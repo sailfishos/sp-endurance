@@ -1,0 +1,67 @@
+.TH PARSE-ENDURANCE-MEASUREMENTS 1 "2007-04-04" "sp-endurance"
+.SH NAME
+parse-endurance-measurements - produce HTML summary from the endurance metrics
+.SH SYNOPSIS
+parse-endurance-measurements [options] \fIdir1\fP [ \fIdir2\fP ... ]
+.SH DESCRIPTION
+\fIparse-endurance-measurements\fP post-processes endurance measurements
+into an overview HTML report.  For instructions on how the whole process
+of taking the measurements and processing them works, see the README
+file coming with these tools.
+.SH OPTIONS
+.TP
+\fB--report\fP=\fIfilename\fP
+Set the output report file name (default='endurance-report').
+.TP
+\fB--start-at\fP=\fIX\fP
+Start parsing from Xth given measurement directory (X > 0, default=0).
+.TP
+\fB--skip\fP=\fIN\fP
+Skip N / parse only every (N+1)th measurement (N > 0, default=0).
+Use  this to see the resource usage changes more clearly.
+.IP
+Note that if you skip measurements and you have cleared syslog between
+them, the endurance report will miss all the sysloggeg errors from
+the skipped measurements.
+.TP
+\fB--stop-at\fP=\fIN\fP
+Stop at Nth measurement (by default all files are parsed).
+.TP
+\fB--stop-at-reboot\fP
+Stop parsing if device had rebooted next round.
+.TP
+\fB--split-at-reboots\fP
+Split results to separate report on reboot
+(by default all measurements go to same report).
+.TP
+\fB--parse-smaps\fP
+Parse SMAPS details for all reports
+(by default not parsed as it's very slow).
+.PP
+If you want more detailed SMAPS report from some specific test round
+without using the slow '--parse-smaps' option for all the rounds,
+install \fIsp-smaps-visualize\fP package and run these directly:
+.br
+	sp_smaps_normalize -f smaps.cap -o smaps.csv
+.br
+	sp_smaps_analyze smaps.csv
+.SH EXAMPLES
+Normal usage:
+.br
+	parse-endurance-measurements test-case/[0-9]*
+.PP
+Example of using most of the options:
+.br
+	parse-endurance-measurements --report=report --start-at=3--skip=3\\
+.br
+	  --parse-smaps --split-at-reboots test-case/[0-9]*
+.SH SEE ALSO
+.IR save-incremental-endurance-stats (1),
+.IR split-endurance-measurements (1),
+.IR endurance_report.py (1)
+.SH COPYRIGHT
+Copyright (C) 2007 Nokia Corporation.
+.PP
+This is free software.  You may redistribute copies of it under the
+terms of the GNU General Public License v2 included with the software.
+There is NO WARRANTY, to the extent permitted by law.

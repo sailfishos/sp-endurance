@@ -1,0 +1,9 @@
+/usr/bin/endurance_report.py
+/usr/bin/syslog_parse.py
+/usr/bin/parse-endurance-measurements
+/usr/bin/split-endurance-measurements
+/usr/share/man/man1/endurance_report.py.1
+/usr/share/man/man1/syslog_parse.py.1
+/usr/share/man/man1/parse-endurance-measurements.1
+/usr/share/man/man1/split-endurance-measurements.1
+/usr/share/doc/sp-endurance-postproc/README

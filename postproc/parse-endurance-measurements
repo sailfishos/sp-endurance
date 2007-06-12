@@ -1,0 +1,350 @@
+#!/bin/sh
+#
+# Post-process endurance measurements into an overview HTML report.
+# This file is part of sp-endurance.
+#
+# Copyright (C) 2006,2007 by Nokia Corporation
+#
+# Contact: Eero Tamminen <eero.tamminen@nokia.com>
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License 
+# version 2 as published by the Free Software Foundation. 
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+# 02110-1301 USA
+#
+# Changelog
+# 2006-11-09:
+# - measurement data files are now in separate directories
+# - if converted files exist, do not re-generate them, do not remove CSV files
+# 2007-02-05:
+# - for performance reasons endurance-report.py does now SMAPS private/dirty
+#   diffing itself (if smaps.cap exists).  Script usage tells now how to get
+#   the full SMAPS report
+# 2007-02-06:
+# - added options for:
+#   - giving report name
+#   - giving from which measurement to start parsing
+#   - giving how many measurements to skip between parsing
+#   - whether to stop parsing at first reboot
+#   - whether to post-process SMAPS data details (which is slow)
+#   and usage for the options
+# 2007-02-16:
+# - added options for splitting reports at reboots and stopping
+#   at specific report
+# 2007-03-01:
+# - rename to make Lintian happy
+# 2007-03-13:
+# - kludge around files which idiots have copied in FTP ASCII mode
+#   using Windows and stupid shells which cannot handle carriage returns
+# 
+# TODO:
+# - add slabinfo diffing?
+
+script=${0##*/}
+
+# tells that tool given argument is missing from path and terminates script.
+# if second argument is given, tell from which package the tool comes from.
+path_error()
+{
+	echo "ERROR: couldn't find '$1' from PATH!"
+	if [ $2 ]; then
+		echo "You need to install '$2' package for this tool."
+	fi
+	exit 1
+}
+
+# shows script usage and terminates it.
+# if argument is given, it's printed as ERROR before this.
+usage()
+{
+	echo "========================================================"
+	if [ -z "$1" ]; then
+		echo "HELP for $script"
+	else
+		echo "ERROR: $1"	# show message
+	fi
+	echo
+	echo "usage: $script [options] use-case-dir1 use-case-dir2..."
+	echo
+	echo "Options:"
+	echo -e "  --report=<filename>\tSet the output report file name"
+	echo -e "\t\t\t(default='endurance-report')"
+	echo -e "  --start-at=<X>\tStart parsing from Xth given measurement directory"
+	echo -e "\t\t\t(> 0, default=0)"
+	echo -e "  --skip=<N>\t\tSkip N / parse only every (N+1)th measurement"
+	echo -e "\t\t\t(use to see resource usage changes more clearly)"
+	echo -e "\t\t\t(> 0, default=0)"
+	echo -e "  --stop-at=<N>\t\tStop at Nth measurement"
+	echo -e "\t\t\t(by default all files are parsed)"
+	echo -e "  --stop-at-reboot\tStop parsing if device had rebooted next round"
+	echo -e "  --split-at-reboots\tSplit results to separate report on reboot"
+	echo -e "\t\t\t(by default all measurements go to same report)"
+	echo -e "  --parse-smaps\t\tParse SMAPS details for all reports"
+	echo -e "\t\t\t(by default not parsed as it's very slow)"
+	echo
+	echo "FYI: If you want more detailed SMAPS report from some specific round"
+	echo "without using the slow '--parse-smaps' option for all rounds,"
+	echo "install 'sp-smaps-visualize' package and run these directly:"
+	echo "  sp_smaps_normalize -f smaps.cap -o smaps.csv"
+	echo "  sp_smaps_analyze smaps.csv"
+	echo
+	echo "NOTE: if you skip measurements and you have cleared syslog between"
+	echo "them, the endurance report will miss all the syslogged errors from"
+	echo "the skipped measurements!"
+	echo 
+	echo "Examples:"
+	echo "  $script test-case/101 test-case/102 test-case/103"
+	echo "  $script --report=report --start-at=3 --skip=3 \\"
+	echo "    --parse-smaps --split-at-reboots test-case/101 test-case/102..."
+	echo
+	exit 1
+}
+
+if [ $# -lt 2 ]; then
+	usage
+fi
+
+# measurement files
+sw_reboot_file=dsme/stats/sw_rst
+hw_reboot_file=dsme/stats/32wd_to
+smaps_file=smaps.cap
+csv_file=usage.csv
+
+# add here paths if tools are not in $PATH
+smaps2csv=sp_smaps_normalize
+smapsdiff=sp_smaps_diff
+smapsanalyze=sp_smaps_analyze
+endurancereport=endurance_report.py
+
+# rest of the tools (SMAPS ones) are checked only if they are needed
+if [ -z $(which $endurancereport) ]; then
+	path_error $endurancereport
+fi
+
+# count SW and HW resets from given dir and set (global shell)
+# "reboots" variable accordingly
+count_reboots()
+{
+	if [ -f "$1/$hw_reboot_file" ]; then
+		hw_reboots=$(cat "$1/$hw_reboot_file"|tr -d '\r')
+	else
+		hw_reboots="0"
+	fi
+	if [ -f "$1/$sw_reboot_file" ]; then
+		sw_reboots=$(cat "$1/$sw_reboot_file"|tr -d '\r')
+	else
+		sw_reboots="0"
+	fi
+	reboots=$(($hw_reboots + $sw_reboots))
+}
+
+# parses SMAPS data and producess the HTML reports from those
+# 'dirs' contains a list of directories to process
+parse_smaps()
+{
+	if [ -z $use_smaps ]; then
+		return
+	fi
+	echo "Processing SMAPS details..."
+	for dir in $dirs; do
+		echo "+ $dir"
+		if [ -f "$dir/smaps.csv" ]; then
+			echo "   (smaps.csv already exists, skipping conversion)"
+		else
+			echo "  - converting '$smaps_file' to CSV format..."
+			$smaps2csv -f "$dir/$smaps_file" -o "$dir/smaps.csv"
+			if [ $? -ne 0 ]; then
+				echo "ERROR: converting '$smaps_file' to 'smaps.csv' failed"
+				exit 1
+			fi
+		fi
+		if [ -f "$dir/smaps.html" ]; then
+			echo "   (smaps.html report already exists, skipping conversion)"
+		else
+			echo "  - creating the SMAPS HTML report..."
+			sp_smaps_analyze "$dir/smaps.csv"
+			if [ $? -ne 0 ]; then
+				echo "ERROR: converting 'smaps.csv' to HTML failed"
+				exit 1
+			fi
+		fi
+	done
+}
+
+# parses the directories and creates endurance report
+# 'dirs' contains a list of directories to process
+create_report()
+{
+	if [ $suffix ]; then
+		saveto="$report-$suffix.html"
+	else
+		saveto="$report.html"
+	fi
+	echo "Creating the '$saveto' endurance report..."
+	$endurancereport $dirs > "$saveto"
+	if [ $? -ne 0 ]; then
+		echo "ERROR: HTML report creation failed"
+		exit 1
+	fi
+}
+
+# default/initial values
+report="endurance-report"	# report prefix
+suffix=""
+start=0
+skips=0
+reboots=0
+started=""
+stop_at=999
+stop_at_reboot=""
+split_at_reboot=""
+use_smaps=""
+dirs=""
+idx=0
+stop=""
+
+# parse arguments
+echo "Checking arguments..."
+for i in $*; do
+	# argument value is after first '=' character
+	val=${i#*=}
+	case "$i" in
+
+		--report=*)
+		if [ "${val%.htm*}" != "$val" ]; then
+			# .html suffix is added separately
+			$val=${val%.htm*}
+		 fi
+		report="$val"
+		;;
+
+		--start-at=*)
+		if [ $val -lt 1 ]; then
+			usage "$i value has to be > 0"
+		fi
+		start=$val
+		;;
+
+		--skip=*)
+		if [ $val -lt 1 ]; then
+			usage "$i value has to be > 0"
+		fi
+		skips=$val
+		;;
+
+		--stop-at=*)
+		if [ $val -lt 1 ]; then
+			usage "$i value has to be > 0"
+		fi
+		stop_at=$val
+		;;
+
+		--stop-at-reboot)
+		stop_at_reboot="yes"
+		;;
+
+		--split-at-reboots)
+		split_at_reboot="yes"
+		suffix="1"
+		;;
+
+		--parse-smaps)
+		if [ -z $(which $smaps2csv) ]; then
+			path_error $smaps2csv "sp-smaps-visualize"
+		fi
+		if [ -z $(which $smapsdiff) ]; then
+			path_error $smapsdiff "sp-smaps-visualize"
+		fi
+		if [ -z $(which $smapsanalyze) ]; then
+			path_error $smapsanalyze "sp-smaps-visualize"
+		fi
+		use_smaps="yes"
+		;;
+
+		-*)
+		# for any other options, show usage
+		usage
+		;;
+
+		*)
+		# check measurement dirs
+		dir="$i"
+		echo "+ $dir"
+		if [ \! -f "$dir/$csv_file" ]; then
+			echo "ERROR: resource usage CSV file '$csv_file' missing"
+			exit 1
+		fi
+		if [ $use_smaps ] && [ \! -f "$dir/$smaps_file" ]; then
+			echo "ERROR: SMAPS data file '$smaps_file' missing"
+			exit 1
+		fi
+		if [ -z "$started" ]; then
+			if [ $idx -lt $start ]; then
+				echo "  - skipped"
+				idx=$(($idx+1))
+			else
+				echo "  - *start from here*"
+				count_reboots "$dir"
+				initial_reboots=$reboots
+				echo "  - $reboots reboots before this"
+				started="yes"
+				dirs="$dir"
+				skip=0
+			fi
+		else
+			count_reboots "$dir"
+			if [ $reboots -ne $initial_reboots ]; then
+				echo "***REBOOT*** (bootreason = $(cat $dir/bootreason))"
+				if [ $stop_at_reboot ]; then
+					echo "-> stop here."
+					stop="yes"
+					break
+				else
+					if [ $split_at_reboot ]; then
+						echo "---------- split ---------"
+						parse_smaps
+						create_report
+						suffix=$(($suffix+1))
+						dirs="$dir"
+						echo "+ $dir"
+					fi
+					initial_reboots=$reboots
+				fi
+			fi
+			if [ $idx -ge $stop_at ]; then
+				stop="yes"
+				break
+			fi
+			if [ $skip -lt $skips ]; then
+				echo "  - skipped"
+				skip=$(($skip+1))
+			else
+				echo "  - taken..."
+				dirs="$dirs $dir"
+				skip=0
+			fi
+			idx=$(($idx+1))
+		fi
+		;;
+	esac
+	if [ $stop ]; then
+		break
+	fi
+done
+
+if [ "$dirs" ]; then
+	# process remaining dirs
+	parse_smaps
+	create_report
+fi
+
+echo "DONE!"

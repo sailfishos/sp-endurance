@@ -1,0 +1,139 @@
+#!/bin/sh
+#
+# Script for saving endurance measurements.
+# This file is part of sp-endurance.
+#
+# Copyright (C) 2006,2007 by Nokia Corporation
+#
+# Contact: Eero Tamminen <eero.tamminen@nokia.com>
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License 
+# version 2 as published by the Free Software Foundation. 
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+# 02110-1301 USA
+#
+# Changelog
+# 2006-11-09:
+# - compress syslog
+# - save the measurement files in to separate directories
+# - add /sbin/ifconfig and interrupts/slabinfo/vmstat/stat files from /proc
+# 2006-11-14:
+# - save DSME statistics
+# 2006-12-05:
+# - save component version
+# 2007-03-01:
+# - don't require sp_smaps_snapshot
+# - use script name Lintian is happy with
+# 2007-04-18:
+# - don't call separate script, do all things here
+
+script=${0##*/}
+if [ $# -lt 1 ]; then
+	echo
+	echo "usage: $script <use-case-name>"
+	echo
+	echo "This saves required endurance measurements to a directory with"
+	echo "given use-case name.  Data from each new measurement is saved"
+	echo "into a numerically named subdirectories (starting from 100),"
+	echo "like this:"
+	echo "<use-case-name>/"
+	echo "+ 100/"
+	echo " - bootreason (why device last booted)"
+	echo " - component_version (HW identification)"
+	echo " - ifconfig   (output of /sbin/ifconfig)"
+	echo " - dsme/      (DSME lifeguard statistics)"
+	echo " - interrupts (number of different HW interrupts)"
+	echo " - slabinfo   (information about kernel caches, see slabinfo(5))"
+	echo " - smaps.cap  (SMAPS memory usage data)"
+	echo " - stat       (kernel/system statistics, see proc(5))"
+	echo " - syslog.gz  (compressed syslog contents)"
+	echo " - usage.csv  (/proc info + X resource & disk usage in CSV format)"
+	echo "+ 101/"
+	echo "+ 102/"
+	echo "etc."
+	echo
+	exit 1
+fi
+
+# do some basic sanity checks
+if [ -z $(which proc2csv) ]; then
+	echo "$script: ERROR, 'proc2csv' tool is missing from PATH" 1>&2
+	exit 1
+fi
+if [ -z $(which xmeminfo) ]; then
+	echo "$script: ERROR, 'xmeminfo' tool is missing from PATH" 1>&2
+	exit 1
+fi
+
+# real dumb way to do find free index, but normally this should be
+# run less than 100 times...
+name=$1
+for i in $(seq 999); do
+	idx="$((100+$i))"
+	if [ \! -d "$name/$idx" ]; then
+		break
+	fi
+done
+path="$name/$idx"
+
+# directory for storing the new statistics
+echo "Saving to $path:"
+mkdir -p $path
+
+# save memory statistics
+echo "- SMAPS data"
+if [ -z $(which sp_smaps_snapshot) ]; then
+	echo " -> skipped as sp_smaps_snapshot is missing"
+else
+	sp_smaps_snapshot > $path/smaps.cap
+fi
+
+# save most of /proc
+usage=$path/usage.csv
+echo "- /proc/ data in CSV format"
+echo -e "generator = syte-endurance-stats v0.4\n" > $usage
+echo "SW-version = $(cat /etc/osso_software_version)" >> $usage
+echo "date = $(date +'%F %T')" >> $usage
+# all relevant info from the /proc that is easy to parse
+proc2csv >> $usage
+if [ $? -ne 0 ]; then
+	echo "$script: WARNING, proc2csv terminated with exit code $?" 1>&2
+fi
+# info on the UI processes X resource usage
+echo >> $usage
+xmeminfo >> $usage
+# output disk usage
+echo >> $usage
+df|sed 's/ \+/,/g' >> $usage
+
+# save some less easily parsed /proc/ statistics
+echo "- Other proc files"
+cp /proc/slabinfo /proc/interrupts /proc/stat /proc/component_version /proc/bootreason $path/
+echo "- /sbin/ifconfig"
+/sbin/ifconfig > $path/ifconfig
+echo "- DSME statistics"
+cp -a /var/lib/dsme $path/
+
+# and syslog...
+echo "- Syslog(s)"
+if [ -f /var/ftd-log/syslog ]; then
+	# FTD saved syslogs
+	logs="/var/ftd-log/logs/syslog /var/ftd-log/syslog"
+elif [ -f /var/log/syslog ]; then
+	# normal syslogs
+	logs="/var/log/syslog.old /var/log/syslog"
+else
+	# no syslog
+	echo "Syslog file(s) missing!" 1>&2
+	exit 0
+fi
+cat $logs | gzip -c > $path/syslog.gz

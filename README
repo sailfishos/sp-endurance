@@ -1,0 +1,94 @@
+
+INSTRUCTIONS FOR ENDURANCE MEASUREMENTS
+=======================================
+
+Changes  (IMPORTANT!)
+-------
+
+Nov 2006:
+- The endurance measurements are saved into separate directories
+- Post-processing scripts accept now directory names instead of file names
+
+
+Usage
+-----
+
+Usage, on target:
+- pre-requirement:
+  - Target kernel has SMAPS enabled and normal Busybox cli tools
+  - You have installed the sp-endurance ARM package (+ dependencies)
+  - If you want more details process memory usage information,
+    install also sp-smaps-measure package
+1. Clean syslog (as root), e.g. with:
+   * If you have FTD installed:
+     echo "" > /var/ftd-log/logs/syslog
+     echo "" > /var/ftd-log/syslog
+   * If you have normal syslog:
+     echo "" > /var/log/syslog.old
+     echo "" > /var/log/syslog
+2. Reboot the device
+3. If DISPLAY is not set, set it (needed for xmeminfo run by the script):
+     export DISPLAY=:0
+4. Then run the following before first test round:
+     save-incremental-endurance-stats usecase
+  -> This will save data files under "usecase/XXX/" directory.
+     Each time it's called, XXX increases (it starts from 100)
+5. Repeat step 4) after each test round.
+   Note: if you're going to do this many times for use-cases which
+   write a lot of data to syslog, you might clean the syslog also
+   after step 4)
+
+Usage, on the PC:
+- Pre-requirements:
+   You have installed the sp-endurance-postproc PC package (+ dependencies).
+1. Copy the contents of usecase/ -directory on the target to PC
+2. Run:
+     parse-endurance-measurements --report use-case-name usecase/[0-9]*
+   This will produce:
+   - the "use-case-name.html" file
+   - reports about errors extracted from the syslog
+   If you want also details memory usage information from the applications,
+   give additional --parse-smaps argument to the script.  This will
+   require sp-smaps-visualize package on PC and sp-smaps-measure
+   package to have been installed on the target device
+
+
+Files in the source package
+---------------------------
+
+Files for the target device:
+- measure/save-incremental-endurance-stats
+  - saves all the measurement data under the given directory
+    using the tools below, date, df and sp_smaps_snapshot
+- measure/proc2csv
+  - binary required by save-incremental-endurance-stats script
+  - outputs contents of /proc/ files as CSV data
+- measure/xmeminfo
+  - binary required by save-incremental-endurance-stats script
+  - outputs X clients resource usage from the X server as CSV data
+- measure/sum-smaps-private
+  - utility script for calculating private memory usage of given
+    process from the process SMAPS information
+
+Files for the PC:
+- postproc/parse-endurance-measurements
+  - runs endurance_report.py after SMAPS data post-processing tools
+- postproc/endurance_report.py
+  - post-processes data files saved by save-incremental-endurance-stats script
+- postproc/syslog_parse.py
+  - used by endurance_report.py
+  - script for digging out known types of problems from syslogs
+- postproc/parse-endurance-measurements
+  - script for making several reports out of given data files
+    (e.g. if device has booted in middle of testing, that invalidates
+    the memory changes, so you want a separate report after that)
+
+Other files:
+- README
+  - this file
+- src/proc2csv.c
+  - source code for proc2csv
+- src/xmeminfo.c
+  - source code for xmeminfo
+- Makefile
+  - compiles the above source files and installs them

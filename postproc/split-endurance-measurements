@@ -1,0 +1,55 @@
+#!/bin/sh
+#
+# Script for getting several reports from measurements.
+# This file is part of sp-endurance.
+#
+# Copyright (C) 2006,2007 by Nokia Corporation
+#
+# Contact: Eero Tamminen <eero.tamminen@nokia.com>
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License 
+# version 2 as published by the Free Software Foundation. 
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+# 02110-1301 USA
+
+# script to run
+script=parse-endurance-measurements
+
+if [ $# -lt 2 ]; then
+	name=${0##*/}
+	echo
+	echo "usage: $name '<split points>' <measurements>"
+	echo
+	echo "splits measurements into separate reports at indicated measurements."
+	echo "the numbers correspond to the test round numbers in endurance report."
+	echo
+	echo "example:"
+	echo "  $name '12 35 66' test-case/[0-9]*"
+	echo
+	exit 1
+fi
+splits=$1
+shift
+
+idx=1
+for i in $splits; do
+	report="--report=endurance-report-$idx"
+	if [ $idx -eq 1 ]; then
+		start=""
+	else
+		start="--start-at=$(($prev_stop+1))"
+	fi
+	stop="--stop-at=$i"
+	$script $start $stop $report $*
+	prev_stop=$i
+	idx=$(($idx+1))
+done

@@ -1,0 +1,58 @@
+#!/bin/sh
+#
+# Script for calculating private memory usage for given process PID.
+# This file is part of sp-endurance.
+#
+# Copyright (C) 2006,2007 by Nokia Corporation
+#
+# Contact: Eero Tamminen <eero.tamminen@nokia.com>
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License 
+# version 2 as published by the Free Software Foundation. 
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+# 02110-1301 USA
+
+if [ $# -ne 1 ]; then
+	echo
+	echo "usage: ${0##*/} <process PID>"
+	echo
+	echo "print the process private memory usage according to SMAPS"
+	echo
+	echo "example:"
+	echo "  cd /proc"
+	echo "  for pid in [0-9]*; do ${0##*/} $pid; done"
+	echo
+	exit 1
+fi
+
+pid=$1
+smaps=/proc/$pid/smaps
+if [ \! -f $smaps ]; then
+	echo "ERROR: $smaps doesn't exist!"
+	exit 1
+fi
+cmd=$(tr '\0' ' ' < /proc/$pid/cmdline)
+if [ -z "$cmd" ]; then
+	echo "PID $pid is a kernel thread"
+	exit 1
+fi
+bin=${cmd%% *}
+opt=${cmd#* }
+
+sdirty=$(awk '/^Shared_Dirty:/{mem+=$2}END{print mem}' $smaps)
+pdirty=$(awk '/^Private_Dirty:/{mem+=$2}END{print mem}' $smaps)
+pclean=$(awk '/^Private_Clean:/{mem+=$2}END{print mem}' $smaps)
+
+echo "PID $pid: ${bin##*/} $opt"
+echo "- Dirty shared memory: $sdirty kB"
+echo "- Dirty private memory: $pdirty kB"
+echo "- Clean private memory: $pclean kB"

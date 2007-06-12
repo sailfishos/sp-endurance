@@ -1,0 +1,28 @@
+Source: sp-endurance
+Section: devel
+Priority: optional
+Maintainer: Eero Tamminen <eero.tamminen@nokia.com>
+Build-Depends: debhelper (>= 4.0.0), libxres-dev
+Standards-Version: 3.7.2.2
+
+Package: sp-endurance
+Architecture: any
+Depends: ${shlibs:Depends}
+Recommends: sp-smaps-measure
+Description: Endurance measument tools
+ Endurance measurement tools save system and process information from /proc
+ and other places; the memory, file descriptors, X resources, flash space,
+ errors in syslog etc.  The data can be later used to see logged application
+ errors, memory usage and resource leakages and leakage trends under
+ long time use-case.
+
+Package: sp-endurance-postproc
+Architecture: all
+Depends: python 
+Suggests: sp-smaps-visualize
+Description: Postprocessing for endurance data
+ Postprocessing scripts to parse and generate a report from the endurance
+ measurement data.  The report lists logged errors and resource usage
+ between the data sets.  This can be used to find reasons (leakage)
+ explaining why the device stops working when used for a longer time.
+ It also provides error parser for the syslog files.

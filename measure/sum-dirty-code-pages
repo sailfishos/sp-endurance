@@ -1,0 +1,91 @@
+#!/bin/sh
+#
+# Script for checking running executables for dirty code pages.
+# This file is part of sp-endurance.
+#
+# Copyright (C) 2007 by Nokia Corporation
+#
+# Contact: Eero Tamminen <eero.tamminen@nokia.com>
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License 
+# version 2 as published by the Free Software Foundation. 
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+# 02110-1301 USA
+
+if [ $# -lt 1 ]; then
+	name=${0##*/}
+	echo
+	echo "usage: $name pid1 pid2 pid3..."
+	echo
+	echo "Checks whether given process has memory mapped executable code"
+	echo "pages which are private/dirty.  Such code pages mean that shared"
+	echo "library code is not compiled correctly with -fPIC. Bug like"
+	echo "this in a common library this can waste a lot of memory."
+	echo
+	echo "examples:"
+	echo "  cd /proc"
+	echo "  $name [0-9]*"
+	echo
+	exit 1
+fi
+
+commands=""
+shared_total=0
+private_total=0
+echo "Detailed information:"
+for pid in $*; do
+	if [ \! -d "/proc/$pid/" ]; then
+		echo "WARN: process '$pid' does not exist"
+		continue
+	fi
+	cmd=$(tr '\0' ' ' < /proc/$pid/cmdline|cut -d' ' -f1)
+	if [ -z "$cmd" ]; then
+		echo "(skipping kernel thread process $pid)"
+		continue
+	fi
+	echo "-------------- $cmd[$pid]"
+	# show details, with patterns of:
+	# - address, not-executable
+	# - address, executable, heap/stack
+	# - address, executable, mapped to file ('/')
+	# - from above, dirty, non-zero
+	awk '
+	/^[-0-9a-f]+ ..-. /      { code=""; next }
+	/^[-0-9a-f]+ ..x. .* [[]/{ code=""; next }
+	/^[-0-9a-f]+ ..x. .* \// { code=$6; show=1; next }
+	code && /_Dirty:/ && ! / 0 / { if (show) { print code; show=0 } print }
+	' /proc/$pid/smaps
+	# get summary
+	values=$(awk 'BEGIN { shared=0; private=0; }
+	/^[-0-9a-f]+ ..-. /      { code=0; next }
+	/^[-0-9a-f]+ ..x. .* [[]/{ code=""; next }
+	/^[-0-9a-f]+ ..x. .* \// { code=1; next }
+	code && /Private_Dirty:/ { private += $2; next }
+	code && /Shared_Dirty:/  { shared  += $2; next }
+	END { if (private || shared) print private, shared }
+	' /proc/$pid/smaps)
+	if [ \! -z "$values" ]; then
+		private=${values% *}
+		shared=${values#* }
+		private_total=$(($private_total+$private))
+		shared_total=$(($shared_total+$shared))
+		commands="$commands $cmd[$pid]=${private}/${shared}KB"
+	fi
+done
+
+echo "---------------------------------------------------------"
+echo "Applications with private/shared dirty code pages:"
+for cmd in $commands; do
+	echo "- $cmd"
+done
+echo "Shared dirty code summed from all processes = $shared_total kB"
+echo "Private dirty code pages total = $private_total kB"

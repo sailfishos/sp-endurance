@@ -1,0 +1,28 @@
+.TH ENDURANCE_REPORT.PY 1 "2007-04-04" "sp-endurance"
+.SH NAME
+endurance_report.py - produce HTML summary from the endurance metrics
+.SH SYNOPSIS
+endurance_report.py \fIdir1\fP [ \fIdir2\fP ... ]
+.SH DESCRIPTION
+\fIendurance_report.py\fP processes the endurance measurement data
+from given directories and outputs a HTML summary of the findings.
+.PP
+.B NOTE:
+It's important that the measurement directories are given in the same
+order as in which the measurements are done, otherwise the differences
+shown between the measurements are incorrect.
+.PP
+The measurement data is from \fIsave-incremental-endurance-stats\fP
+and \fIsyslog_parse.py\fP is used to process the syslogs coming with
+the measurements.  This tool is normally used through the
+\fIparse-endurance-measurements\fP script.
+.SH SEE ALSO
+.IR syslog_parse.py (1),
+.IR save-incremental-endurance-stats (1),
+.IR parse-endurance-measurements (1)
+.SH COPYRIGHT
+Copyright (C) 2007 Nokia Corporation.
+.PP
+This is free software.  You may redistribute copies of it under the
+terms of the GNU General Public License v2 included with the software.
+There is NO WARRANTY, to the extent permitted by law.

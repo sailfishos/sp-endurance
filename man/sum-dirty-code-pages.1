@@ -1,0 +1,27 @@
+.TH SUM-DIRTY-CODE-PAGES 1 "2007-04-04" "sp-endurance"
+.SH NAME
+sum-dirty-code-pages - show amount of dirty code pages in a process
+.SH SYNOPSIS
+sum-dirty-code-pages \fIPID1\fP [ \fIPID2\fP ... ]
+.SH DESCRIPTION
+\fIsum-dirty-code-pages\fP outputs how many KB of dirty code pages
+the given processes have.  Such code pages mean that shared
+library code is not compiled correctly with -fPIC. Bug like
+this in a common library this can waste a lot of memory.
+.PP
+This information is parsed from the /proc/PID/smaps files.
+.SH EXAMPLE
+This gives you an overview of the situation in the whole system:
+.br
+	cd /proc
+.br
+	sum-dirty-code-pages [0-9]*
+.PP
+.SH SEE ALSO
+.IR sum-smaps-private (1)
+.SH COPYRIGHT
+Copyright (C) 2007 Nokia Corporation.
+.PP
+This is free software.  You may redistribute copies of it under the
+terms of the GNU General Public License v2 included with the software.
+There is NO WARRANTY, to the extent permitted by law.
