@@ -72,6 +72,8 @@
 # - Check for SysRq
 # 2007-05-24:
 # - Parse bootup reasons
+# 2007-06-19:
+# - Parse kernel I/O errors (MMC FAT problems)
 """
 NAME
 	<TOOL_NAME>
@@ -125,10 +127,10 @@ import sys, os, re, string, gzip
 # whether to use HTML output or not
 use_html = 1
 
-# sysrq/syslog/kernel/dsp/connectivity/dsme/glib/launcher/all
+# sysrq/syslog/kernel/io/dsp/connectivity/dsme/glib/launcher/all
 verbose = ""
 verbose_options = [
-"sysrq", "bootup", "syslog", "kernel", "dsp", "connectivity", "dsme", "glib", "all"
+"sysrq", "bootup", "syslog", "kernel", "io", "dsp", "connectivity", "dsme", "glib", "all"
 ]
 
 
@@ -249,6 +251,19 @@ def parse_kernel(oopses, ooms, line):
 	    ooms.append("%s %s%s" % match.groups())
 	elif verbose in [ "all", "kernel" ]:
 	    sys.stderr.write("Warning: kernel pattern(s) didn't match:\n  %s\n" % line)
+
+
+# --------------------- I/O error parsing ---------------------------
+
+io_error = re.compile(" (\d+:\d+:\d+) .* kernel: [^]]*[]] (.*)$")
+
+def parse_io(errors, line):
+    "appends to given array simplified kernel I/O error messages"
+    match = io_error.search(line)
+    if match:
+	errors.append("%s %s" % match.groups())
+    elif verbose in [ "all", "io" ]:
+	sys.stderr.write("Warning: I/O error pattern(s) didn't match:\n  %s\n" % line)
 
 
 # --------------------- DSP error parsing ---------------------------
@@ -394,6 +409,8 @@ def parse_syslog(write, file):
     # Dec 30 03:07:49 Nokia770-50 maemo-launcher[880]: invoking '/usr/bin/ossoemail.launch'
     # Dec 30 11:10:37 Nokia770-50 maemo-launcher[601]: child (pid=774) exited due to signal=6
     # Dec 30 03:45:56 Nokia770-50 Browser 2005.50[1636]: GLIB CRITICAL ** Gtk - gtk_widget_destroy: assertion GTK_IS_WIDGET (widget)' failed
+    # Apr 12 17:00:08 Nokia-N800-14 kernel: [ 2122.396057] end_request: I/O error, dev mmcblk0, sector 965286
+    # Apr 12 17:00:08 Nokia-N800-14 kernel: [ 2122.412841] Buffer I/O error on device mmcblk0p1, logical block 657144
 
     if not os.path.exists(file):
 	parse_error(write, "ERROR: syslog file '%s' doesn't exist!" % file)
@@ -413,6 +430,7 @@ def parse_syslog(write, file):
 	'reboots':    [],
 	'oopses':     [],
 	'ooms':       [],
+	'io_errors':  [],
 	'dsp_errors': [],
 	'dsp_warns':  [],
 	'conn_errors':[],
@@ -449,6 +467,8 @@ def parse_syslog(write, file):
 	                  messages['swresets'], messages['hwresets'], line)
 	if line.find('Oops:') >= 0 or line.find('Memory:') >= 0 or line.find('lowmem:') >= 0:
 	    parse_kernel(messages['oopses'], messages['ooms'], line)
+	if line.find('I/O error') >= 0:
+	    parse_io(messages['io_errors'], line)
 	if line.find('mbox:') >= 0 or line.find('omapdsp:') >= 0 or line.find('mbx:') >= 0:
 	    parse_dsp(messages['dsp_errors'], messages['dsp_warns'], line)
 	if line.find('TX dropped') >= 0 or line.find('cx3110x ERROR') >= 0 or line.find('READY interrupt') >= 0:
@@ -487,6 +507,7 @@ error_titles = {
 'exits':      ["Terminated system services", None],
 'oopses':     ["Kernel Oopses", None],
 'ooms':       ["Kernel memory shortage issues", None],
+'io_errors':  ["Kernel I/O errors", None],
 'dsp_errors': ["DSP errors", None],
 'dsp_warns':  ["DSP warnings", None],
 'conn_errors':["Connectivity errors", None],
@@ -499,7 +520,7 @@ error_titles = {
 
 # Dicts are not sorted, so we need a lookup array
 title_order = [
-'sysrq','hwresets','swresets','alarms','powerkeys','reboots','resets','crashes','restarts','exits','oopses','ooms','dsp_errors','dsp_warns','conn_errors','deaths','criticals','warnings'
+'sysrq','hwresets','swresets','alarms','powerkeys','reboots','resets','crashes','restarts','exits','oopses','ooms','io_errors','dsp_errors','dsp_warns','conn_errors','deaths','criticals','warnings'
 ]
 
 def explain_signals(write):
