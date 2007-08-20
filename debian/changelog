@@ -1,12 +1,18 @@
+sp-endurance (1.1.16) unstable; urgency=low
+
+  * Include day to the errors parsed from syslog. Fixes: NB#66123
+
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Thu, 12 Jul 2007 16:01:59 +0300
+
 sp-endurance (1.1.15) unstable; urgency=low
 
-  * Fixes: NB#61217
+  * Parse bootup reason from syslog. Fixes: NB#61217
 
  -- Eero Tamminen <eero.tamminen@nokia.com>  Thu, 12 Jul 2007 16:01:59 +0300
 
 sp-endurance (1.1.14) unstable; urgency=low
 
-  * Bootup reason and kernel I/O errors are parsed from syslog
+  * Parse kernel I/O errors from syslog
 
  -- Eero Tamminen <eero.tamminen@nokia.com>  Thu, 24 May 2007 19:16:25 +0300
 

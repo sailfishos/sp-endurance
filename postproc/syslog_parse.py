@@ -75,7 +75,9 @@
 # 2007-06-19:
 # - Parse kernel I/O errors (MMC FAT problems)
 # 2007-08-20:
-# - Indicate in output titles where the stats come + add charger bootup reason
+# - add day to output
+# - add charger bootup reason
+# - Indicate in output titles where the stats come
 """
 NAME
 	<TOOL_NAME>
@@ -189,29 +191,30 @@ def parse_signal(string):
     return (signum, signame)
 
 
-# --------------------- sysrq parsing ---------------------------
+# ------------------- date/time parsing --------------------------
 
-sysrq_msg = re.compile(" (\d+:\d+:\d+) .* SysRq .*$")
+time_pattern = re.compile(" (\d+) (\d+:\d+:\d+) ")
 
-def parse_sysrq(sysrq, line):
-    "appends to given array sysrq timestamps"
-    match = sysrq_msg.search(line)
+def parse_time(line):
+    match = time_pattern.search(line)
     if match:
-	sysrq.append("SysRq message at %s" % match.group(1))
-    elif verbose in [ "all", "sysrq" ]:
-	sys.stderr.write("Warning: sysrq pattern didn't match:\n  %s\n" % line)
+	# 00:00:00/day
+	return "%02d/%s" % (int(match.group(1)), match.group(2))
+    else:
+	sys.stderr.write("ERROR: line didn't match date/time:\n  %s\n" % line)
+	sys.exit(1)
 
 
 # --------------------- bootup parsing ---------------------------
 
-bootup_reason = re.compile(" (\d+:\d+:\d+) .* Bootup reason: (.*)$")
+bootup_reason = re.compile(" Bootup reason: (.*)$")
 
 def parse_bootups(powerkeys, alarms, charger, swresets, hwresets, line):
     "appends to given array simplified bootup reason messages"
     match = bootup_reason.search(line)
     if match:
-	time = match.group(1)
-	reason = match.group(2)
+	time = parse_time(line)
+	reason = match.group(1)
 	if reason == "pwr_key":
 	    return powerkeys.append("%s user had booted the device" % time)
 	elif reason == "rtc_alarm":
@@ -228,92 +231,92 @@ def parse_bootups(powerkeys, alarms, charger, swresets, hwresets, line):
 
 # --------------------- restart parsing ---------------------------
 
-syslog_restart = re.compile(" (\d+:\d+:\d+) [^:]* syslogd .* restart.*$")
+syslog_restart = re.compile(" [^:]* syslogd .* restart.*$")
 
 def parse_restarts(restarts, line):
     "appends to given array simplified syslogd (=device) restart message"
     match = syslog_restart.search(line)
     if match:
-	restarts.append("%s syslogd restart" % match.group(1))
+	restarts.append("%s syslogd restart" % parse_time(line))
     elif verbose in [ "all", "syslog" ]:
 	sys.stderr.write("Warning: syslog pattern(s) didn't match:\n  %s\n" % line)
 
 
 # --------------------- Kernel parsing ---------------------------
 
-kernel_oops = re.compile(" (\d+:\d+:\d+) .* kernel: .* Oops: (.*)$")
-kernel_oom = re.compile(" (\d+:\d+:\d+) .* kernel: .* (Out of Memory: Kill|lowmem: denying memory)(.*)$")
+kernel_oops = re.compile(" kernel: .* Oops: (.*)$")
+kernel_oom = re.compile(" kernel: .* (Out of Memory: Kill|lowmem: denying memory)(.*)$")
 
 def parse_kernel(oopses, ooms, line):
     "appends to given array simplified kernel Oops message line"
     match = kernel_oops.search(line)
     if match:
-	oopses.append("%s Kernel Oops: %s" % match.groups())
+	oopses.append("%s Kernel Oops: %s" % (parse_time(line), match.group(1)))
     else:
 	match = kernel_oom.search(line)
 	if match:
-	    ooms.append("%s %s%s" % match.groups())
+	    ooms.append("%s %s%s" % (parse_time(line), match.group(1)))
 	elif verbose in [ "all", "kernel" ]:
 	    sys.stderr.write("Warning: kernel pattern(s) didn't match:\n  %s\n" % line)
 
 
 # --------------------- I/O error parsing ---------------------------
 
-io_error = re.compile(" (\d+:\d+:\d+) .* kernel: [^]]*[]] (.*)$")
+io_error = re.compile(" kernel: [^]]*[]] (.*)$")
 
 def parse_io(errors, line):
     "appends to given array simplified kernel I/O error messages"
     match = io_error.search(line)
     if match:
-	errors.append("%s %s" % match.groups())
+	errors.append("%s %s" % (parse_time(line), match.group(1)))
     elif verbose in [ "all", "io" ]:
 	sys.stderr.write("Warning: I/O error pattern(s) didn't match:\n  %s\n" % line)
 
 
 # --------------------- DSP error parsing ---------------------------
 
-dsp_error = re.compile(" (\d+:\d+:\d+) .* (mbox: Illegal seq bit.*|omapdsp: poll error.*)$")
-dsp_warn = re.compile(" (\d+:\d+:\d+) .* (mbx: ERR.*)$")
+dsp_error = re.compile(" (mbox: Illegal seq bit.*|omapdsp: poll error.*)$")
+dsp_warn = re.compile(" (mbx: ERR.*)$")
 
 def parse_dsp(errors, warnings, line):
     "appends to given array simplified DSP error or warning message"
     match = dsp_error.search(line)
     if match:
-	errors.append("%s %s" % match.groups())
+	errors.append("%s %s" % (parse_time(line), match.group(1)))
     else:
 	match = dsp_warn.search(line)
 	if match:
-	    warnings.append("%s %s" % match.groups())
+	    warnings.append("%s %s" % (parse_time(line), match.group(1)))
 	elif verbose in [ "all", "dsp" ]:
 	    sys.stderr.write("Warning: DSP pattern(s) didn't match:\n  %s\n" % line)
 
 
 # ----------------- Connectivity error parsing ---------------------------
 
-conn_error = re.compile(" (\d+:\d+:\d+) .*(cx3110x ERROR.*|TX dropped.*|We haven't got a [A-Z_]+ interrupt from [A-Z_]+.*)$")
+conn_error = re.compile("(cx3110x ERROR.*|TX dropped.*|We haven't got a [A-Z_]+ interrupt from [A-Z_]+.*)$")
 
 def parse_connectivity(errors, line):
     "appends to given array simplified Connectivity error or warning message"
     match = conn_error.search(line)
     if match:
-	errors.append("%s %s" % match.groups())
+	errors.append("%s %s" % (parse_time(line), match.group(1)))
     elif verbose in [ "all", "connectivity" ]:
 	sys.stderr.write("Warning: connectivity pattern(s) didn't match:\n  %s\n" % line)
 
 
 # --------------------- DSME error parsing ---------------------------
 
-dsme_respawn = re.compile(" (\d+:\d+:\d+) .* DSME:[^']* '([^']+)' spawning too fast -> reset")
-dsme_reset = re.compile(" (\d+:\d+:\d+) .* DSME:[^']* '([^']+)' exited (with RESET|and restarted)")
-dsme_signal = re.compile(" (\d+:\d+:\d+) .* DSME:[^']* '([^']+)' with pid ([0-9]+) exited with signal: ([0-9]+)")
-dsme_exit = re.compile(" (\d+:\d+:\d+) .* DSME:[^']* '([^']+)' with pid ([0-9]+) (exited with return value: .*)")
+dsme_respawn = re.compile(" DSME:[^']* '([^']+)' spawning too fast -> reset")
+dsme_reset = re.compile(" DSME:[^']* '([^']+)' exited (with RESET|and restarted)")
+dsme_signal = re.compile(" DSME:[^']* '([^']+)' with pid ([0-9]+) exited with signal: ([0-9]+)")
+dsme_exit = re.compile(" DSME:[^']* '([^']+)' with pid ([0-9]+) (exited with return value: .*)")
 
 def parse_dsme(resets, restarts, crashes, exits, line):
     "appends to given array simplified DSME device reset or process restart message"
     match = dsme_signal.search(line)
     if match:
-	signum, signal = parse_signal(match.group(4))
-	output = (match.group(1), match.group(2), match.group(3), signal)
+	signum, signal = parse_signal(match.group(3))
+	output = (parse_time(line), match.group(1), match.group(2), signal)
 	# termination requests: HUP, INT, TERM
 	if signum in (1, 2, 15):
 	    exits.append("%s %s[%s]: exited with %s" % output)
@@ -323,20 +326,21 @@ def parse_dsme(resets, restarts, crashes, exits, line):
 	return
     match = dsme_reset.search(line)
     if match:
-	output = (match.group(1), match.group(2))
-	if match.group(3) == "with RESET":
+	output = (parse_time(line), match.group(1))
+	if match.group(2) == "with RESET":
 	    resets.append("%s %s (RESET)" % output)
 	else:
 	    restarts.append("%s %s" % output)
 	return
     match = dsme_exit.search(line)
     if match:
-	    exits.append("%s %s[%s]: %s" % match.groups())
-	    return
+	output = "%s[%s]: %s" % match.groups()
+	exits.append("%s %s" % (parse_time(line), output))
+	return
     match = dsme_respawn.search(line)
     if match:
-	    resets.append("%s %s (RESET)" % match.groups())
-	    return
+	resets.append("%s %s (RESET)" % (parse_time(line), match.group(1)))
+	return
     if verbose in [ "all", "dsme" ]:
 	sys.stderr.write("Warning: DSME patterns didn't match:\n  %s\n" % line)
 
@@ -344,16 +348,16 @@ def parse_dsme(resets, restarts, crashes, exits, line):
 # --------------------- GLIB error parsing ---------------------------
 
 #glib_pattern = re.compile(" (\S+): GLIB (WARNING|CRITICAL) \*\* (.*)$")
-glib_pattern = re.compile(" (\d+:\d+:\d+) [-0-9A-Za-z.]+ (.*[]]+): GLIB (WARNING|CRITICAL|ERROR) \*\* (.*)$")
+glib_pattern = re.compile(" [-0-9A-Za-z.]+ (.*[]]+): GLIB (WARNING|CRITICAL|ERROR) \*\* (.*)$")
 
 def parse_glib(criticals, warnings, line):
     "appends to given array simplified Glib critical error or warning"
     match = glib_pattern.search(line)
     if match:
-	output = (match.group(1), match.group(2), match.group(4))
-	if match.group(3) == "ERROR":
+	output = (parse_time(line), match.group(1), match.group(3))
+	if match.group(2) == "ERROR":
 	    criticals.append("%s %s (ERROR): %s" % output)
-	elif match.group(3) == "CRITICAL":
+	elif match.group(2) == "CRITICAL":
 	    criticals.append("%s %s (CRITICAL): %s" % output)
 	else:
 	    warnings.append("%s %s: %s" % output)
@@ -362,8 +366,6 @@ def parse_glib(criticals, warnings, line):
 
 
 # --------------------- maemo-launcher parsing ---------------------------
-
-time_pattern = re.compile(" (\d+:\d+:\d+) ")
 
 def parse_launcher(deaths, lines, line, start):
     "Parses both launcher application exits and invocations to get app names"
@@ -376,8 +378,8 @@ def parse_launcher(deaths, lines, line, start):
 	for check in lines:
 	    if check.find(search) >= 0:
 		# application name without path or quotes
+		time = parse_time(line)
 		app = check[check.find("invoking")+10:-1].split('/')[-1]
-		time = time_pattern.search(line).group(1)
 		signal = line[signal + len("signal="):]
 		signum, signame = parse_signal(signal)
 		# app name: signal (at time)
@@ -459,7 +461,7 @@ def parse_syslog(write, file):
 	#
 	# faster to check with find first...
 	if line.find(' SysRq ') >= 0:
-	    parse_sysrq(messages['sysrq'], line)
+	    messages['sysrq'].append("%s SysRq message" % parse_time(line))
 	if line.find(' GLIB ') >= 0:
 	    parse_glib(messages['criticals'], messages['warnings'], line)
 	if line.find('DSME:') >= 0:
@@ -502,7 +504,7 @@ error_titles = {
 'powerkeys':  ["Device booted normally with powerkey (bootup reason)", None],
 'alarms':     ["Device alarm wakeups (bootup reason)", None],
 'charger':    ["Device charger wakeups (bootup reason)", None],
-'swresets':   ["Device SW watchdog reboots (bootup reason)", None],
+'swresets':   ["Device HW SW-resets (bootup reason)", None],
 'hwresets':   ["Device HW watchdog reboots (bootup reason)", None],
 'resets':     ["Device resets by SW watchdog (DSME)",
   "System service crashes causing device to be restarted by DSME"],
