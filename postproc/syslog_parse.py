@@ -74,6 +74,8 @@
 # - Parse bootup reasons
 # 2007-06-19:
 # - Parse kernel I/O errors (MMC FAT problems)
+# 2007-08-20:
+# - Indicate in output titles where the stats come + add charger bootup reason
 """
 NAME
 	<TOOL_NAME>
@@ -204,7 +206,7 @@ def parse_sysrq(sysrq, line):
 
 bootup_reason = re.compile(" (\d+:\d+:\d+) .* Bootup reason: (.*)$")
 
-def parse_bootups(powerkeys, alarms, swresets, hwresets, line):
+def parse_bootups(powerkeys, alarms, charger, swresets, hwresets, line):
     "appends to given array simplified bootup reason messages"
     match = bootup_reason.search(line)
     if match:
@@ -214,6 +216,8 @@ def parse_bootups(powerkeys, alarms, swresets, hwresets, line):
 	    return powerkeys.append("%s user had booted the device" % time)
 	elif reason == "rtc_alarm":
 	    return alarms.append("%s alarm had woken up the device" % time)
+	elif reason == "charger":
+	    return charger.append("%s charger connection had woken up the device" % time)
 	elif reason == "sw_rst":
 	    return swresets.append("%s SW watchdog had rebooted the device" % time)
 	elif reason == "32wd_to":
@@ -425,6 +429,7 @@ def parse_syslog(write, file):
 	'sysrq':      [],
 	'powerkeys':  [],
 	'alarms':     [],
+	'charger':    [],
 	'swresets':   [],
 	'hwresets':   [],
 	'reboots':    [],
@@ -463,7 +468,7 @@ def parse_syslog(write, file):
 	if line.find('syslogd ') >= 0:
 	    parse_restarts(messages['reboots'], line)
 	if line.find('Bootup reason') >= 0:
-	    parse_bootups(messages['powerkeys'], messages['alarms'],
+	    parse_bootups(messages['powerkeys'], messages['alarms'], messages['charger'],
 	                  messages['swresets'], messages['hwresets'], line)
 	if line.find('Oops:') >= 0 or line.find('Memory:') >= 0 or line.find('lowmem:') >= 0:
 	    parse_kernel(messages['oopses'], messages['ooms'], line)
@@ -494,17 +499,18 @@ error_titles = {
 'sysrq':      ["Faulty setup",
   "SysRq messages - serial console enabled without device being attached to dock, device can spuriously reboot at any moment"],
 'reboots':    ["Device (syslogd) restarts", None],
-'powerkeys':  ["Device booted normally with powerkey", None],
-'alarms':     ["Device alarm wakeups", None],
-'swresets':   ["Device SW watchdog reboots", None],
-'hwresets':   ["Device HW watchdog reboots", None],
-'resets':     ["Device resets by SW watchdog",
-  "System service crashes causing device to restart"],
-'crashes':    ["Crashed system services",
+'powerkeys':  ["Device booted normally with powerkey (bootup reason)", None],
+'alarms':     ["Device alarm wakeups (bootup reason)", None],
+'charger':    ["Device charger wakeups (bootup reason)", None],
+'swresets':   ["Device SW watchdog reboots (bootup reason)", None],
+'hwresets':   ["Device HW watchdog reboots (bootup reason)", None],
+'resets':     ["Device resets by SW watchdog (DSME)",
+  "System service crashes causing device to be restarted by DSME"],
+'crashes':    ["Crashed system services (from DSME)",
   'Life-guarded system services crashing to <a href="#signals">signals about serious errors</a>'],
-'restarts':   ["System service restarts",
-  "Life-guarded system services restarted by SW watchdog"],
-'exits':      ["Terminated system services", None],
+'restarts':   ["System service restarts (from DSME)",
+  "Life-guarded system services restarted by the DSME SW watchdog"],
+'exits':      ["Terminated system services (from DSME)", None],
 'oopses':     ["Kernel Oopses", None],
 'ooms':       ["Kernel memory shortage issues", None],
 'io_errors':  ["Kernel I/O errors", None],
