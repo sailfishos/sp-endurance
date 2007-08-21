@@ -255,7 +255,7 @@ def parse_kernel(oopses, ooms, line):
     else:
 	match = kernel_oom.search(line)
 	if match:
-	    ooms.append("%s %s%s" % (parse_time(line), match.group(1)))
+	    ooms.append("%s %s%s" % (parse_time(line), match.group(1), match.group(2)))
 	elif verbose in [ "all", "kernel" ]:
 	    sys.stderr.write("Warning: kernel pattern(s) didn't match:\n  %s\n" % line)
 
