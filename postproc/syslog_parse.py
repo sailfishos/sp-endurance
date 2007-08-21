@@ -74,10 +74,11 @@
 # - Parse bootup reasons
 # 2007-06-19:
 # - Parse kernel I/O errors (MMC FAT problems)
-# 2007-08-20:
-# - add day to output
-# - add charger bootup reason
+# 2007-08-21:
+# - Add day to output
+# - Add charger bootup reason
 # - Indicate in output titles where the stats come
+# - Syslogd restarts don't anymore mean device restarts
 """
 NAME
 	<TOOL_NAME>
@@ -434,7 +435,7 @@ def parse_syslog(write, file):
 	'charger':    [],
 	'swresets':   [],
 	'hwresets':   [],
-	'reboots':    [],
+	'syslogs':    [],
 	'oopses':     [],
 	'ooms':       [],
 	'io_errors':  [],
@@ -468,7 +469,7 @@ def parse_syslog(write, file):
 	    parse_dsme(messages['resets'], messages['restarts'],
 	               messages['crashes'], messages['exits'], line)
 	if line.find('syslogd ') >= 0:
-	    parse_restarts(messages['reboots'], line)
+	    parse_restarts(messages['syslogs'], line)
 	if line.find('Bootup reason') >= 0:
 	    parse_bootups(messages['powerkeys'], messages['alarms'], messages['charger'],
 	                  messages['swresets'], messages['hwresets'], line)
@@ -500,7 +501,8 @@ def parse_syslog(write, file):
 error_titles = {
 'sysrq':      ["Faulty setup",
   "SysRq messages - serial console enabled without device being attached to dock, device can spuriously reboot at any moment"],
-'reboots':    ["Device (syslogd) restarts", None],
+'syslogs':    ["Syslogd restarts",
+  "(Not really an error, just something to note.)" ]
 'powerkeys':  ["Device booted normally with powerkey (bootup reason)", None],
 'alarms':     ["Device alarm wakeups (bootup reason)", None],
 'charger':    ["Device charger wakeups (bootup reason)", None],
@@ -528,7 +530,7 @@ error_titles = {
 
 # Dicts are not sorted, so we need a lookup array
 title_order = [
-'sysrq','hwresets','swresets','alarms','powerkeys','reboots','resets','crashes','restarts','exits','oopses','ooms','io_errors','dsp_errors','dsp_warns','conn_errors','deaths','criticals','warnings'
+'sysrq','hwresets','swresets','alarms','powerkeys','resets','crashes','restarts','exits','oopses','ooms','io_errors','dsp_errors','dsp_warns','conn_errors','deaths','criticals','warnings','syslogs'
 ]
 
 def explain_signals(write):
