@@ -502,7 +502,7 @@ error_titles = {
 'sysrq':      ["Faulty setup",
   "SysRq messages - serial console enabled without device being attached to dock, device can spuriously reboot at any moment"],
 'syslogs':    ["Syslogd restarts",
-  "(Not really an error, just something to note.)" ]
+  "(Not really an error, just something to note.)" ],
 'powerkeys':  ["Device booted normally with powerkey (bootup reason)", None],
 'alarms':     ["Device alarm wakeups (bootup reason)", None],
 'charger':    ["Device charger wakeups (bootup reason)", None],
