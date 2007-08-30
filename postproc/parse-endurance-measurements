@@ -45,6 +45,9 @@
 # 2007-03-13:
 # - kludge around files which idiots have copied in FTP ASCII mode
 #   using Windows and stupid shells which cannot handle carriage returns
+# 2007-08-30:
+# - smaps analysis doesn't need the intermediate CSV file anymore,
+#   it can handle the .cap files directly
 # 
 # TODO:
 # - add slabinfo diffing?
@@ -88,23 +91,23 @@ usage()
 	echo -e "  --stop-at-reboot\tStop parsing if device had rebooted next round"
 	echo -e "  --split-at-reboots\tSplit results to separate report on reboot"
 	echo -e "\t\t\t(by default all measurements go to same report)"
-	echo -e "  --parse-smaps\t\tParse SMAPS details for all reports"
-	echo -e "\t\t\t(by default not parsed as it's very slow)"
+	echo -e "  --parse-smaps\t\tParse SMAPS details for all reports (slow)"
+	echo -e "\t\t\t(by default only private data changes are shown)"
 	echo
 	echo "FYI: If you want more detailed SMAPS report from some specific round"
 	echo "without using the slow '--parse-smaps' option for all rounds,"
-	echo "install 'sp-smaps-visualize' package and run these directly:"
-	echo "  sp_smaps_normalize -f smaps.cap -o smaps.csv"
-	echo "  sp_smaps_analyze smaps.csv"
+	echo "install 'sp-smaps-visualize' package and run this directly:"
+	echo "  sp_smaps_analyze <subdirectory>/smaps.cap"
 	echo
 	echo "NOTE: if you skip measurements and you have cleared syslog between"
 	echo "them, the endurance report will miss all the syslogged errors from"
 	echo "the skipped measurements!"
 	echo 
 	echo "Examples:"
-	echo "  $script test-case/101 test-case/102 test-case/103"
 	echo "  $script --report=report --start-at=3 --skip=3 \\"
 	echo "    --parse-smaps --split-at-reboots test-case/101 test-case/102..."
+	echo
+	echo "  $script test-case/[0-9]*"
 	echo
 	exit 1
 }
@@ -120,8 +123,6 @@ smaps_file=smaps.cap
 csv_file=usage.csv
 
 # add here paths if tools are not in $PATH
-smaps2csv=sp_smaps_normalize
-smapsdiff=sp_smaps_diff
 smapsanalyze=sp_smaps_analyze
 endurancereport=endurance_report.py
 
@@ -157,23 +158,13 @@ parse_smaps()
 	echo "Processing SMAPS details..."
 	for dir in $dirs; do
 		echo "+ $dir"
-		if [ -f "$dir/smaps.csv" ]; then
-			echo "   (smaps.csv already exists, skipping conversion)"
-		else
-			echo "  - converting '$smaps_file' to CSV format..."
-			$smaps2csv -f "$dir/$smaps_file" -o "$dir/smaps.csv"
-			if [ $? -ne 0 ]; then
-				echo "ERROR: converting '$smaps_file' to 'smaps.csv' failed"
-				exit 1
-			fi
-		fi
 		if [ -f "$dir/smaps.html" ]; then
 			echo "   (smaps.html report already exists, skipping conversion)"
 		else
 			echo "  - creating the SMAPS HTML report..."
-			sp_smaps_analyze "$dir/smaps.csv"
+			sp_smaps_analyze "$dir/smaps.cap"
 			if [ $? -ne 0 ]; then
-				echo "ERROR: converting 'smaps.csv' to HTML failed"
+				echo "ERROR: converting 'smaps.cap' to HTML failed"
 				exit 1
 			fi
 		fi
@@ -258,12 +249,6 @@ for i in $*; do
 		;;
 
 		--parse-smaps)
-		if [ -z $(which $smaps2csv) ]; then
-			path_error $smaps2csv "sp-smaps-visualize"
-		fi
-		if [ -z $(which $smapsdiff) ]; then
-			path_error $smapsdiff "sp-smaps-visualize"
-		fi
 		if [ -z $(which $smapsanalyze) ]; then
 			path_error $smapsanalyze "sp-smaps-visualize"
 		fi
