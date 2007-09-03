@@ -1,3 +1,10 @@
+sp-endurance (1.1.17) unstable; urgency=low
+
+  * Added a missing a comma in a dictionary declaration at
+    syslog_parse.py. Fixes: NB#67436
+
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Fri, 31 Aug 2007 14:54:43 +0300
+
 sp-endurance (1.1.16) unstable; urgency=low
 
   * Include day to the errors parsed from syslog. Fixes: NB#66123
