@@ -1,12 +1,8 @@
 /usr/bin/proc2csv
 /usr/bin/endurance-mem-overview
 /usr/bin/save-incremental-endurance-stats
-/usr/bin/sum-dirty-code-pages
-/usr/bin/sum-smaps-private
 /usr/bin/xmeminfo
 /usr/share/man/man1/proc2csv.1
 /usr/share/man/man1/endurance-mem-overview.1
 /usr/share/man/man1/save-incremental-endurance-stats.1
-/usr/share/man/man1/sum-dirty-code-pages.1
-/usr/share/man/man1/sum-smaps-private.1
 /usr/share/man/man1/xmeminfo.1
