@@ -1,3 +1,11 @@
+sp-endurance (1.1.18) unstable; urgency=low
+
+  * syslog_parse.py: handle syslog read failures gracefully.
+    Fix to 66123 got dates in Glib errors duplicated, fixed.
+    Fixes: NB#71722
+
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Tue,  2 Oct 2007 14:47:05 +0300
+
 sp-endurance (1.1.17) unstable; urgency=low
 
   * Added a missing a comma in a dictionary declaration at
