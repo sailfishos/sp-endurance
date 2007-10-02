@@ -79,15 +79,15 @@
 # - Add charger bootup reason
 # - Indicate in output titles where the stats come
 # - Syslogd restarts don't anymore mean device restarts
-# 2007-10-01:
+# 2007-10-02:
 # - Patch for Tuukka to catch syslog read failures
 
 """
 NAME
-	<TOOL_NAME>
+        <TOOL_NAME>
 
 SYNOPSIS
-	<TOOL_NAME> <syslog1> [syslog2 ...]
+        <TOOL_NAME> <syslog1> [syslog2 ...]
 
 DESCRIPTION
 
@@ -121,12 +121,12 @@ The output is by default in HTML mode (controlled by use_html).
 OPTIONS
 
 When run as a program, you can use either of these options (not both):
-	--html         Use HTML output (text output is default)
-	--debug=value  Complain about matched, but unknown syslog rows
-	
+        --html         Use HTML output (text output is default)
+        --debug=value  Complain about matched, but unknown syslog rows
+        
 EXAMPLES
-	<TOOL_NAME> --html syslog1 syslog2 > syslog-errors.html
-	<TOOL_NAME> --debug=all syslog1 syslog2 > syslog-errors.txt
+        <TOOL_NAME> --html syslog1 syslog2 > syslog-errors.html
+        <TOOL_NAME> --debug=all syslog1 syslog2 > syslog-errors.txt
 """
 
 import sys, os, re, string, gzip
@@ -145,7 +145,7 @@ verbose_options = [
 def parse_error(write, error):
     "outputs error/warning both to stderr and as HTML using given write func"
     if use_html:
-	write("<p><font color=red>%s</font>\n" % error)
+        write("<p><font color=red>%s</font>\n" % error)
     sys.stderr.write("%s\n" % error)
 
 
@@ -189,9 +189,9 @@ def parse_signal(string):
     "gets integer string, returns (signal number, signal name)"
     signum = int(string)
     if signum in signals:
-	signame = "signal SIG%s (%d)" % (signals[signum], signum)
+        signame = "signal SIG%s (%d)" % (signals[signum], signum)
     else:
-	signame = "UNKNOWN signal (%d)" % signum
+        signame = "UNKNOWN signal (%d)" % signum
     return (signum, signame)
 
 
@@ -202,11 +202,11 @@ time_pattern = re.compile(" (\d+) (\d+:\d+:\d+) ")
 def parse_time(line):
     match = time_pattern.search(line)
     if match:
-	# 00:00:00/day
-	return "%02d/%s" % (int(match.group(1)), match.group(2))
+        # 00:00:00/day
+        return "%02d/%s" % (int(match.group(1)), match.group(2))
     else:
-	sys.stderr.write("ERROR: line didn't match date/time:\n  %s\n" % line)
-	sys.exit(1)
+        sys.stderr.write("ERROR: line didn't match date/time:\n  %s\n" % line)
+        sys.exit(1)
 
 
 # --------------------- bootup parsing ---------------------------
@@ -217,20 +217,20 @@ def parse_bootups(powerkeys, alarms, charger, swresets, hwresets, line):
     "appends to given array simplified bootup reason messages"
     match = bootup_reason.search(line)
     if match:
-	time = parse_time(line)
-	reason = match.group(1)
-	if reason == "pwr_key":
-	    return powerkeys.append("%s user had booted the device" % time)
-	elif reason == "rtc_alarm":
-	    return alarms.append("%s alarm had woken up the device" % time)
-	elif reason == "charger":
-	    return charger.append("%s charger connection had woken up the device" % time)
-	elif reason == "sw_rst":
-	    return swresets.append("%s SW watchdog had rebooted the device" % time)
-	elif reason == "32wd_to":
-	    return hwresets.append("%s HW watchdog had rebooted the device" % time)
+        time = parse_time(line)
+        reason = match.group(1)
+        if reason == "pwr_key":
+            return powerkeys.append("%s user had booted the device" % time)
+        elif reason == "rtc_alarm":
+            return alarms.append("%s alarm had woken up the device" % time)
+        elif reason == "charger":
+            return charger.append("%s charger connection had woken up the device" % time)
+        elif reason == "sw_rst":
+            return swresets.append("%s SW watchdog had rebooted the device" % time)
+        elif reason == "32wd_to":
+            return hwresets.append("%s HW watchdog had rebooted the device" % time)
     if verbose in [ "all", "bootup" ]:
-	sys.stderr.write("Warning: bootup reason pattern didn't match:\n  %s\n" % line)
+        sys.stderr.write("Warning: bootup reason pattern didn't match:\n  %s\n" % line)
 
 
 # --------------------- restart parsing ---------------------------
@@ -241,9 +241,9 @@ def parse_restarts(restarts, line):
     "appends to given array simplified syslogd (=device) restart message"
     match = syslog_restart.search(line)
     if match:
-	restarts.append("%s syslogd restart" % parse_time(line))
+        restarts.append("%s syslogd restart" % parse_time(line))
     elif verbose in [ "all", "syslog" ]:
-	sys.stderr.write("Warning: syslog pattern(s) didn't match:\n  %s\n" % line)
+        sys.stderr.write("Warning: syslog pattern(s) didn't match:\n  %s\n" % line)
 
 
 # --------------------- Kernel parsing ---------------------------
@@ -255,13 +255,13 @@ def parse_kernel(oopses, ooms, line):
     "appends to given array simplified kernel Oops message line"
     match = kernel_oops.search(line)
     if match:
-	oopses.append("%s Kernel Oops: %s" % (parse_time(line), match.group(1)))
+        oopses.append("%s Kernel Oops: %s" % (parse_time(line), match.group(1)))
     else:
-	match = kernel_oom.search(line)
-	if match:
-	    ooms.append("%s %s%s" % (parse_time(line), match.group(1), match.group(2)))
-	elif verbose in [ "all", "kernel" ]:
-	    sys.stderr.write("Warning: kernel pattern(s) didn't match:\n  %s\n" % line)
+        match = kernel_oom.search(line)
+        if match:
+            ooms.append("%s %s%s" % (parse_time(line), match.group(1), match.group(2)))
+        elif verbose in [ "all", "kernel" ]:
+            sys.stderr.write("Warning: kernel pattern(s) didn't match:\n  %s\n" % line)
 
 
 # --------------------- I/O error parsing ---------------------------
@@ -272,9 +272,9 @@ def parse_io(errors, line):
     "appends to given array simplified kernel I/O error messages"
     match = io_error.search(line)
     if match:
-	errors.append("%s %s" % (parse_time(line), match.group(1)))
+        errors.append("%s %s" % (parse_time(line), match.group(1)))
     elif verbose in [ "all", "io" ]:
-	sys.stderr.write("Warning: I/O error pattern(s) didn't match:\n  %s\n" % line)
+        sys.stderr.write("Warning: I/O error pattern(s) didn't match:\n  %s\n" % line)
 
 
 # --------------------- DSP error parsing ---------------------------
@@ -286,13 +286,13 @@ def parse_dsp(errors, warnings, line):
     "appends to given array simplified DSP error or warning message"
     match = dsp_error.search(line)
     if match:
-	errors.append("%s %s" % (parse_time(line), match.group(1)))
+        errors.append("%s %s" % (parse_time(line), match.group(1)))
     else:
-	match = dsp_warn.search(line)
-	if match:
-	    warnings.append("%s %s" % (parse_time(line), match.group(1)))
-	elif verbose in [ "all", "dsp" ]:
-	    sys.stderr.write("Warning: DSP pattern(s) didn't match:\n  %s\n" % line)
+        match = dsp_warn.search(line)
+        if match:
+            warnings.append("%s %s" % (parse_time(line), match.group(1)))
+        elif verbose in [ "all", "dsp" ]:
+            sys.stderr.write("Warning: DSP pattern(s) didn't match:\n  %s\n" % line)
 
 
 # ----------------- Connectivity error parsing ---------------------------
@@ -303,9 +303,9 @@ def parse_connectivity(errors, line):
     "appends to given array simplified Connectivity error or warning message"
     match = conn_error.search(line)
     if match:
-	errors.append("%s %s" % (parse_time(line), match.group(1)))
+        errors.append("%s %s" % (parse_time(line), match.group(1)))
     elif verbose in [ "all", "connectivity" ]:
-	sys.stderr.write("Warning: connectivity pattern(s) didn't match:\n  %s\n" % line)
+        sys.stderr.write("Warning: connectivity pattern(s) didn't match:\n  %s\n" % line)
 
 
 # --------------------- DSME error parsing ---------------------------
@@ -319,34 +319,34 @@ def parse_dsme(resets, restarts, crashes, exits, line):
     "appends to given array simplified DSME device reset or process restart message"
     match = dsme_signal.search(line)
     if match:
-	signum, signal = parse_signal(match.group(3))
-	output = (parse_time(line), match.group(1), match.group(2), signal)
-	# termination requests: HUP, INT, TERM
-	if signum in (1, 2, 15):
-	    exits.append("%s %s[%s]: exited with %s" % output)
-	else:
-	    # kills
-	    crashes.append("%s %s[%s]: exited with %s" % output)
-	return
+        signum, signal = parse_signal(match.group(3))
+        output = (parse_time(line), match.group(1), match.group(2), signal)
+        # termination requests: HUP, INT, TERM
+        if signum in (1, 2, 15):
+            exits.append("%s %s[%s]: exited with %s" % output)
+        else:
+            # kills
+            crashes.append("%s %s[%s]: exited with %s" % output)
+        return
     match = dsme_reset.search(line)
     if match:
-	output = (parse_time(line), match.group(1))
-	if match.group(2) == "with RESET":
-	    resets.append("%s %s (RESET)" % output)
-	else:
-	    restarts.append("%s %s" % output)
-	return
+        output = (parse_time(line), match.group(1))
+        if match.group(2) == "with RESET":
+            resets.append("%s %s (RESET)" % output)
+        else:
+            restarts.append("%s %s" % output)
+        return
     match = dsme_exit.search(line)
     if match:
-	output = "%s[%s]: %s" % match.groups()
-	exits.append("%s %s" % (parse_time(line), output))
-	return
+        output = "%s[%s]: %s" % match.groups()
+        exits.append("%s %s" % (parse_time(line), output))
+        return
     match = dsme_respawn.search(line)
     if match:
-	resets.append("%s %s (RESET)" % (parse_time(line), match.group(1)))
-	return
+        resets.append("%s %s (RESET)" % (parse_time(line), match.group(1)))
+        return
     if verbose in [ "all", "dsme" ]:
-	sys.stderr.write("Warning: DSME patterns didn't match:\n  %s\n" % line)
+        sys.stderr.write("Warning: DSME patterns didn't match:\n  %s\n" % line)
 
 
 # --------------------- GLIB error parsing ---------------------------
@@ -358,15 +358,15 @@ def parse_glib(criticals, warnings, line):
     "appends to given array simplified Glib critical error or warning"
     match = glib_pattern.search(line)
     if match:
-	output = (parse_time(line), match.group(1), match.group(3))
-	if match.group(2) == "ERROR":
-	    criticals.append("%s %s (ERROR): %s" % output)
-	elif match.group(2) == "CRITICAL":
-	    criticals.append("%s %s (CRITICAL): %s" % output)
-	else:
-	    warnings.append("%s %s: %s" % output)
+        output = (parse_time(line), match.group(1), match.group(3))
+        if match.group(2) == "ERROR":
+            criticals.append("%s %s (ERROR): %s" % output)
+        elif match.group(2) == "CRITICAL":
+            criticals.append("%s %s (CRITICAL): %s" % output)
+        else:
+            warnings.append("%s %s: %s" % output)
     elif verbose in [ "all", "glib" ]:
-	sys.stderr.write("Warning: GLIB WARNING/CRITICAL pattern(s) did not match:\n  %s\n" % line)
+        sys.stderr.write("Warning: GLIB WARNING/CRITICAL pattern(s) did not match:\n  %s\n" % line)
 
 
 # --------------------- maemo-launcher parsing ---------------------------
@@ -375,28 +375,28 @@ def parse_launcher(deaths, lines, line, start):
     "Parses both launcher application exits and invocations to get app names"
     signal = line.find("signal=")
     if signal >= 0:
-	pid = line[line.find("(pid=")+5:line.rfind(')')]
-	search = "maemo-launcher[%s]" % pid
-	found = 0
-	# find the invocation line for the exited app
-	for check in lines:
-	    if check.find(search) >= 0:
-		# application name without path or quotes
-		time = parse_time(line)
-		app = check[check.find("invoking")+10:-1].split('/')[-1]
-		signal = line[signal + len("signal="):]
-		signum, signame = parse_signal(signal)
-		# app name: signal (at time)
-		deaths.append("%s %s: exited with %s" % (time, app, signame))
-		found = 1
-		break
-	if not found:
-	    sys.stderr.write("Warning: no maemo-launched application invocation matches:\n  '%s'!\n" % search)
+        pid = line[line.find("(pid=")+5:line.rfind(')')]
+        search = "maemo-launcher[%s]" % pid
+        found = 0
+        # find the invocation line for the exited app
+        for check in lines:
+            if check.find(search) >= 0:
+                # application name without path or quotes
+                time = parse_time(line)
+                app = check[check.find("invoking")+10:-1].split('/')[-1]
+                signal = line[signal + len("signal="):]
+                signum, signame = parse_signal(signal)
+                # app name: signal (at time)
+                deaths.append("%s %s: exited with %s" % (time, app, signame))
+                found = 1
+                break
+        if not found:
+            sys.stderr.write("Warning: no maemo-launched application invocation matches:\n  '%s'!\n" % search)
     else:
-	# need to add these in reverse order so that
-	# search above finds last invocation
-	if line.find("invoking") >= 0:
-	    lines.insert(0, line)
+        # need to add these in reverse order so that
+        # search above finds last invocation
+        if line.find("invoking") >= 0:
+            lines.insert(0, line)
 
 
 # --------------------- syslog parsing ---------------------------
@@ -423,80 +423,80 @@ def parse_syslog(write, file):
     # Apr 12 17:00:08 Nokia-N800-14 kernel: [ 2122.412841] Buffer I/O error on device mmcblk0p1, logical block 657144
 
     if not os.path.exists(file):
-	parse_error(write, "ERROR: syslog file '%s' doesn't exist!" % file)
-	sys.exit(1)
+        parse_error(write, "ERROR: syslog file '%s' doesn't exist!" % file)
+        sys.exit(1)
 
     if file[-3:] == ".gz":
-	syslog = gzip.open(file, "r")
+        syslog = gzip.open(file, "r")
     else:
-	syslog = open(file, "r")
+        syslog = open(file, "r")
 
     messages = {
-	'sysrq':      [],
-	'powerkeys':  [],
-	'alarms':     [],
-	'charger':    [],
-	'swresets':   [],
-	'hwresets':   [],
-	'syslogs':    [],
-	'oopses':     [],
-	'ooms':       [],
-	'io_errors':  [],
-	'dsp_errors': [],
-	'dsp_warns':  [],
-	'conn_errors':[],
-	'resets':     [],
-	'crashes':    [],
-	'restarts':   [],
-	'exits':      [],
-	'deaths':     [],
-	'criticals':  [],
-	'warnings':   []
+        'sysrq':      [],
+        'powerkeys':  [],
+        'alarms':     [],
+        'charger':    [],
+        'swresets':   [],
+        'hwresets':   [],
+        'syslogs':    [],
+        'oopses':     [],
+        'ooms':       [],
+        'io_errors':  [],
+        'dsp_errors': [],
+        'dsp_warns':  [],
+        'conn_errors':[],
+        'resets':     [],
+        'crashes':    [],
+        'restarts':   [],
+        'exits':      [],
+        'deaths':     [],
+        'criticals':  [],
+        'warnings':   []
     }
     lines = []
     while 1:
-	try:
-	    line = syslog.readline()
-	except IOError, e:
-	    parse_error(write, "ERROR: syslog file '%s': %s" % (file, e))
-	    break
-	if not line:
-	    break
-	line = line.strip()
-	# Each line has to be checked for each message because sometimes
-	# syslog has different messages on the same line.  This can happen
-	# e.g. when the device reboots and we don't want to miss any of them
-	#
-	# faster to check with find first...
-	if line.find(' SysRq ') >= 0:
-	    messages['sysrq'].append("%s SysRq message" % parse_time(line))
-	if line.find(' GLIB ') >= 0:
-	    parse_glib(messages['criticals'], messages['warnings'], line)
-	if line.find('DSME:') >= 0:
-	    parse_dsme(messages['resets'], messages['restarts'],
-	               messages['crashes'], messages['exits'], line)
-	if line.find('syslogd ') >= 0:
-	    parse_restarts(messages['syslogs'], line)
-	if line.find('Bootup reason') >= 0:
-	    parse_bootups(messages['powerkeys'], messages['alarms'], messages['charger'],
-	                  messages['swresets'], messages['hwresets'], line)
-	if line.find('Oops:') >= 0 or line.find('Memory:') >= 0 or line.find('lowmem:') >= 0:
-	    parse_kernel(messages['oopses'], messages['ooms'], line)
-	if line.find('I/O error') >= 0:
-	    parse_io(messages['io_errors'], line)
-	if line.find('mbox:') >= 0 or line.find('omapdsp:') >= 0 or line.find('mbx:') >= 0:
-	    parse_dsp(messages['dsp_errors'], messages['dsp_warns'], line)
-	if line.find('TX dropped') >= 0 or line.find('cx3110x ERROR') >= 0 or line.find('READY interrupt') >= 0:
-	    parse_connectivity(messages['conn_errors'], line)
-	start = line.find('maemo-launcher[')
-	if start >= 0:
-	    parse_launcher(messages['deaths'], lines, line, start)
+        try:
+            line = syslog.readline()
+        except IOError, e:
+            parse_error(write, "ERROR: syslog file '%s': %s" % (file, e))
+            break
+        if not line:
+            break
+        line = line.strip()
+        # Each line has to be checked for each message because sometimes
+        # syslog has different messages on the same line.  This can happen
+        # e.g. when the device reboots and we don't want to miss any of them
+        #
+        # faster to check with find first...
+        if line.find(' SysRq ') >= 0:
+            messages['sysrq'].append("%s SysRq message" % parse_time(line))
+        if line.find(' GLIB ') >= 0:
+            parse_glib(messages['criticals'], messages['warnings'], line)
+        if line.find('DSME:') >= 0:
+            parse_dsme(messages['resets'], messages['restarts'],
+                       messages['crashes'], messages['exits'], line)
+        if line.find('syslogd ') >= 0:
+            parse_restarts(messages['syslogs'], line)
+        if line.find('Bootup reason') >= 0:
+            parse_bootups(messages['powerkeys'], messages['alarms'], messages['charger'],
+                          messages['swresets'], messages['hwresets'], line)
+        if line.find('Oops:') >= 0 or line.find('Memory:') >= 0 or line.find('lowmem:') >= 0:
+            parse_kernel(messages['oopses'], messages['ooms'], line)
+        if line.find('I/O error') >= 0:
+            parse_io(messages['io_errors'], line)
+        if line.find('mbox:') >= 0 or line.find('omapdsp:') >= 0 or line.find('mbx:') >= 0:
+            parse_dsp(messages['dsp_errors'], messages['dsp_warns'], line)
+        if line.find('TX dropped') >= 0 or line.find('cx3110x ERROR') >= 0 or line.find('READY interrupt') >= 0:
+            parse_connectivity(messages['conn_errors'], line)
+        start = line.find('maemo-launcher[')
+        if start >= 0:
+            parse_launcher(messages['deaths'], lines, line, start)
 
     syslog.close()
     # check whether we got any errors
     for arr in messages.values():
-	if arr:
-	    return messages
+        if arr:
+            return messages
     # no error messages
     return None
 
@@ -541,7 +541,7 @@ title_order = [
 ]
 
 def explain_signals(write):
-	write("""
+        write("""
 <a name="signals"></a>
 <h2>Crash signals explained</h2>
 <p>Explanations of some common exit signals on the Maemo platform:
@@ -562,38 +562,38 @@ contents are saved to system clipboard.</td></tr>
 def list_issues(write, dict1, dict2, key, idx):
     "list issues from list2 which are not in list1 using given write function"
     if dict1 and dict1.has_key(key):
-	list1 = dict1[key]
+        list1 = dict1[key]
     else:
-	list1 = []
+        list1 = []
     if not (dict2 and dict2.has_key(key)):
-	return 0
+        return 0
     list2 = dict2[key]
     
     old_len = len(list1)
     new_len = len(list2)
     heading = error_titles[key][0]
     if old_len and (old_len > new_len or list1[0] != list2[0] or list1[old_len-1] != list2[old_len-1]):
-	parse_error(write, "Warning: previous round '%s' list (%d items)\n doesn't match one for the current round (%d items)!" % (heading, old_len, new_len))
-	old_len = 0
+        parse_error(write, "Warning: previous round '%s' list (%d items)\n doesn't match one for the current round (%d items)!" % (heading, old_len, new_len))
+        old_len = 0
     if new_len == old_len:
-	return 0
+        return 0
 
     # list issues regardless of errors
     if use_html:
-	write('\n<a name="%s-%d"></a>' % (key, idx))
-	write("<h4>%s</h4>\n" % heading)
-	notes = error_titles[key][1]
-	if notes:
-	    # show notes only in HTML format
-	    write("<p>%s:\n" % notes)
-	write("<ul>\n")
-	for line in list2[old_len:]:
-	    write("<li>%s</li>\n" % line)
-	write("</ul>\n")
+        write('\n<a name="%s-%d"></a>' % (key, idx))
+        write("<h4>%s</h4>\n" % heading)
+        notes = error_titles[key][1]
+        if notes:
+            # show notes only in HTML format
+            write("<p>%s:\n" % notes)
+        write("<ul>\n")
+        for line in list2[old_len:]:
+            write("<li>%s</li>\n" % line)
+        write("</ul>\n")
     else:
-	write("\n%s:\n" % heading)
-	for line in list2[old_len:]:
-	    print line
+        write("\n%s:\n" % heading)
+        for line in list2[old_len:]:
+            print line
     # return number of issues
     return len(list2[old_len:])
 
@@ -604,7 +604,7 @@ def output_errors(write, run1, run2, idx = 0):
 
     errors = {}
     for key in title_order:
-	errors[key] = list_issues(write, run1, run2, key, idx)
+        errors[key] = list_issues(write, run1, run2, key, idx)
     return errors
 
 
@@ -612,40 +612,40 @@ def errors_summary(stats, url = "", color = "", idx = 0):
     """outputs summary of the given error statistics.  If url is given,
     link items with errors to given url, otherwise color table differently"""
     if use_html:
-	errors = 0
-	if color:
-	    color = 'bgcolor="#%s"' % color
-	print "\n<p><table border=1 %s>" % color
-	print "<caption><i>Items logged to syslog</i></caption>"
-	print "<tr><th>Error types:</th><th>Count:</th></tr>"
-	for key in title_order:
-	    if not stats.has_key(key):
-		continue
-	    value = stats[key]
-	    title = error_titles[key][0]
-	    if not value:
-		continue
-	    if url:
-		title = '<a href="%s#%s-%d">%s</a>' % (url, key, idx, title)
-	    print "<tr>"
-	    print "<td align=left>%s</td>" % title
-	    print "<td align=right>%d</td>" % value
-	    print "</tr>"
-	    errors += value
-	print "<tr><td align=right><i>Total of items =</i></td><td align=right><b>%d</b></td></tr>" % errors
-	print "</table>"
+        errors = 0
+        if color:
+            color = 'bgcolor="#%s"' % color
+        print "\n<p><table border=1 %s>" % color
+        print "<caption><i>Items logged to syslog</i></caption>"
+        print "<tr><th>Error types:</th><th>Count:</th></tr>"
+        for key in title_order:
+            if not stats.has_key(key):
+                continue
+            value = stats[key]
+            title = error_titles[key][0]
+            if not value:
+                continue
+            if url:
+                title = '<a href="%s#%s-%d">%s</a>' % (url, key, idx, title)
+            print "<tr>"
+            print "<td align=left>%s</td>" % title
+            print "<td align=right>%d</td>" % value
+            print "</tr>"
+            errors += value
+        print "<tr><td align=right><i>Total of items =</i></td><td align=right><b>%d</b></td></tr>" % errors
+        print "</table>"
     else:
-	for key in title_order:
-	    print "- %d %s" % (stats[key], error_titles[key][0])
+        for key in title_order:
+            print "- %d %s" % (stats[key], error_titles[key][0])
 
 
 def errors_add(stats, stat):
     "adds new stats (from output_errors()) to existing stats"
     for key, value in stat.items():
-	if key in stats:
-	    stats[key] += value
-	else:
-	    stats[key] = value
+        if key in stats:
+            stats[key] += value
+        else:
+            stats[key] = value
 
 
 def output_html_report(files):
@@ -663,26 +663,26 @@ def output_html_report(files):
 """ % (title, title)
     idx = 0
     for path in files:
-	sys.stderr.write("Parsing '%s'...\n" % path)
-	run = parse_syslog(write, path)
-	print "<h1>%s</h2>" % os.path.basename(path)
-	print "<font size=-1>(%s)</font>" % path
-	if run:
-	    print "<p><b>Contents:</b><ul>"
-	    for key in title_order:
-		print '<li><a href="#%s-%d">%s</a>' % (key, idx, error_titles[key][0])
-	    print '<li><a href="#summary-%d">Summary</a>' % idx
-	    print "</ul>"
-	    
-	    stat = output_errors(write, {}, run, idx)
-	    print "<hr>"
-	    print '<a name="summary-%d"></a>' % idx
-	    print "<h2>Summary</h2>"
-	    errors_summary(stat)
-	    idx += 1
-	else:
-	    print "<p>No notifiable syslog items identified."
-	print "<hr>\n"
+        sys.stderr.write("Parsing '%s'...\n" % path)
+        run = parse_syslog(write, path)
+        print "<h1>%s</h2>" % os.path.basename(path)
+        print "<font size=-1>(%s)</font>" % path
+        if run:
+            print "<p><b>Contents:</b><ul>"
+            for key in title_order:
+                print '<li><a href="#%s-%d">%s</a>' % (key, idx, error_titles[key][0])
+            print '<li><a href="#summary-%d">Summary</a>' % idx
+            print "</ul>"
+            
+            stat = output_errors(write, {}, run, idx)
+            print "<hr>"
+            print '<a name="summary-%d"></a>' % idx
+            print "<h2>Summary</h2>"
+            errors_summary(stat)
+            idx += 1
+        else:
+            print "<p>No notifiable syslog items identified."
+        print "<hr>\n"
     print explain_signals(write)
     print "</body>\n</html>"
 
@@ -696,43 +696,42 @@ def output_text_report(files):
 Syslog report
 ============="""
     for path in files:
-	print
-	print path
-	print "-" * len(path)
-	run = parse_syslog(write, path)
-	if run:
-	    stat = output_errors(write, {}, run)
-	    print
-	    print "Summary:"
-	    print "- ------"
-	    errors_summary(stat)
-	else:
-	    print
-	    print "No notifiable syslog items identified."
+        print
+        print path
+        print "-" * len(path)
+        run = parse_syslog(write, path)
+        if run:
+            stat = output_errors(write, {}, run)
+            print
+            print "Summary:"
+            print "- ------"
+            errors_summary(stat)
+        else:
+            print
+            print "No notifiable syslog items identified."
 
 
 def help(error=''):
     msg = __doc__.replace("<TOOL_NAME>", sys.argv[0].split('/')[-1])
     sys.stderr.write(msg)
     if error:
-	sys.stderr.write("\n\nERROR: %s\n\n" % error)
+        sys.stderr.write("\n\nERROR: %s\n\n" % error)
     sys.exit(1)
 
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-	help()
+        help()
     if sys.argv[1][0] == "-":
-	if sys.argv[1] == "--html":
-	    output_html_report(sys.argv[2:])
-	elif sys.argv[1][:8] == "--debug=":
-	    verbose = sys.argv[1][8:]
-	    if verbose in verbose_options:
-		output_text_report(sys.argv[2:])
-	    else:
-		help("debug value should be one of:\n  %s" % string.join(verbose_options))
-	else:
-	    help("unknown option: %s" % sys.argv[1])
+        if sys.argv[1] == "--html":
+            output_html_report(sys.argv[2:])
+        elif sys.argv[1][:8] == "--debug=":
+            verbose = sys.argv[1][8:]
+            if verbose in verbose_options:
+                output_text_report(sys.argv[2:])
+            else:
+                help("debug value should be one of:\n  %s" % string.join(verbose_options))
+        else:
+            help("unknown option: %s" % sys.argv[1])
     else:
-	output_text_report(sys.argv[1:])
-
+        output_text_report(sys.argv[1:])
