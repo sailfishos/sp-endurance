@@ -81,6 +81,7 @@
 # - Syslogd restarts don't anymore mean device restarts
 # 2007-10-02:
 # - Patch for Tuukka to catch syslog read failures
+# - Don't duplicate time for Glib messages
 
 """
 NAME
@@ -352,7 +353,7 @@ def parse_dsme(resets, restarts, crashes, exits, line):
 # --------------------- GLIB error parsing ---------------------------
 
 #glib_pattern = re.compile(" (\S+): GLIB (WARNING|CRITICAL) \*\* (.*)$")
-glib_pattern = re.compile(" [-0-9A-Za-z.]+ (.*[]]+): GLIB (WARNING|CRITICAL|ERROR) \*\* (.*)$")
+glib_pattern = re.compile(" ([^ ]*[]]+): GLIB (WARNING|CRITICAL|ERROR) \*\* (.*)$")
 
 def parse_glib(criticals, warnings, line):
     "appends to given array simplified Glib critical error or warning"
