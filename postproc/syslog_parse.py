@@ -79,6 +79,9 @@
 # - Add charger bootup reason
 # - Indicate in output titles where the stats come
 # - Syslogd restarts don't anymore mean device restarts
+# 2007-10-01:
+# - Patch for Tuukka to catch syslog read failures
+
 """
 NAME
 	<TOOL_NAME>
@@ -452,7 +455,11 @@ def parse_syslog(write, file):
     }
     lines = []
     while 1:
-	line = syslog.readline()
+	try:
+	    line = syslog.readline()
+	except IOError, e:
+	    parse_error(write, "ERROR: syslog file '%s': %s" % (file, e))
+	    break
 	if not line:
 	    break
 	line = line.strip()
