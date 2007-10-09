@@ -184,10 +184,10 @@
 # - Show differences in slabinfo and vmstat numbers (pswpin/pswpout)?
 """
 NAME
-	<TOOL_NAME>
+        <TOOL_NAME>
 
 SYNOPSIS
-	<TOOL_NAME> <data directories>
+        <TOOL_NAME> <data directories>
 
 DESCRIPTION
 
@@ -209,9 +209,9 @@ between the CSV, SMAPS and syslog files for the following values:
     - Number of file descriptors used by the (system) processes
     - Number of logged errors (from syslog)
 The errors in syslog are output to a separate file.
-	
+        
 EXAMPLES
-	<TOOL_NAME> usecase/ usecase2/ > report.html
+        <TOOL_NAME> usecase/ usecase2/ > report.html
 """
 
 import sys, os, re
@@ -229,9 +229,9 @@ class Colors:
     fds = "FDFDEE"
 
 # color values for memuse, memfree, oom-limit
-bar1colors = ("3149BD", "ADE739", "DE2821")	# blue, green, red
+bar1colors = ("3149BD", "ADE739", "DE2821")        # blue, green, red
 # color values for rss, size
-bar2colors = ("DE2821", "EAB040")		# red, orange
+bar2colors = ("DE2821", "EAB040")                # red, orange
 
 # --------------------- SMAPS data parsing --------------------------
 
@@ -245,68 +245,68 @@ def parse_smaps(filename):
     private_code = code = sum = idx = 0
     data = {}
     while 1:
-	line = file.readline()
-	if not line:
-	    if sum:
-		#print "INSERT"	#DEBUG
-		data[pid] = sum
-	    break
-	idx += 1
-	line = line.strip()
-	if not line:
-	    continue
-	#print line	#DEBUG
-	first = line[0]
-	if first == '=':
-	    # ==> /proc/767/smaps <==
-	    if sum:
-		#print "INSERT"	#DEBUG
-		data[pid] = sum
-	    # new process
-	    pid, sum = 0, 0
-	    #print "CLEAR"	#DEBUG
-	    continue
-	if first == '#':
-	    if line.find("#Pid: ") == 0:
-		pid = line[6:]
-	    #print "PID"	#DEBUG
-	    continue
-	if not pid:
-	    # sanity check
-	    sys.stderr.write("ERROR: Pid missing for SMAPS line %d:\n  %s\n" % (idx, line))
-	    sys.exit(1)
-	match = smaps_mmap.search(line)
-	if match:
-	    # bef45000-bef5a000 rwxp bef45000 00:00 0          [stack]
-	    mmap = match.group(2)
-	    # code memory map = executable (..x.) and file (/path/...)?
-	    if match.group(1)[2] == 'x' and mmap and mmap[0] == '/':
-		#debug_line = match.group(0)
-		code = 1
-	    else:
-		code = 0
-	    #print "MMAP"	#DEBUG
-	    continue
-	if line.find("Private_Dirty:") == 0:
-	    amount = int(line[15:-2])
-	    if code and amount:
-		#print debug_line
-		#print mmap, code, amount
-		private_code += amount
-	    # Private_Dirty:        0 kB
-	    #if mmap[:5] == "/dev/":
-	    #	# ignore memory mapped devices because RSS/Size don't
-	    #	# (usually?) count them:
-	    #	# 40008000-400c4000 rw-s 87e00000 00:0d 1354       /dev/fb0
-	    #	#print "DEV"	#DEBUG
-	    #	continue
-	    sum += amount
-	    #print "ADD"	#DEBUG
-	    continue
-	# sanity check that mmap lines are not missed
-	if (line[0] >= '0' and line[0] <= '9') or (line[0] >= 'a' and line[0] <= 'f'):
-	    sys.stderr.write("ERROR: SMAPS mmap line not matched:\n  %s\n" % line)
-	    sys.exit(1)
+        line = file.readline()
+        if not line:
+            if sum:
+                #print "INSERT"        #DEBUG
+                data[pid] = sum
+            break
+        idx += 1
+        line = line.strip()
+        if not line:
+            continue
+        #print line        #DEBUG
+        first = line[0]
+        if first == '=':
+            # ==> /proc/767/smaps <==
+            if sum:
+                #print "INSERT"        #DEBUG
+                data[pid] = sum
+            # new process
+            pid, sum = 0, 0
+            #print "CLEAR"        #DEBUG
+            continue
+        if first == '#':
+            if line.find("#Pid: ") == 0:
+                pid = line[6:]
+            #print "PID"        #DEBUG
+            continue
+        if not pid:
+            # sanity check
+            sys.stderr.write("ERROR: Pid missing for SMAPS line %d:\n  %s\n" % (idx, line))
+            sys.exit(1)
+        match = smaps_mmap.search(line)
+        if match:
+            # bef45000-bef5a000 rwxp bef45000 00:00 0          [stack]
+            mmap = match.group(2)
+            # code memory map = executable (..x.) and file (/path/...)?
+            if match.group(1)[2] == 'x' and mmap and mmap[0] == '/':
+                #debug_line = match.group(0)
+                code = 1
+            else:
+                code = 0
+            #print "MMAP"        #DEBUG
+            continue
+        if line.find("Private_Dirty:") == 0:
+            amount = int(line[15:-2])
+            if code and amount:
+                #print debug_line
+                #print mmap, code, amount
+                private_code += amount
+            # Private_Dirty:        0 kB
+            #if mmap[:5] == "/dev/":
+            #        # ignore memory mapped devices because RSS/Size don't
+            #        # (usually?) count them:
+            #        # 40008000-400c4000 rw-s 87e00000 00:0d 1354       /dev/fb0
+            #        #print "DEV"        #DEBUG
+            #        continue
+            sum += amount
+            #print "ADD"        #DEBUG
+            continue
+        # sanity check that mmap lines are not missed
+        if (line[0] >= '0' and line[0] <= '9') or (line[0] >= 'a' and line[0] <= 'f'):
+            sys.stderr.write("ERROR: SMAPS mmap line not matched:\n  %s\n" % line)
+            sys.exit(1)
     #print data #DEBUG
     return (data, private_code)
 
@@ -321,13 +321,13 @@ def get_filesystem_usage(file):
     # device root and tmpfs with fixed size
     keep = {'/':1, '/tmp':1}
     while 1:
-	line = file.readline().strip()
-	if not line:
-	    break
-	fs,blocks,used,available,inuse,mount = line.split(',')
-	if mount not in keep:
-	    continue
-	mounts[mount] = int(used)
+        line = file.readline().strip()
+        if not line:
+            break
+        fs,blocks,used,available,inuse,mount = line.split(',')
+        if mount not in keep:
+            continue
+        mounts[mount] = int(used)
     return mounts
 
 
@@ -335,18 +335,18 @@ def get_xclient_memory(file):
     "reads X client resource usage, return command hash of total X mem usage"
     clients = {}
     while 1:
-	line = file.readline().strip()
-	if not line:
-	    break
-	mem,pid,name = line.split(',')[8:11]
-	if mem[-1] == 'B':
-	    mem = int(mem[:-1])
-	else:
-	    sys.stderr.write("Error: X resource total memory value not followed by 'B':\n  %s\n" % line)
-	    sys.exit(1)
-	# in KBs, check on clients taking > 1KB
-	if mem >= 1024:
-	    clients[name] = mem/1024
+        line = file.readline().strip()
+        if not line:
+            break
+        mem,pid,name = line.split(',')[8:11]
+        if mem[-1] == 'B':
+            mem = int(mem[:-1])
+        else:
+            sys.stderr.write("Error: X resource total memory value not followed by 'B':\n  %s\n" % line)
+            sys.exit(1)
+        # in KBs, check on clients taking > 1KB
+        if mem >= 1024:
+            clients[name] = mem/1024
     return clients
 
 
@@ -358,28 +358,28 @@ def get_process_info(file, headers):
     kthreads = {}
     processes = {}
     fields = headers.strip().split(',')
-    fields[-1] = fields[-1].split(':')[0]	# remove ':' from last field
+    fields[-1] = fields[-1].split(':')[0]        # remove ':' from last field
     pididx = fields.index('Pid')
     nameidx = fields.index('Name')
     while 1:
-	line = file.readline().strip()
-	if not line:
-	    break
-	item = {}
-	info = line.split(',')
-	# kernel threads & zombies don't have all the fields
-	if len(info) < len(fields):
-	    kthreads[info[pididx]] = info[nameidx]
-	    continue
-	elif len(info) > len(fields):
-	    sys.stderr.write("WARNING: Process [%s] has extra column(s) in CSV data!\n" % info[pididx])
-	for idx in range(len(fields)):
-	    if info[idx][-3:] == " kB":
-		# convert memory values to integers
-		item[fields[idx]] = int(info[idx][:-3])
-	    else:
-		item[fields[idx]] = info[idx]
-	processes[item['Pid']] = item
+        line = file.readline().strip()
+        if not line:
+            break
+        item = {}
+        info = line.split(',')
+        # kernel threads & zombies don't have all the fields
+        if len(info) < len(fields):
+            kthreads[info[pididx]] = info[nameidx]
+            continue
+        elif len(info) > len(fields):
+            sys.stderr.write("WARNING: Process [%s] has extra column(s) in CSV data!\n" % info[pididx])
+        for idx in range(len(fields)):
+            if info[idx][-3:] == " kB":
+                # convert memory values to integers
+                item[fields[idx]] = int(info[idx][:-3])
+            else:
+                item[fields[idx]] = info[idx]
+        processes[item['Pid']] = item
     return processes, kthreads
 
 
@@ -389,12 +389,12 @@ def get_commands_and_fd_counts(file):
     commands = {}
     fd_counts = {}
     while 1:
-	line = file.readline().strip()
-	if not line:
-	    break
-	pid,fds,name = line.split(',')
-	commands[pid] = name
-	fd_counts[pid] = int(fds)
+        line = file.readline().strip()
+        if not line:
+            break
+        pid,fds,name = line.split(',')
+        commands[pid] = name
+        fd_counts[pid] = int(fds)
     return (commands,fd_counts)
 
 
@@ -404,8 +404,8 @@ def get_meminfo(data, headers, values):
     values = values.split(',')
     mem = {}
     for i in range(len(values)):
-	# remove 'kB'
-	mem[headers[i]] = int(values[i].split(" kB")[0])
+        # remove 'kB'
+        mem[headers[i]] = int(values[i].split(" kB")[0])
     total = mem['MemTotal']
     free = mem['MemFree']
     buffers = mem['Buffers']
@@ -423,12 +423,12 @@ def skip_to(file, header):
     "reads the given file until first CSV column has given header"
     l = len(header)
     while 1:
-	line = file.readline()
-	if not line:
-	    sys.stderr.write("\nError: premature file end, CSV header '%s' not found\n" % header)
-	    sys.exit(2)
-	if line[:l] == header:
-	    return line
+        line = file.readline()
+        if not line:
+            sys.stderr.write("\nError: premature file end, CSV header '%s' not found\n" % header)
+            sys.exit(2)
+        if line[:l] == header:
+            return line
 
 
 def parse_csv(filename):
@@ -444,16 +444,16 @@ def parse_csv(filename):
     mygen = "syte-endurance-stats"
     generator = file.readline().strip().split(' ')
     if len(generator) < 3 or generator[2] != mygen:
-	sys.stderr.write("\nError: CSV file '%s' is not generated by '%s'!\n" % (filename, mygen))
-	sys.exit(1)
+        sys.stderr.write("\nError: CSV file '%s' is not generated by '%s'!\n" % (filename, mygen))
+        sys.exit(1)
     
     # get the basic data
     file.readline()
     data['release'] = file.readline().strip()
     data['datetime'] = file.readline().strip()
     if data['release'][:2] != "SW" or data['datetime'][:4] != "date":
-	sys.stderr.write("\nError: CSV file '%s' is missing 'SW-version' or 'date' fields!\n" % filename)
-	sys.exit(1)
+        sys.stderr.write("\nError: CSV file '%s' is missing 'SW-version' or 'date' fields!\n" % filename)
+        sys.exit(1)
 
     # total,free,buffers,cached
     mem_header = skip_to(file, "MemTotal").strip()
@@ -464,13 +464,13 @@ def parse_csv(filename):
     skip_to(file, "lowmem_")
     mem = file.readline().split(',')
     if len(mem) == 3:
-	data['limitlow'] = int(mem[0])
-	data['limithigh'] = int(mem[1])
-	data['limitdeny'] = int(mem[2])
+        data['limitlow'] = int(mem[0])
+        data['limithigh'] = int(mem[1])
+        data['limitdeny'] = int(mem[2])
     else:
-	# not fatal as lowmem stuff is not in standard kernel
-	sys.stderr.write("\nWarning: CSV file '%s' lowmem limits are missing!\n" % filename)
-	data['limitlow'] = data['limithigh'] = data['limitdeny'] = 0
+        # not fatal as lowmem stuff is not in standard kernel
+        sys.stderr.write("\nWarning: CSV file '%s' lowmem limits are missing!\n" % filename)
+        data['limitlow'] = data['limithigh'] = data['limitdeny'] = 0
 
     # get system free FDs
     skip_to(file, "Allocated FDs")
@@ -503,15 +503,15 @@ def get_pids_from_procs(processes, commands):
     "return pid:name dictionary for given processes array"
     pids = {}
     for process in processes.values():
-	pid = process['Pid']
-	name = process['Name']
-	if name == "maemo-launcher":
-	    # commands array takes the name from /proc/PID/cmdline
-	    pids[pid] = commands[pid]
-	else:
-	    pids[pid] = name
+        pid = process['Pid']
+        name = process['Name']
+        if name == "maemo-launcher":
+            # commands array takes the name from /proc/PID/cmdline
+            pids[pid] = commands[pid]
+        else:
+            pids[pid] = name
     return pids
-	
+        
 def output_process_changes(pids1, pids2, titles, do_summary):
     "outputs which commands are new and which gone in separate columns"
     # ignore re-starts i.e. check only command names
@@ -519,58 +519,58 @@ def output_process_changes(pids1, pids2, titles, do_summary):
     new_coms = []
     new_pids = []
     for pid in pids2:
-	if pid not in pids1:
-	    new_coms.append("%s[%s]" % (pids2[pid], pid))
+        if pid not in pids1:
+            new_coms.append("%s[%s]" % (pids2[pid], pid))
     for pid in pids1:
-	if pid not in pids2:
-	    gone.append("%s[%s]" % (pids1[pid], pid))
+        if pid not in pids2:
+            gone.append("%s[%s]" % (pids1[pid], pid))
     change = 0
     if gone or new_coms or new_pids:
-	processes = len(pids2)
-	change = processes - len(pids1)
-	print "<p>%s: <b>%d</b>" % (titles[0], change)
-	print "<br>(now totaling %d)." % processes
+        processes = len(pids2)
+        change = processes - len(pids1)
+        print "<p>%s: <b>%d</b>" % (titles[0], change)
+        print "<br>(now totaling %d)." % processes
 
-	print "<p><table border=1>"
-	print "<tr><th>%s</th><th>%s</th><tr>" % (titles[1], titles[2])
-	print "<tr><td>"
-	if gone:
-	    print "<ul>"
-	    gone.sort()
-	    for name in gone:
-		print "<li>%s" % name
-	    print "</ul>"
-	print "</td><td>"
-	if new_coms or new_pids:
-	    print "<ul>"
-	    new_coms.sort()
-	    for name in new_coms:
-		print "<li>%s" % name
-	    new_pids.sort()
-	    for name in new_pids:
-		print "<li>%s" % name
-	    print "</ul>"
-	print "</td></tr></table>"
+        print "<p><table border=1>"
+        print "<tr><th>%s</th><th>%s</th><tr>" % (titles[1], titles[2])
+        print "<tr><td>"
+        if gone:
+            print "<ul>"
+            gone.sort()
+            for name in gone:
+                print "<li>%s" % name
+            print "</ul>"
+        print "</td><td>"
+        if new_coms or new_pids:
+            print "<ul>"
+            new_coms.sort()
+            for name in new_coms:
+                print "<li>%s" % name
+            new_pids.sort()
+            for name in new_pids:
+                print "<li>%s" % name
+            print "</ul>"
+        print "</td></tr></table>"
     if do_summary:
-	print "<!--\n- %s: %+d\n-->" % (titles[0], change)
+        print "<!--\n- %s: %+d\n-->" % (titles[0], change)
 
 
 def output_diffs(diffs, title, colname, colamount, colors, do_summary):
     "output diffs of data: { difference, total, name }"
     total = 0
     if diffs:
-	diffs.sort()
-	diffs.reverse()
-	print '\n<p><table border=1 bgcolor="#%s">' % colors
-	print "<caption><i>%s</i></caption>" % title
-	print "<tr><th>%s:</th><th>Change:</th><th>Total:</th></tr>" % colname
-	for data in diffs:
-	    total += data[0]
-	    print "<tr><td>%s</td><td align=right><b>%+d</b>%s</td><td align=right>%d%s</td></tr>" % (data[2], data[0], colamount, data[1], colamount)
-	print "<tr><td align=right><i>Total change =</i></td><td align=right><b>%+d%s</b></td><td>&nbsp;</td>" % (total, colamount)
-	print "</table>"
+        diffs.sort()
+        diffs.reverse()
+        print '\n<p><table border=1 bgcolor="#%s">' % colors
+        print "<caption><i>%s</i></caption>" % title
+        print "<tr><th>%s:</th><th>Change:</th><th>Total:</th></tr>" % colname
+        for data in diffs:
+            total += data[0]
+            print "<tr><td>%s</td><td align=right><b>%+d</b>%s</td><td align=right>%d%s</td></tr>" % (data[2], data[0], colamount, data[1], colamount)
+        print "<tr><td align=right><i>Total change =</i></td><td align=right><b>%+d%s</b></td><td>&nbsp;</td>" % (total, colamount)
+        print "</table>"
     if do_summary:
-	print "<!--\n- %s change: %+d\n-->" % (title, total)
+        print "<!--\n- %s change: %+d\n-->" % (title, total)
     
     
 def get_usage_diffs(list1, list2):
@@ -578,11 +578,11 @@ def get_usage_diffs(list1, list2):
     two {name:value} hashes"""
     diffs = []
     for name,value2 in list2.items():
-	if name in list1:
-	    value1 = list1[name]
-	    if value2 != value1:
-		# will be sorted according to first column
-		diffs.append((value2 - value1, value2, name))
+        if name in list1:
+            value1 = list1[name]
+            if value2 != value1:
+                # will be sorted according to first column
+                diffs.append((value2 - value1, value2, name))
     return diffs
 
 
@@ -593,11 +593,11 @@ def pid_is_thread(pid, commands, processes):
     ppid = process['PPid']
     name = commands[pid]
     if ppid != '1' and ppid in commands and name == commands[ppid]:
-	# parent has same name as this process...
-	if ppid in processes and process['VmSize'] == processes[ppid]['VmSize']:
-	    # and also size
-	    # -> assume it's a thread which should be ignored
-	    return 1
+        # parent has same name as this process...
+        if ppid in processes and process['VmSize'] == processes[ppid]['VmSize']:
+            # and also size
+            # -> assume it's a thread which should be ignored
+            return 1
     return 0
 
 
@@ -607,18 +607,18 @@ def get_pid_usage_diffs(commands, processes, values1, values2):
     and name the rest based on the given 'commands' hash"""
     diffs = []
     for pid in values2:
-	if pid in values1:
-	    c1 = values1[pid]
-	    c2 = values2[pid]
-	    if c1 != c2:
-		if pid not in processes or pid not in commands:
-		    sys.stderr.write("Warning: PID %s not in commands or processes\n" % pid)
-		    continue
-		if pid_is_thread(pid, commands, processes):
-		    continue
-		name = commands[pid]
-		# will be sorted according to first column (i.e. change)
-		diffs.append((c2-c1, c2, "%s[%s]" % (name, pid)))
+        if pid in values1:
+            c1 = values1[pid]
+            c2 = values2[pid]
+            if c1 != c2:
+                if pid not in processes or pid not in commands:
+                    sys.stderr.write("Warning: PID %s not in commands or processes\n" % pid)
+                    continue
+                if pid_is_thread(pid, commands, processes):
+                    continue
+                name = commands[pid]
+                # will be sorted according to first column (i.e. change)
+                diffs.append((c2-c1, c2, "%s[%s]" % (name, pid)))
     return diffs
 
 
@@ -632,19 +632,19 @@ def output_errors(idx, run1, run2):
     # write the separate error report...
     write("<html>\n<title>%s</title>\n<body>\n<h1>%s</h1>\n" % (title, title))
     if 'errors' in run1:
-	errors1 = run1['errors']
-	path = run1['basedir']
-	if path[0] != '/':
-	    # assume files are in the same hierachy
-	    path = "../" + path.split('/')[-1]
-	path += "/errors.html"
-	write('<a href="%s">Errors for previous round</a>\n' % path)
+        errors1 = run1['errors']
+        path = run1['basedir']
+        if path[0] != '/':
+            # assume files are in the same hierachy
+            path = "../" + path.split('/')[-1]
+        path += "/errors.html"
+        write('<a href="%s">Errors for previous round</a>\n' % path)
     else:
-	errors1 = {}
+        errors1 = {}
     if 'errors' in run2:
-	errors2 = run2['errors']
+        errors2 = run2['errors']
     else:
-	errors2 = {}
+        errors2 = {}
     stat = syslog.output_errors(write, errors1, errors2)
     write("<hr>\n")
     syslog.explain_signals(write)
@@ -652,9 +652,9 @@ def output_errors(idx, run1, run2):
 
     # ...and summary for the main page
     for value in stat.values():
-	if value:
-	    syslog.errors_summary(stat, url, Colors.errors)
-	    break
+        if value:
+            syslog.errors_summary(stat, url, Colors.errors)
+            break
     return stat
 
 
@@ -664,10 +664,10 @@ def output_data_links(run):
     print "<h4>For more details on...</h4>"
     print "<ul>"
     if 'logfile' in run:
-	print '<li>log messages, see <a href="%s">syslog</a>' % run['logfile']
+        print '<li>log messages, see <a href="%s">syslog</a>' % run['logfile']
     if os.path.exists("%s/smaps.html" % basedir):
-	print "<li>private memory usage of all processes, see"
-	print '<a href="%s/smaps.html">smaps overview</a>' % basedir
+        print "<li>private memory usage of all processes, see"
+        print '<a href="%s/smaps.html">smaps overview</a>' % basedir
     print "<li>process and device state details, see"
     print '<a href="%s/usage.csv">collected CSV data</a> and' % basedir
     print '<a href="%s/ifconfig">ifconfig output</a>' % basedir
@@ -684,14 +684,14 @@ def output_run_diffs(idx1, idx2, data, do_summary):
     run1 = data[idx1]
     run2 = data[idx2]
     if run1['release'] != run2['release']:
-	syslog.parse_error("ERROR: release does not match previous round!")
-	return None
+        syslog.parse_error(sys.stdout.write, "ERROR: release '%s' doesn't match previous round release '%s'!" % (run1['release'], run2['release']))
+        return None
 
     # syslogged errors
     if do_summary:
-	stat = None
+        stat = None
     else:
-	stat = output_errors(idx2, run1, run2)
+        stat = output_errors(idx2, run1, run2)
 
     print "<h4>Resource usage changes</h4>"
 
@@ -701,55 +701,55 @@ def output_run_diffs(idx1, idx2, data, do_summary):
     print "<p>System free memory change: <b>%+d</b> kB" % free_change
     print "<br>System unused file descriptor change: <b>%+d</b>" % fdfree_change
     if run2['fdfree'] < 200:
-	print "<br><font color=red>Less than 200 FDs are free in the system.</font>"
+        print "<br><font color=red>Less than 200 FDs are free in the system.</font>"
     elif run2['fdfree'] < 500:
-	print "<br>(Less that 500 FDs are free in the system.)"
+        print "<br>(Less that 500 FDs are free in the system.)"
     if do_summary:
-	print "<!--\n- System free memory change: %+d\n- System free FD change: %+d\n-->" % (free_change, fdfree_change)
-	if 'private_code' in run1:
-	    dcode_change = run2['private_code'] - run1['private_code']
-	    print "<p>System private dirty code pages change: <b>%+d</b> kB" % dcode_change
+        print "<!--\n- System free memory change: %+d\n- System free FD change: %+d\n-->" % (free_change, fdfree_change)
+        if 'private_code' in run1:
+            dcode_change = run2['private_code'] - run1['private_code']
+            print "<p>System private dirty code pages change: <b>%+d</b> kB" % dcode_change
 
     # filesystem usage changes
     diffs = get_usage_diffs(run1['mounts'], run2['mounts'])
     output_diffs(diffs, "Filesystem usage", "Mount", " kB",
-		Colors.disk, do_summary)
+                Colors.disk, do_summary)
 
     # process private memory usage changes
     if 'smaps' in run1:
-	diffs = get_pid_usage_diffs(run2['commands'], run2['processes'],
-			run1['smaps'], run2['smaps'])
-	output_diffs(diffs, "Process private memory usage (according to SMAPS)",
-		"Process[Pid]", " kB", Colors.memory, do_summary)
+        diffs = get_pid_usage_diffs(run2['commands'], run2['processes'],
+                        run1['smaps'], run2['smaps'])
+        output_diffs(diffs, "Process private memory usage (according to SMAPS)",
+                "Process[Pid]", " kB", Colors.memory, do_summary)
     else:
-	print "<p>No SMAPS data for process private memory usage available."
+        print "<p>No SMAPS data for process private memory usage available."
     
     # process X resource usage changes
     diffs = get_usage_diffs(run1['xclients'], run2['xclients'])
     output_diffs(diffs, "X resource usage", "X client", " kB",
-    		Colors.xres, do_summary)
+                    Colors.xres, do_summary)
     
     # FD count changes
     diffs = get_pid_usage_diffs(run2['commands'], run2['processes'],
-    		run1['fdcounts'], run2['fdcounts'])
+                    run1['fdcounts'], run2['fdcounts'])
     output_diffs(diffs, "Process file descriptor count", "Command[Pid]", "",
-    		Colors.fds, do_summary)
+                    Colors.fds, do_summary)
 
     print "\n<h4>Changes in processes</h4>"
 
     # new and closed processes
     titles = ("Change in number of processes/threads",
               "Exited processes/threads",
-	      "New processes/threads")
+              "New processes/threads")
     output_process_changes(
-		get_pids_from_procs(run1['processes'], run1['commands']),
-		get_pids_from_procs(run2['processes'], run2['commands']),
-		titles, do_summary)
+                get_pids_from_procs(run1['processes'], run1['commands']),
+                get_pids_from_procs(run2['processes'], run2['commands']),
+                titles, do_summary)
 
     # new and collected kthreads/zombies
     titles = ("Change in number of kernel threads and zombie processes",
               "Collected kthreads/zombies",
-	      "New kthreads/zombies")
+              "New kthreads/zombies")
     output_process_changes(run1['kthreads'], run2['kthreads'], titles, do_summary)
     return stat
 
@@ -761,8 +761,8 @@ def output_initial_state(run):
     print "<p>Free system memory: <b>%d</b> kB" % run['memfree']
     print "<br>(free = free+cached+buffered+swapfree)"
     if 'private_code' in run and run['private_code']:
-	print "<p>Private dirty code pages: <b>%d</b> kB" % run['private_code']
-	print "<br><i>(this means that system has incorrectly built shared libraries)</i>"
+        print "<p>Private dirty code pages: <b>%d</b> kB" % run['private_code']
+        print "<br><i>(this means that system has incorrectly built shared libraries)</i>"
     output_errors(0, {}, run)
     print """
 <p>Errors from each additional test round are listed below, but for
@@ -781,23 +781,23 @@ def output_memory_graph_table(titles, colors, data):
     width = 640 # total width of the graph bars
     print "<table><tr>"
     for title in titles:
-	if title:
-	    print "<td><i>%s</i></td>" % title
+        if title:
+            print "<td><i>%s</i></td>" % title
     print "</tr>"
     for item in data:
-	# row title
-	print '<tr><td>%s</td>' % item[0]
-	# graphical bar
-	print "<td><table border=0 cellpadding=0 cellspacing=0><tr>"
-	for idx in range(len(colors)):
-	    w = int(item[1][idx]*width)
-	    sys.stdout.write('<td bgcolor="%s" width=%d height=16></td>' % (colors[idx], w))
-	print "</tr></table></td>"
-	# texts at end
-	for text in item[2]:
-	    if text:
-		print '<td align="right">%s</td>' % text
-	print "</tr>"
+        # row title
+        print '<tr><td>%s</td>' % item[0]
+        # graphical bar
+        print "<td><table border=0 cellpadding=0 cellspacing=0><tr>"
+        for idx in range(len(colors)):
+            w = int(item[1][idx]*width)
+            sys.stdout.write('<td bgcolor="%s" width=%d height=16></td>' % (colors[idx], w))
+        print "</tr></table></td>"
+        # texts at end
+        for text in item[2]:
+            if text:
+                print '<td align="right">%s</td>' % text
+        print "</tr>"
     print "</table>"
 
 
@@ -807,60 +807,60 @@ def output_apps_memory_graphs(cases):
     rounds = 0
     data = {}
     for testcase in cases:
-	commands = testcase['commands']
-	processes = testcase['processes']
-	for process in processes.values():
-	    pid = process['Pid']
-	    if pid not in commands:
-		sys.stderr.write("Debug: %s[%s] in status list but not in FD list\n" % (process['Name'], pid))
-		continue
-	    if pid_is_thread(pid, commands, processes):
-		continue
-	    name = commands[pid]
-	    namepid = (name, pid)
-	    if namepid not in data:
-		data[namepid] = {}
-		data[namepid]['first'] = rounds
-	    # process is also in this round, so add its info
-	    data[namepid][rounds] = process
-	rounds += 1
+        commands = testcase['commands']
+        processes = testcase['processes']
+        for process in processes.values():
+            pid = process['Pid']
+            if pid not in commands:
+                sys.stderr.write("Debug: %s[%s] in status list but not in FD list\n" % (process['Name'], pid))
+                continue
+            if pid_is_thread(pid, commands, processes):
+                continue
+            name = commands[pid]
+            namepid = (name, pid)
+            if namepid not in data:
+                data[namepid] = {}
+                data[namepid]['first'] = rounds
+            # process is also in this round, so add its info
+            data[namepid][rounds] = process
+        rounds += 1
 
     # get largest size for any of the namepids, get largest rss
     # for sorting and ignore items which rss/size don't change
     sizes = []
     largest_size = 0
     for namepid in data:
-	changerounds = pidrounds = 0
-	max_size = max_rss = 0
-	min_size = min_rss = 128*1024
-	for idx in range(rounds):
-	    if idx in data[namepid]:
-		rss = data[namepid][idx]['VmRSS']
-		size = data[namepid][idx]['VmSize']
-		if size < min_size:
-		    if pidrounds:
-			changerounds += 1
-		    min_size = size
-		if size > max_size:
-		    if pidrounds:
-			changerounds += 1
-		    max_size = size
-		if rss < min_rss:
-		    min_rss = rss
-		if rss > max_rss:
-		    max_rss = rss
-		if rss > max_rss:
-		    max_rss = rss
-		pidrounds += 1
-	if pidrounds > 1:
-	    rss_change = (float)(max_rss - min_rss) / max_rss / pidrounds
-	    size_change = (float)(max_size - min_size) / max_size / pidrounds
-	    # if >0.2% memory change per round in RSS or Size, or
-	    # size changes on more than half of the rounds, add to list
-	    if rss_change > 0.002 or size_change > 0.002 or 2*changerounds > pidrounds:
-		sizes.append((max_rss,namepid))
-	if max_size > largest_size:
-	    largest_size = max_size
+        changerounds = pidrounds = 0
+        max_size = max_rss = 0
+        min_size = min_rss = 128*1024
+        for idx in range(rounds):
+            if idx in data[namepid]:
+                rss = data[namepid][idx]['VmRSS']
+                size = data[namepid][idx]['VmSize']
+                if size < min_size:
+                    if pidrounds:
+                        changerounds += 1
+                    min_size = size
+                if size > max_size:
+                    if pidrounds:
+                        changerounds += 1
+                    max_size = size
+                if rss < min_rss:
+                    min_rss = rss
+                if rss > max_rss:
+                    max_rss = rss
+                if rss > max_rss:
+                    max_rss = rss
+                pidrounds += 1
+        if pidrounds > 1:
+            rss_change = (float)(max_rss - min_rss) / max_rss / pidrounds
+            size_change = (float)(max_size - min_size) / max_size / pidrounds
+            # if >0.2% memory change per round in RSS or Size, or
+            # size changes on more than half of the rounds, add to list
+            if rss_change > 0.002 or size_change > 0.002 or 2*changerounds > pidrounds:
+                sizes.append((max_rss,namepid))
+        if max_size > largest_size:
+            largest_size = max_size
     largest_size = float(largest_size)
     
     # first sort according to the RSS size
@@ -869,9 +869,9 @@ def output_apps_memory_graphs(cases):
     # then sort according to names
     orders = []
     for size in sizes:
-	namepid = size[1]
-	# sorting order is: name, first round for pid, pid
-	orders.append((namepid[0], data[namepid]['first'], namepid[1], namepid))
+        namepid = size[1]
+        # sorting order is: name, first round for pid, pid
+        orders.append((namepid[0], data[namepid]['first'], namepid[1], namepid))
     del(sizes)
     orders.sort()
     
@@ -882,55 +882,55 @@ If process has same name and (max) RSS as some other process, it's
 assumed to be a thread and ignored.
 """
     for order in orders:
-	namepid = order[3]
-	process = data[namepid]
-	print "<h4>%s [%s]</h4>" % namepid
-	text = ''
-	busy = 0
-	prev_idx = 0
-	prev_text = ""
-	columndata = []
-	for idx in range(rounds):
-	    if idx in process:
-		item = process[idx]
-		rss = item['VmRSS']
-		size = item['VmSize']
-		sizes = (rss/largest_size, (size - rss)/largest_size)
+        namepid = order[3]
+        process = data[namepid]
+        print "<h4>%s [%s]</h4>" % namepid
+        text = ''
+        busy = 0
+        prev_idx = 0
+        prev_text = ""
+        columndata = []
+        for idx in range(rounds):
+            if idx in process:
+                item = process[idx]
+                rss = item['VmRSS']
+                size = item['VmSize']
+                sizes = (rss/largest_size, (size - rss)/largest_size)
 
-		sleepavg = int(item['SleepAVG'][:-1])
-		if sleepavg < 90:
-		    busy = 1
-		    text = ("%skB" % rss, "%skB" % size, "(%d%%)" % sleepavg)
-		else:
-		    text = ("%skB" % rss, "%skB" % size)
+                sleepavg = int(item['SleepAVG'][:-1])
+                if sleepavg < 90:
+                    busy = 1
+                    text = ("%skB" % rss, "%skB" % size, "(%d%%)" % sleepavg)
+                else:
+                    text = ("%skB" % rss, "%skB" % size)
 
-		if idx:
-		    if text == prev_text:
-			columndata.pop()
-			case = 'Rounds <a href="#round-%d">%02d</a> - <a href="#round-%d">%02d</a>:' % (prev_idx, prev_idx, idx, idx)
-		    else:
-			case = 'Test round <a href="#round-%d">%02d</a>:' % (idx, idx)
-			prev_idx = idx
-		else:
-		    case = '<a href="#initial-state">Initial state</a>:'
-		    prev_idx = idx
-		prev_text = text
-	    else:
-		nan = ("N/A",)
-		if text == nan:
-		    # previous one didn't have anything either
-		    continue
-		prev_rss = prev_size = 0
-		sizes = (0,0)
-		text = nan
-		case = "---"
-	    columndata.append((case, sizes, text))
-	if busy:
-	    sleeptext = "Sleep:"
-	else:
-	    sleeptext = None
-	titles = ("Test-case:", "Graph", "RSS:", "Size:", sleeptext)
-	output_memory_graph_table(titles, bar2colors, columndata)
+                if idx:
+                    if text == prev_text:
+                        columndata.pop()
+                        case = 'Rounds <a href="#round-%d">%02d</a> - <a href="#round-%d">%02d</a>:' % (prev_idx, prev_idx, idx, idx)
+                    else:
+                        case = 'Test round <a href="#round-%d">%02d</a>:' % (idx, idx)
+                        prev_idx = idx
+                else:
+                    case = '<a href="#initial-state">Initial state</a>:'
+                    prev_idx = idx
+                prev_text = text
+            else:
+                nan = ("N/A",)
+                if text == nan:
+                    # previous one didn't have anything either
+                    continue
+                prev_rss = prev_size = 0
+                sizes = (0,0)
+                text = nan
+                case = "---"
+            columndata.append((case, sizes, text))
+        if busy:
+            sleeptext = "Sleep:"
+        else:
+            sleeptext = None
+        titles = ("Test-case:", "Graph", "RSS:", "Size:", sleeptext)
+        output_memory_graph_table(titles, bar2colors, columndata)
 
 
 def output_system_memory_graphs(data):
@@ -939,57 +939,57 @@ def output_system_memory_graphs(data):
     swapused = 0
     columndata = []
     for testcase in data:
-	if not idx:
-	    case = '<a href="#initial-state">Initial state</a>:'
-	else:
-	    case = '<a href="#round-%d">Test round %02d</a>:' % (idx, idx)
-	idx += 1
+        if not idx:
+            case = '<a href="#initial-state">Initial state</a>:'
+        else:
+            case = '<a href="#round-%d">Test round %02d</a>:' % (idx, idx)
+        idx += 1
 
-	# amount of memory in the device (float for calculations)
-	mem_total = float(testcase['memtotal'])
-	# memory usage %-limit after which apps are bg-killed
-	mem_low = testcase['limitlow']
-	# memory usage %-limit after which apps refuse certain operations
-	mem_high = testcase['limithigh']
-	# memory usage %-limit after which kernel denies app allocs
-	mem_deny = testcase['limitdeny']
-	
-	if mem_low + mem_high + mem_deny > 0:
-	    # convert percentages to real memory values
-	    mem_low = mem_total * mem_low / 100
-	    mem_high = mem_total * mem_high / 100
-	    mem_deny = mem_total * mem_deny / 100
-	else:
-	    mem_low = mem_high = mem_deny = mem_total
-	    sys.stderr.write("Warning: low memory limits are zero -> disabling\n")
+        # amount of memory in the device (float for calculations)
+        mem_total = float(testcase['memtotal'])
+        # memory usage %-limit after which apps are bg-killed
+        mem_low = testcase['limitlow']
+        # memory usage %-limit after which apps refuse certain operations
+        mem_high = testcase['limithigh']
+        # memory usage %-limit after which kernel denies app allocs
+        mem_deny = testcase['limitdeny']
+        
+        if mem_low + mem_high + mem_deny > 0:
+            # convert percentages to real memory values
+            mem_low = mem_total * mem_low / 100
+            mem_high = mem_total * mem_high / 100
+            mem_deny = mem_total * mem_deny / 100
+        else:
+            mem_low = mem_high = mem_deny = mem_total
+            sys.stderr.write("Warning: low memory limits are zero -> disabling\n")
 
-	mem_used = testcase['memused']
-	mem_free = testcase['memfree']
-	if mem_used > mem_high:
-	    text_used = "<font color=red><b>%d</b></font>" % mem_used
-	elif mem_used > mem_low:
-	    text_used = "<font color=blue><b>%d</b></font>" % mem_used
-	else:
-	    text_used = "%d" % mem_used
-	text_used += "kB"
-	text_free = "%dkB" % mem_free
-	if testcase['swapused']:
-	    memtext = (text_used, text_free, "(%dkB)" % testcase['swapused'])
-	    swapused = 1
-	else:
-	    memtext = (text_used, text_free)
-	if mem_used > mem_deny:
-	    show_free = 0.0
-	    show_deny = (mem_total - mem_used)/mem_total
-	else:
-	    show_free = (mem_free - mem_total + mem_deny)/mem_total
-	    show_deny = 1.0 - mem_deny/mem_total
-	show_used = mem_used/mem_total
-	columndata.append((case, (show_used, show_free, show_deny), memtext))
+        mem_used = testcase['memused']
+        mem_free = testcase['memfree']
+        if mem_used > mem_high:
+            text_used = "<font color=red><b>%d</b></font>" % mem_used
+        elif mem_used > mem_low:
+            text_used = "<font color=blue><b>%d</b></font>" % mem_used
+        else:
+            text_used = "%d" % mem_used
+        text_used += "kB"
+        text_free = "%dkB" % mem_free
+        if testcase['swapused']:
+            memtext = (text_used, text_free, "(%dkB)" % testcase['swapused'])
+            swapused = 1
+        else:
+            memtext = (text_used, text_free)
+        if mem_used > mem_deny:
+            show_free = 0.0
+            show_deny = (mem_total - mem_used)/mem_total
+        else:
+            show_free = (mem_free - mem_total + mem_deny)/mem_total
+            show_deny = 1.0 - mem_deny/mem_total
+        show_used = mem_used/mem_total
+        columndata.append((case, (show_used, show_free, show_deny), memtext))
     if swapused:
-	swaptext = "swap:"
+        swaptext = "swap:"
     else:
-	swaptext = None
+        swaptext = None
     titles = ("Test-case:", "Memory usage graph:", "used:", "free:", swaptext)
     output_memory_graph_table(titles, bar1colors, columndata)
     print """
@@ -1000,8 +1000,8 @@ def output_system_memory_graphs(data):
 <tr><td bgcolor="red"   height="16" width="16"></td><td>If memory usage reaches this, application allocations fail and the allocating app is OOM-killed (&gt;= %d MB used)</td></tr>
 </table>""" % round(mem_deny/1024)
     if mem_low == mem_total:
-	print "<p>(memory limits are not in effect)"
-	return
+        print "<p>(memory limits are not in effect)"
+        return
     print """
 <p>Memory usage values which trigger background killing are marked with
 blue color (&gt;= <font color=blue><b>%d</b></font> MB used).<br>
@@ -1040,7 +1040,7 @@ def output_html_report(data):
   <ul>
 """ % (title, title)   #" fool Jed syntax highlighter
     for round in range(len(data)-1):
-	print '  <li><a href="#round-%d">Round %d</a>' % (round+1, round+1)
+        print '  <li><a href="#round-%d">Round %d</a>' % (round+1, round+1)
     print """
   </ul>
 <li>Summary of changes between all the rounds after the initial one:
@@ -1069,9 +1069,9 @@ def output_html_report(data):
 """ # "fool Jed syntax highlighter
     output_apps_memory_graphs(data)
     if last - first > 1:
-	summary = "resource-summary"
+        summary = "resource-summary"
     else:
-	summary = "round-%d" % last
+        summary = "round-%d" % last
     print"""
 <hr>
 <h2>Resource usage changes for the test rounds</h2>
@@ -1081,19 +1081,19 @@ see <a href="#%s">resource changes summary section</a>.
 
     err_stats = {}
     for idx in range(rounds):
-	if idx:
-	    title = "Test round %d differences from round %d" % (idx+1, idx)
-	else:
-	    title = "Test round 1 differences from initial state"
-	print
-	print '<a name="round-%d"></a>' % (idx+1)
-	print "<h3>%s</h3>" % title
-	print "<p>%s" % data[idx+1]['datetime']
-	stat = output_run_diffs(idx, idx+1, data, 0)
-	if stat:
-	    syslog.errors_add(err_stats, stat)
-	output_data_links(data[idx+1])
-	print "\n<hr>"
+        if idx:
+            title = "Test round %d differences from round %d" % (idx+1, idx)
+        else:
+            title = "Test round 1 differences from initial state"
+        print
+        print '<a name="round-%d"></a>' % (idx+1)
+        print "<h3>%s</h3>" % title
+        print "<p>%s" % data[idx+1]['datetime']
+        stat = output_run_diffs(idx, idx+1, data, 0)
+        if stat:
+            syslog.errors_add(err_stats, stat)
+        output_data_links(data[idx+1])
+        print "\n<hr>"
     
     print """
 <a name="error-summary"></a>
@@ -1123,41 +1123,41 @@ def parse_syte_stats(dirs):
     """parses given CSV files into a data structure"""
     data = []
     for dirname in dirs:
-	file = "%s/usage.csv" % dirname
-	sys.stderr.write("Parsing '%s'...\n" % file)
-	items = parse_csv(file)
-	if not items:
-	    sys.stderr.write("CSV parsing failed\n")
-	    sys.exit(1)
+        file = "%s/usage.csv" % dirname
+        sys.stderr.write("Parsing '%s'...\n" % file)
+        items = parse_csv(file)
+        if not items:
+            sys.stderr.write("CSV parsing failed\n")
+            sys.exit(1)
 
-	file = "%s/smaps.cap" % dirname
-	if os.path.exists(file):
-	    sys.stderr.write("Parsing '%s'...\n" % file)
-	    items['smaps'], items['private_code'] = parse_smaps(file)
-	    if not items['smaps']:
-		sys.stderr.write("SMAPS data parsing failed\n")
-		sys.exit(1)
+        file = "%s/smaps.cap" % dirname
+        if os.path.exists(file):
+            sys.stderr.write("Parsing '%s'...\n" % file)
+            items['smaps'], items['private_code'] = parse_smaps(file)
+            if not items['smaps']:
+                sys.stderr.write("SMAPS data parsing failed\n")
+                sys.exit(1)
 
-	file = "%s/syslog" % dirname
-	if not (os.path.exists(file)):
-	    file = "%s/syslog.gz" % dirname
-	    if not (os.path.exists(file)):
-		file = None
-	if file:
-	    # get the crashes and other errors
-	    sys.stderr.write("Parsing '%s'...\n" % file)
-	    items['errors'] = syslog.parse_syslog(sys.stdout.write, file)
-	    items['logfile'] = file
-	#print items
-	data.append(items)
+        file = "%s/syslog" % dirname
+        if not (os.path.exists(file)):
+            file = "%s/syslog.gz" % dirname
+            if not (os.path.exists(file)):
+                file = None
+        if file:
+            # get the crashes and other errors
+            sys.stderr.write("Parsing '%s'...\n" % file)
+            items['errors'] = syslog.parse_syslog(sys.stdout.write, file)
+            items['logfile'] = file
+        #print items
+        data.append(items)
     return data
 
 
 if __name__ == "__main__":
     if len(sys.argv) < 3:
-	msg = __doc__.replace("<TOOL_NAME>", sys.argv[0].split('/')[-1])
-	sys.stderr.write(msg)
-	sys.exit(1)
+        msg = __doc__.replace("<TOOL_NAME>", sys.argv[0].split('/')[-1])
+        sys.stderr.write(msg)
+        sys.exit(1)
     else:
-	stats = parse_syte_stats(sys.argv[1:])
-	output_html_report(stats)
+        stats = parse_syte_stats(sys.argv[1:])
+        output_html_report(stats)
