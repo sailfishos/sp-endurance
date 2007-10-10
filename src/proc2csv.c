@@ -568,7 +568,7 @@ int main(int argc, char *argv[])
 	}
 
 	/* show some system information */
-	fputs("\nUptime,Idletime (mins):\n", stdout);
+	fputs("\nUptime,Idletime (secs):\n", stdout);
 	show_as_csv("uptime", 0, 2);
 	fputs("\nLoadavg 1min,5min,15min,Running/all,Last PID:\n", stdout);
 	show_as_csv("loadavg", 0, 5);
