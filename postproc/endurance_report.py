@@ -635,8 +635,8 @@ def get_thread_count_diffs(commands, processes1, processes2):
     for pid in commands:
         if pid in processes2 and pid in processes1:
             name = commands[pid]
-            t1 = processes1[pid]['Threads']
-            t2 = processes2[pid]['Threads']
+            t1 = int(processes1[pid]['Threads'])
+            t2 = int(processes2[pid]['Threads'])
             # will be sorted according to first column
             diffs.append((t2-t1, t2, "%s[%s]" % (name, pid)))
     return diffs
