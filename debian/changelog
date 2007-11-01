@@ -6,7 +6,7 @@ sp-endurance (1.2) unstable; urgency=low
   * make endurance report post-processing work for data collected
     on x86, as normal user (i.e. in Sbox). Fixes: NB#71722
 
- -- Eero Tamminen <eero.tamminen@nokia.com>  Tue,  2 Oct 2007 14:47:05 +0300
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Fri,  2 Nov 2007 14:47:05 +0300
 
 sp-endurance (1.1.18) unstable; urgency=low
 
