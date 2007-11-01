@@ -10,14 +10,6 @@ Nov 2006:
 - Post-processing scripts accept now directory names instead of file names
 
 
-TODO
-----
-
-June 2007:
-- Glibc 2.5 has NPTL with which threads don't show up as separate
-  processes.  Process them from /proc/*/task/ instead
-
-
 Usage
 -----
 
