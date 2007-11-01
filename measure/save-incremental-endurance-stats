@@ -36,7 +36,9 @@
 # 2007-04-18:
 # - don't call separate script, do all things here
 # 2007-11-01:
-# - Save also what FDs processes have open
+# - Save what FDs processes have open
+# - Ask proc2csv to ignore permission errors so that this
+#   can be used also as normal user
 
 script=${0##*/}
 if [ $# -lt 1 ]; then
@@ -107,7 +109,7 @@ echo -e "generator = syte-endurance-stats v0.4\n" > $usage
 echo "SW-version = $(cat /etc/osso_software_version)" >> $usage
 echo "date = $(date +'%F %T')" >> $usage
 # all relevant info from the /proc that is easy to parse
-proc2csv >> $usage
+proc2csv -p >> $usage
 if [ $? -ne 0 ]; then
 	echo "$script: WARNING, proc2csv terminated with exit code $?" 1>&2
 fi
