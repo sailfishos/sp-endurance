@@ -626,10 +626,11 @@ def get_pid_usage_diffs(commands, processes, values1, values2):
     return diffs
 
 
-def get_thread_diffs(commands, processes1, processes2):
+def get_thread_count_diffs(commands, processes1, processes2):
     """return { difference, total, name } hash where name is taken from
-    'commands', total is taken from 'processes2', and differences is between
-    'processes2'-'processes1' and all these are matched by pids."""
+    'commands', total is taken from 'processes2', and differences in
+    thread counts is between 'processes2'-'processes1' and all these
+    are matched by pids."""
     diffs = []
     for pid in commands:
         if pid in processes2 and pid in processes1:
