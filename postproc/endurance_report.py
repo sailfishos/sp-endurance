@@ -768,9 +768,9 @@ def output_run_diffs(idx1, idx2, data, do_summary):
                     Colors.threads, do_summary)
 
     # new and closed processes
-    titles = ("Change in number of processes/threads",
-              "Exited processes/threads",
-              "New processes/threads")
+    titles = ("Change in number of processes",
+              "Exited processes",
+              "New processes")
     output_process_changes(
                 get_pids_from_procs(run1['processes'], run1['commands']),
                 get_pids_from_procs(run2['processes'], run2['commands']),
