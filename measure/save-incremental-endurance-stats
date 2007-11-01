@@ -35,6 +35,8 @@
 # - use script name Lintian is happy with
 # 2007-04-18:
 # - don't call separate script, do all things here
+# 2007-11-01:
+# - Save also what FDs processes have open
 
 script=${0##*/}
 if [ $# -lt 1 ]; then
@@ -52,6 +54,7 @@ if [ $# -lt 1 ]; then
 	echo " - ifconfig   (output of /sbin/ifconfig)"
 	echo " - dsme/      (DSME lifeguard statistics)"
 	echo " - interrupts (number of different HW interrupts)"
+	echo " - open-fds   (list of files/sockets open by processes)"
 	echo " - slabinfo   (information about kernel caches, see slabinfo(5))"
 	echo " - smaps.cap  (SMAPS memory usage data)"
 	echo " - stat       (kernel/system statistics, see proc(5))"
@@ -109,13 +112,17 @@ if [ $? -ne 0 ]; then
 	echo "$script: WARNING, proc2csv terminated with exit code $?" 1>&2
 fi
 # info on the UI processes X resource usage
+echo "- X resource usage"
 echo >> $usage
 xmeminfo >> $usage
 # output disk usage
+echo "- Disk usage"
 echo >> $usage
 df|sed 's/ \+/,/g' >> $usage
 
 # save some less easily parsed /proc/ statistics
+echo "- Open file descriptors"
+ls -l /proc/[0-9]*/fd/ > $path/open-fds
 echo "- Other proc files"
 cp /proc/slabinfo /proc/interrupts /proc/stat /proc/component_version /proc/bootreason $path/
 echo "- /sbin/ifconfig"

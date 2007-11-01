@@ -172,6 +172,9 @@
 # 2007-05-03:
 # - Sort resource usage tables according to changes, not total
 # - Fix to get_pid_usage_diffs() 
+# 2007-10-31:
+# - Link list of open file descriptors and smaps.cap
+# - Show differences in process thread counts
 # TODO:
 # - Mark reboots more prominently also in report (<h1>):
 #   - dsme/stats/32wd_to -> HW watchdog reboot
@@ -225,6 +228,7 @@ class Colors:
     errors = "FDEEEE"
     disk = "EEFDFD"
     memory = "EEEEFD"
+    threads = "CFEFEF"
     xres = "FDEEFD"
     fds = "FDFDEE"
 
@@ -586,8 +590,8 @@ def get_usage_diffs(list1, list2):
     return diffs
 
 
-def pid_is_thread(pid, commands, processes):
-    "return true if given pid is a thread, otherwise return false"
+def pid_is_main_thread(pid, commands, processes):
+    "return true if PID is the main thread, otherwise false"
     # command list has better name than process list
     process = processes[pid]
     ppid = process['PPid']
@@ -597,8 +601,8 @@ def pid_is_thread(pid, commands, processes):
         if ppid in processes and process['VmSize'] == processes[ppid]['VmSize']:
             # and also size
             # -> assume it's a thread which should be ignored
-            return 1
-    return 0
+            return 0
+    return 1
 
 
 def get_pid_usage_diffs(commands, processes, values1, values2):
@@ -614,11 +618,26 @@ def get_pid_usage_diffs(commands, processes, values1, values2):
                 if pid not in processes or pid not in commands:
                     sys.stderr.write("Warning: PID %s not in commands or processes\n" % pid)
                     continue
-                if pid_is_thread(pid, commands, processes):
+                if not pid_is_main_thread(pid, commands, processes):
                     continue
                 name = commands[pid]
                 # will be sorted according to first column (i.e. change)
                 diffs.append((c2-c1, c2, "%s[%s]" % (name, pid)))
+    return diffs
+
+
+def get_thread_diffs(commands, processes1, processes2):
+    """return { difference, total, name } hash where name is taken from
+    'commands', total is taken from 'processes2', and differences is between
+    'processes2'-'processes1' and all these are matched by pids."""
+    diffs = []
+    for pid in commands:
+        if pid in processes2 and pid in processes1:
+            name = commands[pid]
+            t1 = processes1[pid]['Threads']
+            t2 = processes2[pid]['Threads']
+            # will be sorted according to first column
+            diffs.append((t2-t1, t2, "%s[%s]" % (name, pid)))
     return diffs
 
 
@@ -668,10 +687,15 @@ def output_data_links(run):
     if os.path.exists("%s/smaps.html" % basedir):
         print "<li>private memory usage of all processes, see"
         print '<a href="%s/smaps.html">smaps overview</a>' % basedir
+    elif os.path.exists("%s/smaps.cap" % basedir):
+        print "<li>private memory usage of all processes, see"
+        print '<a href="%s/smaps.cap">smaps data</a>' % basedir
     print "<li>process and device state details, see"
     print '<a href="%s/usage.csv">collected CSV data</a> and' % basedir
     print '<a href="%s/ifconfig">ifconfig output</a>' % basedir
     print "<li>rest of /proc/ information; see "
+    if os.path.exists("%s/open-fds" % basedir):
+        print '<a href="%s/open-fds">open file descriptors</a>, ' % basedir
     print '<a href="%s/interrupts">interrupts</a>, ' % basedir
     print '<a href="%s/slabinfo">slabinfo</a> and' % basedir
     print '<a href="%s/stat">stat</a> files' % basedir
@@ -720,7 +744,7 @@ def output_run_diffs(idx1, idx2, data, do_summary):
         diffs = get_pid_usage_diffs(run2['commands'], run2['processes'],
                         run1['smaps'], run2['smaps'])
         output_diffs(diffs, "Process private memory usage (according to SMAPS)",
-                "Process[Pid]", " kB", Colors.memory, do_summary)
+                "Command[Pid]", " kB", Colors.memory, do_summary)
     else:
         print "<p>No SMAPS data for process private memory usage available."
     
@@ -736,6 +760,12 @@ def output_run_diffs(idx1, idx2, data, do_summary):
                     Colors.fds, do_summary)
 
     print "\n<h4>Changes in processes</h4>"
+
+    # thread count changes
+    diffs = get_thread_count_diffs(run2['commands'],
+                    run1['processes'], run2['processes'])
+    output_diffs(diffs, "Process thread count", "Command[Pid]", "",
+                    Colors.threads, do_summary)
 
     # new and closed processes
     titles = ("Change in number of processes/threads",
@@ -814,7 +844,7 @@ def output_apps_memory_graphs(cases):
             if pid not in commands:
                 sys.stderr.write("Debug: %s[%s] in status list but not in FD list\n" % (process['Name'], pid))
                 continue
-            if pid_is_thread(pid, commands, processes):
+            if not pid_is_main_thread(pid, commands, processes):
                 continue
             name = commands[pid]
             namepid = (name, pid)
