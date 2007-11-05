@@ -175,6 +175,8 @@
 # 2007-10-31:
 # - Link list of open file descriptors and smaps.cap
 # - Show differences in process thread counts
+# 2007-11-05:
+# - Include SwapCached to system free
 # TODO:
 # - Mark reboots more prominently also in report (<h1>):
 #   - dsme/stats/32wd_to -> HW watchdog reboot
@@ -415,10 +417,11 @@ def get_meminfo(data, headers, values):
     buffers = mem['Buffers']
     cached = mem['Cached']
     swaptotal = mem['SwapTotal']
+    swapcached = mem['SwapCached']
     swapfree = mem['SwapFree']
     
     data['memtotal'] = total + swaptotal
-    data['memfree'] = free + buffers + cached + swapfree
+    data['memfree'] = free + buffers + cached + swapfree + swapcached
     data['memused'] = data['memtotal'] - data['memfree']
     data['swapused'] = swaptotal - swapfree
 
