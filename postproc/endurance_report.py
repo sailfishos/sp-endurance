@@ -176,7 +176,8 @@
 # - Link list of open file descriptors and smaps.cap
 # - Show differences in process thread counts
 # 2007-11-05:
-# - Include SwapCached to system free
+# - Include SwapCached to system free and report swap usage
+#   separately in summary
 # TODO:
 # - Mark reboots more prominently also in report (<h1>):
 #   - dsme/stats/32wd_to -> HW watchdog reboot
@@ -736,9 +737,13 @@ def output_run_diffs(idx1, idx2, data, do_summary):
         print "<br>(Less that 500 FDs are free in the system.)"
     if do_summary:
         print "<!--\n- System free memory change: %+d\n- System free FD change: %+d\n-->" % (free_change, fdfree_change)
+        swap_change = run2['swapused'] - run1['swapused']
+        if swap_change:
+            print "<br>Swap use change: %+d kB" % swap_change
         if 'private_code' in run1:
             dcode_change = run2['private_code'] - run1['private_code']
-            print "<p>System private dirty code pages change: <b>%+d</b> kB" % dcode_change
+            if dcode_change:
+                print "System private dirty code pages change: <b>%+d</b> kB" % dcode_change
 
     # filesystem usage changes
     diffs = get_usage_diffs(run1['mounts'], run2['mounts'])
@@ -795,7 +800,7 @@ def output_initial_state(run):
     print "<p>%s" % run['release']
     print "<p>%s" % run['datetime']
     print "<p>Free system memory: <b>%d</b> kB" % run['memfree']
-    print "<br>(free = free+cached+buffered+swapfree)"
+    print "<br>(free = free+cached+buffered+swapfree+swapcached)"
     if 'private_code' in run and run['private_code']:
         print "<p>Private dirty code pages: <b>%d</b> kB" % run['private_code']
         print "<br><i>(this means that system has incorrectly built shared libraries)</i>"

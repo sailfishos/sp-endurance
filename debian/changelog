@@ -3,9 +3,9 @@ sp-endurance (1.2) unstable; urgency=low
   * save-incremental-endurance-stats: save open file descriptors,
     use proc2csv in permissive mode so that also non-root can get
     data required in postprocessing. Fixes: NB#74679
-  * endurance_report.py: link open-fds and smaps.cap files,
-    show differences in process thread counts, include SwapCached
-    to system free
+  * endurance_report.py: link open-fds and smaps.cap files, include
+    SwapCached to system free and show swap change in summary,
+    show differences in process thread counts
 
  -- Eero Tamminen <eero.tamminen@nokia.com>  Thu,  1 Nov 2007 14:47:05 +0300
 
