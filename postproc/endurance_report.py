@@ -178,6 +178,7 @@
 # 2007-11-05:
 # - Include SwapCached to system free and report swap usage
 #   separately in summary
+# - Handle compressed smaps.cap files
 # TODO:
 # - Mark reboots more prominently also in report (<h1>):
 #   - dsme/stats/32wd_to -> HW watchdog reboot
@@ -220,7 +221,7 @@ EXAMPLES
         <TOOL_NAME> usecase/ usecase2/ > report.html
 """
 
-import sys, os, re
+import sys, os, re, gzip
 import syslog_parse as syslog
 
 # CSV field separator
@@ -248,11 +249,18 @@ smaps_mmap = re.compile("^[-0-9a-f]+ ([-rwxps]+) [0-9a-f]+ [:0-9a-f]+ \d+ *(|[^ 
 # data from sp_smaps_snapshot
 def parse_smaps(filename):
     "parse SMAPS and return process pid, private memory value array"
-    file = open(filename)
+    if filename[-3:] == ".gz":
+        file = gzip.open(filename, "r")
+    else:
+        file = open(filename, "r")
     private_code = code = sum = idx = 0
     data = {}
     while 1:
-        line = file.readline()
+        try:
+            line = file.readline()
+        except IOError, e:
+            parse_error(write, "ERROR: SMAPS file '%s': %s" % (file, e))
+            break
         if not line:
             if sum:
                 #print "INSERT"        #DEBUG
@@ -1172,7 +1180,11 @@ def parse_syte_stats(dirs):
             sys.exit(1)
 
         file = "%s/smaps.cap" % dirname
-        if os.path.exists(file):
+        if not os.path.exists(file):
+            file = "%s/smaps.cap.gz" % dirname
+            if not (os.path.exists(file)):
+                file = None
+        if file:
             sys.stderr.write("Parsing '%s'...\n" % file)
             items['smaps'], items['private_code'] = parse_smaps(file)
             if not items['smaps']:

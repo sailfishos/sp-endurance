@@ -39,6 +39,8 @@
 # - Save what FDs processes have open
 # - Ask proc2csv to ignore permission errors so that this
 #   can be used also as normal user
+# 2007-11-05:
+# - Compress smaps.cap
 
 script=${0##*/}
 if [ $# -lt 1 ]; then
@@ -99,7 +101,7 @@ echo "- SMAPS data"
 if [ -z $(which sp_smaps_snapshot) ]; then
 	echo " -> skipped as sp_smaps_snapshot is missing"
 else
-	sp_smaps_snapshot > $path/smaps.cap
+	sp_smaps_snapshot | gzip -c > $path/smaps.cap.gz
 fi
 
 # save most of /proc
@@ -131,7 +133,7 @@ echo "- /sbin/ifconfig"
 /sbin/ifconfig > $path/ifconfig
 echo "- DSME statistics"
 cp -a /var/lib/dsme $path/
-
+ 
 # and syslog...
 echo "- Syslog(s)"
 if [ -f /var/ftd-log/syslog ]; then

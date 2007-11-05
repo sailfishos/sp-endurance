@@ -6,6 +6,8 @@ sp-endurance (1.2) unstable; urgency=low
   * endurance_report.py: link open-fds and smaps.cap files, include
     SwapCached to system free and show swap change in summary,
     show differences in process thread counts
+  * compress smaps.cap in save-incremental-endurance-stats and
+    handle that in endurance_report.py. Fixes: NB#74905
 
  -- Eero Tamminen <eero.tamminen@nokia.com>  Thu,  1 Nov 2007 14:47:05 +0300
 
