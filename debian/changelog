@@ -8,8 +8,10 @@ sp-endurance (1.2) unstable; urgency=low
     show differences in process thread counts
   * compress smaps.cap in save-incremental-endurance-stats and
     handle that in endurance_report.py. Fixes: NB#74905
+  * endurance_report.py: Fail more gracefully when encountering mixed-
+    version endurance data. Fixes: NB#72588
 
- -- Eero Tamminen <eero.tamminen@nokia.com>  Thu,  1 Nov 2007 14:47:05 +0300
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Tue,  6 Nov 2007 13:39:17 +0200
 
 sp-endurance (1.1.18) unstable; urgency=low
 
