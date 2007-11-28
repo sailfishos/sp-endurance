@@ -41,6 +41,8 @@
 #   can be used also as normal user
 # 2007-11-05:
 # - Compress smaps.cap
+# 2007-11-28:
+# - Store smaps data from here if sp_smaps_snapshot is missing
 
 script=${0##*/}
 if [ $# -lt 1 ]; then
@@ -53,17 +55,17 @@ if [ $# -lt 1 ]; then
 	echo "like this:"
 	echo "<use-case-name>/"
 	echo "+ 100/"
-	echo " - bootreason (why device last booted)"
+	echo " - bootreason   (why device last booted)"
 	echo " - component_version (HW identification)"
-	echo " - ifconfig   (output of /sbin/ifconfig)"
-	echo " - dsme/      (DSME lifeguard statistics)"
-	echo " - interrupts (number of different HW interrupts)"
-	echo " - open-fds   (list of files/sockets open by processes)"
-	echo " - slabinfo   (information about kernel caches, see slabinfo(5))"
-	echo " - smaps.cap  (SMAPS memory usage data)"
-	echo " - stat       (kernel/system statistics, see proc(5))"
-	echo " - syslog.gz  (compressed syslog contents)"
-	echo " - usage.csv  (/proc info + X resource & disk usage in CSV format)"
+	echo " - ifconfig     (output of /sbin/ifconfig)"
+	echo " - dsme/        (DSME lifeguard statistics)"
+	echo " - interrupts   (number of different HW interrupts)"
+	echo " - open-fds     (list of files/sockets open by processes)"
+	echo " - slabinfo     (information about kernel caches, see slabinfo(5))"
+	echo " - smaps.cap.gz (compressed SMAPS memory usage data)"
+	echo " - stat         (kernel/system statistics, see proc(5))"
+	echo " - syslog.gz    (compressed syslog contents)"
+	echo " - usage.csv    (/proc info + X resource & disk usage in CSV format)"
 	echo "+ 101/"
 	echo "+ 102/"
 	echo "etc."
@@ -99,7 +101,11 @@ mkdir -p $path
 # save memory statistics
 echo "- SMAPS data"
 if [ -z $(which sp_smaps_snapshot) ]; then
-	echo " -> skipped as sp_smaps_snapshot is missing"
+	for pid in /proc/[0-9]*; do
+		echo "==> $pid/smaps <=="
+		awk '{print "#"$1,$2}' < $pid/status
+		cat $pid/smaps
+	done | gzip -c > $path/smaps.cap.gz
 else
 	sp_smaps_snapshot | gzip -c > $path/smaps.cap.gz
 fi
