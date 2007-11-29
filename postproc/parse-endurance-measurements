@@ -48,7 +48,9 @@
 # 2007-08-30:
 # - smaps analysis doesn't need the intermediate CSV file anymore,
 #   it can handle the .cap files directly
-# 
+# 2007-11-29:
+# - Handle compressed smaps files
+#
 # TODO:
 # - add slabinfo diffing?
 
@@ -97,6 +99,7 @@ usage()
 	echo "FYI: If you want more detailed SMAPS report from some specific round"
 	echo "without using the slow '--parse-smaps' option for all rounds,"
 	echo "install 'sp-smaps-visualize' package and run this directly:"
+	echo "  gunzip <subdirectory>/smaps.cap.gz"
 	echo "  sp_smaps_analyze <subdirectory>/smaps.cap"
 	echo
 	echo "NOTE: if you skip measurements and you have cleared syslog between"
@@ -162,7 +165,11 @@ parse_smaps()
 			echo "   (smaps.html report already exists, skipping conversion)"
 		else
 			echo "  - creating the SMAPS HTML report..."
-			sp_smaps_analyze "$dir/smaps.cap"
+			if [ \! -f "$dir/$smaps_file" ]; then
+				# assume it's compressed
+				gunzip  "$dir/$smaps_file.gz"
+			fi
+			sp_smaps_analyze "$dir/$smaps_file"
 			if [ $? -ne 0 ]; then
 				echo "ERROR: converting 'smaps.cap' to HTML failed"
 				exit 1
@@ -268,7 +275,7 @@ for i in $*; do
 			echo "ERROR: resource usage CSV file '$csv_file' missing"
 			exit 1
 		fi
-		if [ $use_smaps ] && [ \! -f "$dir/$smaps_file" ]; then
+		if [ $use_smaps ] && [ \! -f "$dir/$smaps_file" ] &&  [ \! -f "$dir/$smaps_file.gz" ]; then
 			echo "ERROR: SMAPS data file '$smaps_file' missing"
 			exit 1
 		fi

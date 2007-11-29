@@ -1,7 +1,12 @@
 sp-endurance (1.3) unstable; urgency=low
 
-  * save-incremental-endurance-stats: when sp_smaps_snapshot is missing,
-    do almost same with few lines of shell
+  * save-incremental-endurance-stats: when sp_smaps_snapshot is
+    missing, produces (about) same data with few lines of shell
+  * parse-endurance-measurements: handle compressed smaps files
+  * endurance_report.py: show smaps private-dirty information
+    in application memory usage graphs
+  * update/fix README
+    Fixes: NB#77594
 
  -- Eero Tamminen <eero.tamminen@nokia.com>  Wed, 28 Nov 2007 18:18:54 +0200
 

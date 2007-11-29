@@ -179,6 +179,8 @@
 # - Include SwapCached to system free and report swap usage
 #   separately in summary
 # - Handle compressed smaps.cap files
+# 2007-11-29:
+# - App memory usage graphs show also SMAPS private memory usage
 # TODO:
 # - Mark reboots more prominently also in report (<h1>):
 #   - dsme/stats/32wd_to -> HW watchdog reboot
@@ -186,8 +188,6 @@
 #   - bootreason -> last boot
 # - Proper option parsing + possibility to state between which
 #   test runs to produce the summaries?
-# - Should the app memory usage changes uses SMAPS instead of RSS?
-#   (it's good to have different sources so that one can compare though)
 # - Show differences in slabinfo and vmstat numbers (pswpin/pswpout)?
 """
 NAME
@@ -239,7 +239,7 @@ class Colors:
 # color values for memuse, memfree, oom-limit
 bar1colors = ("3149BD", "ADE739", "DE2821")        # blue, green, red
 # color values for rss, size
-bar2colors = ("DE2821", "EAB040")                # red, orange
+bar2colors = ("DE2821", "EAB040", "FBE84A")        # red, orange, yellow
 
 # --------------------- SMAPS data parsing --------------------------
 
@@ -259,7 +259,7 @@ def parse_smaps(filename):
         try:
             line = file.readline()
         except IOError, e:
-            parse_error(write, "ERROR: SMAPS file '%s': %s" % (file, e))
+            syslog.parse_error(write, "ERROR: SMAPS file '%s': %s" % (file, e))
             break
         if not line:
             if sum:
@@ -855,6 +855,7 @@ def output_apps_memory_graphs(cases):
     # arrange per use-case data to be per pid
     rounds = 0
     data = {}
+    # get names and pids
     for testcase in cases:
         commands = testcase['commands']
         processes = testcase['processes']
@@ -871,6 +872,12 @@ def output_apps_memory_graphs(cases):
                 data[namepid] = {}
                 data[namepid]['first'] = rounds
             # process is also in this round, so add its info
+            if 'smaps' in testcase and pid in testcase['smaps']:
+                sum = testcase['smaps'][pid]
+            else:
+                syslog.parse_error(sys.stdout.write, "WARNING: SMAPS data missing for pid %s" % pid)
+                sum = 0
+            process['SMAPS'] = sum
             data[namepid][rounds] = process
         rounds += 1
 
@@ -880,12 +887,12 @@ def output_apps_memory_graphs(cases):
     largest_size = 0
     for namepid in data:
         changerounds = pidrounds = 0
-        max_size = max_rss = 0
-        min_size = min_rss = 128*1024
+        max_size = max_dirty = 0
+        min_size = min_dirty = 512*1024
         for idx in range(rounds):
             if idx in data[namepid]:
-                rss = data[namepid][idx]['VmRSS']
                 size = data[namepid][idx]['VmSize']
+                dirty = data[namepid][idx]['SMAPS']
                 if size < min_size:
                     if pidrounds:
                         changerounds += 1
@@ -894,25 +901,23 @@ def output_apps_memory_graphs(cases):
                     if pidrounds:
                         changerounds += 1
                     max_size = size
-                if rss < min_rss:
-                    min_rss = rss
-                if rss > max_rss:
-                    max_rss = rss
-                if rss > max_rss:
-                    max_rss = rss
+                if dirty < min_dirty:
+                    min_dirty = dirty
+                if dirty > max_dirty:
+                    max_dirty = dirty
                 pidrounds += 1
         if pidrounds > 1:
-            rss_change = (float)(max_rss - min_rss) / max_rss / pidrounds
+            dirty_change = (float)(max_dirty - min_dirty) / max_dirty / pidrounds
             size_change = (float)(max_size - min_size) / max_size / pidrounds
-            # if >0.2% memory change per round in RSS or Size, or
+            # if >0.2% memory change per round in dirty or Size, or
             # size changes on more than half of the rounds, add to list
-            if rss_change > 0.002 or size_change > 0.002 or 2*changerounds > pidrounds:
-                sizes.append((max_rss,namepid))
+            if dirty_change > 0.002 or size_change > 0.002 or 2*changerounds > pidrounds:
+                sizes.append((max_dirty,namepid))
         if max_size > largest_size:
             largest_size = max_size
     largest_size = float(largest_size)
     
-    # first sort according to the RSS size
+    # first sort according to the dirty size
     sizes.sort()
     sizes.reverse()
     # then sort according to names
@@ -926,9 +931,9 @@ def output_apps_memory_graphs(cases):
     
     # amount of memory in the device (float for calculations)
     print """
-<p>Only processes which resident size changes during tests are listed.
-If process has same name and (max) RSS as some other process, it's
-assumed to be a thread and ignored.
+<p>Only processes which VmSize and amount of private dirty memory changes
+during tests are listed.  If a process has same name and size as its
+parent, it's assumed to be a thread and ignored.
 """
     for order in orders:
         namepid = order[3]
@@ -943,15 +948,19 @@ assumed to be a thread and ignored.
             if idx in process:
                 item = process[idx]
                 rss = item['VmRSS']
+                dirty = item['SMAPS']
                 size = item['VmSize']
-                sizes = (rss/largest_size, (size - rss)/largest_size)
+                if rss < dirty:
+                    syslog.parse_error(sys.stdout.write, "WARNING: release RSS (%s) < SMAPS dirty (%s)" % (rss, dirty))
+                    rss = dirty
+                sizes = (dirty/largest_size, (rss-dirty)/largest_size, (size-rss)/largest_size)
 
                 sleepavg = int(item['SleepAVG'][:-1])
                 if sleepavg < 90:
                     busy = 1
-                    text = ("%skB" % rss, "%skB" % size, "(%d%%)" % sleepavg)
+                    text = ("%skB" % dirty, "%skB" % rss, "%skB" % size, "(%d%%)" % sleepavg)
                 else:
-                    text = ("%skB" % rss, "%skB" % size)
+                    text = ("%skB" % dirty, "%skB" % rss, "%skB" % size)
 
                 if idx:
                     if text == prev_text:
@@ -965,12 +974,12 @@ assumed to be a thread and ignored.
                     prev_idx = idx
                 prev_text = text
             else:
-                nan = ("N/A",)
+                nan = ("N/A",None,None)
                 if text == nan:
                     # previous one didn't have anything either
                     continue
                 prev_rss = prev_size = 0
-                sizes = (0,0)
+                sizes = (0,0,0)
                 text = nan
                 case = "---"
             columndata.append((case, sizes, text))
@@ -978,7 +987,7 @@ assumed to be a thread and ignored.
             sleeptext = "Sleep:"
         else:
             sleeptext = None
-        titles = ("Test-case:", "Graph", "RSS:", "Size:", sleeptext)
+        titles = ("Test-case:", "Graph", "Dirty:", "RSS:", "Size:", sleeptext)
         output_memory_graph_table(titles, bar2colors, columndata)
 
 

@@ -50,11 +50,12 @@ Usage, on the PC:
    If you want also details memory usage information from the applications,
    give additional --parse-smaps argument to the script.  This will
    require sp-smaps-visualize package on PC and sp-smaps-measure
-   package to have been installed on the target device
+   package to have been installed on the target device. Or just read
+   the smaps.cap.gz files directly
 
 
-Files in the source package
----------------------------
+Files coming from the source package
+------------------------------------
 
 Files for the target device:
 - measure/save-incremental-endurance-stats
@@ -66,19 +67,18 @@ Files for the target device:
 - measure/xmeminfo
   - binary required by save-incremental-endurance-stats script
   - outputs X clients resource usage from the X server as CSV data
-- measure/sum-smaps-private
-  - utility script for calculating private memory usage of given
-    process from the process SMAPS information
+- endurance-mem-overview
+  - show ASCII chart of system memory usage from the endurance data
 
 Files for the PC:
 - postproc/parse-endurance-measurements
-  - runs endurance_report.py after SMAPS data post-processing tools
+  - runs endurance_report.py with suitable options
 - postproc/endurance_report.py
   - post-processes data files saved by save-incremental-endurance-stats script
 - postproc/syslog_parse.py
   - used by endurance_report.py
   - script for digging out known types of problems from syslogs
-- postproc/parse-endurance-measurements
+- postproc/split-endurance-measurements
   - script for making several reports out of given data files
     (e.g. if device has booted in middle of testing, that invalidates
     the memory changes, so you want a separate report after that)
@@ -92,3 +92,5 @@ Other files:
   - source code for xmeminfo
 - Makefile
   - compiles the above source files and installs them
+- man/
+  - manual pages for all binaries and scripts
