@@ -829,9 +829,12 @@ def output_memory_graph_table(titles, colors, data):
     "outputs memory usage bars for given (name, (values), tex(t)) tupple array"
     width = 640 # total width of the graph bars
     print "<table><tr>"
+    # column titles
     for title in titles:
         if title:
-            print "<td><i>%s</i></td>" % title
+            print "<th>%s</th>" % title
+        else:
+            print "<th></th>"
     print "</tr>"
     for item in data:
         # row title
@@ -840,12 +843,15 @@ def output_memory_graph_table(titles, colors, data):
         print "<td><table border=0 cellpadding=0 cellspacing=0><tr>"
         for idx in range(len(colors)):
             w = int(item[1][idx]*width)
-            sys.stdout.write('<td bgcolor="%s" width=%d height=16></td>' % (colors[idx], w))
+            if w:
+                sys.stdout.write('<td bgcolor="%s" width=%d height=16></td>' % (colors[idx], w))
         print "</tr></table></td>"
         # texts at end
         for text in item[2]:
             if text:
                 print '<td align="right">%s</td>' % text
+            else:
+                print "<td></td>"
         print "</tr>"
     print "</table>"
 
@@ -853,6 +859,7 @@ def output_memory_graph_table(titles, colors, data):
 def output_apps_memory_graphs(cases):
     "outputs memory graphs bars for the individual processes"
     # arrange per use-case data to be per pid
+    smaps_available = 0
     rounds = 0
     data = {}
     # get names and pids
@@ -872,11 +879,13 @@ def output_apps_memory_graphs(cases):
                 data[namepid] = {}
                 data[namepid]['first'] = rounds
             # process is also in this round, so add its info
-            if 'smaps' in testcase and pid in testcase['smaps']:
-                sum = testcase['smaps'][pid]
-            else:
-                syslog.parse_error(sys.stdout.write, "WARNING: SMAPS data missing for pid %s" % pid)
-                sum = 0
+            sum = 0
+            if 'smaps' in testcase:
+                if pid in testcase['smaps']:
+                    sum = testcase['smaps'][pid]
+                    smaps_available = 1
+                else:
+                    syslog.parse_error(sys.stdout.write, "WARNING: SMAPS data missing for pid %s" % pid)
             process['SMAPS'] = sum
             data[namepid][rounds] = process
         rounds += 1
@@ -891,8 +900,15 @@ def output_apps_memory_graphs(cases):
         min_size = min_dirty = 512*1024
         for idx in range(rounds):
             if idx in data[namepid]:
+                if smaps_available:
+                    dirty = data[namepid][idx]['SMAPS']
+                else:
+                    dirty = data[namepid][idx]['VmRSS']
+                if dirty < min_dirty:
+                    min_dirty = dirty
+                if dirty > max_dirty:
+                    max_dirty = dirty
                 size = data[namepid][idx]['VmSize']
-                dirty = data[namepid][idx]['SMAPS']
                 if size < min_size:
                     if pidrounds:
                         changerounds += 1
@@ -901,12 +917,10 @@ def output_apps_memory_graphs(cases):
                     if pidrounds:
                         changerounds += 1
                     max_size = size
-                if dirty < min_dirty:
-                    min_dirty = dirty
-                if dirty > max_dirty:
-                    max_dirty = dirty
                 pidrounds += 1
         if pidrounds > 1:
+            # if SMAPS data available, dirty is private dirty memory,
+            # otherwise it's RSS. Size = VmSize
             dirty_change = (float)(max_dirty - min_dirty) / max_dirty / pidrounds
             size_change = (float)(max_size - min_size) / max_size / pidrounds
             # if >0.2% memory change per round in dirty or Size, or
@@ -917,7 +931,7 @@ def output_apps_memory_graphs(cases):
             largest_size = max_size
     largest_size = float(largest_size)
     
-    # first sort according to the dirty size
+    # first sort according to the dirty (or RSS) size
     sizes.sort()
     sizes.reverse()
     # then sort according to names
@@ -931,14 +945,23 @@ def output_apps_memory_graphs(cases):
     
     # amount of memory in the device (float for calculations)
     print """
-<p>Only processes which VmSize and amount of private dirty memory changes
-during tests are listed.  If a process has same name and size as its
-parent, it's assumed to be a thread and ignored.
+<p>Only processes which VmSize and amount of private dirty memory
+changes during tests are listed.  If a process has same name and size
+as its parent, it's assumed to be a thread and ignored.
+
+<p>Note: Memory is not any more accounted as dirty if it's swapped out
+(even when it's paged back in), this seems like a kernel (2.6.21) bug.
+RSS can decrease if device is just running low on memory because
+kernel can just discard unmodified/unused pages. Size tells amount of
+all virtual allocations and memory maps of a process, so it might not
+have any relation to real process memory usage. However, it can show
+leaks which cause process eventually to run out of (2GB) address space
+(e.g. if it's not collecting thread resources).
 """
     for order in orders:
         namepid = order[3]
         process = data[namepid]
-        print "<h4>%s [%s]</h4>" % namepid
+        print "<h4><i>%s [%s]</i></h4>" % namepid
         text = ''
         busy = 0
         prev_idx = 0
@@ -947,20 +970,24 @@ parent, it's assumed to be a thread and ignored.
         for idx in range(rounds):
             if idx in process:
                 item = process[idx]
+
                 rss = item['VmRSS']
-                dirty = item['SMAPS']
                 size = item['VmSize']
-                if rss < dirty:
-                    syslog.parse_error(sys.stdout.write, "WARNING: release RSS (%s) < SMAPS dirty (%s)" % (rss, dirty))
-                    rss = dirty
+                if smaps_available:
+                    dirty = item['SMAPS']
+                    if rss < dirty:
+                        syslog.parse_error(sys.stdout.write, "WARNING: %s[%s] RSS (%s) < SMAPS dirty (%s)" % namepid + (rss, dirty))
+                        rss = dirty
+                    text = ["%skB" % dirty, "%skB" % rss, "%skB" % size]
+                else:
+                    text = ["", "%skB" % rss, "%skB" % size]
+                    dirty = 0
                 sizes = (dirty/largest_size, (rss-dirty)/largest_size, (size-rss)/largest_size)
 
                 sleepavg = int(item['SleepAVG'][:-1])
                 if sleepavg < 90:
                     busy = 1
-                    text = ("%skB" % dirty, "%skB" % rss, "%skB" % size, "(%d%%)" % sleepavg)
-                else:
-                    text = ("%skB" % dirty, "%skB" % rss, "%skB" % size)
+                    text.append("(%d%%)" % sleepavg)
 
                 if idx:
                     if text == prev_text:
@@ -974,11 +1001,10 @@ parent, it's assumed to be a thread and ignored.
                     prev_idx = idx
                 prev_text = text
             else:
-                nan = ("N/A",None,None)
+                nan = ("N/A",)
                 if text == nan:
                     # previous one didn't have anything either
                     continue
-                prev_rss = prev_size = 0
                 sizes = (0,0,0)
                 text = nan
                 case = "---"
@@ -987,7 +1013,9 @@ parent, it's assumed to be a thread and ignored.
             sleeptext = "Sleep:"
         else:
             sleeptext = None
-        titles = ("Test-case:", "Graph", "Dirty:", "RSS:", "Size:", sleeptext)
+        titles = ["Test-case:", "Graph", "Dirty:", "RSS:", "Size:", sleeptext]
+        if not smaps_available:
+            titles[2] = ""
         output_memory_graph_table(titles, bar2colors, columndata)
 
 
