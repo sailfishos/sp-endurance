@@ -3,7 +3,7 @@
 # Script for saving endurance measurements.
 # This file is part of sp-endurance.
 #
-# Copyright (C) 2006,2007 by Nokia Corporation
+# Copyright (C) 2006-2008 by Nokia Corporation
 #
 # Contact: Eero Tamminen <eero.tamminen@nokia.com>
 #
@@ -43,9 +43,12 @@
 # - Compress smaps.cap
 # 2007-11-28:
 # - Store smaps data from here if sp_smaps_snapshot is missing
+# 2008-01-14:
+# - Check for argument starting with '-' or containing spaces
 
-script=${0##*/}
-if [ $# -lt 1 ]; then
+script="${0##*/}"
+# incorrect number of arguments or argument starts with "-"
+if [ $# -ne 1 ] || [ "${1#-}" != "$1" ]; then
 	echo
 	echo "usage: $script <use-case-name>"
 	echo
@@ -82,10 +85,14 @@ if [ -z $(which xmeminfo) ]; then
 	echo "$script: ERROR, 'xmeminfo' tool is missing from PATH" 1>&2
 	exit 1
 fi
+if [ "${1#* }" != "$1" ]; then
+	echo "$script: ERROR, argument '$1' contains space(s)" 1>&2
+	exit 1
+fi
+name=$1
 
 # real dumb way to do find free index, but normally this should be
 # run less than 100 times...
-name=$1
 for i in $(seq 999); do
 	idx="$((100+$i))"
 	if [ \! -d "$name/$idx" ]; then
