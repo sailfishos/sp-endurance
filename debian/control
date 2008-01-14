@@ -8,7 +8,7 @@ Standards-Version: 3.7.2.2
 Package: sp-endurance
 Architecture: any
 Depends: ${shlibs:Depends}
-Recommends: sp-smaps-measure
+Suggests: sp-smaps-measure
 Description: Endurance measument tools
  Endurance measurement tools save system and process information from /proc
  and other places; the memory, file descriptors, X resources, flash space,
