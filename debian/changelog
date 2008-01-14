@@ -1,3 +1,10 @@
+sp-endurance (1.4) unstable; urgency=low
+
+  * save-incremental-endurance-stats: argument handling robustness has
+    been improved. Fixes: NB#79269
+
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Mon, 14 Jan 2008 17:03:50 +0200
+
 sp-endurance (1.3) unstable; urgency=low
 
   * save-incremental-endurance-stats: when sp_smaps_snapshot is
