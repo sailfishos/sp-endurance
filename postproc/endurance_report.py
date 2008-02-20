@@ -939,7 +939,7 @@ def output_apps_memory_graphs(cases):
     for size in sizes:
         namepid = size[1]
         # sorting order is: name, first round for pid, pid
-        orders.append((namepid[0], data[namepid]['first'], namepid[1], namepid))
+        orders.append((namepid[0], data[namepid]['first'], namepid[1]))
     del(sizes)
     orders.sort()
     
@@ -959,7 +959,7 @@ leaks which cause process eventually to run out of (2GB) address space
 (e.g. if it's not collecting thread resources).
 """
     for order in orders:
-        namepid = order[3]
+        namepid = (order[0],order[2])
         process = data[namepid]
         print "<h4><i>%s [%s]</i></h4>" % namepid
         text = ''
@@ -976,7 +976,7 @@ leaks which cause process eventually to run out of (2GB) address space
                 if smaps_available:
                     dirty = item['SMAPS']
                     if rss < dirty:
-                        syslog.parse_error(sys.stdout.write, "WARNING: %s[%s] RSS (%s) < SMAPS dirty (%s)" % namepid + (rss, dirty))
+                        syslog.parse_error(sys.stdout.write, "WARNING: %s[%s] RSS (%s) < SMAPS dirty (%s)" % (namepid + (rss, dirty)))
                         rss = dirty
                     text = ["%skB" % dirty, "%skB" % rss, "%skB" % size]
                 else:
