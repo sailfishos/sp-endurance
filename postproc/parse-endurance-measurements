@@ -3,7 +3,7 @@
 # Post-process endurance measurements into an overview HTML report.
 # This file is part of sp-endurance.
 #
-# Copyright (C) 2006,2007 by Nokia Corporation
+# Copyright (C) 2006,2007,2008 by Nokia Corporation
 #
 # Contact: Eero Tamminen <eero.tamminen@nokia.com>
 #
@@ -43,13 +43,15 @@
 # 2007-03-01:
 # - rename to make Lintian happy
 # 2007-03-13:
-# - kludge around files which idiots have copied in FTP ASCII mode
-#   using Windows and stupid shells which cannot handle carriage returns
+# - kludge around files which have been copied in FTP ASCII mode
+#   using Windows and shells (Bash) which cannot handle carriage returns
 # 2007-08-30:
 # - smaps analysis doesn't need the intermediate CSV file anymore,
 #   it can handle the .cap files directly
 # 2007-11-29:
 # - Handle compressed smaps files
+# 2008-02-21:
+# - Fix case when DSME stat files are empty
 #
 # TODO:
 # - add slabinfo diffing?
@@ -140,12 +142,14 @@ count_reboots()
 {
 	if [ -f "$1/$hw_reboot_file" ]; then
 		hw_reboots=$(cat "$1/$hw_reboot_file"|tr -d '\r')
-	else
+	fi
+	if [ -z "$hw_reboots" ]; then
 		hw_reboots="0"
 	fi
 	if [ -f "$1/$sw_reboot_file" ]; then
 		sw_reboots=$(cat "$1/$sw_reboot_file"|tr -d '\r')
-	else
+	fi
+	if [ -z "$sw_reboots" ]; then
 		sw_reboots="0"
 	fi
 	reboots=$(($hw_reboots + $sw_reboots))
