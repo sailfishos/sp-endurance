@@ -1,3 +1,9 @@
+sp-endurance (1.6) unstable; urgency=low
+
+  * Fixed empty DSME files not being handled gracefully. Fixes: NB#81188
+
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Fri, 22 Feb 2008 09:55:00 +0200
+
 sp-endurance (1.5) unstable; urgency=low
 
   * A rare warning message also triggered an exception in endurance
