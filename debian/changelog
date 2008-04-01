@@ -1,3 +1,9 @@
+sp-endurance (1.7) unstable; urgency=low
+
+  * Fixed syslog rotation handling issue. Fixes: NB#83445
+
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Tue,  1 Apr 2008 14:17:38 +0300
+
 sp-endurance (1.6) unstable; urgency=low
 
   * Fixed empty DSME files not being handled gracefully. Fixes: NB#81188
