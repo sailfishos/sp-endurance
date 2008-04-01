@@ -150,11 +150,16 @@ cp -a /var/lib/dsme $path/
 # and syslog...
 echo "- Syslog(s)"
 if [ -f /var/ftd-log/syslog ]; then
-	# FTD saved syslogs
+	# old FTD rotated syslogs?
 	logs="/var/ftd-log/logs/syslog /var/ftd-log/syslog"
 elif [ -f /var/log/syslog ]; then
-	# normal syslogs
-	logs="/var/log/syslog.old /var/log/syslog"
+	# new FTD rotated syslogs?
+	if [ -f /var/log/logs/syslog ]; then
+		logs="/var/log/logs/syslog /var/log/syslog"
+	else
+		# plain syslog
+		logs="/var/log/syslog.old /var/log/syslog"
+	fi
 else
 	# no syslog
 	echo "Syslog file(s) missing!" 1>&2
