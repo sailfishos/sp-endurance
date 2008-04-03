@@ -284,7 +284,7 @@ def parse_smaps(filename):
         if first == '#':
             if line.find("#Pid: ") == 0:
                 pid = line[6:]
-            #print "PID"        #DEBUG
+                #print "PID"        #DEBUG
             continue
         if not pid:
             # sanity check
@@ -305,7 +305,7 @@ def parse_smaps(filename):
         if line.find("Private_Dirty:") == 0:
             amount = int(line[15:-2])
             if code and amount:
-                #print debug_line
+                #print line
                 #print mmap, code, amount
                 private_code += amount
             # Private_Dirty:        0 kB
@@ -921,7 +921,12 @@ def output_apps_memory_graphs(cases):
         if pidrounds > 1:
             # if SMAPS data available, dirty is private dirty memory,
             # otherwise it's RSS. Size = VmSize
-            dirty_change = (float)(max_dirty - min_dirty) / max_dirty / pidrounds
+            if max_dirty:
+                dirty_change = (float)(max_dirty - min_dirty) / max_dirty / pidrounds
+            else:
+                if smaps_available:
+                    syslog.parse_error(sys.stdout.write, "WARNING: no SMAPS dirty for %s[%s]. Disable swap and try again\n\t(SMAPS doesn't work properly with swap)" % namepid)
+                dirty_change = 0
             size_change = (float)(max_size - min_size) / max_size / pidrounds
             # if >0.2% memory change per round in dirty or Size, or
             # size changes on more than half of the rounds, add to list
