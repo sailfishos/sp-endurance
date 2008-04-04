@@ -1,3 +1,10 @@
+sp-endurance (1.8) unstable; urgency=low
+
+  * Fixed endurance parsing failure when process smaps data had no
+    private dirty memory. Fixes: NB#83676
+
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Fri,  4 Apr 2008 10:47:27 +0300
+
 sp-endurance (1.7) unstable; urgency=low
 
   * Fixed syslog rotation handling issue. Fixes: NB#83445
