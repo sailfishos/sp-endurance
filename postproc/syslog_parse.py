@@ -249,8 +249,8 @@ def parse_restarts(restarts, line):
 
 # --------------------- Kernel parsing ---------------------------
 
-kernel_oops = re.compile(" kernel: .* Oops: (.*)$")
-kernel_oom = re.compile(" kernel: .* (Out of Memory: Kill|lowmem: denying memory)(.*)$")
+kernel_oops = re.compile(" kernel: .* [Oo]ops: (.*)$")
+kernel_oom = re.compile(" kernel: .* ([Oo]ut of [Mm]emory: [Kk]ill|lowmem: denying memory)(.*)$")
 
 def parse_kernel(oopses, ooms, line):
     "appends to given array simplified kernel Oops message line"
