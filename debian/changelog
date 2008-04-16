@@ -1,3 +1,10 @@
+sp-endurance (1.9) unstable; urgency=low
+
+  * Fixed broken detection of kernel OOM messages caused by change in
+    case. Fixes: NB#84309
+
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Wed, 16 Apr 2008 14:29:59 +0300
+
 sp-endurance (1.8) unstable; urgency=low
 
   * Fixed endurance parsing failure when process smaps data had no
