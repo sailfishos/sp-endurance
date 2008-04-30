@@ -181,6 +181,8 @@
 # - Handle compressed smaps.cap files
 # 2007-11-29:
 # - App memory usage graphs show also SMAPS private memory usage
+# 2008-04-30:
+# - Show optional use-case step description
 # TODO:
 # - Mark reboots more prominently also in report (<h1>):
 #   - dsme/stats/32wd_to -> HW watchdog reboot
@@ -198,7 +200,7 @@ SYNOPSIS
 
 DESCRIPTION
 
-This script reads data files produced by the SYTE endurance measurement
+This script reads data files produced by the endurance measurement
 tools.   The data is gathered from proc, X server, SMAPS, syslog etc.
 
 By default all arguments are assumed to be names of directories
@@ -1131,7 +1133,11 @@ def output_html_report(data):
   <ul>
 """ % (title, title)   #" fool Jed syntax highlighter
     for round in range(len(data)-1):
-        print '  <li><a href="#round-%d">Round %d</a>' % (round+1, round+1)
+        if data[round]['description']:
+            desc = " (%s)" % data[round]['description']
+        else:
+            desc = ""
+        print '  <li><a href="#round-%d">Round %d</a>%s' % (round+1, round+1, desc)
     print """
   </ul>
 <li>Summary of changes between all the rounds after the initial one:
@@ -1214,6 +1220,7 @@ def parse_syte_stats(dirs):
     """parses given CSV files into a data structure"""
     data = []
     for dirname in dirs:
+        # get basic information
         file = "%s/usage.csv" % dirname
         sys.stderr.write("Parsing '%s'...\n" % file)
         items = parse_csv(file)
@@ -1227,6 +1234,7 @@ def parse_syte_stats(dirs):
             if not (os.path.exists(file)):
                 file = None
         if file:
+            # get system SMAPS memory usage data
             sys.stderr.write("Parsing '%s'...\n" % file)
             items['smaps'], items['private_code'] = parse_smaps(file)
             if not items['smaps']:
@@ -1242,8 +1250,13 @@ def parse_syte_stats(dirs):
             # get the crashes and other errors
             sys.stderr.write("Parsing '%s'...\n" % file)
             items['errors'] = syslog.parse_syslog(sys.stdout.write, file)
-            items['logfile'] = file
-        #print items
+            items['logfile'] = file 
+
+        file = "%s/step.txt" % dirname
+        if os.path.exists(file):
+            # use-case step description
+            items['description'] = open(file).read()
+       
         data.append(items)
     return data
 
