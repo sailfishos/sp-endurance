@@ -114,6 +114,7 @@ mkdir -p $path
 if [ $# -gt 1 ]; then
 	echo "- use-case step description"
 	echo "$2" > $path/step.txt
+fi
 
 # save memory statistics
 echo "- SMAPS data"

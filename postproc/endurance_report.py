@@ -1132,12 +1132,13 @@ def output_html_report(data):
 <li>Resource usage changes for each of the test rounds:
   <ul>
 """ % (title, title)   #" fool Jed syntax highlighter
-    for round in range(len(data)-1):
-        if data[round]['description']:
-            desc = " (%s)" % data[round]['description']
+    for round in range(rounds):
+        idx = round + 1
+        if data[idx]['description']:
+            desc = " (%s)" % data[idx]['description']
         else:
             desc = ""
-        print '  <li><a href="#round-%d">Round %d</a>%s' % (round+1, round+1, desc)
+        print '  <li><a href="#round-%d">Round %d</a>%s' % (idx, idx, desc)
     print """
   </ul>
 <li>Summary of changes between all the rounds after the initial one:
@@ -1255,7 +1256,7 @@ def parse_syte_stats(dirs):
         file = "%s/step.txt" % dirname
         if os.path.exists(file):
             # use-case step description
-            items['description'] = open(file).read()
+            items['description'] = open(file).read().strip()
        
         data.append(items)
     return data
