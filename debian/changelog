@@ -1,3 +1,10 @@
+sp-endurance (1.11) unstable; urgency=low
+
+  * Compatibility issue with older endurance data was fixed. Fixes:
+    NB#86013
+
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Fri, 30 May 2008 09:58:23 +0300
+
 sp-endurance (1.10) unstable; urgency=low
 
   * Support for adding use-case test descriptions has been implemented.
