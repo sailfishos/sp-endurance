@@ -1134,7 +1134,7 @@ def output_html_report(data):
 """ % (title, title)   #" fool Jed syntax highlighter
     for round in range(rounds):
         idx = round + 1
-        if data[idx]['description']:
+        if data[idx].has_key('description') and data[idx]['description']:
             desc = " (%s)" % data[idx]['description']
         else:
             desc = ""
@@ -1257,7 +1257,7 @@ def parse_syte_stats(dirs):
         if os.path.exists(file):
             # use-case step description
             items['description'] = open(file).read().strip()
-       
+
         data.append(items)
     return data
 
