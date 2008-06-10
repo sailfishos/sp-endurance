@@ -2,7 +2,7 @@
 # -*- indent-tabs-mode: t -*-
 # This file is part of sp-endurance.
 #
-# Copyright (C) 2006,2007 by Nokia Corporation
+# Copyright (C) 2006-2008 by Nokia Corporation
 #
 # Contact: Eero Tamminen <eero.tamminen@nokia.com>
 #
@@ -82,6 +82,8 @@
 # 2007-10-02:
 # - Patch for Tuukka to catch syslog read failures
 # - Don't duplicate time for Glib messages
+# 2008-06-10:
+# - Parse also program names with spaces in them from syslog
 
 """
 NAME
@@ -353,7 +355,8 @@ def parse_dsme(resets, restarts, crashes, exits, line):
 # --------------------- GLIB error parsing ---------------------------
 
 #glib_pattern = re.compile(" (\S+): GLIB (WARNING|CRITICAL) \*\* (.*)$")
-glib_pattern = re.compile(" ([^ ]*[]]+): GLIB (WARNING|CRITICAL|ERROR) \*\* (.*)$")
+# pattern: time, device name, program name (may have spaces) + [pid], GLIB issue
+glib_pattern = re.compile(" \d+:\d+:\d+ +[^ ]+ +([^]]+[]]): GLIB (WARNING|CRITICAL|ERROR) \*\* (.*)$")
 
 def parse_glib(criticals, warnings, line):
     "appends to given array simplified Glib critical error or warning"
