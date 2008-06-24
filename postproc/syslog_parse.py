@@ -84,6 +84,8 @@
 # - Don't duplicate time for Glib messages
 # 2008-06-10:
 # - Parse also program names with spaces in them from syslog
+# 2008-06-24:
+# - Parse kernel BUG and onenand_wait issues
 
 """
 NAME
@@ -97,8 +99,9 @@ DESCRIPTION
 This script parses different kinds of issues from given syslog files:
     - Device bootups (based on boot reasons and syslog restarts)
     - SysRq messages indicating faulty device setup
-    - Kernel Oopses
+    - Kernel Oopses and BUGs
     - DSP errors and warnings
+    - Kernel errors for FAT (I/O) JFFS2 (onenand_wait)
     - DSME reported system service restarts and reboots
     - Maemo-launcher reported application crashes
     - Critical errors and warnings reported by Glib
@@ -141,7 +144,7 @@ use_html = 1
 # sysrq/syslog/kernel/io/dsp/connectivity/dsme/glib/launcher/all
 verbose = ""
 verbose_options = [
-"sysrq", "bootup", "syslog", "kernel", "io", "dsp", "connectivity", "dsme", "glib", "all"
+"sysrq", "bootup", "syslog", "kernel", "fs", "dsp", "connectivity", "dsme", "glib", "all"
 ]
 
 
@@ -252,32 +255,49 @@ def parse_restarts(restarts, line):
 # --------------------- Kernel parsing ---------------------------
 
 kernel_oops = re.compile(" kernel: .* [Oo]ops: (.*)$")
-kernel_oom = re.compile(" kernel: .* ([Oo]ut of [Mm]emory: [Kk]ill|lowmem: denying memory)(.*)$")
+kernel_bugs = re.compile(" kernel BUG at (.*)$")
 
-def parse_kernel(oopses, ooms, line):
-    "appends to given array simplified kernel Oops message line"
+def parse_kernel(oopses, bugs, line):
+    "appends to given array simplified kernel Oops/BUG message line"
     match = kernel_oops.search(line)
     if match:
         oopses.append("%s Kernel Oops: %s" % (parse_time(line), match.group(1)))
     else:
-        match = kernel_oom.search(line)
+        match = kernel_bugs.search(line)
         if match:
-            ooms.append("%s %s%s" % (parse_time(line), match.group(1), match.group(2)))
+            bugs.append("%s Kernel BUG at: %s" % (parse_time(line), match.group(1)))
         elif verbose in [ "all", "kernel" ]:
             sys.stderr.write("Warning: kernel pattern(s) didn't match:\n  %s\n" % line)
 
 
-# --------------------- I/O error parsing ---------------------------
+# --------------------- OOM parsing ---------------------------
+
+kernel_oom = re.compile(" kernel: .* ([Oo]ut of [Mm]emory: [Kk]ill|lowmem: denying memory)(.*)$")
+
+def parse_oom(ooms, line):
+    "appends to given array simplified kernel OOM message line"
+    match = kernel_oom.search(line)
+    if match:
+        ooms.append("%s %s%s" % (parse_time(line), match.group(1), match.group(2)))
+    elif verbose in [ "all", "kernel" ]:
+        sys.stderr.write("Warning: kernel pattern(s) didn't match:\n  %s\n" % line)
+
+# --------------------- FS error parsing ---------------------------
 
 io_error = re.compile(" kernel: [^]]*[]] (.*)$")
+nand_error = re.compile(" onenand[^:]*_wait: (.*)$")
 
-def parse_io(errors, line):
-    "appends to given array simplified kernel I/O error messages"
-    match = io_error.search(line)
+def parse_fs(io_errors, nand_errors, line):
+    "appends to given arrays simplified kernel I/O and nand access error messages"
+    match = nand_error.search(line)
     if match:
-        errors.append("%s %s" % (parse_time(line), match.group(1)))
-    elif verbose in [ "all", "io" ]:
-        sys.stderr.write("Warning: I/O error pattern(s) didn't match:\n  %s\n" % line)
+        nand_errors.append("%s NAND error: %s" % (parse_time(line), match.group(1)))
+    else:
+        match = io_error.search(line)
+        if match:
+            io_errors.append("%s %s" % (parse_time(line), match.group(1)))
+        elif verbose in [ "all", "fs" ]:
+            sys.stderr.write("Warning: kernel FS error pattern(s) didn't match:\n  %s\n" % line)
 
 
 # --------------------- DSP error parsing ---------------------------
@@ -406,11 +426,13 @@ def parse_launcher(deaths, lines, line, start):
 # --------------------- syslog parsing ---------------------------
 
 def parse_syslog(write, file):
-    "parses DSP, connectivity, DSME, Maemo-launcher and Glib reported errors from syslog"
+    "parses kernel, DSP, connectivity, DSME, Maemo-launcher and Glib reported errors from syslog"
     # Syslog entry examples:
     # Nov 16 01:53:52 Nokia770-44 syslogd 1.4.1#17.osso1: restart.
     # Feb 26 20:19:53 Nokia-N800-08 kernel: [ 9899.620422] Bootup reason: sw_rst
     # Oct 23 14:16:53 Nokia770-42 kernel: [44449.006805] Internal error: Oops: 7 [#1]
+    # Feb 22 13:55:06 Nokia-N800-03 kernel: [11162.797271] kernel BUG at drivers/mmc/omap.c:213!
+    # Sep 19 00:17:28 Nokia-N800-37 kernel: [    9.382812] onenand_wait: ECC error = 0x5555
     # Oct 19 17:55:08 Nokia770-42 kernel: [  873.693267] Out of Memory: Kill process 1138 (metalayer-crawl) score 2183 and children.
     # Oct 30 07:04:05 Nokia770-43 kernel: [  555.411865] omapdsp: poll error!
     # Oct 30 07:03:24 Nokia770-43 kernel: [  514.219909] mbox: Illegal seq bit!(54010000) ignored
@@ -444,8 +466,10 @@ def parse_syslog(write, file):
         'hwresets':   [],
         'syslogs':    [],
         'oopses':     [],
+        'BUGs':       [],
         'ooms':       [],
         'io_errors':  [],
+        'nand_errors':[],
         'dsp_errors': [],
         'dsp_warns':  [],
         'conn_errors':[],
@@ -484,10 +508,12 @@ def parse_syslog(write, file):
         if line.find('Bootup reason') >= 0:
             parse_bootups(messages['powerkeys'], messages['alarms'], messages['charger'],
                           messages['swresets'], messages['hwresets'], line)
-        if line.find('Oops:') >= 0 or line.find('Memory:') >= 0 or line.find('lowmem:') >= 0:
-            parse_kernel(messages['oopses'], messages['ooms'], line)
-        if line.find('I/O error') >= 0:
-            parse_io(messages['io_errors'], line)
+        if line.find('Oops:') >= 0 or line.find('BUG at') >= 0:
+            parse_kernel(messages['oopses'], messages['BUGs'], line)
+        if line.find('Memory:') >= 0 or line.find('lowmem:') >= 0:
+            parse_oom(messages['ooms'], line)
+        if line.find('I/O error') >= 0 or line.find(' onenand') >= 0:
+            parse_fs(messages['io_errors'], messages['nand_errors'], line)
         if line.find('mbox:') >= 0 or line.find('omapdsp:') >= 0 or line.find('mbx:') >= 0:
             parse_dsp(messages['dsp_errors'], messages['dsp_warns'], line)
         if line.find('TX dropped') >= 0 or line.find('cx3110x ERROR') >= 0 or line.find('READY interrupt') >= 0:
@@ -527,8 +553,10 @@ error_titles = {
   "Life-guarded system services restarted by the DSME SW watchdog"],
 'exits':      ["Terminated system services (from DSME)", None],
 'oopses':     ["Kernel Oopses", None],
+'BUGs':       ["Kernel BUGs", None],
 'ooms':       ["Kernel memory shortage issues", None],
-'io_errors':  ["Kernel I/O errors", None],
+'io_errors':  ["Kernel I/O errors (FAT issues)", None],
+'nand_errors':["Kernel JFFS2 driver issues", None],
 'dsp_errors': ["DSP errors", None],
 'dsp_warns':  ["DSP warnings", None],
 'conn_errors':["Connectivity errors", None],
@@ -541,7 +569,27 @@ error_titles = {
 
 # Dicts are not sorted, so we need a lookup array
 title_order = [
-'sysrq','hwresets','swresets','alarms','powerkeys','resets','crashes','restarts','exits','oopses','ooms','io_errors','dsp_errors','dsp_warns','conn_errors','deaths','criticals','warnings','syslogs'
+    'sysrq',
+    'hwresets',
+    'swresets',
+    'alarms',
+    'powerkeys',
+    'resets',
+    'crashes',
+    'restarts',
+    'exits',
+    'oopses',
+    'BUGs',
+    'ooms',
+    'io_errors',
+    'nand_errors',
+    'dsp_errors',
+    'dsp_warns',
+    'conn_errors',
+    'deaths',
+    'criticals',
+    'warnings',
+    'syslogs'
 ]
 
 def explain_signals(write):
