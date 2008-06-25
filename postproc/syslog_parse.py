@@ -291,7 +291,7 @@ def parse_fs(io_errors, nand_errors, line):
     "appends to given arrays simplified kernel I/O and nand access error messages"
     match = nand_error.search(line)
     if match:
-        nand_errors.append("%s NAND error: %s" % (parse_time(line), match.group(1)))
+        nand_errors.append("%s NAND issue: %s" % (parse_time(line), match.group(1)))
     else:
         match = io_error.search(line)
         if match:
@@ -556,7 +556,7 @@ error_titles = {
 'BUGs':       ["Kernel BUGs", None],
 'ooms':       ["Kernel memory shortage issues", None],
 'io_errors':  ["Kernel I/O errors (FAT issues)", None],
-'nand_errors':["Kernel JFFS2 driver issues", None],
+'nand_errors':["Kernel NAND issues (bad blocks etc)", None],
 'dsp_errors': ["DSP errors", None],
 'dsp_warns':  ["DSP warnings", None],
 'conn_errors':["Connectivity errors", None],
