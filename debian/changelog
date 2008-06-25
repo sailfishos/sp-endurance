@@ -1,3 +1,10 @@
+sp-endurance (1.13) unstable; urgency=low
+
+  * The message output introduced by the fix in version 1.12 has been
+    tweaked slightly.
+
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Wed, 25 Jun 2008 10:26:00 +0300
+
 sp-endurance (1.12) unstable; urgency=low
 
   * Parse kernel BUG and onenand_wait issues. Fixes: NB#86607
