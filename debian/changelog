@@ -1,3 +1,9 @@
+sp-endurance (1.12) unstable; urgency=low
+
+  * Parse kernel BUG and onenand_wait issues. Fixes: NB#86607
+
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Wed, 25 Jun 2008 09:57:57 +0300
+
 sp-endurance (1.11) unstable; urgency=low
 
   * Compatibility issue with older endurance data was fixed. Fixes:
