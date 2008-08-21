@@ -1,3 +1,9 @@
+sp-endurance (1.15) unstable; urgency=low
+
+  * Fixed a Lintian warning.
+
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Thu, 21 Aug 2008 17:06:15 +0300
+
 sp-endurance (1.14) unstable; urgency=low
 
   * Remove support for SleepAVG as newer kernels don't support it.

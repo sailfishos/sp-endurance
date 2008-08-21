@@ -53,7 +53,7 @@ clean:
 	rm -f build-arch-stamp build-indep-stamp #CONFIGURE-STAMP#
 
 	# Add here commands to clean up after the build process.
-	-$(MAKE) clean
+	$(MAKE) clean
 
 	dh_clean 
 
