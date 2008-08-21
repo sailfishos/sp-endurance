@@ -183,6 +183,9 @@
 # - App memory usage graphs show also SMAPS private memory usage
 # 2008-04-30:
 # - Show optional use-case step description
+# 2008-08-21:
+# - Kernels from v2.6.22 don't anymore provide PID/status:SleepAVG
+#   -> remove support for it (it was fairly useless anyway)
 # TODO:
 # - Mark reboots more prominently also in report (<h1>):
 #   - dsme/stats/32wd_to -> HW watchdog reboot
@@ -970,7 +973,6 @@ leaks which cause process eventually to run out of (2GB) address space
         process = data[namepid]
         print "<h4><i>%s [%s]</i></h4>" % namepid
         text = ''
-        busy = 0
         prev_idx = 0
         prev_text = ""
         columndata = []
@@ -990,11 +992,6 @@ leaks which cause process eventually to run out of (2GB) address space
                     text = ["", "%skB" % rss, "%skB" % size]
                     dirty = 0
                 sizes = (dirty/largest_size, (rss-dirty)/largest_size, (size-rss)/largest_size)
-
-                sleepavg = int(item['SleepAVG'][:-1])
-                if sleepavg < 90:
-                    busy = 1
-                    text.append("(%d%%)" % sleepavg)
 
                 if idx:
                     if text == prev_text:
@@ -1016,11 +1013,7 @@ leaks which cause process eventually to run out of (2GB) address space
                 text = nan
                 case = "---"
             columndata.append((case, sizes, text))
-        if busy:
-            sleeptext = "Sleep:"
-        else:
-            sleeptext = None
-        titles = ["Test-case:", "Graph", "Dirty:", "RSS:", "Size:", sleeptext]
+        titles = ["Test-case:", "Graph", "Dirty:", "RSS:", "Size:"]
         if not smaps_available:
             titles[2] = ""
         output_memory_graph_table(titles, bar2colors, columndata)

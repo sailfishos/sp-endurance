@@ -1,3 +1,10 @@
+sp-endurance (1.14) unstable; urgency=low
+
+  * Remove support for SleepAVG as newer kernels don't support it.
+    Fixes: NB#87720
+
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Thu, 21 Aug 2008 16:31:00 +0300
+
 sp-endurance (1.13) unstable; urgency=low
 
   * The message output introduced by the fix in version 1.12 has been
