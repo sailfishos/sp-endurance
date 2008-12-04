@@ -1,3 +1,10 @@
+sp-endurance (1.16) unstable; urgency=low
+
+  * The shared memory segment stats are now included in the main report
+    page. Fixes: NB#94553
+
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Thu,  4 Dec 2008 11:57:54 +0200
+
 sp-endurance (1.15) unstable; urgency=low
 
   * Fixed a Lintian warning.
