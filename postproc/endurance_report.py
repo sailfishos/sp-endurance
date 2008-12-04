@@ -186,7 +186,11 @@
 # 2008-08-21:
 # - Kernels from v2.6.22 don't anymore provide PID/status:SleepAVG
 #   -> remove support for it (it was fairly useless anyway)
+# 2008-12-04:
+# - Show difference in shared memory segments use
+#   (subset of FDs with their own limits)
 # TODO:
+# - Have separate error_exit() function?
 # - Mark reboots more prominently also in report (<h1>):
 #   - dsme/stats/32wd_to -> HW watchdog reboot
 #   - dsme/stats/sw_rst -> SW watchdog reboots
@@ -240,6 +244,7 @@ class Colors:
     threads = "CFEFEF"
     xres = "FDEEFD"
     fds = "FDFDEE"
+    shm = "EEEEEE"
 
 # color values for memuse, memfree, oom-limit
 bar1colors = ("3149BD", "ADE739", "DE2821")        # blue, green, red
@@ -403,6 +408,37 @@ def get_process_info(file, headers):
     return processes, kthreads
 
 
+def get_shm_counts(file):
+    """reads shared memory segment lines until empty line,
+    returns total count of segments and ones with <2 users"""
+
+    headers = file.readline().strip()
+    if ("size" not in headers) or ("nattch" not in headers):
+        sys.stderr.write("\nError: Shared memory segments list header '%s' missing 'nattch' or 'size' column\n" % headers)
+        sys.exit(1)
+    nattach_idx = headers.split(',').index("nattch")
+    #size_idx = headers.split(',').index("size")
+    
+    size = others = orphans = 0
+    while 1:
+        line = file.readline().strip()
+        if not line:
+            break
+        items = line.split(',')
+        # how many processes attaches to the segment
+        if int(items[nattach_idx]) > 1:
+            others += 1
+        else:
+            orphans += 1
+        # size in KB, rounded to next page
+        #size += (int(items[size_idx]) + 4095) / 1024
+    return {
+        #"Total of segment sizes (KB)": size,
+        "Normal segments (>1 attached processes)": others,
+        "Orphan segments (<=1 attached processes)": orphans
+    }
+
+
 def get_commands_and_fd_counts(file):
     """reads fdcount,pid,command lines until empty line,
     returns pid hashes of command names and fd counts"""
@@ -492,6 +528,10 @@ def parse_csv(filename):
         # not fatal as lowmem stuff is not in standard kernel
         sys.stderr.write("\nWarning: CSV file '%s' lowmem limits are missing!\n" % filename)
         data['limitlow'] = data['limithigh'] = data['limitdeny'] = 0
+
+    # get shared memory segment counts
+    skip_to(file, "Shared memory segments")
+    data['shm'] = get_shm_counts(file)
 
     # get system free FDs
     skip_to(file, "Allocated FDs")
@@ -595,8 +635,7 @@ def output_diffs(diffs, title, colname, colamount, colors, do_summary):
     
     
 def get_usage_diffs(list1, list2):
-    """return {total, name, diff} hash of differences in numbers between
-    two {name:value} hashes"""
+    """return list of (total, name, diff) change tuples for given items"""
     diffs = []
     for name,value2 in list2.items():
         if name in list1:
@@ -782,6 +821,11 @@ def output_run_diffs(idx1, idx2, data, do_summary):
                     run1['fdcounts'], run2['fdcounts'])
     output_diffs(diffs, "Process file descriptor count", "Command[Pid]", "",
                     Colors.fds, do_summary)
+
+    # shared memory segment count changes
+    diffs = get_usage_diffs(run1['shm'], run2['shm'])
+    output_diffs(diffs, "Shared memory segments", "Type", "",
+                Colors.shm, do_summary)
 
     print "\n<h4>Changes in processes</h4>"
 
