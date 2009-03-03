@@ -86,6 +86,8 @@
 # - Parse also program names with spaces in them from syslog
 # 2008-06-24:
 # - Parse kernel BUG and onenand_wait issues
+# 2009-03-02 (ext-tommi.1.rantala@nokia.com):
+# - Parse Maemo DBus warnings about too wide signal match patterns
 
 """
 NAME
@@ -105,6 +107,7 @@ This script parses different kinds of issues from given syslog files:
     - DSME reported system service restarts and reboots
     - Maemo-launcher reported application crashes
     - Critical errors and warnings reported by Glib
+    - Maemo DBus warnings about applications listening to signals too widely
 Then it counts and presents them in more readable form.
     
 It can be used as a standalone program or imported to another python
@@ -141,10 +144,9 @@ import sys, os, re, string, gzip
 # whether to use HTML output or not
 use_html = 1
 
-# sysrq/syslog/kernel/io/dsp/connectivity/dsme/glib/launcher/all
 verbose = ""
 verbose_options = [
-"sysrq", "bootup", "syslog", "kernel", "fs", "dsp", "connectivity", "dsme", "glib", "all"
+"sysrq", "bootup", "syslog", "kernel", "fs", "dsp", "connectivity", "dsme", "glib", "dbus", "all"
 ]
 
 
@@ -423,6 +425,33 @@ def parse_launcher(deaths, lines, line, start):
             lines.insert(0, line)
 
 
+# --------------------- DBus broadcast signal warning ---------------------------
+
+dbus_sig_pattern1 = re.compile("dbus\[\d+\]: WARNING: match (.*) added by (.*) who owns services:")
+dbus_sig_pattern2 = re.compile("dbus\[\d+\]:  :\d+\.\d+")
+dbus_sig_pattern3 = re.compile("dbus\[\d+\]:  (.*)")
+
+def parse_dbus_signal_warning(dbus_sigs, line):
+    "Parses Maemo DBus warnings about applications that match DBus signals too widely"
+    match1 = dbus_sig_pattern1.search(line)
+    match2 = dbus_sig_pattern2.search(line)
+    match3 = dbus_sig_pattern3.search(line)
+    if verbose in [ "all", "dbus" ]:
+        sys.stderr.write("matching dbus to %s\n" % line)
+    if match1:
+        dbus_sigs.append("%s %s registered too wide pattern \"%s\"" % (parse_time(line), match1.group(2), match1.group(1)))
+    elif match2:
+        # ignore, only repeats the ID, such as :1.30
+        pass
+    elif match3:
+        if len(dbus_sigs) > 0:
+            dbus_sigs[-1] += (", owns \"%s\"" % (match3.group(1)));
+        elif verbose in [ "all", "dbus" ]:
+            sys.stderr.write("Warning: dbus matched service name without initial warning:\n  %s\n" % line)
+    elif verbose in [ "all", "dbus" ]:
+        sys.stderr.write("Warning: dbus pattern didn't match:\n  %s\n" % line)
+
+
 # --------------------- syslog parsing ---------------------------
 
 def parse_syslog(write, file):
@@ -447,6 +476,9 @@ def parse_syslog(write, file):
     # Dec 30 03:45:56 Nokia770-50 Browser 2005.50[1636]: GLIB CRITICAL ** Gtk - gtk_widget_destroy: assertion GTK_IS_WIDGET (widget)' failed
     # Apr 12 17:00:08 Nokia-N800-14 kernel: [ 2122.396057] end_request: I/O error, dev mmcblk0, sector 965286
     # Apr 12 17:00:08 Nokia-N800-14 kernel: [ 2122.412841] Buffer I/O error on device mmcblk0p1, logical block 657144
+    # Jan  1 00:02:00 Nokia-NXX-10-2 dbus[1212]: WARNING: match type='signal',sender='org.freedesktop.DBus',path='/org/freedesktop/DBus',interface='org.freedesktop.DBus' added by :1.30 (pid=1226, uid=0) who owns services:
+    # Jan  1 00:02:00 Nokia-NXX-10-2 dbus[1212]:  :1.30
+    # Jan  1 00:02:00 Nokia-NXX-10-2 dbus[1212]:  org.freedesktop.ohm
 
     if not os.path.exists(file):
         parse_error(write, "ERROR: syslog file '%s' doesn't exist!" % file)
@@ -473,6 +505,7 @@ def parse_syslog(write, file):
         'dsp_errors': [],
         'dsp_warns':  [],
         'conn_errors':[],
+        'dbus_sigs':  [],
         'resets':     [],
         'crashes':    [],
         'restarts':   [],
@@ -521,6 +554,8 @@ def parse_syslog(write, file):
         start = line.find('maemo-launcher[')
         if start >= 0:
             parse_launcher(messages['deaths'], lines, line, start)
+        if line.find('dbus') >= 0:
+            parse_dbus_signal_warning(messages['dbus_sigs'], line)
 
     syslog.close()
     # check whether we got any errors
@@ -560,6 +595,7 @@ error_titles = {
 'dsp_errors': ["DSP errors", None],
 'dsp_warns':  ["DSP warnings", None],
 'conn_errors':["Connectivity errors", None],
+'dbus_sigs':  ["DBus signal matching warnings (using too wide match pattern)", None],
 'deaths':     ["Maemo-launched applications which crashed",
   'See <a href="#signals">the explanation of signals</a>'],
 'criticals':  ["Glib reported errors",
@@ -586,6 +622,7 @@ title_order = [
     'dsp_errors',
     'dsp_warns',
     'conn_errors',
+    'dbus_sigs',
     'deaths',
     'criticals',
     'warnings',
