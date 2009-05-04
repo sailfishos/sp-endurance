@@ -943,7 +943,8 @@ def output_run_diffs(idx1, idx2, data, do_summary):
         # Dont show those processes that have used only a little CPU.
         diffs = [x for x in diffs if x[1]+x[2]>0.005*cpu_total_diff]
         # Sort in descending order of CPU ticks used.
-        diffs.sort(key=lambda x: x[1]+x[2], reverse=True)
+        diffs.sort(lambda x,y: cmp(x[1]+x[2], y[1]+y[2]))
+        diffs.reverse()
         if len(diffs)==0:
             return
         # Scale the graphics to the largest CPU usage value.
