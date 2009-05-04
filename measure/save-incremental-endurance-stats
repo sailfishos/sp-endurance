@@ -3,7 +3,7 @@
 # Script for saving endurance measurements.
 # This file is part of sp-endurance.
 #
-# Copyright (C) 2006-2008 by Nokia Corporation
+# Copyright (C) 2006-2009 by Nokia Corporation
 #
 # Contact: Eero Tamminen <eero.tamminen@nokia.com>
 #
@@ -47,6 +47,11 @@
 # - Check for argument starting with '-' or containing spaces
 # 2008-04-30:
 # - Support for optional use-case step description
+# 2009-04-21:
+# - Execute faster by switching compressor from gzip to lzop. The problem is
+#   that Busybox gzip only supports compression level -9, ie. best but slowest.
+#   Endurance report now includes information about CPU usage, so we dont skew
+#   those results so much anymore.
 
 script="${0##*/}"
 # incorrect number of arguments or first argument starts with "-"
@@ -123,16 +128,20 @@ if [ -z $(which sp_smaps_snapshot) ]; then
 		echo "==> $pid/smaps <=="
 		awk '{print "#"$1,$2}' < $pid/status
 		cat $pid/smaps
-	done | gzip -c > $path/smaps.cap.gz
+	done | lzop -c > $path/smaps.cap.lzo
 else
-	sp_smaps_snapshot | gzip -c > $path/smaps.cap.gz
+	sp_smaps_snapshot | lzop -c > $path/smaps.cap.lzo
 fi
 
 # save most of /proc
 usage=$path/usage.csv
 echo "- /proc/ data in CSV format"
 echo -e "generator = syte-endurance-stats v0.4\n" > $usage
-echo "SW-version = $(cat /etc/osso_software_version)" >> $usage
+if [ -z $(which osso-product-info) ]; then
+	echo "SW-version = $(cat /etc/osso_software_version)" >> $usage
+else
+	echo "SW-version = $(osso-product-info -q OSSO_VERSION)" >> $usage
+fi
 echo "date = $(date +'%F %T')" >> $usage
 # all relevant info from the /proc that is easy to parse
 proc2csv -p >> $usage
@@ -176,4 +185,4 @@ else
 	echo "Syslog file(s) missing!" 1>&2
 	exit 0
 fi
-cat $logs | gzip -c > $path/syslog.gz
+cat $logs | lzop -c > $path/syslog.lzo

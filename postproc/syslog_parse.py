@@ -1,8 +1,9 @@
 #!/usr/bin/python
 # -*- indent-tabs-mode: t -*-
+# vim: et:ts=4:sw=4:
 # This file is part of sp-endurance.
 #
-# Copyright (C) 2006-2008 by Nokia Corporation
+# Copyright (C) 2006-2009 by Nokia Corporation
 #
 # Contact: Eero Tamminen <eero.tamminen@nokia.com>
 #
@@ -86,8 +87,13 @@
 # - Parse also program names with spaces in them from syslog
 # 2008-06-24:
 # - Parse kernel BUG and onenand_wait issues
-# 2009-03-02 (ext-tommi.1.rantala@nokia.com):
+# 2009-03-02:
 # - Parse Maemo DBus warnings about too wide signal match patterns
+# 2009-04-21:
+# - Support lzop compressed syslogs
+# 2009-04-28:
+# - Parse upstart messages
+# - Use the psyco JIT compiler, if installed. Gives 2-3x speed up.
 
 """
 NAME
@@ -146,7 +152,7 @@ use_html = 1
 
 verbose = ""
 verbose_options = [
-"sysrq", "bootup", "syslog", "kernel", "fs", "dsp", "connectivity", "dsme", "glib", "dbus", "all"
+"sysrq", "bootup", "syslog", "kernel", "fs", "dsp", "connectivity", "dsme", "glib", "dbus", "upstart", "all"
 ]
 
 
@@ -452,6 +458,57 @@ def parse_dbus_signal_warning(dbus_sigs, line):
         sys.stderr.write("Warning: dbus pattern didn't match:\n  %s\n" % line)
 
 
+# -------------------------------- Upstart --------------------------------------------------------
+#
+#Jan  1 04:13:45 Nokia-NXX-18-5 init: xomap main process (851) terminated with status 6
+#Jan  1 04:13:45 Nokia-NXX-18-5 init: xomap main process ended, respawning
+#Jan  1 04:13:46 Nokia-NXX-18-5 init: xsession pre-stop process (1765) terminated with status 1
+#Jan  1 04:13:46 Nokia-NXX-18-5 init: xsession main process (879) killed by TERM signal
+#Jan  1 04:13:46 Nokia-NXX-18-5 init: osso-systemui main process (1186) terminated with status 1
+#Jan  1 06:26:10 Nokia-NXX-18-5 init: cellmo-watch main process (704) killed by TERM signal
+#Jan  1 07:03:15 Nokia-NXX-18-5 init: osso-systemui main process (875) terminated with status 6
+#Jan  1 07:03:15 Nokia-NXX-18-5 init: osso-systemui main process ended, respawning
+#Jan  1 07:04:11 Nokia-NXX-18-5 init: osso-systemui main process (1485) killed by signal 64
+#Jan  1 07:04:11 Nokia-NXX-18-5 init: osso-systemui main process ended, respawning
+#Jan  1 07:07:11 Nokia-NXX-18-5 init: osso-systemui main process (1503) killed by HUP signal
+#Jan  1 07:07:11 Nokia-NXX-18-5 init: osso-systemui main process ended, respawning
+#Jan  1 07:07:54 Nokia-NXX-18-5 init: osso-systemui main process (1520) killed by INT signal
+#Jan  1 07:07:54 Nokia-NXX-18-5 init: osso-systemui main process ended, respawning
+#Jan  1 07:07:54 Nokia-NXX-18-5 init: osso-systemui respawning too fast, stopped
+
+upstart_nonzero_exit = re.compile(" init: (.*) process \((\d+)\) terminated with status (\d+)")
+upstart_killed1      = re.compile(" init: (.*) process \((\d+)\) killed by (.*) signal")
+upstart_killed2      = re.compile(" init: (.*) process \((\d+)\) killed by signal (\d+)")
+upstart_respawn      = re.compile(" init: (.*) process ended, respawning")
+upstart_respawn2fast = re.compile(" init: (.*) respawning too fast, stopped")
+
+def parse_upstart(exit, kill, respawn, respawn2fast, line):
+    time = parse_time(line)
+    m = upstart_nonzero_exit.search(line)
+    if m:
+        exit.append("%s %s[%s]: exited with return value: %s" % ((time,) + m.group(1,2,3)))
+        return
+    m = upstart_killed1.search(line)
+    if m:
+        kill.append("%s %s[%s]: killed by signal SIG%s" % ((time,) + m.group(1,2,3)))
+        return
+    m = upstart_killed2.search(line)
+    if m:
+        signum, signame = parse_signal(m.group(3))
+        kill.append("%s %s[%s]: killed by %s" % ((time,) + m.group(1,2) + (signame,)))
+        return
+    m = upstart_respawn.search(line)
+    if m:
+        respawn.append("%s %s" % (time, m.group(1)))
+        return
+    m = upstart_respawn2fast.search(line)
+    if m:
+        respawn2fast.append("%s %s" % (time, m.group(1)))
+        return
+    if verbose in [ "all", "upstart" ]:
+        sys.stderr.write("Warning: no match for upstart messages:\n  %s\n" % line)
+
+
 # --------------------- syslog parsing ---------------------------
 
 def parse_syslog(write, file):
@@ -484,8 +541,17 @@ def parse_syslog(write, file):
         parse_error(write, "ERROR: syslog file '%s' doesn't exist!" % file)
         sys.exit(1)
 
-    if file[-3:] == ".gz":
-        syslog = gzip.open(file, "r")
+    if file.endswith(".gz"):
+        if os.system("which zcat >/dev/null") == 0:
+            syslog = os.popen("zcat %s" % file)
+        else:
+            syslog = gzip.open(file, "r")
+    elif file.endswith(".lzo"):
+        if os.system("which lzop >/dev/null") == 0:
+            syslog = os.popen("lzop -dc %s" % file)
+        else:
+            parse_error(write, "ERROR: syslog file '%s' was compressed with lzop, but decompression program not available" % file)
+            sys.exit(1)
     else:
         syslog = open(file, "r")
 
@@ -512,7 +578,11 @@ def parse_syslog(write, file):
         'exits':      [],
         'deaths':     [],
         'criticals':  [],
-        'warnings':   []
+        'warnings':   [],
+        'ups_exit':   [],
+        'ups_kill':   [],
+        'ups_respawn':[],
+        'ups_re2f':   [],
     }
     lines = []
     while 1:
@@ -556,6 +626,8 @@ def parse_syslog(write, file):
             parse_launcher(messages['deaths'], lines, line, start)
         if line.find('dbus') >= 0:
             parse_dbus_signal_warning(messages['dbus_sigs'], line)
+        if line.find(' init:') >= 0:
+            parse_upstart(messages['ups_exit'], messages['ups_kill'], messages['ups_respawn'], messages['ups_re2f'], line)
 
     syslog.close()
     # check whether we got any errors
@@ -600,7 +672,13 @@ error_titles = {
   'See <a href="#signals">the explanation of signals</a>'],
 'criticals':  ["Glib reported errors",
   "Behaviour of a program logging CRITICAL error is undefined"],
-'warnings':   ["Glib warnings", None]
+'warnings':   ["Glib warnings", None],
+'ups_exit':   ["Terminated system services (from Upstart)", None],
+'ups_kill':   ["Killed system services (from Upstart)",
+  'See <a href="#signals">the explanation of signals</a>'],
+'ups_respawn':["Restarted system services (from Upstart)", None],
+'ups_re2f':   ["Too fast restarting system services (from Upstart)",
+  "The process has restarted too many times in a small period of time, so Upstart has decided not to restart it anymore"],
 }
 
 # Dicts are not sorted, so we need a lookup array
@@ -614,6 +692,10 @@ title_order = [
     'crashes',
     'restarts',
     'exits',
+    'ups_kill',
+    'ups_exit',
+    'ups_respawn',
+    'ups_re2f',
     'oopses',
     'BUGs',
     'ooms',
@@ -811,6 +893,11 @@ def help(error=''):
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         help()
+    try:
+        import psyco
+        psyco.full()
+    except ImportError:
+        pass
     if sys.argv[1][0] == "-":
         if sys.argv[1] == "--html":
             output_html_report(sys.argv[2:])

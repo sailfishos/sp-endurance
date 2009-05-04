@@ -3,7 +3,7 @@
 # Post-process endurance measurements into an overview HTML report.
 # This file is part of sp-endurance.
 #
-# Copyright (C) 2006,2007,2008 by Nokia Corporation
+# Copyright (C) 2006-2009 by Nokia Corporation
 #
 # Contact: Eero Tamminen <eero.tamminen@nokia.com>
 #
@@ -52,6 +52,8 @@
 # - Handle compressed smaps files
 # 2008-02-21:
 # - Fix case when DSME stat files are empty
+# 2009-04-21:
+# - Add support for lzo compressed smaps.cap files
 #
 # TODO:
 # - add slabinfo diffing?
@@ -103,6 +105,8 @@ usage()
 	echo "install 'sp-smaps-visualize' package and run this directly:"
 	echo "  gunzip <subdirectory>/smaps.cap.gz"
 	echo "  sp_smaps_analyze <subdirectory>/smaps.cap"
+	echo "If the file is compressed with lzop, decompress with:"
+	echo "  lzop -d <subdirectory>/smaps.cap.lzo"
 	echo
 	echo "NOTE: if you skip measurements and you have cleared syslog between"
 	echo "them, the endurance report will miss all the syslogged errors from"
@@ -171,7 +175,11 @@ parse_smaps()
 			echo "  - creating the SMAPS HTML report..."
 			if [ \! -f "$dir/$smaps_file" ]; then
 				# assume it's compressed
-				gunzip  "$dir/$smaps_file.gz"
+				if [ -e "$dir/$smaps_file.gz" ]; then
+					gunzip  "$dir/$smaps_file.gz"
+				elif [ -e "$dir/$smaps_file.lzo" ]; then
+					lzop -d "$dir/$smaps_file.lzo"
+				fi
 			fi
 			sp_smaps_analyze "$dir/$smaps_file"
 			if [ $? -ne 0 ]; then
@@ -279,7 +287,7 @@ for i in $*; do
 			echo "ERROR: resource usage CSV file '$csv_file' missing"
 			exit 1
 		fi
-		if [ $use_smaps ] && [ \! -f "$dir/$smaps_file" ] &&  [ \! -f "$dir/$smaps_file.gz" ]; then
+		if [ $use_smaps ] && [ \! -f "$dir/$smaps_file" ] &&  [ \! -f "$dir/$smaps_file.gz" ] && [ \! -f "$dir/$smaps_file.lzo" ]; then
 			echo "ERROR: SMAPS data file '$smaps_file' missing"
 			exit 1
 		fi

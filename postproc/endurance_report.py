@@ -208,6 +208,17 @@
 # - Python Gzip module is slow, so use /bin/zcat and popen() instead if
 #   available. Gives 2-3x speed up.
 # - Use the psyco JIT compiler, if installed. Gives 2-3x speed up.
+# 2009-04-22:
+# - Add System Load graph to the resource usage overview, that shows the CPU
+#   time distribution between system processes, user processes, I/O-wait, etc.
+#   The graph is generated with information parsed from /proc/stat.
+# - Add Process CPU Usage graph for each test rounds, that shows the CPU time
+#   distribution between processes during that particular test round. The graph
+#   is generated with information parsed from /proc/pid/stat files.
+# - Use RSS and Size from SMAPS data if available, instead of the ones from
+#   /proc/pid/status. This fixes cases where PSS > RSS, because the SMAPS data
+#   also includes device mappings.
+# - Add support for lzop compressed smaps and syslog files.
 # TODO:
 # - Have separate error_exit() function?
 # - Mark reboots more prominently also in report (<h1>):
@@ -271,6 +282,9 @@ bar1colors = ("EE00FF", "3149BD", "ADE739", "DE2821")
 # color values for (Swap, Dirty, PSS, RSS, Size)
 #      magenta, red, orange, orangeish, yellow
 bar2colors = (bar1colors[0], "DE2821", "E0673E", "EAB040", "FBE84A")
+# color values for CPU load (system, user, user nice, iowait, idle)
+#      red, blue, light blue, magenta, light green
+bar3colors = (bar2colors[1], bar1colors[1], "4265FF", bar1colors[0], bar1colors[2])
 
 # --------------------- SMAPS data parsing --------------------------
 
@@ -280,26 +294,31 @@ smaps_mmap = re.compile("^[-0-9a-f]+ ([-rwxps]+) [0-9a-f]+ [:0-9a-f]+ \d+ *(|[^ 
 # data from sp_smaps_snapshot
 def parse_smaps(filename):
     """
-    Parse SMAPS and return (pid_pdirty, pid_swap, pid_pss, private_code):
-      'pid_pdirty' tells Private Dirty per PID
-      'pid_swap' tells Swap size per PID
-      'pid_pss' tells PSS size per PID
-      'private_code' tells amount of Private Dirty mappings for code pages in whole system
+    Parse SMAPS and return (smaps, private_code):
+      'smaps'        : Per PID dict with keys: private_dirty, swap, pss, rss
+                       and size, which are sums of the SMAPS fields. All these
+                       fields are initialized to 0 for each PID.
+      'private_code' : Amount of Private Dirty mappings for code pages in whole
+                       system.
     Everything is in kilobytes.
     """
-    if filename[-3:] == ".gz":
+    if filename.endswith(".gz"):
         # Unfortunately the python gzip module is slow. Using /bin/zcat and
         # popen() gives 2-3x speed up.
         if os.system("which zcat >/dev/null") == 0:
             file = os.popen("zcat %s" % filename)
         else:
             file = gzip.open(filename, "r")
+    elif filename.endswith(".lzo"):
+        if os.system("which lzop >/dev/null") == 0:
+            file = os.popen("lzop -dc %s" % filename)
+        else:
+            parse_error(write, "ERROR: syslog file '%s' was compressed with lzop, but decompression program not available" % filename)
+            sys.exit(1)
     else:
         file = open(filename, "r")
-    private_code = code = private_dirty = idx = swap = pss = 0
-    pid_pdirty = {}
-    pid_swap = {}
-    pid_pss  = {}
+    private_code = code = idx = 0
+    smaps = {}
     while 1:
         try:
             line = file.readline()
@@ -307,11 +326,6 @@ def parse_smaps(filename):
             syslog.parse_error(write, "ERROR: SMAPS file '%s': %s" % (file, e))
             break
         if not line:
-            if private_dirty:
-                #print "INSERT"        #DEBUG
-                pid_pdirty[pid] = private_dirty
-            if swap: pid_swap[pid] = swap
-            if pss:  pid_pss[pid]  = pss
             break
         idx += 1
         line = line.strip()
@@ -320,24 +334,41 @@ def parse_smaps(filename):
         #print line        #DEBUG
         if line.startswith('='):
             # ==> /proc/767/smaps <==
-            if private_dirty:
-                #print "INSERT"        #DEBUG
-                pid_pdirty[pid] = private_dirty
-            if swap: pid_swap[pid] = swap
-            if pss:  pid_pss[pid]  = pss
-            # new process
-            pid, private_dirty, swap, pss = 0, 0, 0, 0
-            #print "CLEAR"        #DEBUG
             continue
         if line.startswith('#'):
             if line.find("#Pid: ") == 0:
                 pid = line[6:]
-                #print "PID"        #DEBUG
+                smaps[pid] = { 'private_dirty' : 0,
+                               'swap'          : 0,
+                               'pss'           : 0,
+                               'rss'           : 0,
+                               'size'          : 0 }
             continue
         if not pid:
             # sanity check
             sys.stderr.write("ERROR: Pid missing for SMAPS line %d:\n  %s\n" % (idx, line))
             sys.exit(1)
+        if line.startswith("Private_Dirty:"):
+            amount = int(line[15:-2])
+            if code and amount:
+                #print line
+                #sys.stderr.write("dirty code: %s, %dkB\n" %(mmap, amount))
+                private_code += amount
+            smaps[pid]['private_dirty'] += amount
+            #print "ADD"        #DEBUG
+            continue
+        if line.startswith("Swap:"):
+            smaps[pid]['swap'] += int(line[6:-2])
+            continue
+        if line.startswith("Pss:"):
+            smaps[pid]['pss'] += int(line[5:-2])
+            continue
+        if line.startswith("Rss:"):
+            smaps[pid]['rss'] += int(line[5:-2])
+            continue
+        if line.startswith("Size:"):
+            smaps[pid]['size'] += int(line[6:-2])
+            continue
         match = smaps_mmap.search(line)
         if match:
             # bef45000-bef5a000 rwxp bef45000 00:00 0          [stack]
@@ -350,34 +381,11 @@ def parse_smaps(filename):
                 code = 0
             #print "MMAP"        #DEBUG
             continue
-        if line.startswith("Private_Dirty:"):
-            amount = int(line[15:-2])
-            if code and amount:
-                #print line
-                #sys.stderr.write("dirty code: %s, %dkB\n" %(mmap, amount))
-                private_code += amount
-            # Private_Dirty:        0 kB
-            #if mmap[:5] == "/dev/":
-            #        # ignore memory mapped devices because RSS/Size don't
-            #        # (usually?) count them:
-            #        # 40008000-400c4000 rw-s 87e00000 00:0d 1354       /dev/fb0
-            #        #print "DEV"        #DEBUG
-            #        continue
-            private_dirty += amount
-            #print "ADD"        #DEBUG
-            continue
-        if line.startswith("Swap:"):
-            swap += int(line[6:-2])
-            continue
-        if line.startswith("Pss:"):
-            pss += int(line[5:-2])
-            continue
         # sanity check that mmap lines are not missed
         if (line[0] >= '0' and line[0] <= '9') or (line[0] >= 'a' and line[0] <= 'f'):
             sys.stderr.write("ERROR: SMAPS mmap line not matched:\n  %s\n" % line)
             sys.exit(1)
-    #print pid_pdirty #DEBUG
-    return (pid_pdirty, pid_swap, pid_pss, private_code)
+    return (smaps, private_code)
 
 
 # --------------------- CSV parsing ---------------------------
@@ -498,6 +506,48 @@ def get_commands_and_fd_counts(file):
     return (commands,fd_counts)
 
 
+def parse_proc_stat(filename):
+    "Parses relevant data from /proc/stat"
+    file = open(filename)
+    if not file: return None
+    stat = {}
+    # CPU: take everything except "steal" and "guest", which are some
+    # virtualization related counters, obviously not useful in our case.
+    cpu = re.compile("^cpu\s+(\d+) (\d+) (\d+) (\d+) (\d+) (\d+) (\d+)")
+    for line in file:
+        m = cpu.search(line)
+        if m:
+            stat['cpu_user'],       \
+            stat['cpu_user_nice'],  \
+            stat['cpu_system'],     \
+            stat['cpu_idle'],       \
+            stat['cpu_iowait'],     \
+            stat['cpu_irq'],        \
+            stat['cpu_softirq']     \
+                = [int(x) for x in m.groups()]
+    return stat
+
+
+def get_proc_pid_stat(file):
+    """
+    Parses relevant data from /proc/pid/stat entries, and returns dict with per
+    process information:
+                pid : utime
+                pid : stime
+    """
+    stat = {}
+    while 1:
+        line = file.readline().strip()
+        if not line:
+            break
+        pid = int(line.split(',')[0])
+        utime, stime = [int(x) for x in line.split(',')[13:15]]
+        stat[pid] = {}
+        stat[pid]['utime'] = utime
+        stat[pid]['stime'] = stime
+    return stat
+
+
 def get_meminfo(data, headers, values):
     "adds meminfo values to data"
     headers = headers.split(',')
@@ -532,6 +582,17 @@ def skip_to(file, header):
             sys.exit(2)
         if line[:l] == header:
             return line
+
+
+def skip_to_next_header(file):
+    "reads the given file until we get first nonempty line"
+    while 1:
+        line = file.readline()
+        if not line:
+            sys.stderr.write("\nError: premature file end while scanning for CSV header\n")
+            sys.exit(2)
+        if line.strip():
+            return line.strip()
 
 
 def parse_csv(filename):
@@ -591,9 +652,19 @@ def parse_csv(filename):
     # get process statistics
     headers = skip_to(file, "Name,State,")
     data['processes'], data['kthreads'] = get_process_info(file, headers)
-    
+
+    # check if we have /proc/pid/stat in the CSV file
+    headers = skip_to_next_header(file)
+    if headers.startswith("Process status:"):
+        data['/proc/pid/stat'] = get_proc_pid_stat(file)
+        skip_to(file, "res-base")
+    elif headers.startswith("res-base"):
+        pass
+    else:
+        sys.stderr.write("\nError: unexpected '%s' in CSV file\n" % headers)
+        sys.exit(2)
+
     # get the X resource usage
-    skip_to(file, "res-base")
     data['xclients'] = get_xclient_memory(file)
     
     # get the file system usage
@@ -806,13 +877,11 @@ def output_data_links(run):
     print '<a href="%s/stat">stat</a> files' % basedir
     print "</ul>"
 
-def combine_dirty_and_swap(dirty, swap):
+def combine_dirty_and_swap(smaps):
     "Combines private dirty and swap memory usage for each PID"
     result = {}
-    for pid in dirty:
-        result[pid] = dirty[pid]
-        if pid in swap:
-            result[pid] += swap[pid]
+    for pid in smaps:
+        result[pid] = smaps[pid]['private_dirty'] + smaps[pid]['swap']
     return result
 
 def output_run_diffs(idx1, idx2, data, do_summary):
@@ -829,6 +898,72 @@ def output_run_diffs(idx1, idx2, data, do_summary):
         stat = None
     else:
         stat = output_errors(idx2, run1, run2)
+
+    # Create the following table (based on /proc/pid/stat):
+    #
+    #   Command[Pid]: system / user       CPU Usage:
+    #   app2[1234]:   ###########%%%%%%%  45%  (90s)
+    #   app1[987]:    ######%%%%%%%%%     44%  (88s)
+    #   app3[543]:    #%                   5%  (10s)
+    #
+    def process_cpu_usage():
+        CLK_TCK=100.0
+        if not '/proc/pid/stat' in run1 or not '/proc/pid/stat' in run2:
+            return
+        print "<h4>Process CPU usage</h4>"
+        if sum(run2['/proc/stat'].itervalues()) < sum(run1['/proc/stat'].itervalues()):
+            print "<p><i>System reboot detected, omitted.</i>"
+            return
+        cpu_total_diff = float(sum(run2['/proc/stat'].itervalues())-sum(run1['/proc/stat'].itervalues()))
+        print "<p>Interval between rounds was %d seconds." % (cpu_total_diff/CLK_TCK)
+        print "<p>"
+        diffs = []
+        for pid in iter(run2['/proc/pid/stat']):
+            stime1 = utime1 = 0
+            if pid in run1['/proc/pid/stat']:
+                stime1 = run1['/proc/pid/stat'][pid]['stime']
+                utime1 = run1['/proc/pid/stat'][pid]['utime']
+            stimediff  = run2['/proc/pid/stat'][pid]['stime']-stime1
+            utimediff  = run2['/proc/pid/stat'][pid]['utime']-utime1
+            if str(pid) in run2['kthreads']:
+                name = "[" + run2['kthreads'][str(pid)] + "]"
+            else:
+                name = run2['commands'][str(pid)]
+            diffs.append(("%s[%d]" % (name, pid), stimediff, utimediff))
+        # Other processes often eat significant amount of CPU, so lets show
+        # that to the user as well.
+        def total_sys(r):
+            return r['/proc/stat']['cpu_system'] + r['/proc/stat']['cpu_irq'] + r['/proc/stat']['cpu_softirq']
+        def total_usr(r):
+            return r['/proc/stat']['cpu_user'] + r['/proc/stat']['cpu_user_nice']
+        UNACC = "<i>(Unaccounted CPU time)</i>"
+        diffs.append((UNACC,\
+                total_sys(run2)-total_sys(run1)-sum([x[1] for x in diffs]),\
+                total_usr(run2)-total_usr(run1)-sum([x[2] for x in diffs])))
+        # Dont show those processes that have used only a little CPU.
+        diffs = [x for x in diffs if x[1]+x[2]>0.005*cpu_total_diff]
+        # Sort in descending order of CPU ticks used.
+        diffs.sort(key=lambda x: x[1]+x[2], reverse=True)
+        if len(diffs)==0:
+            return
+        # Scale the graphics to the largest CPU usage value.
+        divisor = float(sum(diffs[0][1:3]))
+        output_memory_graph_table(\
+            ("Command[Pid]:", "<font color=%s>system</font> / <font color=%s>user</font>" % bar3colors[0:2], "CPU Usage:"),
+            bar3colors[0:2],\
+            [(x[0], (x[1]/divisor, x[2]/divisor),\
+                ["%.2f%% (%.2fs)" % (100*(x[1]+x[2])/cpu_total_diff, (x[1]+x[2])/CLK_TCK)]) for x in diffs]\
+            + [("", (0,0), ["<i>%.2f%% (%.2fs)</i>" % (\
+                    100*sum([x[1]+x[2] for x in diffs])/cpu_total_diff,\
+                        sum([x[1]+x[2] for x in diffs])/CLK_TCK)\
+                ])])
+        if UNACC in [x[0] for x in diffs]:
+            print "<p><i>Unaccounted CPU time</i> stands for such CPU time that "\
+                  "could not be attributed to any process.<br>"\
+                  "These can be for example short living programs that "\
+                  "started and exited during one round of the tests."
+
+    process_cpu_usage()
 
     print "<h4>Resource usage changes</h4>"
 
@@ -869,8 +1004,8 @@ def output_run_diffs(idx1, idx2, data, do_summary):
     # swapped pages will be private dirty anyways.
     if 'smaps' in run1:
         diffs = get_pid_usage_diffs(run2['commands'], run2['processes'],
-                        combine_dirty_and_swap(run1['smaps'], run1['smaps_swap']),
-                        combine_dirty_and_swap(run2['smaps'], run2['smaps_swap']))
+                        combine_dirty_and_swap(run1['smaps']),
+                        combine_dirty_and_swap(run2['smaps']))
         output_diffs(diffs,
                 "Process private and swap memory usages combined (according to SMAPS)",
                 "Command[Pid]", " kB", Colors.memory, do_summary)
@@ -958,15 +1093,8 @@ def output_memory_graph_table(titles, colors, data):
         print '<tr><td>%s</td>' % item[0]
         # graphical bar
         print "<td><table border=0 cellpadding=0 cellspacing=0><tr>"
-        # Collect reminders from the float -> int truncations, and add them to
-        # the last entry. This makes the total width of the bars more stable
-        # across rounds.
-        rem=0
         for idx in range(len(colors)):
             w = int(item[1][idx]*width)
-            rem += (item[1][idx]*width)-w
-            if idx == len(colors)-1:
-                w += int(rem+1)
             if w:
                 sys.stdout.write('<td bgcolor="%s" width=%d height=16></td>' % (colors[idx], w))
         print "</tr></table></td>"
@@ -1001,28 +1129,20 @@ def output_apps_memory_graphs(cases):
             namepid = (name, pid)
             if namepid not in data:
                 data[namepid] = {}
-                data[namepid]['first'] = rounds
-            # process is also in this round, so add its info
-            sum = 0
-            if 'smaps' in testcase:
-                if pid in testcase['smaps']:
-                    sum = testcase['smaps'][pid]
-                    smaps_available = 1
-                else:
+            try:
+                process['SMAPS_PRIVATE_DIRTY'] = testcase['smaps'][pid]['private_dirty']
+                smaps_available = 1
+            except KeyError:
+                if 'smaps' in testcase:
                     syslog.parse_error(sys.stdout.write, "WARNING: SMAPS data missing for %s[%s]" % namepid)
-            process['SMAPS'] = sum
-            # SMAPS swap
-            sum = 0
-            if 'smaps_swap' in testcase:
-                if pid in testcase['smaps_swap']:
-                    sum = testcase['smaps_swap'][pid]
-            process['SMAPS_SWAP'] = sum
-            # SMAPS PSS
-            sum = 0
-            if 'smaps_pss' in testcase:
-                if pid in testcase['smaps_pss']:
-                    sum = testcase['smaps_pss'][pid]
-            process['SMAPS_PSS'] = sum
+            try: process['SMAPS_SWAP'] = testcase['smaps'][pid]['swap']
+            except KeyError: pass
+            try: process['SMAPS_PSS'] = testcase['smaps'][pid]['pss']
+            except KeyError: pass
+            try: process['SMAPS_RSS'] = testcase['smaps'][pid]['rss']
+            except KeyError: pass
+            try: process['SMAPS_SIZE'] = testcase['smaps'][pid]['size']
+            except KeyError: pass
             data[namepid][rounds] = process
         rounds += 1
 
@@ -1043,17 +1163,16 @@ def output_apps_memory_graphs(cases):
         min_size = min_dirty = min_swap = 512*1024
         for idx in range(rounds):
             if idx in data[namepid]:
-                if smaps_available:
-                    dirty = data[namepid][idx]['SMAPS']
-                    swap = data[namepid][idx]['SMAPS_SWAP']
-                else:
-                    dirty = data[namepid][idx]['VmRSS']
-                    swap = 0
+                try:    dirty = data[namepid][idx]['SMAPS_PRIVATE_DIRTY']
+                except: dirty = data[namepid][idx]['VmRSS']
+                try:    size  = data[namepid][idx]['SMAPS_SIZE']
+                except: size  = data[namepid][idx]['VmSize']
+                try:    swap  = data[namepid][idx]['SMAPS_SWAP']
+                except: swap  = 0
                 min_dirty = min(dirty, min_dirty)
                 max_dirty = max(dirty, max_dirty)
                 min_swap = min(swap, min_swap)
                 max_swap = max(swap, max_swap)
-                size = data[namepid][idx]['VmSize']
                 if size < min_size:
                     if pidrounds:
                         changerounds += 1
@@ -1064,9 +1183,7 @@ def output_apps_memory_graphs(cases):
                     max_size = size
                 pidrounds += 1
         if pidrounds > 1:
-            # if SMAPS data available, dirty is private dirty memory,
-            # otherwise it's RSS. Size = VmSize
-            if max_dirty:
+            if max_dirty+min_swap:
                 swap_and_dirty_change = (float)((max_dirty+min_swap) - (min_dirty+max_swap)) / (max_dirty+min_swap) / pidrounds
             else:
                 if smaps_available:
@@ -1089,7 +1206,7 @@ def output_apps_memory_graphs(cases):
     for size in sizes:
         namepid = size[1]
         # sorting order is: name, first round for pid, pid
-        orders.append((namepid[0], data[namepid]['first'], namepid[1]))
+        orders.append((namepid[0], min(data[namepid].keys()), namepid[1]))
     del(sizes)
     orders.sort()
     
@@ -1137,9 +1254,16 @@ leaks which cause process eventually to run out of (2GB) address space
                 rss = item['VmRSS']
                 size = item['VmSize']
                 if smaps_available:
-                    dirty = item['SMAPS']
-                    swap = item['SMAPS_SWAP']
-                    pss = item['SMAPS_PSS']
+                    try: dirty = item['SMAPS_PRIVATE_DIRTY']
+                    except: dirty = 0
+                    try: swap = item['SMAPS_SWAP']
+                    except: swap = 0
+                    try: rss = item['SMAPS_RSS']
+                    except: pass
+                    try: pss = item['SMAPS_PSS']
+                    except: pss = 0
+                    try: size = item['SMAPS_SIZE']
+                    except: pass
                     if rss < dirty:
                         syslog.parse_error(sys.stdout.write, "WARNING: %s[%s] RSS (%s) < SMAPS dirty (%s)" % (namepid + (rss, dirty)))
                         rss = dirty
@@ -1206,6 +1330,51 @@ leaks which cause process eventually to run out of (2GB) address space
             titles[3] = "" #Dirty
             titles[4] = "" #PSS
         output_memory_graph_table(titles, bar2colors, columndata)
+
+
+def output_system_load_graphs(data):
+    print '<p>System CPU time distribution during the execution of test cases.'
+    print '<p>'
+    prev = data[0]
+    entries = []
+    idx = 1
+    reboots = []
+    for testcase in data[1:]:
+        case = '<a href="#round-%d">Test round %02d</a>:' % (idx, idx)
+        if sum(testcase['/proc/stat'].itervalues()) < sum(prev['/proc/stat'].itervalues()):
+            entries.append((case, (0,0,0,0,0), "-"))
+            reboots.append(idx)
+        else:
+            diffs = {}
+            for key in testcase['/proc/stat'].keys():
+                diffs[key] = testcase['/proc/stat'][key] - prev['/proc/stat'][key]
+            divisor = float(sum(diffs.values()))
+            for key in diffs.keys():
+                diffs[key] = diffs[key] / divisor
+            bars = (diffs['cpu_system'] + diffs['cpu_irq'] + diffs['cpu_softirq'], \
+                    diffs['cpu_user'], \
+                    diffs['cpu_user_nice'], \
+                    diffs['cpu_iowait'], \
+                    diffs['cpu_idle'])
+            entries.append((case, bars, ["%d%%" % int(100-100*diffs['cpu_idle'])]))
+        idx += 1
+        prev = testcase
+    titles = ("Test-case:", "system load:", "CPU usage-%:")
+    output_memory_graph_table(titles, bar3colors, entries)
+    if reboots:
+        text = '<p>Reboots occured during rounds:'
+        for r in reboots:
+            text += " %d," % r
+        print text[:-1] + '.<br>'
+    # Legend
+    print '<table><tr><th><th align="left">Legend:'
+    print '<tr><td bgcolor="%s" height=16 width=16><td>CPU time used by <i>system</i> tasks, including time spent in interrupt handling' % bar3colors[0]
+    print '<tr><td bgcolor="%s" height=16 width=16><td>CPU time used by <i>user</i> tasks' % bar3colors[1]
+    print '<tr><td bgcolor="%s" height=16 width=16><td>CPU time used by <i>user</i> tasks with <i>low priority</i> (nice)' % bar3colors[2]
+    print '<tr><td bgcolor="%s" height=16 width=16><td>CPU time wasted waiting for I/O (idle)' % bar3colors[3]
+    print '<tr><td bgcolor="%s" height=16 width=16><td>CPU time idle' % bar3colors[4]
+    print '</table>'
+
 
 def output_system_memory_graphs(data):
     "outputs memory graphs bars for the system"
@@ -1309,9 +1478,10 @@ def output_html_report(data):
 <p><b>Contents:</b>
 <ul>
 <li><a href="#initial-state">Initial state</a>
-<li>Memory usage overview for the test rounds:
+<li>Resource usage overview for the test rounds:
   <ul>
     <li><a href="#system-memory">System memory usage</a>
+    <li><a href="#system-load">System load</a>
     <li><a href="#process-memory">Processes memory usage</a>
   </ul>
 <li>Resource usage changes for each of the test rounds:
@@ -1341,10 +1511,15 @@ def output_html_report(data):
 
     print """
 <a name="system-memory"></a>
-<h2>Memory usage overview for the test rounds</h2>
+<h2>Resource usage overview for the test rounds</h2>
 <h3>System memory usage</h3>
 """
     output_system_memory_graphs(data)
+    print """
+<hr>
+<a name="system-load"></a>
+<h3>System load</h3>"""
+    output_system_load_graphs(data)
     print """
 <hr>
 <a name="process-memory"></a>
@@ -1414,34 +1589,38 @@ def parse_syte_stats(dirs):
             sys.stderr.write("CSV parsing failed\n")
             sys.exit(1)
 
-        file = "%s/smaps.cap" % dirname
-        if not os.path.exists(file):
-            file = "%s/smaps.cap.gz" % dirname
-            if not (os.path.exists(file)):
-                file = None
-        if file:
-            # get system SMAPS memory usage data
-            sys.stderr.write("Parsing '%s'...\n" % file)
-            items['smaps'], items['smaps_swap'], items['smaps_pss'], items['private_code'] = parse_smaps(file)
-            if not items['smaps']:
-                sys.stderr.write("SMAPS data parsing failed\n")
-                sys.exit(1)
+        for suffix in ("", ".gz", ".lzo"):
+            file = "%s/smaps.cap%s" % (dirname, suffix)
+            if os.path.exists(file):
+                # get system SMAPS memory usage data
+                sys.stderr.write("Parsing '%s'...\n" % file)
+                items['smaps'], items['private_code'] = parse_smaps(file)
+                if not items['smaps']:
+                    sys.stderr.write("SMAPS data parsing failed\n")
+                    sys.exit(1)
+                break
 
-        file = "%s/syslog" % dirname
-        if not (os.path.exists(file)):
-            file = "%s/syslog.gz" % dirname
-            if not (os.path.exists(file)):
-                file = None
-        if file:
-            # get the crashes and other errors
-            sys.stderr.write("Parsing '%s'...\n" % file)
-            items['errors'] = syslog.parse_syslog(sys.stdout.write, file)
-            items['logfile'] = file 
+        for suffix in ("", ".gz", ".lzo"):
+            file = "%s/syslog%s" % (dirname, suffix)
+            if os.path.exists(file):
+                # get the crashes and other errors
+                sys.stderr.write("Parsing '%s'...\n" % file)
+                items['errors'] = syslog.parse_syslog(sys.stdout.write, file)
+                items['logfile'] = file
+                break
 
         file = "%s/step.txt" % dirname
         if os.path.exists(file):
             # use-case step description
             items['description'] = open(file).read().strip()
+
+        file = "%s/stat" % dirname
+        if os.path.exists(file):
+            sys.stderr.write("Parsing '%s'...\n" % file)
+            items['/proc/stat'] = parse_proc_stat(file)
+            if not items['/proc/stat']:
+                sys.stderr.write("/proc/stat parsing failed\n")
+                sys.exit(1)
 
         data.append(items)
     return data

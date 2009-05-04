@@ -270,7 +270,7 @@ check_win_for_info(XResTopApp *app, XResTopClient *client, Window win)
 	{
 	  if (XGetWMName(app->dpy, win, &text_prop))
 	    {
-	      client->identifier = strdup((char *) text_prop.value);
+	      client->identifier = (unsigned char *) strdup((char *) text_prop.value);
 	      XFree((char *) text_prop.value);
 	    }
 	  else
@@ -345,7 +345,7 @@ xrestop_client_get_info(XResTopApp *app, XResTopClient *client)
   if ( (client->resource_base & ~client->resource_mask) 
           == (app->win_dummy & ~client->resource_mask) )
     {
-      client->identifier = strdup("xrestop");
+      client->identifier = (unsigned char *) strdup("xrestop");
       return;
     }
 
@@ -357,7 +357,7 @@ xrestop_client_get_info(XResTopApp *app, XResTopClient *client)
     }
   else
     {
-      client->identifier = strdup("<unknown>");
+      client->identifier = (unsigned char *) strdup("<unknown>");
     }
 }
 

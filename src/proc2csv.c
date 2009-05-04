@@ -19,6 +19,7 @@
  * - sys/fs/file-nr
  * - PID/cmdline
  * - PID/fds/ (just the count of open FDs)
+ * - PID/stat
  * - PID/status
  * - sys/vm/lowmem_deny_watermark
  * - sys/vm/lowmem_notify_high
@@ -34,7 +35,7 @@
  *   relative to that
  * 
  * Copyright (C) 2003 by Eero Tamminen
- * Copyright (C) 2006,2007 by Nokia Corporation
+ * Copyright (C) 2006,2007,2009 by Nokia Corporation
  * 
  * Contact: Eero Tamminen <eero.tamminen@nokia.com>
  *
@@ -371,6 +372,23 @@ static void show_statuses(int num, status_t *statuslist)
 }
 
 
+/* read /proc/pid/stat */
+static void show_proc_pid_stat(int num, status_t *statuslist)
+{
+	char stat[20];
+	int i;
+	status_t *s;
+	for (i=0; i < num; ++i) {
+		s = &statuslist[i];
+		if (s->skip) {
+			continue;
+		}
+		snprintf(stat, sizeof(stat), "%s/stat", s->pid);
+		show_as_csv(stat, 0, 128);
+	}
+}
+
+
 /* read fd counts for each process in statuslist */
 static void show_fd_counts(int num, status_t *statuslist)
 {
@@ -484,7 +502,7 @@ static status_t *read_info(int num, struct dirent **namelist)
 static int filter_pids(const struct dirent *dir)
 {
 	status_t dummy;
-	char *name = dir->d_name;
+	const char *name = dir->d_name;
 
 	if (*name >= '0' && *name <= '9') {
 		if (strlen(name) > sizeof(dummy.pid)-1) {
@@ -618,6 +636,10 @@ int main(int argc, char *argv[])
 	/* read and show status for each of the processes */
 	newline();
 	show_statuses(lines, statuslist);
+
+	/* show /proc/pid/stat for each process */
+	fputs("\nProcess status:\n", stdout);
+	show_proc_pid_stat(lines, statuslist);
 	
 	free(statuslist);
 	return 0;
