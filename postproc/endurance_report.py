@@ -1,8 +1,9 @@
 #!/usr/bin/python
 # -*- indent-tabs-mode: t -*-
+# vim: et:ts=4:sw=4:
 # This file is part of sp-endurance.
 #
-# Copyright (C) 2006,2007 by Nokia Corporation
+# Copyright (C) 2006-2009 by Nokia Corporation
 #
 # Contact: Eero Tamminen <eero.tamminen@nokia.com>
 #
@@ -189,6 +190,24 @@
 # 2008-12-04:
 # - Show difference in shared memory segments use
 #   (subset of FDs with their own limits)
+# 2009-04-01:
+# - Parse swap usage from SMAPS and add 'Swap' column in process memory usage.
+#   Swap is shown in the graphs as well, although it's often just a few pixels
+#   in width.
+# - Parse PSS from SMAPS and add 'PSS' column in per-process tables.
+# - Include Slab Reclaimable in system free memory calculations. The kernel low
+#   memory notification calculations take these into account as well.
+# - Remove SwapCached from the free memory calculations, it is already included
+#   in SwapFree.
+# - Take swap into consideration when looking for changes in Dirty and Size.
+#   This affects what processes are listed under the "Processes memory usage"
+#   section.
+# - Add legend for the "Processes memory usage" section graphs.
+# - Add UTF-8 header in HTML, some X client names may contain UTF-8 characters.
+# - Include process name when giving warning about missing SMAPS data.
+# - Python Gzip module is slow, so use /bin/zcat and popen() instead if
+#   available. Gives 2-3x speed up.
+# - Use the psyco JIT compiler, if installed. Gives 2-3x speed up.
 # TODO:
 # - Have separate error_exit() function?
 # - Mark reboots more prominently also in report (<h1>):
@@ -246,10 +265,12 @@ class Colors:
     fds = "FDFDEE"
     shm = "EEEEEE"
 
-# color values for memuse, memfree, oom-limit
-bar1colors = ("3149BD", "ADE739", "DE2821")        # blue, green, red
-# color values for rss, size
-bar2colors = ("DE2821", "EAB040", "FBE84A")        # red, orange, yellow
+# color values for (Swap used, RAM used, memory free, oom-limit)
+#      magenta, blue, light green, red
+bar1colors = ("EE00FF", "3149BD", "ADE739", "DE2821")
+# color values for (Swap, Dirty, PSS, RSS, Size)
+#      magenta, red, orange, orangeish, yellow
+bar2colors = (bar1colors[0], "DE2821", "E0673E", "EAB040", "FBE84A")
 
 # --------------------- SMAPS data parsing --------------------------
 
@@ -258,13 +279,27 @@ smaps_mmap = re.compile("^[-0-9a-f]+ ([-rwxps]+) [0-9a-f]+ [:0-9a-f]+ \d+ *(|[^ 
 
 # data from sp_smaps_snapshot
 def parse_smaps(filename):
-    "parse SMAPS and return process pid, private memory value array"
+    """
+    Parse SMAPS and return (pid_pdirty, pid_swap, pid_pss, private_code):
+      'pid_pdirty' tells Private Dirty per PID
+      'pid_swap' tells Swap size per PID
+      'pid_pss' tells PSS size per PID
+      'private_code' tells amount of Private Dirty mappings for code pages in whole system
+    Everything is in kilobytes.
+    """
     if filename[-3:] == ".gz":
-        file = gzip.open(filename, "r")
+        # Unfortunately the python gzip module is slow. Using /bin/zcat and
+        # popen() gives 2-3x speed up.
+        if os.system("which zcat >/dev/null") == 0:
+            file = os.popen("zcat %s" % filename)
+        else:
+            file = gzip.open(filename, "r")
     else:
         file = open(filename, "r")
-    private_code = code = sum = idx = 0
-    data = {}
+    private_code = code = private_dirty = idx = swap = pss = 0
+    pid_pdirty = {}
+    pid_swap = {}
+    pid_pss  = {}
     while 1:
         try:
             line = file.readline()
@@ -272,26 +307,29 @@ def parse_smaps(filename):
             syslog.parse_error(write, "ERROR: SMAPS file '%s': %s" % (file, e))
             break
         if not line:
-            if sum:
+            if private_dirty:
                 #print "INSERT"        #DEBUG
-                data[pid] = sum
+                pid_pdirty[pid] = private_dirty
+            if swap: pid_swap[pid] = swap
+            if pss:  pid_pss[pid]  = pss
             break
         idx += 1
         line = line.strip()
         if not line:
             continue
         #print line        #DEBUG
-        first = line[0]
-        if first == '=':
+        if line.startswith('='):
             # ==> /proc/767/smaps <==
-            if sum:
+            if private_dirty:
                 #print "INSERT"        #DEBUG
-                data[pid] = sum
+                pid_pdirty[pid] = private_dirty
+            if swap: pid_swap[pid] = swap
+            if pss:  pid_pss[pid]  = pss
             # new process
-            pid, sum = 0, 0
+            pid, private_dirty, swap, pss = 0, 0, 0, 0
             #print "CLEAR"        #DEBUG
             continue
-        if first == '#':
+        if line.startswith('#'):
             if line.find("#Pid: ") == 0:
                 pid = line[6:]
                 #print "PID"        #DEBUG
@@ -312,11 +350,11 @@ def parse_smaps(filename):
                 code = 0
             #print "MMAP"        #DEBUG
             continue
-        if line.find("Private_Dirty:") == 0:
+        if line.startswith("Private_Dirty:"):
             amount = int(line[15:-2])
             if code and amount:
                 #print line
-                #print mmap, code, amount
+                #sys.stderr.write("dirty code: %s, %dkB\n" %(mmap, amount))
                 private_code += amount
             # Private_Dirty:        0 kB
             #if mmap[:5] == "/dev/":
@@ -325,15 +363,21 @@ def parse_smaps(filename):
             #        # 40008000-400c4000 rw-s 87e00000 00:0d 1354       /dev/fb0
             #        #print "DEV"        #DEBUG
             #        continue
-            sum += amount
+            private_dirty += amount
             #print "ADD"        #DEBUG
+            continue
+        if line.startswith("Swap:"):
+            swap += int(line[6:-2])
+            continue
+        if line.startswith("Pss:"):
+            pss += int(line[5:-2])
             continue
         # sanity check that mmap lines are not missed
         if (line[0] >= '0' and line[0] <= '9') or (line[0] >= 'a' and line[0] <= 'f'):
             sys.stderr.write("ERROR: SMAPS mmap line not matched:\n  %s\n" % line)
             sys.exit(1)
-    #print data #DEBUG
-    return (data, private_code)
+    #print pid_pdirty #DEBUG
+    return (pid_pdirty, pid_swap, pid_pss, private_code)
 
 
 # --------------------- CSV parsing ---------------------------
@@ -466,14 +510,16 @@ def get_meminfo(data, headers, values):
     free = mem['MemFree']
     buffers = mem['Buffers']
     cached = mem['Cached']
+    slab_reclaimable = mem['SReclaimable']
     swaptotal = mem['SwapTotal']
-    swapcached = mem['SwapCached']
     swapfree = mem['SwapFree']
-    
-    data['memtotal'] = total + swaptotal
-    data['memfree'] = free + buffers + cached + swapfree + swapcached
-    data['memused'] = data['memtotal'] - data['memfree']
-    data['swapused'] = swaptotal - swapfree
+
+    data['ram_total'] = total
+    data['ram_free'] = free + buffers + cached + slab_reclaimable
+    data['ram_used'] = data['ram_total'] - data['ram_free']
+    data['swap_total'] = swaptotal
+    data['swap_free'] = swapfree
+    data['swap_used'] = swaptotal - swapfree
 
 
 def skip_to(file, header):
@@ -759,7 +805,15 @@ def output_data_links(run):
     print '<a href="%s/slabinfo">slabinfo</a> and' % basedir
     print '<a href="%s/stat">stat</a> files' % basedir
     print "</ul>"
-    
+
+def combine_dirty_and_swap(dirty, swap):
+    "Combines private dirty and swap memory usage for each PID"
+    result = {}
+    for pid in dirty:
+        result[pid] = dirty[pid]
+        if pid in swap:
+            result[pid] += swap[pid]
+    return result
 
 def output_run_diffs(idx1, idx2, data, do_summary):
     "outputs the differencies between two runs"
@@ -779,34 +833,46 @@ def output_run_diffs(idx1, idx2, data, do_summary):
     print "<h4>Resource usage changes</h4>"
 
     # overall stats
-    free_change = run2['memfree'] - run1['memfree']
+    total_change = (run2['ram_free']+run2['swap_free']) - (run1['ram_free']+run1['swap_free'])
+    ram_change = run2['ram_free'] - run1['ram_free']
+    swap_change = run2['swap_free'] - run1['swap_free']
     fdfree_change = run2['fdfree'] - run1['fdfree']
-    print "<p>System free memory change: <b>%+d</b> kB" % free_change
+    print "<p>System free memory change: <b>%+d</b> kB" % total_change
+    if ram_change or swap_change:
+        print "<br>(free RAM change: <b>%+d</b> kB, free swap change: <b>%+d</b> kB)" % (ram_change, swap_change)
     print "<br>System unused file descriptor change: <b>%+d</b>" % fdfree_change
     if run2['fdfree'] < 200:
         print "<br><font color=red>Less than 200 FDs are free in the system.</font>"
     elif run2['fdfree'] < 500:
         print "<br>(Less that 500 FDs are free in the system.)"
     if do_summary:
-        print "<!--\n- System free memory change: %+d\n- System free FD change: %+d\n-->" % (free_change, fdfree_change)
-        swap_change = run2['swapused'] - run1['swapused']
-        if swap_change:
-            print "<br>Swap use change: %+d kB" % swap_change
+        print """
+<!--
+- System free memory change: %+d
+- System free RAM change: %+d
+- System free swap change: %+d
+- System free FD change: %+d
+-->""" % (total_change, ram_change, swap_change, fdfree_change)
         if 'private_code' in run1:
             dcode_change = run2['private_code'] - run1['private_code']
             if dcode_change:
-                print "System private dirty code pages change: <b>%+d</b> kB" % dcode_change
+                print "<br>System private dirty code pages change: <b>%+d</b> kB" % dcode_change
 
     # filesystem usage changes
     diffs = get_usage_diffs(run1['mounts'], run2['mounts'])
     output_diffs(diffs, "Filesystem usage", "Mount", " kB",
                 Colors.disk, do_summary)
 
-    # process private memory usage changes
+    # Combine Private dirty + swap into one table. The idea is to reduce the
+    # amount of data included in the report (=less tables & smaller HTML file
+    # size), and entries like -4 kB private dirty & +4 kB swap. Most of the
+    # swapped pages will be private dirty anyways.
     if 'smaps' in run1:
         diffs = get_pid_usage_diffs(run2['commands'], run2['processes'],
-                        run1['smaps'], run2['smaps'])
-        output_diffs(diffs, "Process private memory usage (according to SMAPS)",
+                        combine_dirty_and_swap(run1['smaps'], run1['smaps_swap']),
+                        combine_dirty_and_swap(run2['smaps'], run2['smaps_swap']))
+        output_diffs(diffs,
+                "Process private and swap memory usages combined (according to SMAPS)",
                 "Command[Pid]", " kB", Colors.memory, do_summary)
     else:
         print "<p>No SMAPS data for process private memory usage available."
@@ -856,8 +922,10 @@ def output_initial_state(run):
     "show basic information about the test run"
     print "<p>%s" % run['release']
     print "<p>%s" % run['datetime']
-    print "<p>Free system memory: <b>%d</b> kB" % run['memfree']
-    print "<br>(free = free+cached+buffered+swapfree+swapcached)"
+    print "<p>Free system RAM: <b>%d</b> kB" % run['ram_free']
+    print "<br>(free = free+cached+buffered+slab reclaimable)"
+    if run['swap_total']:
+        print "<p>Free system Swap: <b>%d</b> kB (out of <b>%d</b> kB)" % (run['swap_free'], run['swap_total'])
     if 'private_code' in run and run['private_code']:
         print "<p>Private dirty code pages: <b>%d</b> kB" % run['private_code']
         print "<br><i>(this means that system has incorrectly built shared libraries)</i>"
@@ -890,8 +958,15 @@ def output_memory_graph_table(titles, colors, data):
         print '<tr><td>%s</td>' % item[0]
         # graphical bar
         print "<td><table border=0 cellpadding=0 cellspacing=0><tr>"
+        # Collect reminders from the float -> int truncations, and add them to
+        # the last entry. This makes the total width of the bars more stable
+        # across rounds.
+        rem=0
         for idx in range(len(colors)):
             w = int(item[1][idx]*width)
+            rem += (item[1][idx]*width)-w
+            if idx == len(colors)-1:
+                w += int(rem+1)
             if w:
                 sys.stdout.write('<td bgcolor="%s" width=%d height=16></td>' % (colors[idx], w))
         print "</tr></table></td>"
@@ -934,29 +1009,50 @@ def output_apps_memory_graphs(cases):
                     sum = testcase['smaps'][pid]
                     smaps_available = 1
                 else:
-                    syslog.parse_error(sys.stdout.write, "WARNING: SMAPS data missing for pid %s" % pid)
+                    syslog.parse_error(sys.stdout.write, "WARNING: SMAPS data missing for %s[%s]" % namepid)
             process['SMAPS'] = sum
+            # SMAPS swap
+            sum = 0
+            if 'smaps_swap' in testcase:
+                if pid in testcase['smaps_swap']:
+                    sum = testcase['smaps_swap'][pid]
+            process['SMAPS_SWAP'] = sum
+            # SMAPS PSS
+            sum = 0
+            if 'smaps_pss' in testcase:
+                if pid in testcase['smaps_pss']:
+                    sum = testcase['smaps_pss'][pid]
+            process['SMAPS_PSS'] = sum
             data[namepid][rounds] = process
         rounds += 1
 
     # get largest size for any of the namepids, get largest rss
     # for sorting and ignore items which rss/size don't change
+    #
+    # Also filter out processes that get dirty pages swapped to disk:
+    #
+    #     initial state: Swap:0kB Dirty:100kB
+    #     ...
+    #     last round:    Swap:8kB Dirty:92kB
+    #
     sizes = []
     largest_size = 0
     for namepid in data:
         changerounds = pidrounds = 0
-        max_size = max_dirty = 0
-        min_size = min_dirty = 512*1024
+        max_size = max_dirty = max_swap = 0
+        min_size = min_dirty = min_swap = 512*1024
         for idx in range(rounds):
             if idx in data[namepid]:
                 if smaps_available:
                     dirty = data[namepid][idx]['SMAPS']
+                    swap = data[namepid][idx]['SMAPS_SWAP']
                 else:
                     dirty = data[namepid][idx]['VmRSS']
-                if dirty < min_dirty:
-                    min_dirty = dirty
-                if dirty > max_dirty:
-                    max_dirty = dirty
+                    swap = 0
+                min_dirty = min(dirty, min_dirty)
+                max_dirty = max(dirty, max_dirty)
+                min_swap = min(swap, min_swap)
+                max_swap = max(swap, max_swap)
                 size = data[namepid][idx]['VmSize']
                 if size < min_size:
                     if pidrounds:
@@ -971,15 +1067,15 @@ def output_apps_memory_graphs(cases):
             # if SMAPS data available, dirty is private dirty memory,
             # otherwise it's RSS. Size = VmSize
             if max_dirty:
-                dirty_change = (float)(max_dirty - min_dirty) / max_dirty / pidrounds
+                swap_and_dirty_change = (float)((max_dirty+min_swap) - (min_dirty+max_swap)) / (max_dirty+min_swap) / pidrounds
             else:
                 if smaps_available:
                     syslog.parse_error(sys.stdout.write, "WARNING: no SMAPS dirty for %s[%s]. Disable swap and try again\n\t(SMAPS doesn't work properly with swap)" % namepid)
-                dirty_change = 0
+                swap_and_dirty_change = 0
             size_change = (float)(max_size - min_size) / max_size / pidrounds
             # if >0.2% memory change per round in dirty or Size, or
             # size changes on more than half of the rounds, add to list
-            if dirty_change > 0.002 or size_change > 0.002 or 2*changerounds > pidrounds:
+            if swap_and_dirty_change > 0.002 or size_change > 0.002 or 2*changerounds > pidrounds:
                 sizes.append((max_dirty,namepid))
         if max_size > largest_size:
             largest_size = max_size
@@ -1012,6 +1108,20 @@ have any relation to real process memory usage. However, it can show
 leaks which cause process eventually to run out of (2GB) address space
 (e.g. if it's not collecting thread resources).
 """
+
+    # LEGEND
+    print '<p><table><tr><th><th align="left">Legend:'
+    if smaps_available: print """
+<tr><td bgcolor="%s" height="16" width="16"><td>Swap
+<tr><td bgcolor="%s" height="16" width="16"><td>Dirty
+<tr><td bgcolor="%s" height="16" width="16"><td>PSS: Proportional Set Size -- amount of resident memory, where each 4kB memory page is divided by the number of processes sharing it.
+""" % (bar2colors[0], bar2colors[1], bar2colors[2])
+    print """
+<tr><td bgcolor="%s" height="16" width="16"><td>RSS: Resident Set Size
+<tr><td bgcolor="%s" height="16" width="16"><td>Size
+</table>
+""" % (bar2colors[3], bar2colors[4])
+
     for order in orders:
         namepid = (order[0],order[2])
         process = data[namepid]
@@ -1028,15 +1138,48 @@ leaks which cause process eventually to run out of (2GB) address space
                 size = item['VmSize']
                 if smaps_available:
                     dirty = item['SMAPS']
+                    swap = item['SMAPS_SWAP']
+                    pss = item['SMAPS_PSS']
                     if rss < dirty:
                         syslog.parse_error(sys.stdout.write, "WARNING: %s[%s] RSS (%s) < SMAPS dirty (%s)" % (namepid + (rss, dirty)))
                         rss = dirty
-                    text = ["%skB" % dirty, "%skB" % rss, "%skB" % size]
+                    if pss < dirty:
+                        syslog.parse_error(sys.stdout.write, "WARNING: %s[%s] SMAPS PSS (%s) < SMAPS dirty (%s)" % (namepid + (pss, dirty)))
+                    if rss < pss:
+                        syslog.parse_error(sys.stdout.write, "WARNING: %s[%s] RSS (%s) < SMAPS PSS (%s)" % (namepid + (rss, pss)))
+                    text = ["%skB" % swap, "%skB" % dirty, "%skB" % pss, "%skB" % rss, "%skB" % size]
                 else:
-                    text = ["", "%skB" % rss, "%skB" % size]
+                    swap = 0
                     dirty = 0
-                sizes = (dirty/largest_size, (rss-dirty)/largest_size, (size-rss)/largest_size)
-
+                    pss = 0
+                    text = ["", "", "", "%skB" % rss, "%skB" % size]
+                barwidth_swap  = swap/largest_size
+                barwidth_dirty = dirty/largest_size
+                barwidth_pss   = pss/largest_size
+                barwidth_rss   = rss/largest_size
+                barwidth_size  = size/largest_size
+                #  ___________________________________________________
+                # |      |    ____________________     |              |
+                # |      |   |                    |    |              |
+                # |      |   |  _______________   |    |              |
+                # |      |   | |               |  |    |              |
+                # |      |   | | Private Dirty |  |    |              |
+                # |      |   | |_______________|  |    |              |
+                # | SWAP |   |                    |    |              |
+                # |      |   |        PSS         |    |              |
+                # |      |   |____________________|    |              |
+                # |      |                             |              |
+                # |      |            RSS              |              |
+                # |______|_____________________________|              |
+                # |                                                   |
+                # |                   Size                            |
+                # |___________________________________________________|
+                #
+                sizes = (barwidth_swap,
+                         barwidth_dirty,
+                         barwidth_pss - barwidth_dirty,
+                         barwidth_rss - barwidth_pss,
+                         barwidth_size - barwidth_swap - barwidth_rss)
                 if idx:
                     if text == prev_text:
                         columndata.pop()
@@ -1053,21 +1196,28 @@ leaks which cause process eventually to run out of (2GB) address space
                 if text == nan:
                     # previous one didn't have anything either
                     continue
-                sizes = (0,0,0)
+                sizes = (0,0,0,0,0)
                 text = nan
                 case = "---"
             columndata.append((case, sizes, text))
-        titles = ["Test-case:", "Graph", "Dirty:", "RSS:", "Size:"]
+        titles = ['Test-case:', 'Graph', 'Swap:', 'Dirty:', 'PSS:', 'RSS:', 'Size:']
         if not smaps_available:
-            titles[2] = ""
+            titles[2] = "" #Swap
+            titles[3] = "" #Dirty
+            titles[4] = "" #PSS
         output_memory_graph_table(titles, bar2colors, columndata)
-
 
 def output_system_memory_graphs(data):
     "outputs memory graphs bars for the system"
     idx = 0
-    swapused = 0
+    swaptext = None
     columndata = []
+    # See whether swap was used during the tests. We need to know this in
+    # advance in the next loop.
+    for testcase in data:
+        if testcase['swap_used']:
+            swaptext = "swap used:"
+            break
     for testcase in data:
         if not idx:
             case = '<a href="#initial-state">Initial state</a>:'
@@ -1076,7 +1226,7 @@ def output_system_memory_graphs(data):
         idx += 1
 
         # amount of memory in the device (float for calculations)
-        mem_total = float(testcase['memtotal'])
+        mem_total = float(testcase['ram_total'] + testcase['swap_total'])
         # memory usage %-limit after which apps are bg-killed
         mem_low = testcase['limitlow']
         # memory usage %-limit after which apps refuse certain operations
@@ -1092,43 +1242,39 @@ def output_system_memory_graphs(data):
         else:
             mem_low = mem_high = mem_deny = mem_total
             sys.stderr.write("Warning: low memory limits are zero -> disabling\n")
-
-        mem_used = testcase['memused']
-        mem_free = testcase['memfree']
-        if mem_used > mem_high:
-            text_used = "<font color=red><b>%d</b></font>" % mem_used
-        elif mem_used > mem_low:
-            text_used = "<font color=blue><b>%d</b></font>" % mem_used
-        else:
-            text_used = "%d" % mem_used
-        text_used += "kB"
-        text_free = "%dkB" % mem_free
-        if testcase['swapused']:
-            memtext = (text_used, text_free, "(%dkB)" % testcase['swapused'])
-            swapused = 1
-        else:
-            memtext = (text_used, text_free)
+        mem_used = testcase['ram_used'] + testcase['swap_used']
+        mem_free = testcase['ram_free'] + testcase['swap_free']
+        # Graphics
+        show_swap = testcase['swap_used']/mem_total
+        show_ram  = testcase['ram_used']/mem_total
         if mem_used > mem_deny:
-            show_free = 0.0
             show_deny = (mem_total - mem_used)/mem_total
+            show_free = 0.0
         else:
-            show_free = (mem_free - mem_total + mem_deny)/mem_total
             show_deny = 1.0 - mem_deny/mem_total
-        show_used = mem_used/mem_total
-        columndata.append((case, (show_used, show_free, show_deny), memtext))
-    if swapused:
-        swaptext = "swap:"
-    else:
-        swaptext = None
-    titles = ("Test-case:", "Memory usage graph:", "used:", "free:", swaptext)
+            show_free = 1.0 - show_swap - show_ram - show_deny
+        bars = (show_swap, show_ram, show_free, show_deny)
+        # Numbers
+        def label():
+            if mem_used > mem_high: return "<font color=red><b>%d</b></font>kB"
+            if mem_used > mem_low:  return "<font color=blue><b>%d</b></font>kB"
+            return "%dkB"
+        memtext = None
+        if swaptext: memtext = label() % testcase['swap_used']
+        memtext = (memtext,) + (label() % testcase['ram_used'], "%dkB" % mem_free)
+        # done!
+        columndata.append((case, bars, memtext))
+    titles = ("Test-case:", "memory usage graph:", swaptext, "RAM used:", "free:")
     output_memory_graph_table(titles, bar1colors, columndata)
+    print '<table><tr><th><th align="left">Legend:'
+    if testcase['swap_total']:
+        print '<tr><td bgcolor="%s" height="16" width="16"><td>Swap used' % bar1colors[0]
     print """
-<table>
-<tr><th></th><th align="left">Legend:</th></tr>
-<tr><td bgcolor="blue"  height="16" width="16"></td><td>Memory used in the device</td></tr>
-<tr><td bgcolor="green" height="16" width="16"></td><td>Memory "freely" usable in the device (free/cached/buffered)</td></tr>
-<tr><td bgcolor="red"   height="16" width="16"></td><td>If memory usage reaches this, application allocations fail and the allocating app is OOM-killed (&gt;= %d MB used)</td></tr>
-</table>""" % round(mem_deny/1024)
+<tr><td bgcolor="%s" height="16" width="16"><td>RAM used in the device
+<tr><td bgcolor="%s" height="16" width="16"><td>RAM and swap freely usable in the device
+<tr><td bgcolor="%s" height="16" width="16"><td>If memory usage reaches this, application allocations fail and the allocating app is OOM-killed (&gt;= %d MB used)
+""" % (bar1colors[1], bar1colors[2], bar1colors[3], round(mem_deny/1024))
+    print "</table>"
     if mem_low == mem_total:
         print "<p>(memory limits are not in effect)"
         return
@@ -1149,8 +1295,10 @@ def output_html_report(data):
     last = rounds
     first = 1
 
+    # X client names may contain UTF-8 characters, so add character encoding.
     print """<html>
 <head>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8"/>
 <title>%s</title>
 </head>
 <body>
@@ -1274,7 +1422,7 @@ def parse_syte_stats(dirs):
         if file:
             # get system SMAPS memory usage data
             sys.stderr.write("Parsing '%s'...\n" % file)
-            items['smaps'], items['private_code'] = parse_smaps(file)
+            items['smaps'], items['smaps_swap'], items['smaps_pss'], items['private_code'] = parse_smaps(file)
             if not items['smaps']:
                 sys.stderr.write("SMAPS data parsing failed\n")
                 sys.exit(1)
@@ -1304,6 +1452,11 @@ if __name__ == "__main__":
         msg = __doc__.replace("<TOOL_NAME>", sys.argv[0].split('/')[-1])
         sys.stderr.write(msg)
         sys.exit(1)
-    else:
-        stats = parse_syte_stats(sys.argv[1:])
-        output_html_report(stats)
+    # Use psyco if available. Gives 2-3x speed up.
+    try:
+        import psyco
+        psyco.full()
+    except ImportError:
+        pass
+    stats = parse_syte_stats(sys.argv[1:])
+    output_html_report(stats)
