@@ -1,3 +1,9 @@
+sp-endurance (1.20) unstable; urgency=low
+
+  * Fix endurance_report.py to work with Scratchbox Python v2.3.
+
+ -- Kiryl Shutsemau <kiryl.shutsemau@nokia.com>  Tue, 5 May 2009 15:55:09 +0200
+
 sp-endurance (1.19) unstable; urgency=low
 
   * More statics added. Fixes: NB#107365
