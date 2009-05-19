@@ -219,6 +219,14 @@
 #   /proc/pid/status. This fixes cases where PSS > RSS, because the SMAPS data
 #   also includes device mappings.
 # - Add support for lzop compressed smaps and syslog files.
+# 2009-05-13:
+# - Introduce a new section Kernel Events, and add tables Virtual Memory
+#   Subsystem and Low Level System Events. The former includes details about
+#   page faults and swap, and the latter details about the number of interrupts
+#   and context switches. Data is parsed from /proc/stat and /proc/vmstat.
+#   The numbers are highlited in red if they exceed certain fixed thresholds.
+# - Process CPU Usage graph: show summary about the processes that we did not
+#   include in the graph.
 # TODO:
 # - Have separate error_exit() function?
 # - Mark reboots more prominently also in report (<h1>):
@@ -275,6 +283,7 @@ class Colors:
     xres = "FDEEFD"
     fds = "FDFDEE"
     shm = "EEEEEE"
+    kernel = "EFFDF0"
 
 # color values for (Swap used, RAM used, memory free, oom-limit)
 #      magenta, blue, light green, red
@@ -514,17 +523,32 @@ def parse_proc_stat(filename):
     # CPU: take everything except "steal" and "guest", which are some
     # virtualization related counters, obviously not useful in our case.
     cpu = re.compile("^cpu\s+(\d+) (\d+) (\d+) (\d+) (\d+) (\d+) (\d+)")
+    # Interrupts: take first column, it contains the sum of the individual
+    # interrupts.
+    intr = re.compile("^intr\s+(\d+)")
+    # Context switches.
+    ctxt = re.compile("^ctxt\s+(\d+)")
     for line in file:
         m = cpu.search(line)
         if m:
-            stat['cpu_user'],       \
-            stat['cpu_user_nice'],  \
-            stat['cpu_system'],     \
-            stat['cpu_idle'],       \
-            stat['cpu_iowait'],     \
-            stat['cpu_irq'],        \
-            stat['cpu_softirq']     \
+            stat['cpu'] = {}
+            stat['cpu']['user'],       \
+            stat['cpu']['user_nice'],  \
+            stat['cpu']['system'],     \
+            stat['cpu']['idle'],       \
+            stat['cpu']['iowait'],     \
+            stat['cpu']['irq'],        \
+            stat['cpu']['softirq']     \
                 = [int(x) for x in m.groups()]
+            continue
+        m = intr.search(line)
+        if m:
+            stat['intr'] = int(m.group(1))
+            continue
+        m = ctxt.search(line)
+        if m:
+            stat['ctxt'] = int(m.group(1))
+            continue
     return stat
 
 
@@ -623,6 +647,15 @@ def parse_csv(filename):
     mem_header = skip_to(file, "MemTotal").strip()
     mem_values = file.readline().strip()
     get_meminfo(data, mem_header, mem_values)
+
+    # /proc/vmstat
+    # The header line ends with ':', so get rid of that.
+    keys = skip_to(file, "nr_free_pages").strip()[:-1].split(',')
+    try:
+        vals = [int(x) for x in file.readline().strip().split(',')]
+        data['/proc/vmstat'] = dict(zip(keys, vals))
+    except:
+        pass
 
     # low memory limits
     skip_to(file, "lowmem_")
@@ -911,10 +944,10 @@ def output_run_diffs(idx1, idx2, data, do_summary):
         if not '/proc/pid/stat' in run1 or not '/proc/pid/stat' in run2:
             return
         print "<h4>Process CPU usage</h4>"
-        if sum(run2['/proc/stat'].itervalues()) < sum(run1['/proc/stat'].itervalues()):
+        if sum(run2['/proc/stat']['cpu'].itervalues()) < sum(run1['/proc/stat']['cpu'].itervalues()):
             print "<p><i>System reboot detected, omitted.</i>"
             return
-        cpu_total_diff = float(sum(run2['/proc/stat'].itervalues())-sum(run1['/proc/stat'].itervalues()))
+        cpu_total_diff = float(sum(run2['/proc/stat']['cpu'].itervalues())-sum(run1['/proc/stat']['cpu'].itervalues()))
         print "<p>Interval between rounds was %d seconds." % (cpu_total_diff/CLK_TCK)
         print "<p>"
         diffs = []
@@ -933,15 +966,24 @@ def output_run_diffs(idx1, idx2, data, do_summary):
         # Other processes often eat significant amount of CPU, so lets show
         # that to the user as well.
         def total_sys(r):
-            return r['/proc/stat']['cpu_system'] + r['/proc/stat']['cpu_irq'] + r['/proc/stat']['cpu_softirq']
+            return r['/proc/stat']['cpu']['system'] + r['/proc/stat']['cpu']['irq'] + r['/proc/stat']['cpu']['softirq']
         def total_usr(r):
-            return r['/proc/stat']['cpu_user'] + r['/proc/stat']['cpu_user_nice']
+            return r['/proc/stat']['cpu']['user'] + r['/proc/stat']['cpu']['user_nice']
         UNACC = "<i>(Unaccounted CPU time)</i>"
         diffs.append((UNACC,\
                 total_sys(run2)-total_sys(run1)-sum([x[1] for x in diffs]),\
                 total_usr(run2)-total_usr(run1)-sum([x[2] for x in diffs])))
-        # Dont show those processes that have used only a little CPU.
-        diffs = [x for x in diffs if x[1]+x[2]>0.005*cpu_total_diff]
+        # Dont include in the graph those processes that have used only a
+        # little CPU, but collect them and show some statistics.
+        THRESHOLD = max(1, 0.005*cpu_total_diff)
+        filtered_out = []
+        diffs2 = []
+        for x in diffs:
+            if x[1]+x[2] > THRESHOLD:
+                diffs2.append(x)
+            elif x[1]+x[2] > 0:
+                filtered_out.append(x)
+        diffs = diffs2
         # Sort in descending order of CPU ticks used.
         diffs.sort(lambda x,y: cmp(x[1]+x[2], y[1]+y[2]))
         diffs.reverse()
@@ -958,6 +1000,11 @@ def output_run_diffs(idx1, idx2, data, do_summary):
                     100*sum([x[1]+x[2] for x in diffs])/cpu_total_diff,\
                         sum([x[1]+x[2] for x in diffs])/CLK_TCK)\
                 ])])
+        if filtered_out:
+            print "<p><i>Note:</i> %d other processes also used some CPU, but "\
+                  "did not exceed the threshold of 0.5%% CPU Usage (%.2f seconds).<br>"\
+                  "They used %.2f seconds of CPU time in total." \
+                  % (len(filtered_out), THRESHOLD/CLK_TCK, sum([x[1]+x[2] for x in filtered_out])/CLK_TCK)
         if UNACC in [x[0] for x in diffs]:
             print "<p><i>Unaccounted CPU time</i> stands for such CPU time that "\
                   "could not be attributed to any process.<br>"\
@@ -1028,6 +1075,51 @@ def output_run_diffs(idx1, idx2, data, do_summary):
     diffs = get_usage_diffs(run1['shm'], run2['shm'])
     output_diffs(diffs, "Shared memory segments", "Type", "",
                 Colors.shm, do_summary)
+
+    # Kernel statistics
+    cpu_total_diff = float(sum(run2['/proc/stat']['cpu'].itervalues())-sum(run1['/proc/stat']['cpu'].itervalues()))
+    if cpu_total_diff > 0:
+        print "\n<h4>Kernel events</h4>"
+
+        def format_key(key, max):
+            if key > max:
+                return "<font color=red>%.1f</font>" % key
+            else:
+                return "%.1f" % key
+
+        # Kernel virtual memory subsystem statistics, /proc/vmstat
+        pgmajfault = (run2['/proc/vmstat']['pgmajfault']-run1['/proc/vmstat']['pgmajfault'])/cpu_total_diff*3600
+        pswpin     = (run2['/proc/vmstat']['pswpin']-run1['/proc/vmstat']['pswpin'])/cpu_total_diff*3600
+        pswpout    = (run2['/proc/vmstat']['pswpout']-run1['/proc/vmstat']['pswpout'])/cpu_total_diff*3600
+        diffs = []
+        if pgmajfault > 0:
+            diffs.append(("Major page faults per hour", format_key(pgmajfault, 1000)))
+        if pswpin > 0:
+            diffs.append(("Page swap ins per hour", format_key(pswpin, 10000)))
+        if pswpout > 0:
+            diffs.append(("Page swap outs per hour", format_key(pswpout, 1000)))
+        if diffs:
+            print '\n<p><table border=1 bgcolor=%s>' % Colors.kernel
+            print "<caption><i>Virtual memory subsystem</i></caption>"
+            print "<tr><th>Type:</th><th>Value:</th></tr>"
+            for data in diffs:
+                print "<tr><td>%s</td><td align=right><b>%s</b></td></tr>" % data
+            print "</table>"
+
+        # Interrupts and context switches.
+        intr = (run2['/proc/stat']['intr']-run1['/proc/stat']['intr'])/cpu_total_diff
+        ctxt = (run2['/proc/stat']['ctxt']-run1['/proc/stat']['ctxt'])/cpu_total_diff
+        diffs = [
+                 ("Interrupts per second", format_key(intr, 1e5/3600)),
+                 ("Context switches per second", format_key(ctxt, 1e6/3600)),
+                ]
+        print '\n<p><table border=1 bgcolor=%s>' % Colors.kernel
+        print "<caption><i>Low level system events</i></caption>"
+        print "<tr><th>Type:</th><th>Value:</th></tr>"
+        for data in diffs:
+            print "<tr><td>%s</td><td align=right><b>%s</b></td></tr>" % data
+        print "</table>"
+
 
     print "\n<h4>Changes in processes</h4>"
 
@@ -1342,22 +1434,22 @@ def output_system_load_graphs(data):
     reboots = []
     for testcase in data[1:]:
         case = '<a href="#round-%d">Test round %02d</a>:' % (idx, idx)
-        if sum(testcase['/proc/stat'].itervalues()) < sum(prev['/proc/stat'].itervalues()):
+        if sum(testcase['/proc/stat']['cpu'].itervalues()) < sum(prev['/proc/stat']['cpu'].itervalues()):
             entries.append((case, (0,0,0,0,0), "-"))
             reboots.append(idx)
         else:
             diffs = {}
-            for key in testcase['/proc/stat'].keys():
-                diffs[key] = testcase['/proc/stat'][key] - prev['/proc/stat'][key]
+            for key in testcase['/proc/stat']['cpu'].keys():
+                diffs[key] = testcase['/proc/stat']['cpu'][key] - prev['/proc/stat']['cpu'][key]
             divisor = float(sum(diffs.values()))
             for key in diffs.keys():
                 diffs[key] = diffs[key] / divisor
-            bars = (diffs['cpu_system'] + diffs['cpu_irq'] + diffs['cpu_softirq'], \
-                    diffs['cpu_user'], \
-                    diffs['cpu_user_nice'], \
-                    diffs['cpu_iowait'], \
-                    diffs['cpu_idle'])
-            entries.append((case, bars, ["%d%%" % int(100-100*diffs['cpu_idle'])]))
+            bars = (diffs['system'] + diffs['irq'] + diffs['softirq'], \
+                    diffs['user'], \
+                    diffs['user_nice'], \
+                    diffs['iowait'], \
+                    diffs['idle'])
+            entries.append((case, bars, ["%d%%" % int(100-100*diffs['idle'])]))
         idx += 1
         prev = testcase
     titles = ("Test-case:", "system load:", "CPU usage-%:")
