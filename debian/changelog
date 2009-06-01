@@ -1,6 +1,12 @@
+sp-endurance (1.22) unstable; urgency=low
+
+  * Fix divide-by-zero error on identical (copied) data. Fixes: NB#119307
+
+ -- Kiryl Shutsemau <kiryl.shutsemau@nokia.com>  Mon, 1 Jun 2009 15:57:19 +0200
+
 sp-endurance (1.21) unstable; urgency=low
 
-  * More statics added. Fixes: NB#107365
+  * CPU/swap/interrups/context switch statistics added. Fixes: NB#107365
 
  -- Kiryl Shutsemau <kiryl.shutsemau@nokia.com>  Tue, 19 May 2009 15:57:19 +0200
 
@@ -12,7 +18,7 @@ sp-endurance (1.20) unstable; urgency=low
 
 sp-endurance (1.19) unstable; urgency=low
 
-  * More statics added. Fixes: NB#107365
+  * More statistics added. Fixes: NB#107365
   * Fixes NB#109052: sp-endurance/syslog parser doesn't catch upstart reported
     crash/restart messages
   * Fixes NB#112730: sp-endurance uses obsolete /etc/osso_software_version
