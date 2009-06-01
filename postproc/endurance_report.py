@@ -227,6 +227,10 @@
 #   The numbers are highlited in red if they exceed certain fixed thresholds.
 # - Process CPU Usage graph: show summary about the processes that we did not
 #   include in the graph.
+# 2009-06-01:
+# - System Load graph: fix division with zero with exactly identical data. This
+#   happened if user manually made another copy of one of the snapshot
+#   directories.
 # TODO:
 # - Have separate error_exit() function?
 # - Mark reboots more prominently also in report (<h1>):
@@ -947,8 +951,14 @@ def output_run_diffs(idx1, idx2, data, do_summary):
         if sum(run2['/proc/stat']['cpu'].itervalues()) < sum(run1['/proc/stat']['cpu'].itervalues()):
             print "<p><i>System reboot detected, omitted.</i>"
             return
+        elif sum(run2['/proc/stat']['cpu'].itervalues()) == sum(run1['/proc/stat']['cpu'].itervalues()):
+            # Two identical entries? Most likely user has manually copied the snapshot directories.
+            print "<p><i>Identical snapshots detected, omitted.</i>"
+            return
         cpu_total_diff = float(sum(run2['/proc/stat']['cpu'].itervalues())-sum(run1['/proc/stat']['cpu'].itervalues()))
         print "<p>Interval between rounds was %d seconds." % (cpu_total_diff/CLK_TCK)
+        if cpu_total_diff <= 0:
+            return
         print "<p>"
         diffs = []
         for pid in iter(run2['/proc/pid/stat']):
@@ -1437,19 +1447,25 @@ def output_system_load_graphs(data):
         if sum(testcase['/proc/stat']['cpu'].itervalues()) < sum(prev['/proc/stat']['cpu'].itervalues()):
             entries.append((case, (0,0,0,0,0), "-"))
             reboots.append(idx)
+        elif sum(testcase['/proc/stat']['cpu'].itervalues()) == sum(prev['/proc/stat']['cpu'].itervalues()):
+            # Two identical entries? Most likely user has manually copied the snapshot directories.
+            entries.append((case, (0,0,0,0,0), "-"))
         else:
             diffs = {}
             for key in testcase['/proc/stat']['cpu'].keys():
                 diffs[key] = testcase['/proc/stat']['cpu'][key] - prev['/proc/stat']['cpu'][key]
             divisor = float(sum(diffs.values()))
-            for key in diffs.keys():
-                diffs[key] = diffs[key] / divisor
-            bars = (diffs['system'] + diffs['irq'] + diffs['softirq'], \
-                    diffs['user'], \
-                    diffs['user_nice'], \
-                    diffs['iowait'], \
-                    diffs['idle'])
-            entries.append((case, bars, ["%d%%" % int(100-100*diffs['idle'])]))
+            if divisor <= 0:
+                entries.append((case, (0,0,0,0,0), "-"))
+            else:
+                for key in diffs.keys():
+                    diffs[key] = diffs[key] / divisor
+                bars = (diffs['system'] + diffs['irq'] + diffs['softirq'], \
+                        diffs['user'], \
+                        diffs['user_nice'], \
+                        diffs['iowait'], \
+                        diffs['idle'])
+                entries.append((case, bars, ["%d%%" % int(100-100*diffs['idle'])]))
         idx += 1
         prev = testcase
     titles = ("Test-case:", "system load:", "CPU usage-%:")
