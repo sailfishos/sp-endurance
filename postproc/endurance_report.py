@@ -948,14 +948,16 @@ def output_run_diffs(idx1, idx2, data, do_summary):
         if not '/proc/pid/stat' in run1 or not '/proc/pid/stat' in run2:
             return
         print "<h4>Process CPU usage</h4>"
-        if sum(run2['/proc/stat']['cpu'].itervalues()) < sum(run1['/proc/stat']['cpu'].itervalues()):
+        cpusum1 = sum(run1['/proc/stat']['cpu'].itervalues())
+        cpusum2 = sum(run2['/proc/stat']['cpu'].itervalues())
+        if cpusum2 < cpusum1:
             print "<p><i>System reboot detected, omitted.</i>"
             return
-        elif sum(run2['/proc/stat']['cpu'].itervalues()) == sum(run1['/proc/stat']['cpu'].itervalues()):
+        elif cpusum2 == cpusum1:
             # Two identical entries? Most likely user has manually copied the snapshot directories.
             print "<p><i>Identical snapshots detected, omitted.</i>"
             return
-        cpu_total_diff = float(sum(run2['/proc/stat']['cpu'].itervalues())-sum(run1['/proc/stat']['cpu'].itervalues()))
+        cpu_total_diff = float(cpusum2-cpusum1)
         print "<p>Interval between rounds was %d seconds." % (cpu_total_diff/CLK_TCK)
         if cpu_total_diff <= 0:
             return
