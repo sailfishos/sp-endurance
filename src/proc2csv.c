@@ -436,7 +436,8 @@ static void show_fd_counts(int num, status_t *statuslist)
 
 /* allocs statuslist and reads process command lines, frees namelist
  * (which was allocated by scandir()), returns filled statuslist or
- * NULL in case of error.
+ * NULL in case of error.  In case of an error, namelist may be only
+ * half freed.
  */
 static status_t *read_info(int num, struct dirent **namelist)
 {	
@@ -461,11 +462,13 @@ static status_t *read_info(int num, struct dirent **namelist)
 		/* copy PID string to status struct and free name */
 		if (strlen((*n)->d_name) > sizeof(s->pid)-1) {
 			fprintf(stderr, "PID '%s' too long\n", (*n)->d_name);
+			free(statuslist);
 			return NULL;
 		}
 		strncpy(s->pid, (*n)->d_name, sizeof(s->pid));
 		s->pid[sizeof(s->pid)-1] = '\0';
 		free((*n));
+		*n = NULL;
 
 		/* read the command line from 'cmdline' in PID dir */
 		snprintf(filename, sizeof(filename), "%s/cmdline", s->pid);

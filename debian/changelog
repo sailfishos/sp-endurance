@@ -1,3 +1,10 @@
+sp-endurance (1.23) unstable; urgency=low
+
+  * Fix harmless Coverity reported leak on error exit + set freed
+    namelist entries NULL in proc2csv. Fixes: NB#121145
+
+ -- Kiryl Shutsemau <kiryl.shutsemau@nokia.com>  Mon, 9 Jun 2009 16:37:19 +0200
+
 sp-endurance (1.22) unstable; urgency=low
 
   * Fix divide-by-zero error on identical (copied) data. Fixes: NB#119307
