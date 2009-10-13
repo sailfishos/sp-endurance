@@ -44,7 +44,7 @@ if [ -z "$(which lzop)" ]; then
 fi
 
 if [ \! -f 101/smaps.cap.lzo ]; then
-	usage "Gndurance SMAPS files like '101/smaps.cap.lzo' are missing"
+	usage "Endurance SMAPS files like '101/smaps.cap.lzo' are missing"
 fi
 
 prog=$1
