@@ -231,6 +231,8 @@
 # - System Load graph: fix division with zero with exactly identical data. This
 #   happened if user manually made another copy of one of the snapshot
 #   directories.
+# 2009-10-15:
+# - Take last three xresource values, not ones from fixed offset.
 # TODO:
 # - Have separate error_exit() function?
 # - Mark reboots more prominently also in report (<h1>):
@@ -428,8 +430,9 @@ def get_xclient_memory(file):
         line = file.readline().strip()
         if not line:
             break
-        mem,pid,name = line.split(',')[8:11]
-        if mem[-1] == 'B':
+        # last three columns are the interesting ones
+        mem,pid,name = line.split(',')[-3:]
+        if pid[-1] != 'B' and mem[-1] == 'B':
             mem = int(mem[:-1])
         else:
             sys.stderr.write("Error: X resource total memory value not followed by 'B':\n  %s\n" % line)

@@ -52,6 +52,8 @@
 #   that Busybox gzip only supports compression level -9, ie. best but slowest.
 #   Endurance report now includes information about CPU usage, so we dont skew
 #   those results so much anymore.
+# 2009-10-15:
+# - Save xmeminfo error messages
 
 script="${0##*/}"
 # incorrect number of arguments or first argument starts with "-"
@@ -78,6 +80,7 @@ if [ $# -lt 1 ] || [ $# -gt 2 ] || [ "${1#-}" != "$1" ]; then
 	echo " - stat         (kernel/system statistics, see proc(5))"
 	echo " - syslog.gz    (compressed syslog contents)"
 	echo " - usage.csv    (/proc info + X resource & disk usage in CSV format)"
+	echo " - xres.log     (XRes related error messages from xmeminfo)"
 	echo " - step.txt     (current use-case step description)"
 	echo "+ 102/"
 	echo "+ 103/"
@@ -151,7 +154,7 @@ fi
 # info on the UI processes X resource usage
 echo "- X resource usage"
 echo >> $usage
-xmeminfo >> $usage
+xmeminfo >> $usage 2> $path/xres.log
 # output disk usage
 echo "- Disk usage"
 echo >> $usage

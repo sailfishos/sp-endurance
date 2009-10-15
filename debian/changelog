@@ -1,3 +1,10 @@
+sp-endurance (1.24) unstable; urgency=low
+
+  * Give more detailed X resource usage information and log use of unknown X resources.
+    Fixes: NB#143151
+
+ -- Kiryl Shutsemau <kiryl.shutsemau@nokia.com>  Mon, 9 Jun 2009 16:37:19 +0200
+
 sp-endurance (1.23) unstable; urgency=low
 
   * Fix harmless Coverity reported leak on error exit + set freed

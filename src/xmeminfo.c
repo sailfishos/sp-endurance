@@ -48,15 +48,27 @@
 #endif
 
 enum {
-  ATOM_PIXMAP = 0,
-  ATOM_WINDOW,
+  /* builtin resources */
+  ATOM_WINDOW = 0,
+  ATOM_PIXMAP,
   ATOM_GC,
   ATOM_FONT,
-  ATOM_GLYPHSET,
-  ATOM_PICTURE,
-  ATOM_COLORMAP_ENTRY,
-  ATOM_PASSIVE_GRAB,
   ATOM_CURSOR,
+  ATOM_COLORMAP,
+  ATOM_COLORMAP_ENTRY,
+  ATOM_OTHER_CLIENT,
+  ATOM_PASSIVE_GRAB,
+  /* Render extension */
+  ATOM_PICTURE,
+  ATOM_PICTFORMAT,
+  ATOM_GLYPHSET,
+  /* RandR extension */
+  ATOM_CRTC,
+  ATOM_MODE,
+  ATOM_OUTPUT,
+  /* Xi extension */
+  ATOM_INPUTCLIENT,
+  /* non-resource atoms */
   ATOM_NET_CLIENT_LIST,
   ATOM_NET_WM_PID,
   ATOM_NET_WM_NAME,
@@ -66,15 +78,22 @@ enum {
 
 static const char *AtomNames[] =
   {
-    "PIXMAP",
     "WINDOW",
+    "PIXMAP",
     "GC",
     "FONT",
-    "GLYPHSET",
-    "PICTURE",
-    "COLORMAP ENTRY",
-    "PASSIVE GRAB",
     "CURSOR",
+    "COLORMAP",
+    "COLORMAP ENTRY",
+    "OTHER CLIENT",
+    "PASSIVE GRAB",
+    "PICTURE",
+    "PICTFORMAT",
+    "GLYPHSET",
+    "CRTC",
+    "MODE",
+    "OUTPUT",
+    "INPUTCLIENT",
     "_NET_CLIENT_LIST",
     "_NET_WM_PID",
     "_NET_WM_NAME",
@@ -89,17 +108,28 @@ typedef struct XResTopClient
   unsigned char *identifier;
   unsigned long  pixmap_bytes;
   unsigned long  other_bytes;
-
-  int            n_pixmaps;
+  /* basic types */
   int            n_windows; 
+  int            n_pixmaps;
   int            n_gcs;
-  int            n_pictures;
-  int            n_glyphsets; 
   int            n_fonts;
-  int            n_colormaps;
-  int            n_passive_grabs;
   int            n_cursors;
-  int            n_other;
+  int            n_colormaps;
+  int            n_map_entries;
+  int            n_other_clients;
+  int            n_passive_grabs;
+  /* render extension */
+  int            n_pictures;
+  int            n_pictformats;
+  int            n_glyphsets;
+  /* randr extension */
+  int            n_crtcs;
+  int            n_modes;
+  int            n_outputs;
+  /* xi */
+  int            n_input_clients;
+  /* unknown (if any -> update list) */
+  int            n_unknown;
 
 } XResTopClient;
 
@@ -385,38 +415,71 @@ xrestop_client_get_stats(XResTopApp *app, XResTopClient *client)
     {
       unsigned int this_type = types[j].resource_type;
       
-      if (this_type == app->atoms[ATOM_PIXMAP])
-	client->n_pixmaps += types[j].count;
-      else if (this_type == app->atoms[ATOM_WINDOW])
+      if (this_type == app->atoms[ATOM_WINDOW])
 	client->n_windows += types[j].count;
+      else if (this_type == app->atoms[ATOM_PIXMAP])
+	client->n_pixmaps += types[j].count;
       else if (this_type == app->atoms[ATOM_GC])
 	client->n_gcs += types[j].count;
       else if (this_type == app->atoms[ATOM_FONT])
 	client->n_fonts += types[j].count;
-      else if (this_type == app->atoms[ATOM_GLYPHSET])
-	client->n_glyphsets += types[j].count;
-      else if (this_type == app->atoms[ATOM_PICTURE])
-	client->n_pictures  += types[j].count;
-      else if (this_type == app->atoms[ATOM_COLORMAP_ENTRY])
-	client->n_colormaps += types[j].count;
-      else if (this_type == app->atoms[ATOM_PASSIVE_GRAB])
-	client->n_passive_grabs += types[j].count;
       else if (this_type == app->atoms[ATOM_CURSOR])
 	client->n_cursors += types[j].count;
-      else client->n_other += types[j].count;
+      else if (this_type == app->atoms[ATOM_COLORMAP])
+	client->n_colormaps += types[j].count;
+      else if (this_type == app->atoms[ATOM_COLORMAP_ENTRY])
+	client->n_map_entries += types[j].count;
+      else if (this_type == app->atoms[ATOM_OTHER_CLIENT])
+	client->n_other_clients += types[j].count;
+      else if (this_type == app->atoms[ATOM_PASSIVE_GRAB])
+	client->n_passive_grabs += types[j].count;
+
+      else if (this_type == app->atoms[ATOM_PICTURE])
+	client->n_pictures += types[j].count;
+      else if (this_type == app->atoms[ATOM_PICTFORMAT])
+	client->n_pictformats += types[j].count;
+      else if (this_type == app->atoms[ATOM_GLYPHSET])
+	client->n_glyphsets += types[j].count;
+
+      else if (this_type == app->atoms[ATOM_CRTC])
+	client->n_crtcs += types[j].count;
+      else if (this_type == app->atoms[ATOM_MODE])
+	client->n_modes += types[j].count;
+      else if (this_type == app->atoms[ATOM_OUTPUT])
+	client->n_outputs += types[j].count;
+
+      else if (this_type == app->atoms[ATOM_INPUTCLIENT])
+	client->n_input_clients += types[j].count;
+
+      else
+	{
+	   client->n_unknown += types[j].count;
+	   fprintf(stderr, "WARNING: %d unknown resources of type %d for %s\n", types[j].count, this_type, client->identifier);
+	}
     }
 
   /* All approx currently - same as gnome system monitor */
    client->other_bytes += client->n_windows * 24;
    client->other_bytes += client->n_gcs * 24;
-   client->other_bytes += client->n_pictures * 24;
-   client->other_bytes += client->n_glyphsets * 24;
    client->other_bytes += client->n_fonts * 1024;
-   client->other_bytes += client->n_colormaps * 24;
-   client->other_bytes += client->n_passive_grabs * 24;
    client->other_bytes += client->n_cursors * 24;
-   client->other_bytes += client->n_other * 24;
-  
+   client->other_bytes += client->n_colormaps * 24;
+   client->other_bytes += client->n_map_entries * 24;
+   client->other_bytes += client->n_other_clients * 24;
+   client->other_bytes += client->n_passive_grabs * 24;
+
+   client->other_bytes += client->n_pictures * 24;
+   client->other_bytes += client->n_pictformats * 24;
+   client->other_bytes += client->n_glyphsets * 24;
+
+   client->other_bytes += client->n_crtcs * 24;
+   client->other_bytes += client->n_modes * 24;
+   client->other_bytes += client->n_outputs * 24;
+
+   client->other_bytes += client->n_input_clients * 24;
+
+   client->other_bytes += client->n_unknown * 24;
+
  cleanup:
    if (types) XFree(types);
 
@@ -464,23 +527,33 @@ xrestop_display(XResTopApp *app)
 {
 	int  i;
 	
-	printf("res-base,Wins,GCs,Fnts,Pxms,Misc,Pxm mem,Other,Total,PID,Identifier\n");
+	printf("res-base,Windows,Pixmaps,GCs,Fonts,Cursors,Colormaps,Map entries,Other clients,Grabs,Pictures,Pictformats,Glyphsets,CRTCs,Modes,Outputs,Xi clients,Unknown,Pixmap mem,Misc mem,Total mem,PID,Identifier\n");
 
 	for (i = 0; i < app->n_clients; i++)
 	{
-		printf("%.7x,%d,%d,%d,%d,%d,%liB,%liB,%liB,%d,%s\n", 
+		printf("%.7x,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%liB,%liB,%liB,%d,%s\n", 
 		       (unsigned int)app->clients[i]->resource_base, 
 		       app->clients[i]->n_windows, 
-		       app->clients[i]->n_gcs, 
-		       app->clients[i]->n_fonts,
 		       app->clients[i]->n_pixmaps,
-		       
-		       app->clients[i]->n_pictures 
-		       + app->clients[i]->n_glyphsets
-		       + app->clients[i]->n_colormaps
-		       + app->clients[i]->n_passive_grabs
-		       + app->clients[i]->n_cursors
-		       + app->clients[i]->n_other,
+		       app->clients[i]->n_gcs,
+		       app->clients[i]->n_fonts,
+		       app->clients[i]->n_cursors,
+		       app->clients[i]->n_colormaps,
+		       app->clients[i]->n_map_entries,
+		       app->clients[i]->n_other_clients,
+		       app->clients[i]->n_passive_grabs,
+
+		       app->clients[i]->n_pictures,
+		       app->clients[i]->n_pictformats,
+		       app->clients[i]->n_glyphsets,
+
+		       app->clients[i]->n_crtcs,
+		       app->clients[i]->n_modes,
+		       app->clients[i]->n_outputs,
+
+		       app->clients[i]->n_input_clients,
+
+		       app->clients[i]->n_unknown,
 		       
 		       app->clients[i]->pixmap_bytes,
 		       app->clients[i]->other_bytes,
