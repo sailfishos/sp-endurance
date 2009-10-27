@@ -66,7 +66,7 @@
  */
 typedef struct {
 	int skip;	/* whether to skip this item */
-	char cmd[32];	/* command line[read/show size] */
+	char cmd[78];	/* command line[read/show size] */
 	char pid[6];	/* Pid */
 } status_t;
 
@@ -397,7 +397,7 @@ static void show_fd_counts(int num, status_t *statuslist)
 	status_t *s;
 	DIR *dir;
 
-	fputs("PID,FD count,Command:\n", stdout);
+	fputs("PID,FD count,Command line:\n", stdout);
 	for (s = statuslist, idx = 0; idx < num; idx++, s++) {
 
 		if (s->skip) {
@@ -419,12 +419,13 @@ static void show_fd_counts(int num, status_t *statuslist)
 		/* count files in the fd/ subdirectory */
 		for (fds = 0; readdir(dir); fds++)
 		  ;
+		closedir(dir);
+
 		/* ignore current and parent dir entries */
 		fds -= 2;
 		assert(fds >= 0);
 		fprintf(stdout, "%s%s%d%s%s\n",
 			s->pid, CSV_SEPARATOR, fds, CSV_SEPARATOR, s->cmd);
-		closedir(dir);
 	}
 	if (exited) {
 		fprintf(stderr,
@@ -444,9 +445,8 @@ static status_t *read_info(int num, struct dirent **namelist)
 	FILE *fp;
 	struct dirent **n;
 	status_t *statuslist, *s;
-	char cmdline[2*sizeof(s->cmd)];
-	char filename[20];
-	int idx, exited = 0;
+	int i, idx, count, exited = 0;
+	char filename[20], *cmdline;
 	
 	/* allocate & zero status for each of the processes */
 	statuslist = calloc(num, sizeof(status_t));
@@ -479,15 +479,16 @@ static status_t *read_info(int num, struct dirent **namelist)
 			exited++;
 			continue;
 		}
-		if (fgets(cmdline, sizeof(cmdline), fp)) {
-			/* remove path and store it */
-			strncpy(s->cmd, basename(cmdline), sizeof(s->cmd));
-			s->cmd[sizeof(s->cmd)-1] = '\0';
-		} else {
-			/* kernel threads don't have cmdline */
-			s->cmd[0] = '\0';
-		}
+		count = fread(s->cmd, 1, sizeof(s->cmd), fp);
 		fclose(fp);
+		
+		cmdline = s->cmd;
+		for (i = 0; i < count-1; i++) {
+			if (cmdline[i] < ' ') {
+				cmdline[i] = ' ';
+			}
+		}
+		cmdline[i] = '\0';
 	}
 	free(namelist);
 	if (exited) {

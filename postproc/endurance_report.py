@@ -517,7 +517,7 @@ def get_commands_and_fd_counts(file):
         if not line:
             break
         pid,fds,name = line.split(',')
-        commands[pid] = name
+        commands[pid] = os.path.basename(name.split(' ')[0])
         fd_counts[pid] = int(fds)
     return (commands,fd_counts)
 
