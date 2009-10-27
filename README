@@ -2,27 +2,15 @@
 INSTRUCTIONS FOR ENDURANCE MEASUREMENTS
 =======================================
 
-Changes  (IMPORTANT!)
--------
+Collecting the endurance measurements
+-------------------------------------
 
-Nov 2006:
-- The endurance measurements are saved into separate directories
-- Post-processing scripts accept now directory names instead of file names
-
-
-Usage
------
-
-Usage, on target:
 - pre-requirement:
-  - Target kernel has SMAPS enabled and normal Busybox cli tools
-  - You have installed the sp-endurance ARM package (+ dependencies)
-  - If you want more details process memory usage information,
-    install also sp-smaps-measure package
+  - Kernel with SMAPS enabled and normal POSIX tools
+    (like Maemo and about all normal Linux distributions)
+  - sp-endurance package and its dependencies installed
+
 1. Clean syslog (as root), e.g. with:
-   * If you have FTD installed:
-     echo "" > /var/ftd-log/logs/syslog
-     echo "" > /var/ftd-log/syslog
    * If you have normal syslog:
      echo "" > /var/log/syslog.old
      echo "" > /var/log/syslog
@@ -38,29 +26,41 @@ Usage, on target:
    write a lot of data to syslog, you might clean the syslog also
    after step 4)
 
-Usage, on the PC:
+With the "endurance-mem-overview" script one can quickly check from
+the collected data whether there were (already) large differencies
+in the whole system memory usage.  This way only individual process
+leakage and the leakage of other (less frequently leaked) resources
+needs to be investigated with the full post-processing tools.
+
+
+Post-processing / visualizing the endurance data
+------------------------------------------------
+
 - Pre-requirements:
-   You have installed the sp-endurance-postproc PC package (+ dependencies).
-1. Copy the contents of usecase/ -directory on the target to PC
-2. Run:
+  - sp-endurance-postproc package and its dependencies isntalled
+  - the contents of the "usecase" directory (collected endurance data)
+
+1. Run:
      parse-endurance-measurements --report use-case-name usecase/[0-9]*
-   This will produce:
-   - the "use-case-name.html" file
-   - reports about errors extracted from the syslog
-   If you want also details memory usage information from the applications,
-   give additional --parse-smaps argument to the script.  This will
-   require sp-smaps-visualize package on PC and sp-smaps-measure
-   package to have been installed on the target device. Or just read
-   the smaps.cap.gz files directly
+
+This will produce:
+- the "use-case-name.html" file
+- reports about errors extracted from the syslog
+
+If you want also details memory usage information from the
+applications, give additional --parse-smaps argument to the script.
+This will require sp-smaps-visualize package. Or just read the
+smaps.cap.gz files directly (extract-endurance-process-smaps
+extracts just the given process information from all rounds).
 
 
 Files coming from the source package
 ------------------------------------
 
-Files for the target device:
+Files for the endurance data collection:
 - measure/save-incremental-endurance-stats
   - saves all the measurement data under the given directory
-    using the tools below, date, df and sp_smaps_snapshot
+    using the tools below, date, df, sp_smaps_snapshot etc
 - measure/proc2csv
   - binary required by save-incremental-endurance-stats script
   - outputs contents of /proc/ files as CSV data
@@ -68,9 +68,10 @@ Files for the target device:
   - binary required by save-incremental-endurance-stats script
   - outputs X clients resource usage from the X server as CSV data
 - endurance-mem-overview
-  - show ASCII chart of system memory usage from the endurance data
+  - show ASCII chart of system memory usage from the already
+    collected endurance data
 
-Files for the PC:
+Files for the data post-processing:
 - postproc/parse-endurance-measurements
   - runs endurance_report.py with suitable options
 - postproc/endurance_report.py
@@ -82,6 +83,9 @@ Files for the PC:
   - script for making several reports out of given data files
     (e.g. if device has booted in middle of testing, that invalidates
     the memory changes, so you want a separate report after that)
+- postproc/extract-endurance-process-smaps
+  - script for extracting just the given process SMAPS information
+    from all the endurance rounds for comparising (diff -u ...)
 
 Other files:
 - README
