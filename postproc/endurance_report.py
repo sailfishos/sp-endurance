@@ -234,6 +234,8 @@
 # 2009-10-26:
 # - Adapt to proc2csv providing whole command line
 # - Parse X client resource counts and show them in summary
+# - Parse ifconfig output and show network usage distribution between
+#   interfaces (network/radio usage has use-time implications)
 # - Generalize and move compressed file logging, opening and error
 #   handling to syslog_parse.py
 # TODO:
@@ -708,6 +710,37 @@ def parse_csv(file):
     
     return data
 
+# ------------------- ifconfig parsing -----------------------
+
+def parse_ifconfig(file):
+    """reads interface = [send,receive] information from ifocnfig output"""
+    regex = re.compile("packets:([0-9]+) errors:([0-9]+) dropped:([0-9]+)")
+    transfers = {}
+    interface = None
+    rpackets = tpackets = 0
+    while 1:
+        line = file.readline()
+        if not line:
+            break
+        if line[0] > ' ':
+            if interface and interface != "lo":
+                transfers[interface] = int(rpackets) + int(tpackets)
+            interface = line.split()[0]
+            continue
+        line = line.strip()
+        if line.startswith("RX"):
+            match = regex.search(line)
+            if match:
+                rpackets,rerrors,rdropped = match.groups()
+        elif line.startswith("TX"):
+            match = regex.search(line)
+            if match:
+                tpackets,terrors,tdropped = match.groups()
+    if interface and interface != "lo":
+        transfers[interface] = int(rpackets) + int(tpackets)
+    return transfers
+
+
 # --------------------- HTML output ---------------------------
 
 def get_pids_from_procs(processes, commands):
@@ -999,7 +1032,7 @@ def output_run_diffs(idx1, idx2, data, do_summary):
             return
         # Scale the graphics to the largest CPU usage value.
         divisor = float(sum(diffs[0][1:3]))
-        output_memory_graph_table(\
+        output_graph_table(\
             ("Command[Pid]:", "<font color=%s>system</font> / <font color=%s>user</font>" % bar3colors[0:2], "CPU Usage:"),
             bar3colors[0:2],\
             [(x[0], (x[1]/divisor, x[2]/divisor),\
@@ -1182,7 +1215,7 @@ may appear under multiple error types.
 
 # ------------------- output memory graphs -------------------------
 
-def output_memory_graph_table(titles, colors, data):
+def output_graph_table(titles, colors, data):
     "outputs memory usage bars for given (name, (values), tex(t)) tupple array"
     width = 640 # total width of the graph bars
     print "<table><tr>"
@@ -1434,7 +1467,7 @@ leaks which cause process eventually to run out of (2GB) address space
             titles[2] = "" #Swap
             titles[3] = "" #Dirty
             titles[4] = "" #PSS
-        output_memory_graph_table(titles, bar2colors, columndata)
+        output_graph_table(titles, bar2colors, columndata)
 
 
 def output_system_load_graphs(data):
@@ -1471,7 +1504,7 @@ def output_system_load_graphs(data):
         idx += 1
         prev = testcase
     titles = ("Test-case:", "system load:", "CPU usage-%:")
-    output_memory_graph_table(titles, bar3colors, entries)
+    output_graph_table(titles, bar3colors, entries)
     if reboots:
         text = '<p>Reboots occured during rounds:'
         for r in reboots:
@@ -1485,6 +1518,52 @@ def output_system_load_graphs(data):
     print '<tr><td bgcolor="%s" height=16 width=16><td>CPU time wasted waiting for I/O (idle)' % bar3colors[3]
     print '<tr><td bgcolor="%s" height=16 width=16><td>CPU time idle' % bar3colors[4]
     print '</table>'
+
+
+def output_network_use_graphs(data):
+    print '<p>Network interface usage distribution during the execution of test cases.'
+    print '<p>'
+    interfaces = {}
+    # collect interfaces
+    for testcase in data:
+        for face in testcase['transfers']:
+            if face not in interfaces and testcase['transfers'][face] > 0:
+                interfaces[face] = []
+    # collect test round data per interfaces
+    faces = interfaces.keys()
+    faces.sort() # get phonet first
+    for testcase in data:
+        for face in faces:
+            if face in testcase['transfers']:
+                interfaces[face].append(testcase['transfers'][face])
+            else:
+                interfaces[face].append(0)
+    # arrange back to rounds
+    rounds = []
+    for i in range(len(data)):
+        line = []
+        for face in faces:
+            line.append(interfaces[face][i])
+        rounds.append(line)
+    # find max
+    scale =  0
+    for r in rounds:
+        total = sum(r)
+        if total > scale:
+            scale = total
+    scale = float(scale)
+    # create table
+    idx = 0
+    entries = []
+    case = "Initial state:"
+    for r in rounds:
+        idx += 1
+        bars = [x/scale for x in r]
+        vals = ["%sB" % x for x in r]
+        entries.append((case, bars, vals))
+        case = 'Test round %02d:' % idx
+    titles = ["Test-case:", "network usage:"] + ["%s:" % x for x in faces]
+    output_graph_table(titles, bar1colors[:len(faces)], entries)
 
 
 def output_system_memory_graphs(data):
@@ -1545,7 +1624,7 @@ def output_system_memory_graphs(data):
         # done!
         columndata.append((case, bars, memtext))
     titles = ("Test-case:", "memory usage graph:", swaptext, "RAM used:", "free:")
-    output_memory_graph_table(titles, bar1colors, columndata)
+    output_graph_table(titles, bar1colors, columndata)
     print '<table><tr><th><th align="left">Legend:'
     if testcase['swap_total']:
         print '<tr><td bgcolor="%s" height="16" width="16"><td>Swap used' % bar1colors[0]
@@ -1593,6 +1672,7 @@ def output_html_report(data):
   <ul>
     <li><a href="#system-memory">System memory usage</a>
     <li><a href="#system-load">System load</a>
+    <li><a href="#network-use">Network usage</a>
     <li><a href="#process-memory">Processes memory usage</a>
   </ul>
 <li>Resource usage changes for each of the test rounds:
@@ -1631,6 +1711,11 @@ def output_html_report(data):
 <a name="system-load"></a>
 <h3>System load</h3>"""
     output_system_load_graphs(data)
+    print """
+<hr>
+<a name="network-use"></a>
+<h3>Network usage</h3>"""
+    output_network_use_graphs(data)
     print """
 <hr>
 <a name="process-memory"></a>
@@ -1725,6 +1810,12 @@ def parse_syte_stats(dirs):
             items['/proc/stat'] = parse_proc_stat(file)
             if not items['/proc/stat']:
                 syslog.error_exit("/proc/stat parsing failed")
+
+        file, filename = syslog.open_compressed("%s/ifconfig" % dirname)
+        if file:
+            items['transfers'] = parse_ifconfig(file)
+            if not items['transfers']:
+                syslog.error_exit("ifconfig output parsing failed")
 
         data.append(items)
     return data
