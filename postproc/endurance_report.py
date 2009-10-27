@@ -226,8 +226,8 @@
 # - Process CPU Usage graph: show summary about the processes that we did not
 #   include in the graph.
 # 2009-06-01:
-# - System Load graph: fix division with zero with exactly identical data. This
-#   happened if user manually made another copy of one of the snapshot
+# - System Load graph: fix division with zero with exactly identical data.
+#   This happened if user manually made another copy of one of the snapshot
 #   directories.
 # 2009-10-15:
 # - Take last three xresource values, not ones from fixed offset.
@@ -920,7 +920,7 @@ def output_errors(idx, run1, run2):
 
 
 def output_data_links(run):
-    "output links to all collected data"
+    "output links to all collected uncompressed data"
     basedir = run['basedir']
     print "<h4>For more details on...</h4>"
     print "<ul>"
@@ -1354,9 +1354,7 @@ def output_apps_memory_graphs(cases):
 changes during tests are listed.  If a process has same name and size
 as its parent, it's assumed to be a thread and ignored.
 
-<p>Note: Memory is not any more accounted as dirty if it's swapped out
-(even when it's paged back in), this seems like a kernel (2.6.21) bug.
-RSS can decrease if device is just running low on memory because
+<p>Note: RSS can decrease if device is just running low on memory because
 kernel can just discard unmodified/unused pages. Size tells amount of
 all virtual allocations and memory maps of a process, so it might not
 have any relation to real process memory usage. However, it can show
@@ -1422,18 +1420,14 @@ leaks which cause process eventually to run out of (2GB) address space
                 barwidth_size  = size/largest_size
                 #  ___________________________________________________
                 # |      |    ____________________     |              |
-                # |      |   |                    |    |              |
                 # |      |   |  _______________   |    |              |
                 # |      |   | |               |  |    |              |
-                # |      |   | | Private Dirty |  |    |              |
+                # | SWAP |   | | Private Dirty |  |    |              |
                 # |      |   | |_______________|  |    |              |
-                # | SWAP |   |                    |    |              |
                 # |      |   |        PSS         |    |              |
                 # |      |   |____________________|    |              |
-                # |      |                             |              |
                 # |      |            RSS              |              |
                 # |______|_____________________________|              |
-                # |                                                   |
                 # |                   Size                            |
                 # |___________________________________________________|
                 #
@@ -1663,7 +1657,7 @@ def output_html_report(data):
 <body>
 <h1>%s</h1>
 
-<!-- endurance_report.py v1.1.13 -->
+<!-- endurance_report.py v2.0 -->
 
 <p><b>Contents:</b>
 <ul>
