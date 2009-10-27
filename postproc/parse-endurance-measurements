@@ -225,7 +225,7 @@ stop=""
 # parse arguments
 echo "Checking arguments..."
 for i in $*; do
-	# argument value is after first '=' character
+	# option value is after first '=' character
 	val=${i#*=}
 	case "$i" in
 
