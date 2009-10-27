@@ -1,8 +1,11 @@
 # build and install rules for endurance tools and scripts
 
-CFLAGS = -Wmissing-prototypes -Wstrict-prototypes -Wsign-compare\
+CFLAGS ?= -O2 -Wall
+
+# add some extra warnings
+CFLAGS += -Wmissing-prototypes -Wstrict-prototypes -Wsign-compare\
  -Wbad-function-cast -Wcast-qual -Wpointer-arith -Wshadow\
- -Wwrite-strings -Wcast-align -W -Wall -Os -s
+ -Wwrite-strings -Wcast-align -W
 
 BINS = measure/proc2csv measure/xmeminfo 
 SRC_FILES = Makefile src/proc2csv.c src/xmeminfo.c
