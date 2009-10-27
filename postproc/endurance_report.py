@@ -233,6 +233,7 @@
 # - Take last three xresource values, not ones from fixed offset.
 # 2009-10-26:
 # - Adapt to proc2csv providing whole command line
+# - Parse X client resource counts and show them in summary
 # - Generalize and move compressed file logging, opening and error
 #   handling to syslog_parse.py
 # TODO:
@@ -281,13 +282,14 @@ import syslog_parse as syslog
 # CSV field separator
 SEPARATOR = ','
 
-# these are HTML hex color values for different tables
+# these are HTML hex color values for different HTML tables
 class Colors:
     errors = "FDEEEE"
     disk = "EEFDFD"
     memory = "EEEEFD"
     threads = "CFEFEF"
-    xres = "FDEEFD"
+    xres_mem = "FDEEFD"
+    xres_count = "EEDDEE"
     fds = "FDFDEE"
     shm = "EEEEEE"
     kernel = "EFFDF0"
@@ -410,14 +412,16 @@ def get_filesystem_usage(file):
     return mounts
 
 
-def get_xclient_memory(file):
+def get_xres_usage(file):
     "reads X client resource usage, return command hash of total X mem usage"
-    clients = {}
+    xres_mem = {}
+    xres_count = {}
     while 1:
         line = file.readline().strip()
         if not line:
             break
-        # last three columns are the interesting ones
+        
+        # last three columns are the most interesting ones
         mem,pid,name = line.split(',')[-3:]
         if pid[-1] != 'B' and mem[-1] == 'B':
             mem = int(mem[:-1])
@@ -426,8 +430,17 @@ def get_xclient_memory(file):
             sys.exit(1)
         # in KBs, check on clients taking > 1KB
         if mem >= 1024:
-            clients[name] = mem/1024
-    return clients
+            xres_mem[name] = mem/1024
+        
+        count = 0
+        # resource base, counts of resources, their memory usages, PID, name
+        cols = line.split(',')
+        for i in range(1, len(cols) - 3):
+            if cols[i][-1] != 'B':
+                count += int(cols[i])
+        xres_count[name] = count
+
+    return (xres_mem, xres_count)
 
 
 def get_process_info(file, headers):
@@ -687,7 +700,7 @@ def parse_csv(file):
         sys.exit(2)
 
     # get the X resource usage
-    data['xclients'] = get_xclient_memory(file)
+    data['xclient_mem'], data['xclient_count'] = get_xres_usage(file)
     
     # get the file system usage
     skip_to(file, "Filesystem")
@@ -1056,9 +1069,13 @@ def output_run_diffs(idx1, idx2, data, do_summary):
         print "<p>No SMAPS data for process private memory usage available."
     
     # process X resource usage changes
-    diffs = get_usage_diffs(run1['xclients'], run2['xclients'])
-    output_diffs(diffs, "X resource usage", "X client", " kB",
-                    Colors.xres, do_summary)
+    diffs = get_usage_diffs(run1['xclient_mem'], run2['xclient_mem'])
+    output_diffs(diffs, "X resource memory usage", "X client", " kB",
+                 Colors.xres_mem, do_summary)
+    if do_summary:
+        diffs = get_usage_diffs(run1['xclient_count'], run2['xclient_count'])
+        output_diffs(diffs, "X resource count", "X client", "",
+                     Colors.xres_count, do_summary)
     
     # FD count changes
     diffs = get_pid_usage_diffs(run2['commands'], run2['processes'],
