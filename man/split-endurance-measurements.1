@@ -1,4 +1,4 @@
-.TH SPLIT-ENDURANCE-MEASUREMENTS 1 "2007-04-04" "sp-endurance"
+.TH SPLIT-ENDURANCE-MEASUREMENTS 1 "2009-10-26" "sp-endurance"
 .SH NAME
 split-endurance-measurements - split endurance measurements to separate reports
 .SH SYNOPSIS
@@ -8,9 +8,9 @@ split-endurance-measurements '\fIsplit points\fP'
 \fIsplit-endurance-measurements\fP splits the measurements into
 separate reports at indicated measurements split points.  Typically
 you use this tool if the normal endurance report indicates that
-the device has booted between the measurements as the resource
-usage differences are not valid across boots.  The split point
-numbers correspond to the test round numbers in endurance report.
+the device has re-booted between the measurements as the resource
+usage differences are not valid across re-boots.  The split point
+numbers correspond to the test round numbers in the endurance report.
 .SH EXAMPLE
 A usage example:
 .br
@@ -19,7 +19,7 @@ A usage example:
 .IR save-incremental-endurance-stats (1),
 .IR parse-endurance-measurements (1)
 .SH COPYRIGHT
-Copyright (C) 2007 Nokia Corporation.
+Copyright (C) 2007-2009 Nokia Corporation.
 .PP
 This is free software.  You may redistribute copies of it under the
 terms of the GNU General Public License v2 included with the software.

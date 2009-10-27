@@ -1,4 +1,4 @@
-.TH PARSE-ENDURANCE-MEASUREMENTS 1 "2007-04-04" "sp-endurance"
+.TH PARSE-ENDURANCE-MEASUREMENTS 1 "2009-10-26" "sp-endurance"
 .SH NAME
 parse-endurance-measurements - produce HTML summary from the endurance metrics
 .SH SYNOPSIS
@@ -42,9 +42,7 @@ If you want more detailed SMAPS report from some specific test round
 without using the slow '--parse-smaps' option for all the rounds,
 install \fIsp-smaps-visualize\fP package and run these directly:
 .br
-	sp_smaps_normalize -f smaps.cap -o smaps.csv
-.br
-	sp_smaps_analyze smaps.csv
+	sp_smaps_analyze smaps.cap
 .SH EXAMPLES
 Normal usage:
 .br
@@ -57,10 +55,11 @@ Example of using most of the options:
 	  --parse-smaps --split-at-reboots test-case/[0-9]*
 .SH SEE ALSO
 .IR save-incremental-endurance-stats (1),
+.IR extract-endurance-process-smaps (1),
 .IR split-endurance-measurements (1),
 .IR endurance_report.py (1)
 .SH COPYRIGHT
-Copyright (C) 2007 Nokia Corporation.
+Copyright (C) 2007-2009 Nokia Corporation.
 .PP
 This is free software.  You may redistribute copies of it under the
 terms of the GNU General Public License v2 included with the software.
