@@ -3,7 +3,7 @@
 # Show memory usage overview graph from usage.csv files.
 # This file is part of sp-endurance.
 #
-# Copyright (C) 2007 by Nokia Corporation
+# Copyright (C) 2007,2009 by Nokia Corporation
 #
 # Contact: Eero Tamminen <eero.tamminen@nokia.com>
 #
@@ -20,39 +20,214 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA
+#
+# Changes:
+# - 2009-10-26: rewrite; split work into several steps, take also swap
+#   into account, let user select whether total, swap or ram usage change
+#   is show and what is the range of memory usage shown.
 
-if [ $# -lt 2 ]; then
+min=0
+max=0
+show="total"
+
+usage ()
+{
 	name=${0##*/}
 	echo
-	echo "usage: $name dir1 dir2 ..."
+	echo "usage: $name [options] dir1 dir2 ..."
 	echo
-	echo "Shows a memory usage overview graph from endurance data as ASCII"
+	echo "Show a memory usage overview from endurance data as ASCII graph."
 	echo "As arguments expects the endurance data directories."
-	echo "Note: the shown values are incorrect if swap is used!"
 	echo
-	echo "Example: $name [0-9][0-9][0-9]"
+	echo "Options:"
+	echo -e "\t--base=<MBs>\tMinimum/base value on the ASCII graph in MBs."
+	echo -e "\t--range=<MBs>\tMemory range shown on the ASCII graph in MBs"
+	echo -e "\t\t\tfrom the min/base value upwards."
+	echo -e "\t--show=t|r|s\tWhether to show [T]otal (default),"
+	echo -e "\t\t\t[R]AM or [S]wap usage."
+	echo
+	echo "If no options are shown, graph is scaled to fit all memory"
+	echo "usage changes within the selected endurance data dirs."
+	echo
+	echo "Examples:"
+	echo -e "\t$name --range=200 --base=100 --show=t [0-9]*"
+	echo -e "\t$name --range=100 [0-9]*"
+	echo
+	echo "ERROR: $1!"
 	echo
 	exit 1
+}
+
+for i in $*; do
+	# option value is after the first '=' character
+	val=${i#*=}
+	case "$i" in
+
+		--base=*)
+		# MB to KB
+		min=$(($val*1000))
+		shift
+		;;
+
+		--range=*)
+		# MB to KB
+		max=$(($val*1000))
+		shift
+		;;
+
+		--show=*)
+		case "$val" in
+			[Tt])
+			show="total"
+			;;
+			[Rr])
+			show="RAM"
+			;;
+			[Ss])
+			show="swap"
+			;;
+			*)
+			usage "unknown --show option value '$val'"
+			;;
+		esac
+		shift
+		;;
+
+		-*)
+		# for any other options, show usage
+		usage "unrecognized option '$i'"
+		;;
+	esac
+done
+
+if [ $# -lt 2 ]; then
+	usage "too few arguments"
 fi
-echo "Memory usage in given endurance rounds:"
+
+tmpfile=$(tempfile)
+exit_cleanup ()
+{
+	if [ $? -ne 0 ]; then
+		cat $tmpfile
+	fi
+	rm -f $tmpfile
+}
+trap exit_cleanup EXIT
+
+# collect the data
+rm $tmpfile
 for i in $*; do
 	file="$i/usage.csv"
 	if [ \! -f "$file" ]; then
 		echo "ERROR: '$file' is missing!"
 		exit 1
 	fi
-	echo -n "$i: "
-	awk '
-BEGIN { FS=" kB,"; max=78-14 }
-/^MemTotal,/ { found=1; next }
-! found { next }
-found { total=$1; free=$2; buff=$3; cached=$4; exit 0 }
-END {
-  used=total-free-buff-cached;
-  usebars=int(max*used/total);
-  freebars=max-usebars;
-  for (i = 0; i < usebars; i++) printf "0";
-  for (i = 0; i < freebars; i++) printf " ";
-  printf "|%6dK\n", used
-}' $file
+	awk -v round=$i -v show=$show '
+BEGIN {
+	# first split at commas...
+	FS = ",";
+}
+/^MemTotal,/ {
+	if ($15 != "SwapFree") {
+		printf "ERROR: meminfo columns mismatch; 15th column = \"%s\", not SwapFree!\n", $15;
+		exit 1;
+	}
+	# ...and after above check, split also " kB" away.
+	FS = " kB,";
+	found = 1;
+	next;
+}
+! found {
+	next;
+}
+found {
+	swapfree = $15;
+	swaptotal = $14;
+	swapused = swaptotal - swapfree;
+	
+	total = $1;
+	free = $2;
+	buff = $3;
+	cached = $4;
+	used = total-free-buff-cached;
+
+	if (show == "total") {
+		print used+swapused, round;
+	} else if (show == "swap") {
+		print swapused, round;
+	} else if (show == "RAM") {
+		print used, round;
+	} else {
+		print "ERROR: unknown show value:", show;
+		exit 1;
+	}
+	exit 0;
+}' $file >> $tmpfile
+	if [ $? -ne 0 ]; then
+		exit 1
+	fi
 done
+
+# whether to take min shown value from data or user?
+if [ $min -eq 0 ]; then
+	min=$(sort -n  $tmpfile | awk '{print $1; exit 0}')
+fi
+# truncate to closest MB
+min=$(($min/1000))
+echo "Minimum (shown) $show memory usage = $min MB"
+min=$(($min*1000))
+
+if [ $max -eq 0 ]; then
+	# absolute maximum value from data
+	max=$(sort -nr $tmpfile | awk '{print $1; exit 0}')
+else
+	# relative maximum value from user (add range to base value)
+	max=$(($min+$max))
+fi
+# round up to closes MB
+max=$((($max+999)/1000))
+echo "Maximum (shown) $show memory usage = $max MB"
+max=$(($max*1000))
+
+echo "Memory usage ($show) in given endurance rounds:"
+awk -v min=$min -v max=$max '
+BEGIN {
+	if (int (min) == 0 || int(max) == 0) {
+		printf "ERROR: neither max nor min values can be zero (%s, %s)!\n", max, min;
+		exit 1;
+	}
+	maxdiff = max - min;
+	if (maxdiff < 0) {
+		printf "ERROR: max value cannot be smaller than min (%s < %s)!\n", max, min;
+		exit 1;
+	}
+	if (maxdiff == 0) {
+		printf "-> NO differencies in memory usage!?!"
+		exit 0;
+	}
+	maxcol = 79-14;
+}
+
+{ show_usage($2, $1) }
+
+function show_usage(round, used)
+{
+	base = used - min;
+	if (base < 0) {
+		base = 0;
+	}
+	usebars = int(maxcol*base/maxdiff);
+	if (usebars > maxcol) {
+		usebars = maxcol;
+	}
+	freebars = maxcol - usebars;
+
+	printf "%s: ", round;
+	for (i = 0; i < usebars; i++) {
+		printf "0";
+	}
+	for (i = 0; i < freebars; i++) {
+		printf " ";
+	}
+	printf "|%6dK\n", used;
+}' $tmpfile
