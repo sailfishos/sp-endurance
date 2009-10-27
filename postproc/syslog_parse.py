@@ -1,6 +1,4 @@
 #!/usr/bin/python
-# -*- indent-tabs-mode: t -*-
-# vim: et:ts=4:sw=4:
 # This file is part of sp-endurance.
 #
 # Copyright (C) 2006-2009 by Nokia Corporation
@@ -94,6 +92,9 @@
 # 2009-04-28:
 # - Parse upstart messages
 # - Use the psyco JIT compiler, if installed. Gives 2-3x speed up.
+# 2009-10-26:
+# - Generalize compressed file opening in syslog parsing and endurance
+#   report generation to common function here
 
 """
 NAME
@@ -156,11 +157,61 @@ verbose_options = [
 ]
 
 
+# -------------------- error helpers --------------------------
+
 def parse_error(write, error):
-    "outputs error/warning both to stderr and as HTML using given write func"
+    "output given error/warning both to stderr and as HTML using given write func"
     if use_html:
         write("<p><font color=red>%s</font>\n" % error)
     sys.stderr.write("%s\n" % error)
+
+
+def error_exit(msg):
+    "outputs given message as error to stderr and exit"
+    sys.stderr.write("ERROR: %s!\n" % msg)
+    sys.exit(1)
+
+# --------------------- file helper --------------------------
+
+FATAL = True
+
+def open_compressed(filename, fatal = False):
+    """Open potentially compressed file and return its name and handle.
+       First checks whether there's a gzipped or lzopped version
+       of the file and if not, assumes file to be non-compressed.
+       If the file doesn't exist, return None.
+    """
+    for suffix in ("", ".gz", ".lzo"):
+        tmp = filename + suffix
+        if os.path.exists(tmp):
+            filename = tmp
+            break
+
+    if not os.path.exists(filename):
+        if fatal == FATAL:
+            error_exit("%s missing" % filename)
+        return (None, None)
+
+    sys.stderr.write("Parsing '%s'...\n" % filename)
+
+    if filename.endswith(".gz"):
+        # Unfortunately the python gzip module is slow. Using /bin/zcat and
+        # popen() gives 2-3x speed up.
+        if os.system("which zcat >/dev/null") == 0:
+            file = os.popen("zcat %s" % filename)
+        else:
+            file = gzip.open(filename, "r")
+
+    elif filename.endswith(".lzo"):
+        if os.system("which lzop >/dev/null") == 0:
+            file = os.popen("lzop -dc %s" % filename)
+        else:
+            parse_error(write, "ERROR: file '%s' was compressed with lzop, but decompression program not available" % filename)
+            sys.exit(1)
+    else:
+        file = open(filename, "r")
+
+    return file, filename
 
 
 # --------------------- signal utility --------------------------
@@ -511,7 +562,7 @@ def parse_upstart(exit, kill, respawn, respawn2fast, line):
 
 # --------------------- syslog parsing ---------------------------
 
-def parse_syslog(write, file):
+def parse_syslog(write, syslog):
     "parses kernel, DSP, connectivity, DSME, Maemo-launcher and Glib reported errors from syslog"
     # Syslog entry examples:
     # Nov 16 01:53:52 Nokia770-44 syslogd 1.4.1#17.osso1: restart.
@@ -536,24 +587,6 @@ def parse_syslog(write, file):
     # Jan  1 00:02:00 Nokia-NXX-10-2 dbus[1212]: WARNING: match type='signal',sender='org.freedesktop.DBus',path='/org/freedesktop/DBus',interface='org.freedesktop.DBus' added by :1.30 (pid=1226, uid=0) who owns services:
     # Jan  1 00:02:00 Nokia-NXX-10-2 dbus[1212]:  :1.30
     # Jan  1 00:02:00 Nokia-NXX-10-2 dbus[1212]:  org.freedesktop.ohm
-
-    if not os.path.exists(file):
-        parse_error(write, "ERROR: syslog file '%s' doesn't exist!" % file)
-        sys.exit(1)
-
-    if file.endswith(".gz"):
-        if os.system("which zcat >/dev/null") == 0:
-            syslog = os.popen("zcat %s" % file)
-        else:
-            syslog = gzip.open(file, "r")
-    elif file.endswith(".lzo"):
-        if os.system("which lzop >/dev/null") == 0:
-            syslog = os.popen("lzop -dc %s" % file)
-        else:
-            parse_error(write, "ERROR: syslog file '%s' was compressed with lzop, but decompression program not available" % file)
-            sys.exit(1)
-    else:
-        syslog = open(file, "r")
 
     messages = {
         'sysrq':      [],
@@ -834,8 +867,7 @@ def output_html_report(files):
 """ % (title, title)
     idx = 0
     for path in files:
-        sys.stderr.write("Parsing '%s'...\n" % path)
-        run = parse_syslog(write, path)
+        run = parse_syslog(write, open_compressed(path, FATAL)[0])
         print "<h1>%s</h2>" % os.path.basename(path)
         print "<font size=-1>(%s)</font>" % path
         if run:
@@ -870,7 +902,7 @@ Syslog report
         print
         print path
         print "-" * len(path)
-        run = parse_syslog(write, path)
+        run = parse_syslog(write, open_compressed(path, FATAL)[0])
         if run:
             stat = output_errors(write, {}, run)
             print

@@ -1,6 +1,4 @@
 #!/usr/bin/python
-# -*- indent-tabs-mode: t -*-
-# vim: et:ts=4:sw=4:
 # This file is part of sp-endurance.
 #
 # Copyright (C) 2006-2009 by Nokia Corporation
@@ -233,8 +231,11 @@
 #   directories.
 # 2009-10-15:
 # - Take last three xresource values, not ones from fixed offset.
+# 2009-10-26:
+# - Adapt to proc2csv providing whole command line
+# - Generalize and move compressed file logging, opening and error
+#   handling to syslog_parse.py
 # TODO:
-# - Have separate error_exit() function?
 # - Mark reboots more prominently also in report (<h1>):
 #   - dsme/stats/32wd_to -> HW watchdog reboot
 #   - dsme/stats/sw_rst -> SW watchdog reboots
@@ -274,7 +275,7 @@ EXAMPLES
         <TOOL_NAME> usecase/ usecase2/ > report.html
 """
 
-import sys, os, re, gzip
+import sys, os, re
 import syslog_parse as syslog
 
 # CSV field separator
@@ -301,13 +302,14 @@ bar2colors = (bar1colors[0], "DE2821", "E0673E", "EAB040", "FBE84A")
 #      red, blue, light blue, magenta, light green
 bar3colors = (bar2colors[1], bar1colors[1], "4265FF", bar1colors[0], bar1colors[2])
 
+
 # --------------------- SMAPS data parsing --------------------------
 
 # address range, access rights, page offset, major:minor, inode, mmap()ed item
 smaps_mmap = re.compile("^[-0-9a-f]+ ([-rwxps]+) [0-9a-f]+ [:0-9a-f]+ \d+ *(|[^ ].*)$")
 
 # data from sp_smaps_snapshot
-def parse_smaps(filename):
+def parse_smaps(file):
     """
     Parse SMAPS and return (smaps, private_code):
       'smaps'        : Per PID dict with keys: private_dirty, swap, pss, rss
@@ -317,21 +319,6 @@ def parse_smaps(filename):
                        system.
     Everything is in kilobytes.
     """
-    if filename.endswith(".gz"):
-        # Unfortunately the python gzip module is slow. Using /bin/zcat and
-        # popen() gives 2-3x speed up.
-        if os.system("which zcat >/dev/null") == 0:
-            file = os.popen("zcat %s" % filename)
-        else:
-            file = gzip.open(filename, "r")
-    elif filename.endswith(".lzo"):
-        if os.system("which lzop >/dev/null") == 0:
-            file = os.popen("lzop -dc %s" % filename)
-        else:
-            parse_error(write, "ERROR: syslog file '%s' was compressed with lzop, but decompression program not available" % filename)
-            sys.exit(1)
-    else:
-        file = open(filename, "r")
     private_code = code = idx = 0
     smaps = {}
     while 1:
@@ -522,10 +509,8 @@ def get_commands_and_fd_counts(file):
     return (commands,fd_counts)
 
 
-def parse_proc_stat(filename):
+def parse_proc_stat(file):
     "Parses relevant data from /proc/stat"
-    file = open(filename)
-    if not file: return None
     stat = {}
     # CPU: take everything except "steal" and "guest", which are some
     # virtualization related counters, obviously not useful in our case.
@@ -626,12 +611,9 @@ def skip_to_next_header(file):
             return line.strip()
 
 
-def parse_csv(filename):
+def parse_csv(file):
     "Parses interesting information from the endurance measurement CSV file"
     data = {}
-    file = open(filename)
-    # filename without the extension
-    data['basedir'] = os.path.dirname(filename)
     
     # Check that file is generated with correct script so that
     # we can trust it's format and order of rows & fields:
@@ -711,8 +693,6 @@ def parse_csv(filename):
     skip_to(file, "Filesystem")
     data['mounts'] = get_filesystem_usage(file)
     
-    # alles clar
-    file.close()
     return data
 
 # --------------------- HTML output ---------------------------
@@ -1695,46 +1675,39 @@ def parse_syte_stats(dirs):
     """parses given CSV files into a data structure"""
     data = []
     for dirname in dirs:
+
         # get basic information
-        file = "%s/usage.csv" % dirname
-        sys.stderr.write("Parsing '%s'...\n" % file)
+        file, filename = syslog.open_compressed("%s/usage.csv" % dirname, syslog.FATAL)
         items = parse_csv(file)
         if not items:
-            sys.stderr.write("CSV parsing failed\n")
-            sys.exit(1)
+            syslog.error_exit("CSV parsing failed")
 
-        for suffix in ("", ".gz", ".lzo"):
-            file = "%s/smaps.cap%s" % (dirname, suffix)
-            if os.path.exists(file):
-                # get system SMAPS memory usage data
-                sys.stderr.write("Parsing '%s'...\n" % file)
-                items['smaps'], items['private_code'] = parse_smaps(file)
-                if not items['smaps']:
-                    sys.stderr.write("SMAPS data parsing failed\n")
-                    sys.exit(1)
-                break
+        # filename without the extension
+        items['basedir'] = dirname
 
-        for suffix in ("", ".gz", ".lzo"):
-            file = "%s/syslog%s" % (dirname, suffix)
-            if os.path.exists(file):
-                # get the crashes and other errors
-                sys.stderr.write("Parsing '%s'...\n" % file)
-                items['errors'] = syslog.parse_syslog(sys.stdout.write, file)
-                items['logfile'] = file
-                break
-
-        file = "%s/step.txt" % dirname
-        if os.path.exists(file):
+        filename = "%s/step.txt" % dirname
+        if os.path.exists(filename):
             # use-case step description
-            items['description'] = open(file).read().strip()
+            items['description'] = open(filename).read().strip()
 
-        file = "%s/stat" % dirname
-        if os.path.exists(file):
-            sys.stderr.write("Parsing '%s'...\n" % file)
+        file, filename = syslog.open_compressed("%s/smaps.cap" % dirname)
+        if file:
+            # get system SMAPS memory usage data
+            items['smaps'], items['private_code'] = parse_smaps(file)
+            if not items['smaps']:
+                syslog.error_exit("SMAPS data parsing failed")
+
+        file, filename = syslog.open_compressed("%s/syslog" % dirname)
+        if file:
+            # get the crashes and other errors
+            items['logfile'] = filename
+            items['errors'] = syslog.parse_syslog(sys.stdout.write, file)
+
+        file, filename = syslog.open_compressed("%s/stat" % dirname)
+        if file:
             items['/proc/stat'] = parse_proc_stat(file)
             if not items['/proc/stat']:
-                sys.stderr.write("/proc/stat parsing failed\n")
-                sys.exit(1)
+                syslog.error_exit("/proc/stat parsing failed")
 
         data.append(items)
     return data
@@ -1743,8 +1716,7 @@ def parse_syte_stats(dirs):
 if __name__ == "__main__":
     if len(sys.argv) < 3:
         msg = __doc__.replace("<TOOL_NAME>", sys.argv[0].split('/')[-1])
-        sys.stderr.write(msg)
-        sys.exit(1)
+        syslog.error_exit(msg)
     # Use psyco if available. Gives 2-3x speed up.
     try:
         import psyco
