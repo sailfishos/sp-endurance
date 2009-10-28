@@ -323,7 +323,7 @@ def parse_smaps(file):
                        system.
     Everything is in kilobytes.
     """
-    private_code = code = idx = 0
+    private_code = code = pid = idx = 0
     smaps = {}
     while 1:
         try:

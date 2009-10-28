@@ -206,8 +206,7 @@ def open_compressed(filename, fatal = False):
         if os.system("which lzop >/dev/null") == 0:
             file = os.popen("lzop -dc %s" % filename)
         else:
-            parse_error(write, "ERROR: file '%s' was compressed with lzop, but decompression program not available" % filename)
-            sys.exit(1)
+            error_exit("file '%s' was compressed with lzop, but decompression program not available" % filename)
     else:
         file = open(filename, "r")
 
