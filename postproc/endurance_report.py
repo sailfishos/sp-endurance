@@ -243,6 +243,7 @@
 # - In memory graphs, handle process as same one regardless
 #   of program name/cmdline changes
 # - Get right fields from ifconfig and show network usage changes, not totals
+# - Support Fremantle low memory limits scheme in addition to Diablo one
 # TODO:
 # - Mark reboots more prominently also in report (<h1>):
 #   - dsme/stats/32wd_to -> HW watchdog reboot
@@ -674,14 +675,17 @@ def parse_csv(file):
     # low memory limits
     skip_to(file, "lowmem_")
     mem = file.readline().split(',')
-    if len(mem) == 3:
+    if len(mem) in (3, 6):
         data['limitlow'] = int(mem[0])
         data['limithigh'] = int(mem[1])
         data['limitdeny'] = int(mem[2])
+        if len(mem) == 6:
+            data['limitlowpages'] = int(mem[3])
+            data['limithighpages'] = int(mem[4])
+            data['limitdenypages'] = int(mem[5])
     else:
         # not fatal as lowmem stuff is not in standard kernel
         sys.stderr.write("\nWarning: CSV file '%s' lowmem limits are missing!\n" % filename)
-        data['limitlow'] = data['limithigh'] = data['limitdeny'] = 0
 
     # get shared memory segment counts
     skip_to(file, "Shared memory segments")
@@ -1621,21 +1625,28 @@ def output_system_memory_graphs(data):
 
         # amount of memory in the device (float for calculations)
         mem_total = float(testcase['ram_total'] + testcase['swap_total'])
-        # memory usage %-limit after which apps are bg-killed
-        mem_low = testcase['limitlow']
-        # memory usage %-limit after which apps refuse certain operations
-        mem_high = testcase['limithigh']
-        # memory usage %-limit after which kernel denies app allocs
-        mem_deny = testcase['limitdeny']
         
-        if mem_low + mem_high + mem_deny > 0:
+        # Fremantle low mem limits?
+        if 'limitlowpages' in testcase:
+            # limit is given as available free memory in pages
+            mem_low  = mem_total - 4*testcase['limitlowpages']
+            mem_high = mem_total - 4*testcase['limithighpages']
+            mem_deny = mem_total - 4*testcase['limitdenypages']
+        # Diablo low mem limits?
+        elif 'limitlow' in testcase:
             # convert percentages to real memory values
-            mem_low = mem_total * mem_low / 100
-            mem_high = mem_total * mem_high / 100
-            mem_deny = mem_total * mem_deny / 100
-        else:
+            percent = 0.01 * mem_total
+            # memory usage %-limit after which apps are bg-killed
+            mem_low  = testcase['limitlow'] * percent
+            # memory usage %-limit after which apps refuse certain operations
+            mem_high = testcase['limithigh'] * percent
+            # memory usage %-limit after which kernel denies app allocs
+            mem_deny = testcase['limitdeny'] * percent
+        # valid mem low limits?
+        if mem_low + mem_high + mem_deny <= 0:
             mem_low = mem_high = mem_deny = mem_total
             sys.stderr.write("Warning: low memory limits are zero -> disabling\n")
+        
         mem_used = testcase['ram_used'] + testcase['swap_used']
         mem_free = testcase['ram_free'] + testcase['swap_free']
         # Graphics

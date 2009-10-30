@@ -21,10 +21,13 @@
  * - PID/fds/ (just the count of open FDs)
  * - PID/stat
  * - PID/status
+ * - sys/vm/lowmem_deny_watermark_pages
+ * - sys/vm/lowmem_notify_high_pages
+ * - sys/vm/lowmem_notify_low_pages
  * - sys/vm/lowmem_deny_watermark
  * - sys/vm/lowmem_notify_high
  * - sys/vm/lowmem_notify_low
- * If the last three do not exist, their values will be zero.
+ * If the last six do not exist, their values will be zero.
  * 
  * NOTES:
  * - Originally this was a 'top' utility contributed by Eero
@@ -258,6 +261,9 @@ static void show_lowmem_limits(void)
 		{ "lowmem_notify_low", 0 },
 		{ "lowmem_notify_high", 0 },
 		{ "lowmem_deny_watermark", 0 },
+		{ "lowmem_notify_low_pages", 0 },
+		{ "lowmem_notify_high_pages", 0 },
+		{ "lowmem_deny_watermark_pages", 0 },
 		{ NULL, 0 }
 	};
 	char *tmp, buf[8];
@@ -276,7 +282,7 @@ static void show_lowmem_limits(void)
 		perror("chdir(sys/vm)");
 		/* not available: zero for the values */
 		for (;;) {
-			fputs("0", stdout);
+			fputc('0', stdout);
 			if (--i <= 0) {
 				newline();
 				break;
@@ -288,10 +294,14 @@ static void show_lowmem_limits(void)
 
 	for (i = 0; files[i].name; i++) {
 		fp = fopen(files[i].name, "r");
+		if (i) {
+			fputc(',', stdout);
+		}
 		if (!fp) {
 			fprintf(stderr,
 				"Warning: show_lowmem_limits() file open failed for: %s\n",
 				files[i].name);
+			fputc('0', stdout);
 			continue;
 		}
 		fgets(buf, sizeof(buf), fp);
@@ -300,9 +310,6 @@ static void show_lowmem_limits(void)
 				*tmp = '\0';
 				break;
 			}
-		}
-		if (i) {
-			fputc(',', stdout);
 		}
 		fputs(buf, stdout);
 		fclose(fp);
