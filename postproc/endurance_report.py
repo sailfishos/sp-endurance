@@ -242,6 +242,7 @@
 # - Show program cmdline with acronym tag (mouse highlight)
 # - In memory graphs, handle process as same one regardless
 #   of program name/cmdline changes
+# - Get right fields from ifconfig and show network usage changes, not totals
 # TODO:
 # - Mark reboots more prominently also in report (<h1>):
 #   - dsme/stats/32wd_to -> HW watchdog reboot
@@ -723,30 +724,27 @@ def parse_csv(file):
 
 def parse_ifconfig(file):
     """reads interface = [send,receive] information from ifocnfig output"""
-    regex = re.compile("packets:([0-9]+) errors:([0-9]+) dropped:([0-9]+)")
+    #regex = re.compile("packets:([0-9]+) errors:([0-9]+) dropped:([0-9]+)")
+    regex = re.compile("RX bytes:([0-9]+) [^:]*TX bytes:([0-9]+)")
     transfers = {}
     interface = None
-    rpackets = tpackets = 0
+    rbytes = tbytes = 0
     while 1:
         line = file.readline()
         if not line:
             break
         if line[0] > ' ':
             if interface and interface != "lo":
-                transfers[interface] = int(rpackets) + int(tpackets)
+                transfers[interface] = int(rbytes) + int(tbytes)
             interface = line.split()[0]
             continue
         line = line.strip()
-        if line.startswith("RX"):
+        if line.startswith("RX bytes"):
             match = regex.search(line)
             if match:
-                rpackets,rerrors,rdropped = match.groups()
-        elif line.startswith("TX"):
-            match = regex.search(line)
-            if match:
-                tpackets,terrors,tdropped = match.groups()
+                rbytes,tbytes = match.groups()
     if interface and interface != "lo":
-        transfers[interface] = int(rpackets) + int(tpackets)
+        transfers[interface] = int(rbytes) + int(tbytes)
     return transfers
 
 
@@ -1530,49 +1528,77 @@ def output_system_load_graphs(data):
 
 
 def output_network_use_graphs(data):
-    print '<p>Network interface usage distribution during the execution of test cases.'
-    print '<p>'
     interfaces = {}
     # collect interfaces
     for testcase in data:
         for face in testcase['transfers']:
             if face not in interfaces and testcase['transfers'][face] > 0:
                 interfaces[face] = []
-    # collect test round data per interfaces
     faces = interfaces.keys()
-    faces.sort() # get phonet first
+    if not faces:
+        print "<p>Only local or no interfaces up when measurements were taken."
+        return
+
+    # collect test round data per interfaces
+    faces.sort()
     for testcase in data:
         for face in faces:
             if face in testcase['transfers']:
                 interfaces[face].append(testcase['transfers'][face])
             else:
                 interfaces[face].append(0)
-    # arrange back to rounds
+    
+    # arrange values shown as numbers and used for bar sizes into rounds
+    previous = []
+    for face in faces:
+        previous.append(interfaces[face][0])
+    prevrange = range(len(previous))
+    # ...with max bar size to use as scale
+    scale = 0
     rounds = []
-    for i in range(len(data)):
-        line = []
+    for r in range(1, len(data)):
+        valdiff = []
+        bardiff = []
+        current = []
         for face in faces:
-            line.append(interfaces[face][i])
-        rounds.append(line)
-    # find max
-    scale =  0
-    for r in rounds:
-        total = sum(r)
+            current.append(interfaces[face][r])
+        for i in prevrange:
+            if current[i]:
+                diff = current[i] - previous[i]
+                valdiff.append(diff)
+                if diff > 0:
+                    bardiff.append(diff)
+                else:
+                    # interface down and up, show as zero (bar size cannot be negative)
+                    bardiff.append(0)
+            else:
+                # interface down
+                valdiff.append(0)
+                bardiff.append(0)
+        previous = current
+        total = sum(bardiff)
         if total > scale:
             scale = total
+        rounds.append((bardiff,valdiff))
     scale = float(scale)
+    
     # create table
+    print '<p>Network interface usage distribution during the execution of test cases.'
+    print '<p>'
     idx = 0
     entries = []
-    case = "Initial state:"
-    for r in rounds:
+    for b,v in rounds:
         idx += 1
-        bars = [x/scale for x in r]
-        vals = ["%sB" % x for x in r]
-        entries.append((case, bars, vals))
-        case = 'Test round %02d:' % idx
+        bars = [x/scale for x in b]
+        vals = ["%dkB" % (x/1024) for x in v]
+        entries.append(('Test round %02d:' % idx, bars, vals))
     titles = ["Test-case:", "network usage:"] + ["%s:" % x for x in faces]
     output_graph_table(titles, bar1colors[:len(faces)], entries)
+    # Legend
+    print '<table><tr><th><th align="left">Legend:'
+    for i in range(len(faces)):
+        print '<tr><td bgcolor="%s" height=16 width=16><td>%s' % (bar1colors[i], faces[i])
+    print '</table>'
 
 
 def output_system_memory_graphs(data):
