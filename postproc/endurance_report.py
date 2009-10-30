@@ -238,6 +238,10 @@
 #   interfaces (network/radio usage has use-time implications)
 # - Generalize and move compressed file logging, opening and error
 #   handling to syslog_parse.py
+# 2009-10-29:
+# - Show program cmdline with acronym tag (mouse highlight)
+# - In memory graphs, handle process as same one regardless
+#   of program name/cmdline changes
 # TODO:
 # - Mark reboots more prominently also in report (<h1>):
 #   - dsme/stats/32wd_to -> HW watchdog reboot
@@ -514,14 +518,19 @@ def get_commands_and_fd_counts(file):
     returns pid hashes of command names and fd counts"""
     commands = {}
     fd_counts = {}
+    cmdlines = {}
     while 1:
         line = file.readline().strip()
         if not line:
             break
-        pid,fds,name = line.split(',')
-        commands[pid] = os.path.basename(name.split(' ')[0])
-        fd_counts[pid] = int(fds)
-    return (commands,fd_counts)
+        cols = line.split(',')
+        pid = cols[0]
+        fd_counts[pid] = int(cols[1])
+        # need to handle command lines with commas
+        cmdline = ",".join(cols[2:])
+        cmdlines[pid] = cmdline
+        commands[pid] = os.path.basename(cmdline.split(' ')[0])
+    return (commands,fd_counts,cmdlines)
 
 
 def parse_proc_stat(file):
@@ -684,7 +693,7 @@ def parse_csv(file):
 
     # get the process FD usage
     skip_to(file, "PID,FD count,Command")
-    data['commands'], data['fdcounts'] = get_commands_and_fd_counts(file)
+    data['commands'], data['fdcounts'], data['cmdlines'] = get_commands_and_fd_counts(file)
     
     # get process statistics
     headers = skip_to(file, "Name,State,")
@@ -1252,9 +1261,11 @@ def output_apps_memory_graphs(cases):
     smaps_available = 0
     rounds = 0
     data = {}
+    pidinfo = {}
     # get names and pids
     for testcase in cases:
         commands = testcase['commands']
+        cmdlines = testcase['cmdlines']
         processes = testcase['processes']
         for process in processes.values():
             pid = process['Pid']
@@ -1264,15 +1275,12 @@ def output_apps_memory_graphs(cases):
             if not pid_is_main_thread(pid, commands, processes):
                 continue
             name = commands[pid]
-            namepid = (name, pid)
-            if namepid not in data:
-                data[namepid] = {}
             try:
                 process['SMAPS_PRIVATE_DIRTY'] = testcase['smaps'][pid]['private_dirty']
                 smaps_available = 1
             except KeyError:
                 if 'smaps' in testcase:
-                    syslog.parse_error(sys.stdout.write, "WARNING: SMAPS data missing for %s[%s]" % namepid)
+                    syslog.parse_error(sys.stdout.write, "WARNING: SMAPS data missing for %s[%s]" % (name,pid))
             try: process['SMAPS_SWAP'] = testcase['smaps'][pid]['swap']
             except KeyError: pass
             try: process['SMAPS_PSS'] = testcase['smaps'][pid]['pss']
@@ -1281,7 +1289,11 @@ def output_apps_memory_graphs(cases):
             except KeyError: pass
             try: process['SMAPS_SIZE'] = testcase['smaps'][pid]['size']
             except KeyError: pass
-            data[namepid][rounds] = process
+            if pid not in data:
+                data[pid] = {}
+                pidinfo[pid] = {}
+            data[pid][rounds] = process
+            pidinfo[pid] = (name, cmdlines[pid])
         rounds += 1
 
     # get largest size for any of the namepids, get largest rss
@@ -1295,17 +1307,17 @@ def output_apps_memory_graphs(cases):
     #
     sizes = []
     largest_size = 0
-    for namepid in data:
+    for pid in data:
         changerounds = pidrounds = 0
         max_size = max_dirty = max_swap = 0
         min_size = min_dirty = min_swap = 512*1024
         for idx in range(rounds):
-            if idx in data[namepid]:
-                try:    dirty = data[namepid][idx]['SMAPS_PRIVATE_DIRTY']
-                except: dirty = data[namepid][idx]['VmRSS']
-                try:    size  = data[namepid][idx]['SMAPS_SIZE']
-                except: size  = data[namepid][idx]['VmSize']
-                try:    swap  = data[namepid][idx]['SMAPS_SWAP']
+            if idx in data[pid]:
+                try:    dirty = data[pid][idx]['SMAPS_PRIVATE_DIRTY']
+                except: dirty = data[pid][idx]['VmRSS']
+                try:    size  = data[pid][idx]['SMAPS_SIZE']
+                except: size  = data[pid][idx]['VmSize']
+                try:    swap  = data[pid][idx]['SMAPS_SWAP']
                 except: swap  = 0
                 min_dirty = min(dirty, min_dirty)
                 max_dirty = max(dirty, max_dirty)
@@ -1325,13 +1337,13 @@ def output_apps_memory_graphs(cases):
                 swap_and_dirty_change = (float)((max_dirty+min_swap) - (min_dirty+max_swap)) / (max_dirty+min_swap) / pidrounds
             else:
                 if smaps_available:
-                    syslog.parse_error(sys.stdout.write, "WARNING: no SMAPS dirty for %s[%s]. Disable swap and try again\n\t(SMAPS doesn't work properly with swap)" % namepid)
+                    syslog.parse_error(sys.stdout.write, "WARNING: no SMAPS dirty for %s[%s]. Disable swap and try again\n\t(SMAPS doesn't work properly with swap)" % (pid, pidinfo[pid][0]))
                 swap_and_dirty_change = 0
             size_change = (float)(max_size - min_size) / max_size / pidrounds
             # if >0.2% memory change per round in dirty or Size, or
             # size changes on more than half of the rounds, add to list
             if swap_and_dirty_change > 0.002 or size_change > 0.002 or 2*changerounds > pidrounds:
-                sizes.append((max_dirty,namepid))
+                sizes.append((max_dirty,pid))
         if max_size > largest_size:
             largest_size = max_size
     largest_size = float(largest_size)
@@ -1342,9 +1354,9 @@ def output_apps_memory_graphs(cases):
     # then sort according to names
     orders = []
     for size in sizes:
-        namepid = size[1]
-        # sorting order is: name, first round for pid, pid
-        orders.append((namepid[0], min(data[namepid].keys()), namepid[1]))
+        pid = size[1]
+        # data and sorting order is: name, first round for pid, pid
+        orders.append((pidinfo[pid][0], min(data[pid].keys()), pid))
     del(sizes)
     orders.sort()
     
@@ -1376,9 +1388,12 @@ leaks which cause process eventually to run out of (2GB) address space
 """ % (bar2colors[3], bar2colors[4])
 
     for order in orders:
-        namepid = (order[0],order[2])
-        process = data[namepid]
-        print "<h4><i>%s [%s]</i></h4>" % namepid
+        name = order[0]
+        pid = order[2]
+        cmdline = pidinfo[pid][1].replace('"', "&quot;")
+        print '<h4><i><acronym title="%s">%s</acronym> [%s]</i></h4>' % (cmdline, name, pid)
+        process = data[pid]
+        namepid = (name, pid)
         text = ''
         prev_idx = 0
         prev_text = ""
