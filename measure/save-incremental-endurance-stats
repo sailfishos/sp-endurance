@@ -155,6 +155,9 @@ fi
 echo "- X resource usage"
 echo >> $usage
 xmeminfo >> $usage 2> $path/xres.log
+if [ $? -ne 0 ]; then
+	echo "$script: WARNING, xmeminfo failed, is DISPLAY set?" 1>&2
+fi
 # output disk usage
 echo "- Disk usage"
 echo >> $usage
