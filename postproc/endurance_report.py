@@ -243,6 +243,7 @@
 # - In memory graphs, handle process as same one regardless
 #   of program name/cmdline changes
 # - Get right fields from ifconfig and show network usage changes, not totals
+# 2009-11-02:
 # - Support Fremantle low memory limits scheme in addition to Diablo one
 # TODO:
 # - Mark reboots more prominently also in report (<h1>):
@@ -1373,7 +1374,7 @@ kernel can just discard unmodified/unused pages. Size tells amount of
 all virtual allocations and memory maps of a process, so it might not
 have any relation to real process memory usage. However, it can show
 leaks which cause process eventually to run out of (2GB) address space
-(e.g. if it's not collecting thread resources).
+(e.g. if it's not collecting joinable thread resources).
 """
 
     # LEGEND
@@ -1677,18 +1678,18 @@ def output_system_memory_graphs(data):
     print """
 <tr><td bgcolor="%s" height="16" width="16"><td>RAM used in the device
 <tr><td bgcolor="%s" height="16" width="16"><td>RAM and swap freely usable in the device
-<tr><td bgcolor="%s" height="16" width="16"><td>If memory usage reaches this, application allocations fail and the allocating app is OOM-killed (&gt;= %d MB used)
+<tr><td bgcolor="%s" height="16" width="16"><td>If memory usage reaches this, applications allocations fail and usually they abort as a result (&gt;= %d MB used)
 """ % (bar1colors[1], bar1colors[2], bar1colors[3], round(mem_deny/1024))
     print "</table>"
     if mem_low == mem_total:
         print "<p>(memory limits are not in effect)"
         return
     print """
-<p>Memory usage values which trigger background killing are marked with
-blue color (&gt;= <font color=blue><b>%d</b></font> MB used).<br>
-After bg-killing and memory low mark comes the memory high pressure mark
-at which point e.g.<br> Browser refuses to open new pages, these numbers
-are marked with red color (&gt;= <font color=red><b>%d</b></font> MB used).
+<p>Memory usage values which trigger application background killing and disable their
+pre-starting are marked with blue color (&gt;= <font color=blue><b>%d</b></font> MB used).<br>
+After bg-killing and memory low mark comes the memory high pressure mark at which point
+even pre-started applications are killed and e.g. Browser refuses to open new pages,
+these numbers are marked with red color (&gt;= <font color=red><b>%d</b></font> MB used).
 """ % (round(mem_low/1024), round(mem_high/1024))
 
 
