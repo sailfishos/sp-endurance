@@ -1,14 +1,15 @@
 sp-endurance (2.0) unstable; urgency=low
 
   * "proc2csv" stores the whole process command line; this makes the data
-    format incompatible with older sp-endurance-postproc versions
+    format incompatible with older sp-endurance-postproc versions.
+    Fixes: NB#144538, NB#144586
   * "endurance-mem-overview" takes swap into account and it's now possible
-    to specify the shown memory usage range
+    to specify the shown memory usage range. Fixes: NB#144138
   * Show X resource count differencies in addition to X resource memory usage
-    in the summary at the end
-  * Show network interface transfers graph in the beginning
-  * Add "extract-endurance-process-smaps" helper script
-  * Support Fremantle low memory limits scheme
+    in the summary at the end. Fixes: NB#143985
+  * Show network interface transfers graph in the beginning. Fixes: NB#143225
+  * Add "extract-endurance-process-smaps" helper script. Fixes: NB#142776
+  * Support Fremantle low memory limits scheme. Fixes: NB#144981
   * Update documentation
 
  -- Eero Tamminen <eero.tamminen@nokia.com>  Mon, 30 Oct 2009 18:54:43 +0200
