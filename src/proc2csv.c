@@ -69,7 +69,7 @@
  */
 typedef struct {
 	int skip;	/* whether to skip this item */
-	char cmd[78];	/* command line[read/show size] */
+	char cmd[128];	/* command line[read/show size] */
 	char pid[6];	/* Pid */
 } status_t;
 
@@ -486,7 +486,7 @@ static status_t *read_info(int num, struct dirent **namelist)
 			exited++;
 			continue;
 		}
-		count = fread(s->cmd, 1, sizeof(s->cmd), fp);
+		count = fread(s->cmd, 1, sizeof(s->cmd)-1, fp);
 		fclose(fp);
 		
 		cmdline = s->cmd;
@@ -495,7 +495,7 @@ static status_t *read_info(int num, struct dirent **namelist)
 				cmdline[i] = ' ';
 			}
 		}
-		cmdline[i] = '\0';
+		cmdline[++i] = '\0';
 	}
 	free(namelist);
 	if (exited) {
