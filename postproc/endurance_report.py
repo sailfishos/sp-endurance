@@ -638,7 +638,7 @@ def skip_to_next_header(file):
             return line.strip()
 
 
-def parse_csv(file):
+def parse_csv(file, filename):
     "Parses interesting information from the endurance measurement CSV file"
     data = {}
     
@@ -1827,7 +1827,7 @@ def parse_syte_stats(dirs):
 
         # get basic information
         file, filename = syslog.open_compressed("%s/usage.csv" % dirname, syslog.FATAL)
-        items = parse_csv(file)
+        items = parse_csv(file, filename)
         if not items:
             syslog.error_exit("CSV parsing failed")
 
