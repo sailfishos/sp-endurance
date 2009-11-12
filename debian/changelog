@@ -1,3 +1,12 @@
+sp-endurance (2.0.1) unstable; urgency=low
+
+  * Do not mangle the last character in the process command line.
+    Fixes: NB#144538
+  * Proper error handling in case low memory limits are missing from the data.
+    Fixes: NB#144981
+
+ -- Kiryl Shutsemau <kiryl.shutsemau@nokia.com>  Thu, 12 Nov 2009 13:56:41 +0200
+
 sp-endurance (2.0) unstable; urgency=low
 
   * "proc2csv" stores the whole process command line; this makes the data
