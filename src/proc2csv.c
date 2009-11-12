@@ -99,10 +99,11 @@ static void error_exit(const char *fun, const char *msg, const char *file)
 	int error = errno;
 	
 	perror(fun);
-	fprintf(stderr, "  ERROR: %s for '%s'\n", msg, file);
 	if (ignore_user_errors && error == EACCES) {
+		fprintf(stderr, "  INFO: %s for '%s'\n", msg, file);
 		return;
 	} else {
+		fprintf(stderr, "  ERROR: %s for '%s'\n", msg, file);
 		exit(-1);
 	}
 }
@@ -299,7 +300,7 @@ static void show_lowmem_limits(void)
 		}
 		if (!fp) {
 			fprintf(stderr,
-				"Warning: show_lowmem_limits() file open failed for: %s\n",
+				"INFO: show_lowmem_limits() file open failed for: %s\n",
 				files[i].name);
 			fputc('0', stdout);
 			continue;

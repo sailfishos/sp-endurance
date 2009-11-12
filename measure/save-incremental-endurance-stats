@@ -54,6 +54,9 @@
 #   those results so much anymore.
 # 2009-10-15:
 # - Save xmeminfo error messages
+# 2009-11-12:
+# - Better OSSO_VERSION and error handling, show only relevant errors to
+#   user, update file version
 
 script="${0##*/}"
 # incorrect number of arguments or first argument starts with "-"
@@ -98,6 +101,10 @@ if [ -z $(which xmeminfo) ]; then
 	echo "$script: ERROR, 'xmeminfo' tool is missing from PATH" 1>&2
 	exit 1
 fi
+if [ -z $(which lzop) ]; then
+	echo "$script: ERROR, 'lzop' tool is missing from PATH" 1>&2
+	exit 1
+fi
 if [ "${1#* }" != "$1" ]; then
 	echo "$script: ERROR, argument '$1' contains space(s)" 1>&2
 	exit 1
@@ -139,35 +146,39 @@ fi
 # save most of /proc
 usage=$path/usage.csv
 echo "- /proc/ data in CSV format"
-echo -e "generator = syte-endurance-stats v0.4\n" > $usage
-if [ -z $(which osso-product-info) ]; then
-	echo "SW-version = $(cat /etc/osso_software_version)" >> $usage
-else
+echo -e "generator = syte-endurance-stats v0.5\n" > $usage
+if [ \! -z "$OSSO_VERSION" ]; then
+	echo "SW-version = $OSSO_VERSION" >> $usage
+elif [ \! -z $(which osso-product-info) ]; then
 	echo "SW-version = $(osso-product-info -q OSSO_VERSION)" >> $usage
+else
+	echo "SW-version = <unknown>" >> $usage
 fi
 echo "date = $(date +'%F %T')" >> $usage
 # all relevant info from the /proc that is easy to parse
 proc2csv -p >> $usage
 if [ $? -ne 0 ]; then
-	echo "$script: WARNING, proc2csv terminated with exit code $?" 1>&2
+	echo "$script: WARNING, proc2csv failed with exit code $??" 1>&2
 fi
 # info on the UI processes X resource usage
 echo "- X resource usage"
 echo >> $usage
 xmeminfo >> $usage 2> $path/xres.log
 if [ $? -ne 0 ]; then
-	echo "$script: WARNING, xmeminfo failed, is DISPLAY set?" 1>&2
+	echo "$script: WARNING, xmeminfo failed with exit code $?, is DISPLAY set?" 1>&2
 fi
 # output disk usage
 echo "- Disk usage"
 echo >> $usage
 df|sed 's/ \+/,/g' >> $usage
 
-# save some less easily parsed /proc/ statistics
+# save some less easily parsed /proc/ statistics, ignore errors
 echo "- Open file descriptors"
-ls -l /proc/[0-9]*/fd/ > $path/open-fds
+ls -l /proc/[0-9]*/fd/ > $path/open-fds 2> /dev/null
 echo "- Other proc files"
-cp /proc/slabinfo /proc/interrupts /proc/stat /proc/component_version /proc/bootreason $path/
+cp /proc/slabinfo /proc/interrupts /proc/stat /proc/component_version /proc/bootreason $path/ 2> /dev/null
+
+# save network and DSME stats
 echo "- /sbin/ifconfig"
 /sbin/ifconfig > $path/ifconfig
 echo "- DSME statistics"
@@ -184,7 +195,11 @@ elif [ -f /var/log/syslog ]; then
 		logs="/var/log/logs/syslog /var/log/syslog"
 	else
 		# plain syslog
-		logs="/var/log/syslog.old /var/log/syslog"
+		if [ -f /var/log/syslog.old ]; then
+			logs="/var/log/syslog.old /var/log/syslog"
+		else
+			logs="/var/log/syslog"
+		fi
 	fi
 else
 	# no syslog
