@@ -1585,10 +1585,14 @@ def output_network_use_graphs(data):
         if total > scale:
             scale = total
         rounds.append((bardiff,valdiff))
+
     scale = float(scale)
+    if not scale:
+        print "<p>Active interfaces, but no network traffic during the test-cases."
+        return
     
     # create table
-    print '<p>Network interface usage distribution during the execution of test cases.'
+    print '<p>Network interface usage distribution during the test-cases.'
     print '<p>'
     idx = 0
     entries = []
