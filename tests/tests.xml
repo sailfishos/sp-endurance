@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<testdefinition version="0.1">
+<suite name="sp-endurance-tests">
+	<set name="sp-endurance" description="sp-endurance">
+		<case name="sp-endurance1" type="Functional" level="Feature">
+			<step>DISPLAY=:0 /usr/share/sp-endurance-tests/test-endurance.sh</step>
+		</case>
+	</set>
+</suite>
+</testdefinition>
