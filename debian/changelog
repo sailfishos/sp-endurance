@@ -2,6 +2,7 @@ sp-endurance (2.0.2) unstable; urgency=low
 
   * Fix the post-processing exception when network interfaces are
     active, but have no traffic.  Fixes: NB#153961
+  * Add CI test script.
 
  -- Kiryl Shutsemau <kiryl.shutsemau@nokia.com>  Thu, 21 Jan 2010 17:56:41 +0200
 
