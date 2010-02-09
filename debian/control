@@ -26,3 +26,12 @@ Description: Postprocessing for endurance data
  between the data sets.  This can be used to find reasons (leakage)
  explaining why the device stops working when used for a longer time.
  It also provides error parser for the syslog files.
+
+Package: sp-endurance-tests
+Priority: extra
+Architecture: any
+Depends: ci-testing, sp-endurance (=${binary:Version}), sp-endurance-postproc (=${binary:Version})
+XB-Maemo-CI-Packages: sp-endurance, sp-endurance-postproc
+XB-Maemo-CI-Stage: fast, staging, acceptance
+Description: CI tests for sp-endurance
+ CI tests for sp-endurance

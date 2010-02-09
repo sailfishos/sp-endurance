@@ -33,3 +33,5 @@ install:
 	 cp man/* $(DESTDIR)/usr/share/man/man1/
 	 install -d $(DESTDIR)/usr/share/doc/sp-endurance-postproc/
 	 cp README $(DESTDIR)/usr/share/doc/sp-endurance-postproc/
+	 install -d $(DESTDIR)/usr/share/sp-endurance-tests/
+	 cp -a tests/* $(DESTDIR)/usr/share/sp-endurance-tests/
