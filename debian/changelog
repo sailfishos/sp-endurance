@@ -1,3 +1,9 @@
+sp-endurance (2.0.3) unstable; urgency=low
+
+  * Use "-a" option for ifconfig.  Fixes: NB#159288 
+
+ -- Kiryl Shutsemau <kiryl.shutsemau@nokia.com>  Thu, 04 Mar 2010 10:36:41 +0200
+
 sp-endurance (2.0.2) unstable; urgency=low
 
   * Fix the post-processing exception when network interfaces are

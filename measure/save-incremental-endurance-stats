@@ -3,7 +3,7 @@
 # Script for saving endurance measurements.
 # This file is part of sp-endurance.
 #
-# Copyright (C) 2006-2009 by Nokia Corporation
+# Copyright (C) 2006-2010 by Nokia Corporation
 #
 # Contact: Eero Tamminen <eero.tamminen@nokia.com>
 #
@@ -57,6 +57,10 @@
 # 2009-11-12:
 # - Better OSSO_VERSION and error handling, show only relevant errors to
 #   user, update file version
+# 2010-03-04:
+# - Use ifconfig -a so that all present interfaces are always listed.
+#   This way it's easier to track the amounts transferred through them
+#   (Desktop Linux interfaces zero values when they go down, N900 don't)
 
 script="${0##*/}"
 # incorrect number of arguments or first argument starts with "-"
@@ -180,7 +184,7 @@ cp /proc/slabinfo /proc/interrupts /proc/stat /proc/component_version /proc/boot
 
 # save network and DSME stats
 echo "- /sbin/ifconfig"
-/sbin/ifconfig > $path/ifconfig
+/sbin/ifconfig -a > $path/ifconfig
 echo "- DSME statistics"
 cp -a /var/lib/dsme $path/
  
