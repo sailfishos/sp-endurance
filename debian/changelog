@@ -1,8 +1,10 @@
 sp-endurance (2.0.3) unstable; urgency=low
 
-  * Use "-a" option for ifconfig.  Fixes: NB#159288 
+  * Use "-a" option for ifconfig.  Fixes: NB#159288
+  * Correct swap/page in/out, interrupt and context switch counts,
+    they were 100x off. Fixes: NB#159294
 
- -- Kiryl Shutsemau <kiryl.shutsemau@nokia.com>  Thu, 04 Mar 2010 10:36:41 +0200
+ -- Kiryl Shutsemau <kiryl.shutsemau@nokia.com>  Fri, 05 Mar 2010 17:36:41 +0200
 
 sp-endurance (2.0.2) unstable; urgency=low
 

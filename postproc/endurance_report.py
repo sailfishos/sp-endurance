@@ -245,6 +245,10 @@
 # - Get right fields from ifconfig and show network usage changes, not totals
 # 2009-11-02:
 # - Support Fremantle low memory limits scheme in addition to Diablo one
+# 2010-03-05:
+# - Swap&page in/out and interrupt&context switch values were 100x too
+#   small, fix.  Change swap&page in/out to be per second like for
+#   interrups & context switches and adapt highlight limits accordingly.
 # TODO:
 # - Mark reboots more prominently also in report (<h1>):
 #   - dsme/stats/32wd_to -> HW watchdog reboot
@@ -287,6 +291,9 @@ EXAMPLES
 
 import sys, os, re
 import syslog_parse as syslog
+
+# how many CPU clock ticks kernel reports / second
+CLK_TCK=100.0
 
 # CSV field separator
 SEPARATOR = ','
@@ -977,6 +984,9 @@ def output_run_diffs(idx1, idx2, data, do_summary):
     else:
         stat = output_errors(idx2, run1, run2)
 
+    cpu_total_diff = sum(run2['/proc/stat']['cpu'].itervalues())-sum(run1['/proc/stat']['cpu'].itervalues())
+    cpu_total_secs = float(cpu_total_diff)/CLK_TCK
+
     # Create the following table (based on /proc/pid/stat):
     #
     #   Command[Pid]: system / user       CPU Usage:
@@ -985,23 +995,18 @@ def output_run_diffs(idx1, idx2, data, do_summary):
     #   app3[543]:    #%                   5%  (10s)
     #
     def process_cpu_usage():
-        CLK_TCK=100.0
         if not '/proc/pid/stat' in run1 or not '/proc/pid/stat' in run2:
             return
         print "<h4>Process CPU usage</h4>"
-        cpusum1 = sum(run1['/proc/stat']['cpu'].itervalues())
-        cpusum2 = sum(run2['/proc/stat']['cpu'].itervalues())
-        if cpusum2 < cpusum1:
+        if cpu_total_diff < 0:
             print "<p><i>System reboot detected, omitted.</i>"
             return
-        elif cpusum2 == cpusum1:
-            # Two identical entries? Most likely user has manually copied the snapshot directories.
+        if cpu_total_diff == 0:
+            # No CPU spent? Most likely user has manually copied the snapshot directories.
             print "<p><i>Identical snapshots detected, omitted.</i>"
             return
-        cpu_total_diff = float(cpusum2-cpusum1)
-        print "<p>Interval between rounds was %d seconds." % (cpu_total_diff/CLK_TCK)
-        if cpu_total_diff <= 0:
-            return
+        print "<p>Interval between rounds was %d seconds." % cpu_total_secs
+
         print "<p>"
         diffs = []
         for pid in iter(run2['/proc/pid/stat']):
@@ -1048,10 +1053,10 @@ def output_run_diffs(idx1, idx2, data, do_summary):
             ("Command[Pid]:", "<font color=%s>system</font> / <font color=%s>user</font>" % bar3colors[0:2], "CPU Usage:"),
             bar3colors[0:2],\
             [(x[0], (x[1]/divisor, x[2]/divisor),\
-                ["%.2f%% (%.2fs)" % (100*(x[1]+x[2])/cpu_total_diff, (x[1]+x[2])/CLK_TCK)]) for x in diffs]\
+                ["%.2f%% (%.2fs)" % (100.0*(x[1]+x[2])/cpu_total_diff, (x[1]+x[2])/CLK_TCK)]) for x in diffs]\
             + [("", (0,0), ["<i>%.2f%% (%.2fs)</i>" % (\
-                    100*sum([x[1]+x[2] for x in diffs])/cpu_total_diff,\
-                        sum([x[1]+x[2] for x in diffs])/CLK_TCK)\
+                    100.0*sum([x[1]+x[2] for x in diffs])/cpu_total_diff,\
+                          sum([x[1]+x[2] for x in diffs])/CLK_TCK)\
                 ])])
         if filtered_out:
             print "<p><i>Note:</i> %d other processes also used some CPU, but "\
@@ -1134,7 +1139,6 @@ def output_run_diffs(idx1, idx2, data, do_summary):
                 Colors.shm, do_summary)
 
     # Kernel statistics
-    cpu_total_diff = float(sum(run2['/proc/stat']['cpu'].itervalues())-sum(run1['/proc/stat']['cpu'].itervalues()))
     if cpu_total_diff > 0:
         print "\n<h4>Kernel events</h4>"
 
@@ -1145,16 +1149,16 @@ def output_run_diffs(idx1, idx2, data, do_summary):
                 return "%.1f" % key
 
         # Kernel virtual memory subsystem statistics, /proc/vmstat
-        pgmajfault = (run2['/proc/vmstat']['pgmajfault']-run1['/proc/vmstat']['pgmajfault'])/cpu_total_diff*3600
-        pswpin     = (run2['/proc/vmstat']['pswpin']-run1['/proc/vmstat']['pswpin'])/cpu_total_diff*3600
-        pswpout    = (run2['/proc/vmstat']['pswpout']-run1['/proc/vmstat']['pswpout'])/cpu_total_diff*3600
+        pgmajfault = (run2['/proc/vmstat']['pgmajfault']-run1['/proc/vmstat']['pgmajfault'])/cpu_total_secs
+        pswpin     = (run2['/proc/vmstat']['pswpin']-run1['/proc/vmstat']['pswpin'])/cpu_total_secs
+        pswpout    = (run2['/proc/vmstat']['pswpout']-run1['/proc/vmstat']['pswpout'])/cpu_total_secs
         diffs = []
         if pgmajfault > 0:
-            diffs.append(("Major page faults per hour", format_key(pgmajfault, 1000)))
+            diffs.append(("Major page faults per second", format_key(pgmajfault, 1000)))
         if pswpin > 0:
-            diffs.append(("Page swap ins per hour", format_key(pswpin, 10000)))
+            diffs.append(("Page swap ins per second", format_key(pswpin, 100)))
         if pswpout > 0:
-            diffs.append(("Page swap outs per hour", format_key(pswpout, 1000)))
+            diffs.append(("Page swap outs per second", format_key(pswpout, 100)))
         if diffs:
             print '\n<p><table border=1 bgcolor=%s>' % Colors.kernel
             print "<caption><i>Virtual memory subsystem</i></caption>"
@@ -1164,8 +1168,8 @@ def output_run_diffs(idx1, idx2, data, do_summary):
             print "</table>"
 
         # Interrupts and context switches.
-        intr = (run2['/proc/stat']['intr']-run1['/proc/stat']['intr'])/cpu_total_diff
-        ctxt = (run2['/proc/stat']['ctxt']-run1['/proc/stat']['ctxt'])/cpu_total_diff
+        intr = (run2['/proc/stat']['intr']-run1['/proc/stat']['intr'])/cpu_total_secs
+        ctxt = (run2['/proc/stat']['ctxt']-run1['/proc/stat']['ctxt'])/cpu_total_secs
         diffs = [
                  ("Interrupts per second", format_key(intr, 1e5/3600)),
                  ("Context switches per second", format_key(ctxt, 1e6/3600)),
