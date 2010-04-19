@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # This file is part of sp-endurance.
 #
-# Copyright (C) 2006-2009 by Nokia Corporation
+# Copyright (C) 2006-2010 by Nokia Corporation
 #
 # Contact: Eero Tamminen <eero.tamminen@nokia.com>
 #
@@ -249,6 +249,8 @@
 # - Swap&page in/out and interrupt&context switch values were 100x too
 #   small, fix.  Change swap&page in/out to be per second like for
 #   interrups & context switches and adapt highlight limits accordingly.
+# 2010-04-19:
+# - Handle resource counting for X apps with commas in their names
 # TODO:
 # - Mark reboots more prominently also in report (<h1>):
 #   - dsme/stats/32wd_to -> HW watchdog reboot
@@ -437,21 +439,33 @@ def get_xres_usage(file):
         if not line:
             break
         
-        # last three columns are the most interesting ones
-        mem,pid,name = line.split(',')[-3:]
-        if pid[-1] != 'B' and mem[-1] == 'B':
-            mem = int(mem[:-1])
-        else:
-            sys.stderr.write("Error: X resource total memory value not followed by 'B':\n  %s\n" % line)
-            sys.exit(1)
+        cols = line.split(',')
+        # last three columns for the X client:
+        # - total mem usage
+        # - process ID
+        # - (window) name
+        # are the most interesting ones, but the name column
+        # may contain commas too, so need to find from which
+        # column these three items actually start from.
+        idx = len(cols) - 3
+        while cols[idx][-1] != 'B' or cols[idx+1][-1] == 'B':
+            idx -= 1
+            if idx < 1:
+                sys.stderr.write("Error: X resource total memory value not followed by 'B':\n  %s\n" % line)
+                sys.exit(1)
+
+        mem = int(cols[idx][:-1])
+        pid = cols[idx+1]
+        # rest of the columns belong to name
+        name = ",".join(cols[idx+2:])
+
         # in KBs, check on clients taking > 1KB
         if mem >= 1024:
             xres_mem[name] = mem/1024
-        
+
         count = 0
         # resource base, counts of resources, their memory usages, PID, name
-        cols = line.split(',')
-        for i in range(1, len(cols) - 3):
+        for i in range(1, idx):
             if cols[i][-1] != 'B':
                 count += int(cols[i])
         xres_count[name] = count
