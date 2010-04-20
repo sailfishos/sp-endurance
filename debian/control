@@ -8,7 +8,7 @@ Standards-Version: 3.7.2.2
 Package: sp-endurance
 Architecture: any
 Depends: ${shlibs:Depends}, lzop
-Suggests: sp-smaps-measure
+Recommends: sp-smaps-measure, x11-utils
 Description: Endurance measument tools
  Endurance measurement tools save system and process information from /proc
  and other places; the memory, file descriptors, X resources, flash space,
@@ -19,7 +19,7 @@ Description: Endurance measument tools
 Package: sp-endurance-postproc
 Architecture: all
 Depends: python, lzop
-Suggests: sp-smaps-visualize, python-psyco
+Recommends: sp-smaps-visualize, python-psyco
 Description: Postprocessing for endurance data
  Postprocessing scripts to parse and generate a report from the endurance
  measurement data.  The report lists logged errors and resource usage
