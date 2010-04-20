@@ -137,22 +137,27 @@ if [ $# -gt 1 ]; then
 	echo "- use-case step description"
 	echo "$2" > $path/step.txt
 else
+	echo "- use-case step desription (focused/topmost window)"
 	if [ -z $(which xprop) ]; then
 		echo "$script: WARNING, 'xprop' tool is missing from PATH" 1>&2
 	else
-		echo "- focused/topmost window"
 		# _NET_ACTIVE_WINDOW standard property tells focused window,
-		# WM_CLASS tells the "name" of the application owning that
-		win=$(xprop -root _NET_ACTIVE_WINDOW|cut -s -d'#' -f2)
-		app=$(xprop -id $win WM_CLASS|cut -s -d'"' -f2)
-		# Maemo specific property for topmost window
-		win=$(xprop -root _MB_CURRENT_APP_WINDOW|cut -s -d'#' -f2)
-		if [ \! -z "$win" ]; then
-			topmost=$(xprop -id $win WM_CLASS|cut -s -d'"' -f2)
-			if [ "$app" != "$topmost" ]; then
-				app="focused: $app, on top: $topmost"
+		# WM_CLASS tells the "name" of the application owning that.
+		# _MB_CURRENT_APP_WINDOW is Maemo/Matchbox property for
+		# topmost window (can be different from focused one)
+		for prop in _MB_CURRENT_APP_WINDOW _NET_ACTIVE_WINDOW; do
+			win=$(xprop -root $prop|cut -s -d'#' -f2)
+			if [ -z $win ]; then
+				continue
 			fi
-		fi
+			app=$(xprop -id $win WM_CLASS|cut -s -d'"' -f2)
+			if [ -z "$app" ]; then
+				app=$(xprop -id $win WM_NAME|cut -s -d'"' -f2)
+				if [ -z "$app" ]; then
+					continue
+				fi
+			fi
+		done
 		echo "$app" > $path/step.txt
 	fi
 fi
