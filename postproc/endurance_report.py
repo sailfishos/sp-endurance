@@ -251,6 +251,7 @@
 #   interrups & context switches and adapt highlight limits accordingly.
 # 2010-04-19:
 # - Handle resource counting for X apps with commas in their names
+# - Fix for 'df' splitting too long lines
 # TODO:
 # - Mark reboots more prominently also in report (<h1>):
 #   - dsme/stats/32wd_to -> HW watchdog reboot
@@ -416,6 +417,7 @@ def get_filesystem_usage(file):
     """reads Filesystem,1k-blocks,Used,Available,Use%,Mountpoint fields
     until empty line, returns hash of free space on interesting mountpoints
     """
+    prev = None
     mounts = {}
     # device root and tmpfs with fixed size
     keep = {'/':1, '/tmp':1}
@@ -423,7 +425,22 @@ def get_filesystem_usage(file):
         line = file.readline().strip()
         if not line:
             break
-        fs,blocks,used,available,inuse,mount = line.split(',')
+        cols = line.split(',')
+        # handle lines that 'df' has split
+        if len(cols) < 6:
+            if prev:
+                sys.stderr.write("Error: invalid number of columns in 'df' output:\n  %s\n" % line)
+                sys.exit(1)
+            prev = cols
+            continue
+        if prev:
+            # first column should be empty, it indicates line is wrapped
+            if cols[0]:
+                sys.stderr.write("Error: invalid number of columns in 'df' output:\n  %s\n" % line)
+                sys.exit(1)
+            cols = prev+cols[1:]
+            prev = None
+        fs,blocks,used,available,inuse,mount = cols
         if mount not in keep:
             continue
         mounts[mount] = int(used)
