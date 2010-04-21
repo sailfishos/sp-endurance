@@ -1,3 +1,12 @@
+sp-endurance (2.0.4) unstable; urgency=low
+
+  * Store topmost application and focused application names to sp-endurance
+    data. Fixes: NB#164110
+  * Handle df filesystem usage output spanning multiple lines.
+    Fixes: NB#163812
+
+ -- Kiryl Shutsemau <kiryl.shutsemau@nokia.com>  Wed, 21 Apr 2010 13:16:52 +0300
+
 sp-endurance (2.0.3) unstable; urgency=low
 
   * Use "-a" option for ifconfig.  Fixes: NB#159288
