@@ -252,6 +252,15 @@
 # 2010-04-19:
 # - Handle resource counting for X apps with commas in their names
 # - Fix for 'df' splitting too long lines
+# 2010-04-21:
+# - Fix for which processes to show memory graph.  Didn't take private
+#   dirty & swap properly into account (should be summed per round,
+#   not check min & max of them for all rounds)
+# - Don't show graphs if only initial state has different values
+#   only for swap+dirty (but not size)
+# - Show memory graph for processes running only during one round
+#   if their memory usage is high enough (>1MB)
+# - Option for showing graphs for all processes
 # TODO:
 # - Mark reboots more prominently also in report (<h1>):
 #   - dsme/stats/32wd_to -> HW watchdog reboot
@@ -265,7 +274,13 @@ NAME
         <TOOL_NAME>
 
 SYNOPSIS
-        <TOOL_NAME> <data directories>
+        <TOOL_NAME> [options] <data directories>
+
+OPTIONS
+
+  --show-all  Give memory graphs for all processes, don't use heuristics
+              to hide "non-interesting" ones
+  -h, --help  This help
 
 DESCRIPTION
 
@@ -322,6 +337,10 @@ bar2colors = (bar1colors[0], "DE2821", "E0673E", "EAB040", "FBE84A")
 # color values for CPU load (system, user, user nice, iowait, idle)
 #      red, blue, light blue, magenta, light green
 bar3colors = (bar2colors[1], bar1colors[1], "4265FF", bar1colors[0], bar1colors[2])
+
+
+# whether to show memory graphs for all processes
+show_all_processes = False
 
 
 # --------------------- SMAPS data parsing --------------------------
@@ -1319,6 +1338,7 @@ def output_apps_memory_graphs(cases):
             except KeyError:
                 if 'smaps' in testcase:
                     syslog.parse_error(sys.stdout.write, "WARNING: SMAPS data missing for %s[%s]" % (name,pid))
+                continue
             try: process['SMAPS_SWAP'] = testcase['smaps'][pid]['swap']
             except KeyError: pass
             try: process['SMAPS_PSS'] = testcase['smaps'][pid]['pss']
@@ -1334,56 +1354,65 @@ def output_apps_memory_graphs(cases):
             pidinfo[pid] = (name, cmdlines[pid])
         rounds += 1
 
-    # get largest size for any of the namepids, get largest rss
-    # for sorting and ignore items which rss/size don't change
-    #
-    # Also filter out processes that get dirty pages swapped to disk:
-    #
-    #     initial state: Swap:0kB Dirty:100kB
-    #     ...
-    #     last round:    Swap:8kB Dirty:92kB
-    #
+    # get largest size for any of the namepids, get largest dirty (or RSS)
+    # for sorting and ignore items which dirty/size don't change.
+    # dirty is private_dirty + swap.
     sizes = []
     largest_size = 0
     for pid in data:
         changerounds = pidrounds = 0
-        max_size = max_dirty = max_swap = 0
-        min_size = min_dirty = min_swap = 512*1024
+        max_size = max_dirty = 0
+        min_size = min_dirty = 512*1024
+        prev_dirty = prev_size = 0
         for idx in range(rounds):
             if idx in data[pid]:
-                try:    dirty = data[pid][idx]['SMAPS_PRIVATE_DIRTY']
-                except: dirty = data[pid][idx]['VmRSS']
-                try:    size  = data[pid][idx]['SMAPS_SIZE']
-                except: size  = data[pid][idx]['VmSize']
-                try:    swap  = data[pid][idx]['SMAPS_SWAP']
-                except: swap  = 0
-                min_dirty = min(dirty, min_dirty)
-                max_dirty = max(dirty, max_dirty)
-                min_swap = min(swap, min_swap)
-                max_swap = max(swap, max_swap)
-                if size < min_size:
-                    if pidrounds:
+                try:    priv = data[pid][idx]['SMAPS_PRIVATE_DIRTY']
+                except: priv = data[pid][idx]['VmRSS'] # bad substitute
+                try:    swap = data[pid][idx]['SMAPS_SWAP']
+                except: swap = 0
+                try:    size = data[pid][idx]['SMAPS_SIZE']
+                except: size = data[pid][idx]['VmSize']
+                dirty = priv+swap;
+                max_size  = max(size, max_size)
+                min_size  = min(size, min_size)
+                # skip initial state for dirty and change checks
+                if prev_dirty and prev_size:
+                    max_dirty = max(dirty, max_dirty)
+                    min_dirty = min(dirty, min_dirty)
+                    if dirty != prev_dirty or size != prev_size:
                         changerounds += 1
-                    min_size = size
-                if size > max_size:
-                    if pidrounds:
-                        changerounds += 1
-                    max_size = size
+                prev_dirty = dirty
+                prev_size = size
                 pidrounds += 1
-        if pidrounds > 1:
-            if max_dirty+min_swap:
-                swap_and_dirty_change = (float)((max_dirty+min_swap) - (min_dirty+max_swap)) / (max_dirty+min_swap) / pidrounds
-            else:
-                if smaps_available:
-                    syslog.parse_error(sys.stdout.write, "WARNING: no SMAPS dirty for %s[%s]. Disable swap and try again\n\t(SMAPS doesn't work properly with swap)" % (pid, pidinfo[pid][0]))
-                swap_and_dirty_change = 0
-            size_change = (float)(max_size - min_size) / max_size / pidrounds
-            # if >0.2% memory change per round in dirty or Size, or
-            # size changes on more than half of the rounds, add to list
-            if swap_and_dirty_change > 0.002 or size_change > 0.002 or 2*changerounds > pidrounds:
-                sizes.append((max_dirty,pid))
         if max_size > largest_size:
             largest_size = max_size
+
+        if show_all_processes:
+            sizes.append((max_dirty,pid))
+        # use heuristics to include only "interesting" processes
+        elif pidrounds == 1:
+            # show single round processes using >1MB
+            if dirty > 1024:
+                sizes.append((dirty,pid))
+        else:
+            if not max_dirty:
+                # show 2 round processes if their memory usage changes
+                min_dirty = min(prev_dirty, dirty)
+                max_dirty = max(prev_dirty, dirty)
+
+            dirty_max_diff = max_dirty - min_dirty
+            dirty_change_per_round = float(dirty_max_diff) / max_dirty / pidrounds
+            size_change_per_round = (float)(max_size - min_size) / max_size / pidrounds
+
+            # if >0.2% average memory change per round in dirty or Size, or
+            # size/dirty changes on more than half of all the rounds, add
+            # process to list.
+            # average dirty differences is ignored if maximum difference
+            # in dirty (private+swap) is < 16kB.
+            if (dirty_max_diff >= 16 and dirty_change_per_round > 0.002) or\
+               size_change_per_round > 0.002 or 2*changerounds >= rounds:
+                sizes.append((max_dirty,pid))
+
     largest_size = float(largest_size)
     
     # first sort according to the dirty (or RSS) size
@@ -1908,14 +1937,25 @@ def parse_syte_stats(dirs):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) < 3:
+    help = False
+    first_arg = 1
+    if len(sys.argv) > 1:
+        if sys.argv[1] in ("-h", "--help"):
+            help = True
+        elif sys.argv[1] == "--show-all":
+            show_all_processes = True
+            first_arg += 1
+
+    if help or (len(sys.argv) - first_arg < 2):
         msg = __doc__.replace("<TOOL_NAME>", sys.argv[0].split('/')[-1])
         syslog.error_exit(msg)
+
     # Use psyco if available. Gives 2-3x speed up.
     try:
         import psyco
         psyco.full()
     except ImportError:
         pass
-    stats = parse_syte_stats(sys.argv[1:])
+
+    stats = parse_syte_stats(sys.argv[first_arg:])
     output_html_report(stats)
