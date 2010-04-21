@@ -1,11 +1,14 @@
-sp-endurance (2.0.4) unstable; urgency=low
+sp-endurance (2.1) unstable; urgency=low
 
-  * Store topmost application and focused application names to sp-endurance
-    data. Fixes: NB#164110
-  * Handle df filesystem usage output spanning multiple lines.
-    Fixes: NB#163812
+  * Handle X client names with commas and df filesystem usage output
+    spanning multiple lines. Fixes: NB#163812
+  * Store focused/topmost application name if use-case step description
+    is missing.  Fixes: NB#164110
+  * Improved heuristics for removing memove graphs for non-interesting
+    processes, with a fix for swap+dirty accounting and a new --show-all
+    option to get graphs for all processes.  Fixes: NB#159301
 
- -- Kiryl Shutsemau <kiryl.shutsemau@nokia.com>  Wed, 21 Apr 2010 13:16:52 +0300
+ -- Kiryl Shutsemau <kiryl.shutsemau@nokia.com>  Wed, 21 Apr 2010 14:36:41 +0200
 
 sp-endurance (2.0.3) unstable; urgency=low
 
