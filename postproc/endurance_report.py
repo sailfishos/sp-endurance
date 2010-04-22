@@ -1163,10 +1163,10 @@ def output_run_diffs(idx1, idx2, data, do_summary):
                         combine_dirty_and_swap(run1['smaps']),
                         combine_dirty_and_swap(run2['smaps']))
         output_diffs(diffs,
-                "Process private and swap memory usages combined (according to SMAPS)",
+                "Process private dirty and swap memory usages combined (according to SMAPS)",
                 "Command[Pid]", " kB", Colors.memory, do_summary)
     else:
-        print "<p>No SMAPS data for process private memory usage available."
+        print "<p>No SMAPS data for process memory usage available."
     
     # process X resource usage changes
     diffs = get_usage_diffs(run1['xclient_mem'], run2['xclient_mem'])
