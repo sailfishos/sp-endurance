@@ -261,14 +261,11 @@
 # - Show memory graph for processes running only during one round
 #   if their memory usage is high enough (>1MB)
 # - Option for showing graphs for all processes
+# 2010-05-18:
+# - Show reboots prominently, detection based on uptime
 # TODO:
-# - Mark reboots more prominently also in report (<h1>):
-#   - dsme/stats/32wd_to -> HW watchdog reboot
-#   - dsme/stats/sw_rst -> SW watchdog reboots
-#   - bootreason -> last boot
 # - Proper option parsing + possibility to state between which
 #   test runs to produce the summaries?
-# - Show differences in slabinfo and vmstat numbers (pswpin/pswpout)?
 """
 NAME
         <TOOL_NAME>
@@ -716,6 +713,10 @@ def parse_csv(file, filename):
         sys.stderr.write("\nError: CSV file '%s' is missing 'SW-version' or 'date' fields!\n" % filename)
         sys.exit(1)
 
+    # get uptime for reboot detection
+    skip_to(file, "Uptime")
+    data['uptime'] = float(file.readline().split(',')[0])
+
     # total,free,buffers,cached
     mem_header = skip_to(file, "MemTotal").strip()
     mem_values = file.readline().strip()
@@ -1049,11 +1050,11 @@ def output_run_diffs(idx1, idx2, data, do_summary):
             return
         print "<h4>Process CPU usage</h4>"
         if cpu_total_diff < 0:
-            print "<p><i>System reboot detected, omitted.</i>"
+            print "<p><i>WARNING: system reboot detected, CPU usage omitted.</i>"
             return
         if cpu_total_diff == 0:
             # No CPU spent? Most likely user has manually copied the snapshot directories.
-            print "<p><i>Identical snapshots detected, omitted.</i>"
+            print "<p><i>WARNING: identical snapshots detected, CPU usage omitted.</i>"
             return
         print "<p>Interval between rounds was %d seconds." % cpu_total_secs
 
@@ -1552,12 +1553,10 @@ def output_system_load_graphs(data):
     prev = data[0]
     entries = []
     idx = 1
-    reboots = []
     for testcase in data[1:]:
         case = '<a href="#round-%d">Test round %02d</a>:' % (idx, idx)
         if sum(testcase['/proc/stat']['cpu'].itervalues()) < sum(prev['/proc/stat']['cpu'].itervalues()):
             entries.append((case, (0,0,0,0,0), "-"))
-            reboots.append(idx)
         elif sum(testcase['/proc/stat']['cpu'].itervalues()) == sum(prev['/proc/stat']['cpu'].itervalues()):
             # Two identical entries? Most likely user has manually copied the snapshot directories.
             entries.append((case, (0,0,0,0,0), "-"))
@@ -1581,11 +1580,6 @@ def output_system_load_graphs(data):
         prev = testcase
     titles = ("Test-case:", "system load:", "CPU usage-%:")
     output_graph_table(titles, bar3colors, entries)
-    if reboots:
-        text = '<p>Reboots occured during rounds:'
-        for r in reboots:
-            text += " %d," % r
-        print text[:-1] + '.<br>'
     # Legend
     print '<table><tr><th><th align="left">Legend:'
     print '<tr><td bgcolor="%s" height=16 width=16><td>CPU time used by <i>system</i> tasks, including time spent in interrupt handling' % bar3colors[0]
@@ -1761,6 +1755,33 @@ these numbers are marked with red color (&gt;= <font color=red><b>%d</b></font> 
 """ % (round(mem_low/1024), round(mem_high/1024))
 
 
+def output_reboots(reboots):
+    if not reboots:
+        return
+    print """
+<p><font color="red">ERROR: reboots detected on round(s) %s.
+Please use only endurance data from rounds between reboots!</font>
+""" % ", ".join([str(x) for x in reboots])
+
+
+def readable_uptime(fuptime):
+    uptime = int(fuptime)
+    divs = (60, 60, 24, 7 ,1)
+    names = ("seconds", "minutes", "hours", "days", "weeks")
+    values = []
+    for div in divs:
+        values.append(uptime % div)
+        uptime /= div
+    split = ret = ""
+    order = range(len(names))
+    order.reverse()
+    for i in order:
+        if values[i]:
+            ret += "%s%d %s" % (split, values[i], names[i])
+            split = ", "
+    return ret
+
+
 # ------------------- output all data -------------------------
 
 def output_html_report(data):
@@ -1793,8 +1814,15 @@ def output_html_report(data):
 <li>Resource usage changes for each of the test rounds:
   <ul>
 """ % (title, title)   #" fool Jed syntax highlighter
+    reboots = []
+    uptime_prev = data[0]['uptime']
     for round in range(rounds):
         idx = round + 1
+        uptime_next = data[idx]['uptime']
+        if uptime_next < uptime_prev:
+            reboots.append(idx)
+            print "  <li><font color=red>REBOOT</font> (after <i>previous</i> round uptime of %s)</i>" % readable_uptime(uptime_prev)
+        uptime_prev = uptime_next
         if data[idx].has_key('description') and data[idx]['description']:
             desc = " (%s)" % data[idx]['description']
         else:
@@ -1807,7 +1835,9 @@ def output_html_report(data):
     <li><a href="#error-summary">Error summary</a>
     <li><a href="#resource-summary">Resource usage summary</a>
   </ul>
-</ul>
+</ul>"""
+    output_reboots(reboots)
+    print """
 <hr>
 
 <a name="initial-state"></a>
@@ -1881,6 +1911,7 @@ see <a href="#%s">resource changes summary section</a>.
 changes are shown only for processes which exist in both of the
 compared rounds!
 """
+    output_reboots(reboots)
     output_run_diffs(first, last, data, 1)
 
     print "\n</body></html>"

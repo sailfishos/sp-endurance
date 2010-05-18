@@ -1,3 +1,9 @@
+sp-endurance (2.1.1) unstable; urgency=low
+
+  * Prominent notice about reboots in endurance reports. Fixes: NB#169356
+
+ -- Kiryl Shutsemau <kiryl.shutsemau@nokia.com>  Tue, 18 May 2010 13:36:41 +0200
+
 sp-endurance (2.1) unstable; urgency=low
 
   * Handle X client names with commas and df filesystem usage output
