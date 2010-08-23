@@ -1,3 +1,9 @@
+sp-endurance (2.1.2) unstable; urgency=low
+
+  * Update save-incremental-endurance-stats for Harmattan. Fixes: NB#186994
+
+ -- Kiryl Shutsemau <kiryl.shutsemau@nokia.com>  Mon, 23 Aug 2010 17:21:57 +0300
+
 sp-endurance (2.1.1) unstable; urgency=low
 
   * Prominent notice about reboots in endurance reports. Fixes: NB#169356
