@@ -64,6 +64,10 @@
 # 2010-04-20:
 # - If use-case step description isn't given, add information about
 #   focused / topmost application
+# 2010-08-23:
+# - Changes for Harmattan:
+#   - Remove checking of Matchbox specific _MB_CURRENT_APP_WINDOW property
+#   - Get SW release version by default with sysinfo utility
 
 script="${0##*/}"
 # incorrect number of arguments or first argument starts with "-"
@@ -143,22 +147,14 @@ else
 	else
 		# _NET_ACTIVE_WINDOW standard property tells focused window,
 		# WM_CLASS tells the "name" of the application owning that.
-		# _MB_CURRENT_APP_WINDOW is Maemo/Matchbox property for
-		# topmost window (can be different from focused one)
-		for prop in _MB_CURRENT_APP_WINDOW _NET_ACTIVE_WINDOW; do
-			win=$(xprop -root $prop|cut -s -d'#' -f2)
-			if [ -z $win ]; then
-				continue
-			fi
+		win=$(xprop -root _NET_ACTIVE_WINDOW|cut -s -d'#' -f2)
+		if [ \! -z $win ]; then
 			app=$(xprop -id $win WM_CLASS|cut -s -d'"' -f2)
 			if [ -z "$app" ]; then
 				app=$(xprop -id $win WM_NAME|cut -s -d'"' -f2)
-				if [ -z "$app" ]; then
-					continue
-				fi
 			fi
-		done
-		echo "$app" > $path/step.txt
+			echo "$app" > $path/step.txt
+		fi
 	fi
 fi
 
@@ -178,12 +174,19 @@ fi
 usage=$path/usage.csv
 echo "- /proc/ data in CSV format"
 echo -e "generator = syte-endurance-stats v0.5\n" > $usage
-if [ \! -z "$OSSO_VERSION" ]; then
+# software release identification
+if [ \! -z $(which sysinfo-tool) ]; then
+	# Harmattan
+	echo "SW-version = $(sysinfo-tool -g /device/sw-release-ver)" >> $usage
+elif [ \! -z "$OSSO_VERSION" ]; then
+	# earlier Maemo releases
 	echo "SW-version = $OSSO_VERSION" >> $usage
 elif [ \! -z $(which osso-product-info) ]; then
+	# Diablo/Fremantle
 	echo "SW-version = $(osso-product-info -q OSSO_VERSION)" >> $usage
 else
-	echo "SW-version = <unknown>" >> $usage
+	# not Maemo
+	echo "SW-version = $(uname -mrs)" >> $usage
 fi
 echo "date = $(date +'%F %T')" >> $usage
 # all relevant info from the /proc that is easy to parse
