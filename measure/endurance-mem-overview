@@ -3,7 +3,7 @@
 # Show memory usage overview graph from usage.csv files.
 # This file is part of sp-endurance.
 #
-# Copyright (C) 2007,2009 by Nokia Corporation
+# Copyright (C) 2007,2009-2010 by Nokia Corporation
 #
 # Contact: Eero Tamminen <eero.tamminen@nokia.com>
 #
@@ -24,7 +24,8 @@
 # Changes:
 # - 2009-10-26: rewrite; split work into several steps, take also swap
 #   into account, let user select whether total, swap or ram usage change
-#   is show and what is the range of memory usage shown.
+#   is show and what is the range of memory usage shown
+# - 2010-08-24: take SwapCached into account
 
 min=0
 max=0
@@ -143,8 +144,9 @@ BEGIN {
 found {
 	swapfree = $15;
 	swaptotal = $14;
-	swapused = swaptotal - swapfree;
-	
+	swapcached = $5;
+	swapused = swaptotal-swapfree-swapcached;
+
 	total = $1;
 	free = $2;
 	buff = $3;
