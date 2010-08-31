@@ -265,6 +265,12 @@
 # - Option for showing graphs for all processes
 # 2010-05-18:
 # - Show reboots prominently, detection based on uptime
+# 2010-08-26:
+# - Improve the heuristics for selecting processes for the 'Process memory
+#   usage' section:
+#      i) Prune processes that do not use any CPU ticks.
+#     ii) Include processes that used at least 0.5% of total CPU time during
+#         the first and last round.
 # TODO:
 # - Proper option parsing + possibility to state between which
 #   test runs to produce the summaries?
@@ -1022,6 +1028,20 @@ def combine_dirty_and_swap(smaps):
         result[pid] = smaps[pid]['private_dirty'] + smaps[pid]['swap']
     return result
 
+def __cpu_tickdiff(round1, round2, pid, category):
+    return round2['/proc/pid/stat'][int(pid)][category] - \
+           round1['/proc/pid/stat'][int(pid)][category]
+
+# Per-PID difference in used user+sys CPU clock ticks between given rounds.
+def cpu_tickdiff(round1, round2, pid):
+    return __cpu_tickdiff(round1, round2, pid, 'stime') + \
+           __cpu_tickdiff(round1, round2, pid, 'utime')
+
+# Total difference in CPU clock ticks between given rounds.
+def total_cpu_tickdiff(round1, round2):
+    return sum(round2['/proc/stat']['cpu'].itervalues()) - \
+           sum(round1['/proc/stat']['cpu'].itervalues())
+
 def output_run_diffs(idx1, idx2, data, do_summary):
     "outputs the differencies between two runs"
 
@@ -1037,7 +1057,7 @@ def output_run_diffs(idx1, idx2, data, do_summary):
     else:
         stat = output_errors(idx2, run1, run2)
 
-    cpu_total_diff = sum(run2['/proc/stat']['cpu'].itervalues())-sum(run1['/proc/stat']['cpu'].itervalues())
+    cpu_total_diff = total_cpu_tickdiff(run1, run2)
     cpu_total_secs = float(cpu_total_diff)/CLK_TCK
 
     # Create the following table (based on /proc/pid/stat):
@@ -1357,6 +1377,22 @@ def output_apps_memory_graphs(cases):
             pidinfo[pid] = (name, cmdlines[pid])
         rounds += 1
 
+    # Collect processes that used at least 0.5% of CPU time, this should
+    # roughly match the processes listed in 'Process CPU usage' graphs in the
+    # per-round difference summaries. We will include these processes in the
+    # memory usage graphs even if their memory usage does not change.
+    cpuhoggers = []
+    for pid in data:
+        try:
+            first_round = min([x for x in data[pid].iterkeys() if x>0])
+            last_round  = max(data[pid].iterkeys())
+            if first_round < last_round:
+                ticks_diff = cpu_tickdiff(cases[first_round], cases[last_round], pid)
+                cpu_total_diff = total_cpu_tickdiff(cases[first_round], cases[last_round])
+                if ticks_diff > 0.005*cpu_total_diff:
+                    cpuhoggers.append(pid)
+        except: pass
+
     # get largest size for any of the namepids, get largest dirty (or RSS)
     # for sorting and ignore items which dirty/size don't change.
     # dirty is private_dirty + swap.
@@ -1393,11 +1429,23 @@ def output_apps_memory_graphs(cases):
         if show_all_processes:
             sizes.append((max_dirty,pid))
         # use heuristics to include only "interesting" processes
+        elif pid in cpuhoggers:
+            sizes.append((max_dirty,pid))
         elif pidrounds == 1:
             # show single round processes using >1MB
             if dirty > 1024:
                 sizes.append((dirty,pid))
         else:
+            try:
+                # Filter out processes that did not eat any CPU ticks.
+                first_round = min([x for x in data[pid].iterkeys() if x>0])
+                last_round  = max(data[pid].iterkeys())
+                if first_round < last_round:
+                    ticks_diff = cpu_tickdiff(cases[first_round], cases[last_round], pid)
+                    if ticks_diff <= 0:
+                        continue
+            except: pass
+
             if not max_dirty:
                 # show 2 round processes if their memory usage changes
                 min_dirty = min(prev_dirty, dirty)
@@ -1557,9 +1605,9 @@ def output_system_load_graphs(data):
     idx = 1
     for testcase in data[1:]:
         case = '<a href="#round-%d">Test round %02d</a>:' % (idx, idx)
-        if sum(testcase['/proc/stat']['cpu'].itervalues()) < sum(prev['/proc/stat']['cpu'].itervalues()):
+        if total_cpu_tickdiff(prev, testcase) < 0:
             entries.append((case, (0,0,0,0,0), "-"))
-        elif sum(testcase['/proc/stat']['cpu'].itervalues()) == sum(prev['/proc/stat']['cpu'].itervalues()):
+        elif total_cpu_tickdiff(prev, testcase) == 0:
             # Two identical entries? Most likely user has manually copied the snapshot directories.
             entries.append((case, (0,0,0,0,0), "-"))
         else:
