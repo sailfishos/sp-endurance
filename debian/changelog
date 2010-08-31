@@ -1,3 +1,15 @@
+sp-endurance (2.1.3) unstable; urgency=low
+
+  * endurance-mem-overview: take SwapCached into account.
+  * endurance_report.py: Improve the heuristics for selecting processes for
+    the 'Process memory usage' section:
+        i) Prune processes that do not use any CPU ticks.
+       ii) Include processes that used at least 0.5% of total CPU time during
+           the first and last round.
+    Fixes: NB#164928
+
+ -- Tommi Rantala <ext-tommi.1.rantala@nokia.com>  Tue, 31 Aug 2010 13:56:37 +0300
+
 sp-endurance (2.1.2) unstable; urgency=low
 
   * Update save-incremental-endurance-stats for Harmattan. Fixes: NB#186994
