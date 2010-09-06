@@ -1236,8 +1236,8 @@ def output_run_diffs(idx1, idx2, data, do_summary):
             print '\n<p><table border=1 bgcolor=%s>' % Colors.kernel
             print "<caption><i>Virtual memory subsystem</i></caption>"
             print "<tr><th>Type:</th><th>Value:</th></tr>"
-            for data in diffs:
-                print "<tr><td>%s</td><td align=right><b>%s</b></td></tr>" % data
+            for d in diffs:
+                print "<tr><td>%s</td><td align=right><b>%s</b></td></tr>" % d
             print "</table>"
 
         # Interrupts and context switches.
@@ -1250,8 +1250,8 @@ def output_run_diffs(idx1, idx2, data, do_summary):
         print '\n<p><table border=1 bgcolor=%s>' % Colors.kernel
         print "<caption><i>Low level system events</i></caption>"
         print "<tr><th>Type:</th><th>Value:</th></tr>"
-        for data in diffs:
-            print "<tr><td>%s</td><td align=right><b>%s</b></td></tr>" % data
+        for d in diffs:
+            print "<tr><td>%s</td><td align=right><b>%s</b></td></tr>" % d
         print "</table>"
 
 
