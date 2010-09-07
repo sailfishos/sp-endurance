@@ -271,6 +271,8 @@
 #      i) Prune processes that do not use any CPU ticks.
 #     ii) Include processes that used at least 0.5% of total CPU time during
 #         the first and last round.
+# 2010-09-10:
+# - Add information to report changes from initial state.
 # TODO:
 # - Proper option parsing + possibility to state between which
 #   test runs to produce the summaries?
@@ -877,33 +879,65 @@ def output_process_changes(pids1, pids2, titles, do_summary):
         print "<!--\n- %s: %+d\n-->" % (titles[0], change)
 
 
-def output_diffs(diffs, title, colname, colamount, colors, do_summary):
-    "output diffs of data: { difference, total, name }"
-    total = 0
+def output_diffs(diffs, title, first_column_title, data_units, bgcolor, idx1, do_summary):
+    "diffs = { <change>, <change from initial>, <total value>, <name> }"
+    total_change              = sum([x[0] for x in diffs])
+    total_change_from_initial = sum([x[1] for x in diffs])
     if diffs:
         diffs.sort()
         diffs.reverse()
-        print '\n<p><table border=1 bgcolor="#%s">' % colors
+        print '\n<p><table border=1 bgcolor="#%s">' % bgcolor
         print "<caption><i>%s</i></caption>" % title
-        print "<tr><th>%s:</th><th>Change:</th><th>Total:</th></tr>" % colname
-        for data in diffs:
-            total += data[0]
-            print "<tr><td>%s</td><td align=right><b>%+d</b>%s</td><td align=right>%d%s</td></tr>" % (data[2], data[0], colamount, data[1], colamount)
-        print "<tr><td align=right><i>Total change =</i></td><td align=right><b>%+d%s</b></td><td>&nbsp;</td>" % (total, colamount)
+        # HTML end tags (</th>, </tr>, </td>) omitted on purpose to reduce
+        # output file size, it's permitted by the HTML4 spec.
+        if idx1 > 0:
+            print "<tr><th>%s:<th>Total:<th>Change:<th>Change from<br>initial state:" % first_column_title
+        else:
+            print "<tr><th>%s:<th>Total:<th>Change:" % first_column_title
+        for change, change_from_initial, value, name in diffs:
+            initialch = ""
+            if idx1 > 0:
+                initialch = "<td align=right>%+d%s" % (change_from_initial, data_units)
+            print "<tr><td>%s<td align=right>%d%s<td align=right><b>%+d</b>%s%s" % \
+                    (name, \
+                     value, data_units, \
+                     change, data_units, \
+                     initialch)
+        initialch = ""
+        if idx1 > 0:
+            initialch = "<td align=right>%+d%s" % (total_change_from_initial, data_units)
+        print "<tr><td align=right><i>Total change =</i><td>&nbsp;<td align=right><b>%+d%s</b>%s" % \
+                (total_change, data_units, initialch)
         print "</table>"
     if do_summary:
-        print "<!--\n- %s change: %+d\n-->" % (title, total)
-    
-    
-def get_usage_diffs(list1, list2):
-    """return list of (total, name, diff) change tuples for given items"""
+        print "<!--\n- %s change: %+d\n-->" % (title, total_change)
+
+# list0: initial values
+# list1 & list2: compare these rounds
+#
+# Input:
+#   list0: {'/tmp': 48, '/': 852140}
+#   list1: {'/tmp': 48, '/': 852140}
+#   list2: {'/tmp': 52, '/': 851804}
+#
+# Output:
+#   [
+#    (4, 4, 52, '/tmp'),
+#    (-336, -336, 851804, '/')
+#   ]
+#
+def get_usage_diffs(list0, list1, list2):
+    """return [(<change>, <change from initial>, <total value>, <name>), ...]"""
     diffs = []
     for name,value2 in list2.items():
         if name in list1:
             value1 = list1[name]
             if value2 != value1:
+                change_from_initial = 0
+                try: change_from_initial = value2 - list0[name]
+                except KeyError: pass
                 # will be sorted according to first column
-                diffs.append((value2 - value1, value2, name))
+                diffs.append((value2 - value1, change_from_initial, value2, name))
     return diffs
 
 
@@ -921,11 +955,27 @@ def pid_is_main_thread(pid, commands, processes):
             return 0
     return 1
 
-
-def get_pid_usage_diffs(commands, processes, values1, values2):
-    """return {diff, total, name} hash of differences in numbers between
-    two {pid:value} hashes, remove threads based on given 'processes' hash
-    and name the rest based on the given 'commands' hash"""
+# values0: initial values
+# values1 & values2: compare these rounds
+#
+# Input:
+#   values0: {'4134': 12128, '3035': 2292, '2062': 1296, ...}
+#   values1: {'4134': 12260, '3035': 2396, '2062': 1296, ...}
+#   values2: {'4134': 12352, '3035': 2496, '2062': 1304, ...}
+#
+# Output:
+#  [
+#    (92, 224, 12352, 'fennec[4134]'),
+#    (100, 204, 2496, 'mcompositor[3035]'),
+#    (8, 8, 1304, 'sensord[2062]'),
+#    ...
+#  ]
+#
+def get_pid_usage_diffs(commands, processes, values0, values1, values2):
+    """return [(<change>, <change from initial>, <total value>, <name>), ...]
+    of differences in numbers between two {pid:value} hashes, remove threads
+    based on given 'processes' hash and name the rest based on the given
+    'commands' hash"""
     diffs = []
     for pid in values2:
         if pid in values1:
@@ -938,12 +988,14 @@ def get_pid_usage_diffs(commands, processes, values1, values2):
                 if not pid_is_main_thread(pid, commands, processes):
                     continue
                 name = commands[pid]
-                # will be sorted according to first column (i.e. change)
-                diffs.append((c2-c1, c2, "%s[%s]" % (name, pid)))
+                change_from_initial = 0
+                try: change_from_initial = c2 - values0[pid]
+                except KeyError: pass
+                diffs.append((c2-c1, change_from_initial, c2, "%s[%s]" % (name, pid)))
     return diffs
 
 
-def get_thread_count_diffs(commands, processes1, processes2):
+def get_thread_count_diffs(commands, processes0, processes1, processes2):
     """return { difference, total, name } hash where name is taken from
     'commands', total is taken from 'processes2', and differences in
     thread counts is between 'processes2'-'processes1' and all these
@@ -956,8 +1008,11 @@ def get_thread_count_diffs(commands, processes1, processes2):
             if t1 == t2:
                 continue
             name = commands[pid]
+            t0 = 0
+            try: t0 = t2 - int(processes0[pid]['Threads'])
+            except KeyError: pass
             # will be sorted according to first column
-            diffs.append((t2-t1, t2, "%s[%s]" % (name, pid)))
+            diffs.append((t2-t1, t0, t2, "%s[%s]" % (name, pid)))
     return diffs
 
 
@@ -1028,6 +1083,24 @@ def combine_dirty_and_swap(smaps):
         result[pid] = smaps[pid]['private_dirty'] + smaps[pid]['swap']
     return result
 
+#  Input (key='mounts'):
+#     data[0]['mounts'] = {'/tmp': 48, '/': 852108}
+#     data[1]['mounts'] = {'/tmp': 48, '/': 852140}
+#     data[2]['mounts'] = {'/tmp': 48, '/': 851804, '/foo': 1}
+#     ...
+#
+#  Output:
+#     {'/tmp': 48, '/': 852108, '/foo' : 1}
+#
+def initial_values(data, key):
+    result = {}
+    for round in range(0, len(data)):
+        for x in data[round][key]:
+            if x not in result:
+                try: result[x] = data[round][key][x]
+                except: pass
+    return result
+
 def __cpu_tickdiff(round1, round2, pid, category):
     return round2['/proc/pid/stat'][int(pid)][category] - \
            round1['/proc/pid/stat'][int(pid)][category]
@@ -1041,6 +1114,41 @@ def cpu_tickdiff(round1, round2, pid):
 def total_cpu_tickdiff(round1, round2):
     return sum(round2['/proc/stat']['cpu'].itervalues()) - \
            sum(round1['/proc/stat']['cpu'].itervalues())
+
+def resource_overall_changes(data, idx1, idx2, do_summary):
+    run1 = data[idx1]
+    run2 = data[idx2]
+    memory_change = (run2['ram_free']+run2['swap_free']) - (run1['ram_free']+run1['swap_free'])
+    ram_change = run2['ram_free'] - run1['ram_free']
+    swap_change = run2['swap_free'] - run1['swap_free']
+    fdfree_change = run2['fdfree'] - run1['fdfree']
+    change_from_initial = [(run2['ram_free']+run2['swap_free']) - (data[0]['ram_free']+data[0]['swap_free'])]
+    change_from_initial += [run2[key]-data[0][key] for key in ['ram_free', 'swap_free', 'fdfree']]
+
+    print "<p>System free memory change: <b>%+d</b> kB" % memory_change
+    if ram_change or swap_change:
+        print "<br>(free RAM change: <b>%+d</b> kB, free swap change: <b>%+d</b> kB)" % (ram_change, swap_change)
+    print "<br>System unused file descriptor change: <b>%+d</b>" % fdfree_change
+    if idx1 > 0:
+        print "<br>(change from initial state: free memory: %+d kB [RAM: %+d kB, swap: %+d kB], FD: %+d)" % \
+                (change_from_initial[0], change_from_initial[1], change_from_initial[2], change_from_initial[3])
+    if run2['fdfree'] < 200:
+        print "<br><font color=red>Less than 200 FDs are free in the system.</font>"
+    elif run2['fdfree'] < 500:
+        print "<br>(Less that 500 FDs are free in the system.)"
+    if do_summary:
+        print """
+<!--
+- System free memory change: %+d
+- System free RAM change: %+d
+- System free swap change: %+d
+- System free FD change: %+d
+-->""" % (memory_change, ram_change, swap_change, fdfree_change)
+        if 'private_code' in run1:
+            dcode_change = run2['private_code'] - run1['private_code']
+            if dcode_change:
+                print "<br>System private dirty code pages change: <b>%+d</b> kB" % dcode_change
+
 
 def output_run_diffs(idx1, idx2, data, do_summary):
     "outputs the differencies between two runs"
@@ -1145,37 +1253,14 @@ def output_run_diffs(idx1, idx2, data, do_summary):
     process_cpu_usage()
 
     print "<h4>Resource usage changes</h4>"
-
-    # overall stats
-    total_change = (run2['ram_free']+run2['swap_free']) - (run1['ram_free']+run1['swap_free'])
-    ram_change = run2['ram_free'] - run1['ram_free']
-    swap_change = run2['swap_free'] - run1['swap_free']
-    fdfree_change = run2['fdfree'] - run1['fdfree']
-    print "<p>System free memory change: <b>%+d</b> kB" % total_change
-    if ram_change or swap_change:
-        print "<br>(free RAM change: <b>%+d</b> kB, free swap change: <b>%+d</b> kB)" % (ram_change, swap_change)
-    print "<br>System unused file descriptor change: <b>%+d</b>" % fdfree_change
-    if run2['fdfree'] < 200:
-        print "<br><font color=red>Less than 200 FDs are free in the system.</font>"
-    elif run2['fdfree'] < 500:
-        print "<br>(Less that 500 FDs are free in the system.)"
-    if do_summary:
-        print """
-<!--
-- System free memory change: %+d
-- System free RAM change: %+d
-- System free swap change: %+d
-- System free FD change: %+d
--->""" % (total_change, ram_change, swap_change, fdfree_change)
-        if 'private_code' in run1:
-            dcode_change = run2['private_code'] - run1['private_code']
-            if dcode_change:
-                print "<br>System private dirty code pages change: <b>%+d</b> kB" % dcode_change
+    resource_overall_changes(data, idx1, idx2, do_summary)
 
     # filesystem usage changes
-    diffs = get_usage_diffs(run1['mounts'], run2['mounts'])
+    diffs = get_usage_diffs(initial_values(data, 'mounts'),
+                            run1['mounts'],
+                            run2['mounts'])
     output_diffs(diffs, "Filesystem usage", "Mount", " kB",
-                Colors.disk, do_summary)
+                Colors.disk, idx1, do_summary)
 
     # Combine Private dirty + swap into one table. The idea is to reduce the
     # amount of data included in the report (=less tables & smaller HTML file
@@ -1183,33 +1268,41 @@ def output_run_diffs(idx1, idx2, data, do_summary):
     # swapped pages will be private dirty anyways.
     if 'smaps' in run1:
         diffs = get_pid_usage_diffs(run2['commands'], run2['processes'],
+                        combine_dirty_and_swap(initial_values(data, 'smaps')),
                         combine_dirty_and_swap(run1['smaps']),
                         combine_dirty_and_swap(run2['smaps']))
         output_diffs(diffs,
                 "Process private dirty and swap memory usages combined (according to SMAPS)",
-                "Command[Pid]", " kB", Colors.memory, do_summary)
+                "Command[Pid]", " kB", Colors.memory, idx1, do_summary)
     else:
         print "<p>No SMAPS data for process memory usage available."
     
     # process X resource usage changes
-    diffs = get_usage_diffs(run1['xclient_mem'], run2['xclient_mem'])
+    diffs = get_usage_diffs(initial_values(data, 'xclient_mem'),
+                            run1['xclient_mem'],
+                            run2['xclient_mem'])
     output_diffs(diffs, "X resource memory usage", "X client", " kB",
-                 Colors.xres_mem, do_summary)
+                 Colors.xres_mem, idx1, do_summary)
     if do_summary:
-        diffs = get_usage_diffs(run1['xclient_count'], run2['xclient_count'])
+        diffs = get_usage_diffs(initial_values(data, 'xclient_count'),
+                                run1['xclient_count'],
+                                run2['xclient_count']);
         output_diffs(diffs, "X resource count", "X client", "",
-                     Colors.xres_count, do_summary)
+                     Colors.xres_count, idx1, do_summary)
     
     # FD count changes
     diffs = get_pid_usage_diffs(run2['commands'], run2['processes'],
+                    initial_values(data, 'fdcounts'),
                     run1['fdcounts'], run2['fdcounts'])
     output_diffs(diffs, "Process file descriptor count", "Command[Pid]", "",
-                    Colors.fds, do_summary)
+                    Colors.fds, idx1, do_summary)
 
     # shared memory segment count changes
-    diffs = get_usage_diffs(run1['shm'], run2['shm'])
+    diffs = get_usage_diffs(initial_values(data, 'shm'),
+                            run1['shm'],
+                            run2['shm'])
     output_diffs(diffs, "Shared memory segments", "Type", "",
-                Colors.shm, do_summary)
+                Colors.shm, idx1, do_summary)
 
     # Kernel statistics
     if cpu_total_diff > 0:
@@ -1259,9 +1352,10 @@ def output_run_diffs(idx1, idx2, data, do_summary):
 
     # thread count changes
     diffs = get_thread_count_diffs(run2['commands'],
+                    initial_values(data, 'processes'),
                     run1['processes'], run2['processes'])
     output_diffs(diffs, "Process thread count", "Command[Pid]", "",
-                    Colors.threads, do_summary)
+                    Colors.threads, idx1, do_summary)
 
     # new and closed processes
     titles = ("Change in number of processes",
