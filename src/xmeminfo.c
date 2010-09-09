@@ -12,7 +12,7 @@
  * - do not use ncurses
  *
  *  Copyright (C) 2003 by Matthew Allum
- *  Copyright (C) 2006,2007 by Nokia Corporation
+ *  Copyright (C) 2006-2007,2009-2010 by Nokia Corporation
  * 
  * Contact: Eero Tamminen <eero.tamminen@nokia.com>
  *
@@ -48,28 +48,7 @@
 #endif
 
 enum {
-  /* builtin resources */
-  ATOM_WINDOW = 0,
-  ATOM_PIXMAP,
-  ATOM_GC,
-  ATOM_FONT,
-  ATOM_CURSOR,
-  ATOM_COLORMAP,
-  ATOM_COLORMAP_ENTRY,
-  ATOM_OTHER_CLIENT,
-  ATOM_PASSIVE_GRAB,
-  /* Render extension */
-  ATOM_PICTURE,
-  ATOM_PICTFORMAT,
-  ATOM_GLYPHSET,
-  /* RandR extension */
-  ATOM_CRTC,
-  ATOM_MODE,
-  ATOM_OUTPUT,
-  /* Xi extension */
-  ATOM_INPUTCLIENT,
   /* non-resource atoms */
-  ATOM_NET_CLIENT_LIST,
   ATOM_NET_WM_PID,
   ATOM_NET_WM_NAME,
   ATOM_UTF8_STRING,
@@ -78,23 +57,6 @@ enum {
 
 static const char *AtomNames[] =
   {
-    "WINDOW",
-    "PIXMAP",
-    "GC",
-    "FONT",
-    "CURSOR",
-    "COLORMAP",
-    "COLORMAP ENTRY",
-    "OTHER CLIENT",
-    "PASSIVE GRAB",
-    "PICTURE",
-    "PICTFORMAT",
-    "GLYPHSET",
-    "CRTC",
-    "MODE",
-    "OUTPUT",
-    "INPUTCLIENT",
-    "_NET_CLIENT_LIST",
     "_NET_WM_PID",
     "_NET_WM_NAME",
     "UTF8_STRING"
@@ -108,28 +70,8 @@ typedef struct XResTopClient
   unsigned char *identifier;
   unsigned long  pixmap_bytes;
   unsigned long  other_bytes;
-  /* basic types */
-  int            n_windows; 
-  int            n_pixmaps;
-  int            n_gcs;
-  int            n_fonts;
-  int            n_cursors;
-  int            n_colormaps;
-  int            n_map_entries;
-  int            n_other_clients;
-  int            n_passive_grabs;
-  /* render extension */
-  int            n_pictures;
-  int            n_pictformats;
-  int            n_glyphsets;
-  /* randr extension */
-  int            n_crtcs;
-  int            n_modes;
-  int            n_outputs;
-  /* xi */
-  int            n_input_clients;
-  /* unknown (if any -> update list) */
-  int            n_unknown;
+  XResType      *resources;
+  int            n_resources;
 
 } XResTopClient;
 
@@ -142,6 +84,9 @@ typedef struct XResTopApp
   int         screen;
   Window      win_root, win_dummy;
   Atom        atoms[ATOM_COUNT];
+  char      **resource_atom_names;
+  Atom       *resource_atoms;
+  int         resource_atoms_cnt;
 
   XResTopClient *clients[MAX_CLIENTS];
   int         n_clients;
@@ -394,13 +339,10 @@ xrestop_client_get_info(XResTopApp *app, XResTopClient *client)
 static void
 xrestop_client_get_stats(XResTopApp *app, XResTopClient *client)
 {
-  int               j = 0;
-  XResType         *types = NULL;
-  int               n_types;
-
   trap_errors();
   
-  XResQueryClientResources (app->dpy, client->resource_base, &n_types, &types);
+  XResQueryClientResources (app->dpy, client->resource_base,
+          &client->n_resources, &client->resources);
   
   XResQueryClientPixmapBytes (app->dpy, client->resource_base, 
 			      &client->pixmap_bytes);
@@ -408,82 +350,12 @@ xrestop_client_get_stats(XResTopApp *app, XResTopClient *client)
   if (untrap_errors())
     {
       app->n_xerrors++;
-      goto cleanup;
+      if (client->resources) {
+        XFree(client->resources);
+        client->resources = NULL;
+        client->n_resources = 0;
+      }
     }
-  
-  for (j=0; j < n_types; j++)
-    {
-      unsigned int this_type = types[j].resource_type;
-      
-      if (this_type == app->atoms[ATOM_WINDOW])
-	client->n_windows += types[j].count;
-      else if (this_type == app->atoms[ATOM_PIXMAP])
-	client->n_pixmaps += types[j].count;
-      else if (this_type == app->atoms[ATOM_GC])
-	client->n_gcs += types[j].count;
-      else if (this_type == app->atoms[ATOM_FONT])
-	client->n_fonts += types[j].count;
-      else if (this_type == app->atoms[ATOM_CURSOR])
-	client->n_cursors += types[j].count;
-      else if (this_type == app->atoms[ATOM_COLORMAP])
-	client->n_colormaps += types[j].count;
-      else if (this_type == app->atoms[ATOM_COLORMAP_ENTRY])
-	client->n_map_entries += types[j].count;
-      else if (this_type == app->atoms[ATOM_OTHER_CLIENT])
-	client->n_other_clients += types[j].count;
-      else if (this_type == app->atoms[ATOM_PASSIVE_GRAB])
-	client->n_passive_grabs += types[j].count;
-
-      else if (this_type == app->atoms[ATOM_PICTURE])
-	client->n_pictures += types[j].count;
-      else if (this_type == app->atoms[ATOM_PICTFORMAT])
-	client->n_pictformats += types[j].count;
-      else if (this_type == app->atoms[ATOM_GLYPHSET])
-	client->n_glyphsets += types[j].count;
-
-      else if (this_type == app->atoms[ATOM_CRTC])
-	client->n_crtcs += types[j].count;
-      else if (this_type == app->atoms[ATOM_MODE])
-	client->n_modes += types[j].count;
-      else if (this_type == app->atoms[ATOM_OUTPUT])
-	client->n_outputs += types[j].count;
-
-      else if (this_type == app->atoms[ATOM_INPUTCLIENT])
-	client->n_input_clients += types[j].count;
-
-      else
-	{
-	   client->n_unknown += types[j].count;
-	   fprintf(stderr, "WARNING: %d unknown resources of type %d for %s\n", types[j].count, this_type, client->identifier);
-	}
-    }
-
-  /* All approx currently - same as gnome system monitor */
-   client->other_bytes += client->n_windows * 24;
-   client->other_bytes += client->n_gcs * 24;
-   client->other_bytes += client->n_fonts * 1024;
-   client->other_bytes += client->n_cursors * 24;
-   client->other_bytes += client->n_colormaps * 24;
-   client->other_bytes += client->n_map_entries * 24;
-   client->other_bytes += client->n_other_clients * 24;
-   client->other_bytes += client->n_passive_grabs * 24;
-
-   client->other_bytes += client->n_pictures * 24;
-   client->other_bytes += client->n_pictformats * 24;
-   client->other_bytes += client->n_glyphsets * 24;
-
-   client->other_bytes += client->n_crtcs * 24;
-   client->other_bytes += client->n_modes * 24;
-   client->other_bytes += client->n_outputs * 24;
-
-   client->other_bytes += client->n_input_clients * 24;
-
-   client->other_bytes += client->n_unknown * 24;
-
- cleanup:
-   if (types) XFree(types);
-
-   return;
 }
 
 static void
@@ -522,48 +394,143 @@ xrestop_populate_client_data(XResTopApp *app)
   if (clients) XFree(clients);
 }
 
+/* Iterate over the list of X clients, and collect a set of unique X resource
+ * atoms from the ones that we encounter.
+ *
+ * Then map the atoms (=integers) to human readable resource names.
+ */
+static void
+xrestop_build_atom_list(XResTopApp *app)
+{
+  int i, j, k;
+
+  for (i=0; i < app->n_clients; ++i)
+    {
+      for (k=0; k < app->clients[i]->n_resources; ++k)
+        {
+          Atom a = app->clients[i]->resources[k].resource_type;
+          for (j=0; j < app->resource_atoms_cnt; ++j)
+            {
+              if (a == app->resource_atoms[j]) break;
+            }
+          if (j == app->resource_atoms_cnt)
+            {
+              app->resource_atoms_cnt += 1;
+              app->resource_atoms = realloc(app->resource_atoms,
+                        (app->resource_atoms_cnt)*sizeof(Atom));
+              app->resource_atoms[app->resource_atoms_cnt-1] = a;
+            }
+        }
+    }
+
+  app->resource_atom_names = calloc(app->resource_atoms_cnt, sizeof(char*));
+  XGetAtomNames(app->dpy, app->resource_atoms, app->resource_atoms_cnt,
+                app->resource_atom_names);
+}
+
+static void
+print_column_titles(XResTopApp *app)
+{
+  int i;
+  printf("res-base");
+  for (i=0; i < app->resource_atoms_cnt; ++i)
+    {
+      printf(",%s", app->resource_atom_names[i]);
+    }
+  printf(",total_resource_count,Pixmap mem,Misc mem,Total mem,PID,Identifier\n");
+}
+
+static unsigned
+rcount(XResTopClient *client)
+{
+  int i;
+  unsigned cnt = 0;
+  for (i=0; i < client->n_resources; ++i)
+    {
+      cnt += client->resources[i].count;
+    }
+  return cnt;
+}
+
+static unsigned
+rcount_for_atom(XResTopClient *client, Atom atom)
+{
+  int i;
+  unsigned cnt = 0;
+  for (i=0; i < client->n_resources; ++i)
+    {
+      if (atom == client->resources[i].resource_type)
+        {
+          cnt = client->resources[i].count;
+          break;
+        }
+    }
+  return cnt;
+}
+
+static void
+print_client_data(XResTopApp *app, XResTopClient *client)
+{
+  int i;
+
+  printf("%.7x", (unsigned)client->resource_base);
+
+  for (i=0; i < app->resource_atoms_cnt; ++i)
+    {
+      printf(",%u", rcount_for_atom(client, app->resource_atoms[i]));
+    }
+
+  printf(",%u,%liB,%liB,%liB,%d,%s\n",
+      rcount(client),
+
+      client->pixmap_bytes,
+      client->other_bytes,
+      client->pixmap_bytes + client->other_bytes,
+
+      client->pid,	/* -1 for unknown */
+      client->identifier);
+}
+
 static void
 xrestop_display(XResTopApp *app)
 {
-	int  i;
-	
-	printf("res-base,Windows,Pixmaps,GCs,Fonts,Cursors,Colormaps,Map entries,Other clients,Grabs,Pictures,Pictformats,Glyphsets,CRTCs,Modes,Outputs,Xi clients,Unknown,Pixmap mem,Misc mem,Total mem,PID,Identifier\n");
+  int i;
 
-	for (i = 0; i < app->n_clients; i++)
-	{
-		printf("%.7x,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%liB,%liB,%liB,%d,%s\n", 
-		       (unsigned int)app->clients[i]->resource_base, 
-		       app->clients[i]->n_windows, 
-		       app->clients[i]->n_pixmaps,
-		       app->clients[i]->n_gcs,
-		       app->clients[i]->n_fonts,
-		       app->clients[i]->n_cursors,
-		       app->clients[i]->n_colormaps,
-		       app->clients[i]->n_map_entries,
-		       app->clients[i]->n_other_clients,
-		       app->clients[i]->n_passive_grabs,
+  print_column_titles(app);
 
-		       app->clients[i]->n_pictures,
-		       app->clients[i]->n_pictformats,
-		       app->clients[i]->n_glyphsets,
+  for (i=0; i < app->n_clients; i++)
+    {
+      print_client_data(app, app->clients[i]);
+    }
+}
 
-		       app->clients[i]->n_crtcs,
-		       app->clients[i]->n_modes,
-		       app->clients[i]->n_outputs,
 
-		       app->clients[i]->n_input_clients,
-
-		       app->clients[i]->n_unknown,
-		       
-		       app->clients[i]->pixmap_bytes,
-		       app->clients[i]->other_bytes,
-		       app->clients[i]->pixmap_bytes
-		       + app->clients[i]->other_bytes,
-		       
-		       app->clients[i]->pid,	/* -1 for unknown */
-		       app->clients[i]->identifier
-		       );
-	}
+/* Estimate how many bytes each X client is using.
+ *
+ * XRes does not give byte values for the resource types (the only exception is
+ * pixmaps), so try to guess something.
+ */
+static void
+xrestop_calculate_client_bytes(XResTopApp *app)
+{
+  int i, j, k;
+  for (i=0; i < app->n_clients; ++i)
+    {
+      for (j=0; j < app->clients[i]->n_resources; ++j)
+        {
+          unsigned bytes;
+          Atom a = app->clients[i]->resources[j].resource_type;
+          for (k=0; k < app->resource_atoms_cnt; ++k)
+            if (a == app->resource_atoms[k]) break;
+          if (strcmp(app->resource_atom_names[k], "PIXMAP") == 0)
+            bytes = 0;
+          else if (strcmp(app->resource_atom_names[k], "FONT") == 0)
+            bytes = app->clients[i]->resources[j].count * 1024;
+          else
+            bytes = app->clients[i]->resources[j].count * 24;
+          app->clients[i]->other_bytes += bytes;
+        }
+    }
 }
 
 static int 
@@ -638,6 +605,8 @@ main(int argc, char **argv)
   app->win_dummy = XCreateSimpleWindow(app->dpy, app->win_root, 
 				       0, 0, 16, 16, 0, None, None); 
   xrestop_populate_client_data(app);
+  xrestop_build_atom_list(app);
+  xrestop_calculate_client_bytes(app);
   xrestop_sort(app);
   xrestop_display(app);
 
