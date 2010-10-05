@@ -7,7 +7,7 @@ Standards-Version: 3.8.0
 
 Package: sp-endurance
 Architecture: any
-Depends: ${shlibs:Depends}, lzop
+Depends: ${misc:Depends}, ${shlibs:Depends}, lzop
 Recommends: sp-smaps-measure, x11-utils
 Description: Endurance measument tools
  Endurance measurement tools save system and process information from /proc
@@ -18,7 +18,7 @@ Description: Endurance measument tools
 
 Package: sp-endurance-postproc
 Architecture: all
-Depends: python, lzop
+Depends: ${misc:Depends}, python, lzop
 Recommends: sp-smaps-visualize, python-psyco
 Description: Postprocessing for endurance data
  Postprocessing scripts to parse and generate a report from the endurance
@@ -30,7 +30,7 @@ Description: Postprocessing for endurance data
 Package: sp-endurance-tests
 Priority: extra
 Architecture: any
-Depends: ci-testing, sp-endurance (=${binary:Version}), sp-endurance-postproc (=${binary:Version})
+Depends: ${misc:Depends}, ci-testing, sp-endurance (=${binary:Version}), sp-endurance-postproc (=${binary:Version})
 XB-Maemo-CI-Packages: sp-endurance, sp-endurance-postproc
 XB-Maemo-CI-Stage: fast, staging, acceptance
 Description: CI tests for sp-endurance
