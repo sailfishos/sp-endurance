@@ -95,6 +95,9 @@ typedef struct XResTopApp
   int         delay;
   int         n_xerrors;
 
+  char      **atoms_wanted;
+  int         atoms_wanted_cnt;
+
 } XResTopApp;
 
 
@@ -191,9 +194,16 @@ static void
 usage(char *progname)
 {
   fprintf(stderr, 
-	  "%s usage:\n"
-	  "  -display,     -d        specify X Display to monitor.\n\n",
-	  progname);
+          "%s usage:\n"
+          "  -d, -display      Specify X Display to monitor.\n"
+          "  -a, -atom         Specify X Resource Atom name to report.\n"
+          "                    Multiple -a/-atom parameters are accepted.\n"
+          "                    The atoms are reported in the order specified.\n"
+          "\n"
+          "Examples:\n"
+          "  %s -a WINDOW -a FONT -a \"PASSIVE GRAB\"\n"
+          "\n",
+          progname, progname);
 
   exit(1);
 }
@@ -431,11 +441,31 @@ xrestop_build_atom_list(XResTopApp *app)
 static void
 print_column_titles(XResTopApp *app)
 {
-  int i;
+  int i, j;
   printf("res-base");
-  for (i=0; i < app->resource_atoms_cnt; ++i)
+  if (app->atoms_wanted_cnt)
     {
-      printf(",%s", app->resource_atom_names[i]);
+      /* Report the atoms in the exact order the user specified on command
+       * line.
+       */
+      for (i=0; i < app->atoms_wanted_cnt; ++i)
+        {
+          for (j=0; j < app->resource_atoms_cnt; ++j)
+            {
+              if (strcmp(app->atoms_wanted[i], app->resource_atom_names[j]) == 0)
+                {
+                  printf(",%s", app->resource_atom_names[j]);
+                  break;
+                }
+            }
+        }
+    }
+  else
+    {
+      for (i=0; i < app->resource_atoms_cnt; ++i)
+        {
+          printf(",%s", app->resource_atom_names[i]);
+        }
     }
   printf(",total_resource_count,Pixmap mem,Misc mem,Total mem,PID,Identifier\n");
 }
@@ -471,13 +501,33 @@ rcount_for_atom(XResTopClient *client, Atom atom)
 static void
 print_client_data(XResTopApp *app, XResTopClient *client)
 {
-  int i;
+  int i, j;
 
   printf("%.7x", (unsigned)client->resource_base);
 
-  for (i=0; i < app->resource_atoms_cnt; ++i)
+  if (app->atoms_wanted_cnt)
     {
-      printf(",%u", rcount_for_atom(client, app->resource_atoms[i]));
+      /* Report the atoms in the exact order the user specified on command
+       * line.
+       */
+      for (i=0; i < app->atoms_wanted_cnt; ++i)
+        {
+          for (j=0; j < app->resource_atoms_cnt; ++j)
+            {
+              if (strcmp(app->atoms_wanted[i], app->resource_atom_names[j]) == 0)
+                {
+                  printf(",%u", rcount_for_atom(client, app->resource_atoms[j]));
+                  break;
+                }
+            }
+        }
+    }
+  else
+    {
+      for (i=0; i < app->resource_atoms_cnt; ++i)
+        {
+          printf(",%u", rcount_for_atom(client, app->resource_atoms[i]));
+        }
     }
 
   printf(",%u,%liB,%liB,%liB,%d,%s\n",
@@ -556,7 +606,7 @@ xrestop_sort(XResTopApp *app)
 int 
 main(int argc, char **argv)
 {
-  int      i, event, error, major, minor;
+  int      i, j, event, error, major, minor;
   XResTopApp *app = NULL;
 
   app = malloc(sizeof(XResTopApp));
@@ -568,6 +618,34 @@ main(int argc, char **argv)
     if (!strcmp ("-display", argv[i]) || !strcmp ("-d", argv[i])) {
       if (++i>=argc) usage (argv[0]);
       app->dpy_name = argv[i];
+      continue;
+    }
+
+    if (!strcmp("-atom", argv[i]) || !strcmp("-a", argv[i])) {
+      if (++i>=argc) usage (argv[0]);
+      if (!argv[i]) usage (argv[0]);
+      if (app->atoms_wanted_cnt)
+        {
+          for (j=0; j < app->atoms_wanted_cnt; ++j)
+            {
+              if (strcmp(argv[i], app->atoms_wanted[j]) == 0)
+                {
+                  fprintf(stderr,
+                       "%s: ERROR: -a/-atom '%s' specified multiple times.\n",
+                       argv[0], argv[i]);
+                  exit(1);
+                }
+            }
+        }
+      app->atoms_wanted = realloc(app->atoms_wanted,
+                    (app->atoms_wanted_cnt+1)*sizeof(char*));
+      if (!app->atoms_wanted)
+        {
+          fprintf(stderr, "%s: ERROR: realloc() failure.\n", argv[0]);
+          exit(1);
+        }
+      app->atoms_wanted[app->atoms_wanted_cnt] = argv[i];
+      app->atoms_wanted_cnt++;
       continue;
     }
 
