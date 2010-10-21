@@ -7,7 +7,7 @@ Standards-Version: 3.8.0
 
 Package: sp-endurance
 Architecture: any
-Depends: ${misc:Depends}, ${shlibs:Depends}, lzop
+Depends: ${misc:Depends}, ${shlibs:Depends}, lzop, sysinfo-tool
 Recommends: sp-smaps-measure, x11-utils
 Description: Endurance measument tools
  Endurance measurement tools save system and process information from /proc
