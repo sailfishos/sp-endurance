@@ -178,6 +178,9 @@ echo -e "generator = syte-endurance-stats v0.5\n" > $usage
 if [ \! -z $(which sysinfo-tool) ]; then
 	# Harmattan
 	echo "SW-version = $(sysinfo-tool -g /device/sw-release-ver)" >> $usage
+elif [ \! -z $(which sysinfoclient) ]; then
+	# Harmattan
+	echo "SW-version = $(sysinfoclient -g /device/sw-release-ver | cut -b26-)" >> $usage
 elif [ \! -z "$OSSO_VERSION" ]; then
 	# earlier Maemo releases
 	echo "SW-version = $OSSO_VERSION" >> $usage
