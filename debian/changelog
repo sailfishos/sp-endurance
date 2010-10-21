@@ -1,3 +1,15 @@
+sp-endurance (2.1.5) unstable; urgency=low
+
+  * xmeminfo: add support for new X resource types. This changes the CSV
+    output format produced by xmeminfo.
+  * xmeminfo: optionally report only specified atoms: add new parameter
+    -a/-atom.
+  * endurance_report.py: add support for new xmeminfo CSV format.
+  * Add dependency to sysinfo-tool to fix useless release identification in
+    usage.csv produced by save-incremental-endurance-stats. Fixes: NB#199719
+
+ -- Tommi Rantala <ext-tommi.1.rantala@nokia.com>  Thu, 21 Oct 2010 15:11:42 +0300
+
 sp-endurance (2.1.4) unstable; urgency=low
 
   * endurance_report.py: report change from initial state - Fixes: NB#176122
