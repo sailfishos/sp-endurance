@@ -777,7 +777,7 @@ def parse_csv(file, filename):
     headers = skip_to_next_header(file)
     if headers.startswith("Process status:"):
         data['/proc/pid/stat'] = get_proc_pid_stat(file)
-        skip_to(file, "res-base")
+        headers = skip_to(file, "res-base")
     elif headers.startswith("res-base"):
         pass
     else:
