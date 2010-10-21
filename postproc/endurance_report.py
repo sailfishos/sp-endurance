@@ -273,6 +273,8 @@
 #         the first and last round.
 # 2010-09-10:
 # - Add information to report changes from initial state.
+# 2010-10-21:
+# - Parse new xmeminfo CSV output format.
 # TODO:
 # - Proper option parsing + possibility to state between which
 #   test runs to produce the summaries?
@@ -472,48 +474,84 @@ def get_filesystem_usage(file):
         mounts[mount] = int(used)
     return mounts
 
-
-def get_xres_usage(file):
-    "reads X client resource usage, return command hash of total X mem usage"
-    xres_mem = {}
-    xres_count = {}
+# Input from sp-endurance < v2.1.5 (column order is fixed):
+#    res-base,Windows,Pixmaps,GCs,Fonts,Cursors,Colormaps,Map entries,Other clients,\
+#             Grabs,Pictures,Pictformats,Glyphsets,CRTCs,Modes,Outputs,Xi clients,\
+#             Unknown,Pixmap mem,Misc mem,Total mem,PID,Identifier
+#    0e00000,6,15,1,1,1,1,0,3,0,57,0,14,0,0,0,6,201,2428324B,7984B,2436308B,1227,duihome
+#    1800000,13,18,3,1,1,3,0,1,0,69,0,9,0,0,0,13,28,2415322B,4384B,2419706B,2197,Status Indicator Menu
+#    0800000,0,157,1,0,0,1,0,1,0,173,0,0,0,0,0,1,64,993033B,5784B,998817B,-1,<unknown>
+#    ...
+#
+# Input from sp-endurance >= v2.1.5 (resource atom column order varies):
+#    res-base,WINDOW,FONT,CURSOR,COLORMAP,PICTFORMAT,XvRTPort,MODE,CRTC,OUTPUT,\
+#             ...,\
+#             total_resource_count,Pixmap mem,Misc mem,Total mem,PID,Identifier
+#    1a00000,12,1,1,4,0,0,0,0,0,3,0,0,0,15,2,1,58,16,28,3,12,1,1,1,0,0,0,0,0,159,1689742B,4456B,1694198B,1982,LockScreenUI
+#    1000000,9,1,1,1,0,0,0,0,0,1,0,0,6,6,3,9,4,0,138,0,5,1,0,1,0,1,8,1,6,202,1589760B,5704B,1595464B,-1,MCompositor
+#    0a00000,0,0,0,1,0,0,0,0,0,0,0,0,0,160,1,1,176,0,65,0,1,1,0,1,0,0,0,0,0,407,959714B,5928B,965642B,-1,<unknown>
+#    ...
+#
+# Output:
+#  {
+#    'res-base' = {
+#              'duihome': '0e00000',
+#              'clipboard': '3a00000',
+#    },
+#    'FONT' = {
+#              'duihome': 1,
+#              'clipboard': 2,
+#    },
+#    'WINDOW' = {
+#              'duihome': 3,
+#              'clipboard': 4,
+#    },
+#    ...
+#    'total_resource_count' = {
+#              'duihome': 128,
+#              'clipboard': 256,
+#    },
+#    'Pixmap mem' = {...},
+#    'Misc mem' = {...},
+#    'Total mem' = {...},
+#    'PID' = {...},
+#  }
+def get_xres_usage(file, header):
+    xmeminfo = {}
+    columns = header.strip().split(',')
     while 1:
         line = file.readline().strip()
         if not line:
             break
-        
+
         cols = line.split(',')
-        # last three columns for the X client:
-        # - total mem usage
-        # - process ID
-        # - (window) name
-        # are the most interesting ones, but the name column
-        # may contain commas too, so need to find from which
-        # column these three items actually start from.
-        idx = len(cols) - 3
-        while cols[idx][-1] != 'B' or cols[idx+1][-1] == 'B':
-            idx -= 1
-            if idx < 1:
+        # If the name contained commas, fix it back to original form.
+        if len(cols) > len(columns):
+            name = ",".join(cols[len(columns)-1:])
+            del cols[len(columns)-1:]
+            cols.append(name)
+        else:
+            name = cols[-1]
+        for i in range(len(columns)-1):
+            if not columns[i] in xmeminfo: xmeminfo[columns[i]] = {}
+            xmeminfo[columns[i]][name] = cols[i]
+
+        for memcol in ("Pixmap mem", "Misc mem", "Total mem"):
+            if xmeminfo[memcol][name][-1] != 'B':
                 sys.stderr.write("Error: X resource total memory value not followed by 'B':\n  %s\n" % line)
                 sys.exit(1)
+            xmeminfo[memcol][name] = int(xmeminfo[memcol][name][:-1]) / 1024
 
-        mem = int(cols[idx][:-1])
-        pid = cols[idx+1]
-        # rest of the columns belong to name
-        name = ",".join(cols[idx+2:])
+        # Convert numerical values to integers.
+        for i in range(len(columns)-1)[1:]:
+            xmeminfo[columns[i]][name] = int(xmeminfo[columns[i]][name])
 
-        # in KBs, check on clients taking > 1KB
-        if mem >= 1024:
-            xres_mem[name] = mem/1024
+        # total_resource_count column was added to xmeminfo in v2.1.5.
+        if not 'total_resource_count' in columns:
+            if not 'total_resource_count' in xmeminfo: xmeminfo['total_resource_count'] = {}
+            xmeminfo['total_resource_count'][name] = sum([int(x) for x in cols[1:-5]])
 
-        count = 0
-        # resource base, counts of resources, their memory usages, PID, name
-        for i in range(1, idx):
-            if cols[i][-1] != 'B':
-                count += int(cols[i])
-        xres_count[name] = count
-
-    return (xres_mem, xres_count)
+    return xmeminfo
 
 
 def get_process_info(file, headers):
@@ -785,8 +823,8 @@ def parse_csv(file, filename):
         sys.exit(2)
 
     # get the X resource usage
-    data['xclient_mem'], data['xclient_count'] = get_xres_usage(file)
-    
+    data['xmeminfo'] = get_xres_usage(file, headers)
+
     # get the file system usage
     skip_to(file, "Filesystem")
     data['mounts'] = get_filesystem_usage(file)
@@ -1098,7 +1136,15 @@ def initial_values(data, key):
         for x in data[round][key]:
             if x not in result:
                 try: result[x] = data[round][key][x]
-                except: pass
+                except KeyError: pass
+            else:
+                try:
+                    for y in data[round][key][x]:
+                        if y not in result[x]:
+                            result[x][y] = data[round][key][x][y]
+                except KeyError: pass
+                except TypeError: pass
+
     return result
 
 def __cpu_tickdiff(round1, round2, pid, category):
@@ -1278,17 +1324,22 @@ def output_run_diffs(idx1, idx2, data, do_summary):
         print "<p>No SMAPS data for process memory usage available."
     
     # process X resource usage changes
-    diffs = get_usage_diffs(initial_values(data, 'xclient_mem'),
-                            run1['xclient_mem'],
-                            run2['xclient_mem'])
-    output_diffs(diffs, "X resource memory usage", "X client", " kB",
-                 Colors.xres_mem, idx1, do_summary)
+    xmeminfo_initial = initial_values(data, 'xmeminfo')
+    try:
+        diffs = get_usage_diffs(xmeminfo_initial['Total mem'],
+                                run1['xmeminfo']['Total mem'],
+                                run2['xmeminfo']['Total mem'])
+        output_diffs(diffs, "X resource memory usage", "X client", " kB",
+                     Colors.xres_mem, idx1, do_summary)
+    except KeyError: pass
     if do_summary:
-        diffs = get_usage_diffs(initial_values(data, 'xclient_count'),
-                                run1['xclient_count'],
-                                run2['xclient_count']);
-        output_diffs(diffs, "X resource count", "X client", "",
-                     Colors.xres_count, idx1, do_summary)
+        try:
+            diffs = get_usage_diffs(xmeminfo_initial['total_resource_count'],
+                                    run1['xmeminfo']['total_resource_count'],
+                                    run2['xmeminfo']['total_resource_count'])
+            output_diffs(diffs, "X resource count", "X client", "",
+                         Colors.xres_count, idx1, do_summary)
+        except KeyError: pass
     
     # FD count changes
     diffs = get_pid_usage_diffs(run2['commands'], run2['processes'],
