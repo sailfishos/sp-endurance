@@ -1994,7 +1994,7 @@ def output_html_report(data):
 <body>
 <h1>%s</h1>
 
-<!-- endurance_report.py v2.0 -->
+<!-- endurance_report.py v2.1.5 -->
 
 <p><b>Contents:</b>
 <ul>
