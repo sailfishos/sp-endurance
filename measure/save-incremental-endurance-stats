@@ -194,15 +194,18 @@ fi
 echo "date = $(date +'%F %T')" >> $usage
 # all relevant info from the /proc that is easy to parse
 proc2csv -p >> $usage
-if [ $? -ne 0 ]; then
-	echo "$script: WARNING, proc2csv failed with exit code $??" 1>&2
+RET=$?
+if [ $RET -ne 0 ]; then
+	echo "$script: WARNING, proc2csv failed with exit code $RET." 1>&2
 fi
 # info on the UI processes X resource usage
 echo "- X resource usage"
 echo >> $usage
 xmeminfo >> $usage 2> $path/xres.log
-if [ $? -ne 0 ]; then
-	echo "$script: WARNING, xmeminfo failed with exit code $?, is DISPLAY set?" 1>&2
+RET=$?
+if [ $RET -ne 0 ]; then
+	cat $path/xres.log 1>&2
+	echo "$script: WARNING, xmeminfo failed with exit code $RET, is DISPLAY set?" 1>&2
 fi
 # output disk usage
 echo "- Disk usage"
