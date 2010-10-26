@@ -275,6 +275,9 @@
 # - Add information to report changes from initial state.
 # 2010-10-21:
 # - Parse new xmeminfo CSV output format.
+# 2010-10-26:
+# - Add new per round table "X resource DRI2Drawable count" for tracking DRI
+#   resource atom count changes.
 # TODO:
 # - Proper option parsing + possibility to state between which
 #   test runs to produce the summaries?
@@ -1331,6 +1334,13 @@ def output_run_diffs(idx1, idx2, data, do_summary):
                                 run2['xmeminfo']['Total mem'])
         output_diffs(diffs, "X resource memory usage", "X client", " kB",
                      Colors.xres_mem, idx1, do_summary)
+    except KeyError: pass
+    try:
+        diffs = get_usage_diffs(xmeminfo_initial['DRI2Drawable'],
+                                run1['xmeminfo']['DRI2Drawable'],
+                                run2['xmeminfo']['DRI2Drawable'])
+        output_diffs(diffs, "X resource DRI2Drawable count", "X client", "",
+                     Colors.xres_count, idx1, do_summary)
     except KeyError: pass
     if do_summary:
         try:
