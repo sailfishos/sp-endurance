@@ -1,3 +1,12 @@
+sp-endurance (2.1.6) unstable; urgency=low
+
+  * endurance_report.py: track DRI2Drawable resource atom count changes.
+    Fixes: NB#157338
+  * save-incremental-endurance-stats: provide default value for DISPLAY.
+    Fixes: NB#200347
+
+ -- Tommi Rantala <ext-tommi.1.rantala@nokia.com>  Tue, 26 Oct 2010 14:59:34 +0300
+
 sp-endurance (2.1.5) unstable; urgency=low
 
   * xmeminfo: add support for new X resource types. This changes the CSV
