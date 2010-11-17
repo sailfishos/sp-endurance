@@ -69,6 +69,10 @@
 #   - Remove checking of Matchbox specific _MB_CURRENT_APP_WINDOW property
 #   - Get SW release version by default with sysinfo utility
 #   - Give DISPLAY a default value if not set.
+# 2010-11-17:
+# - Remove use of deprecated Maemo specific /proc/component_version and
+#   /proc/bootreason interfaces. Get the hardware information using
+#   sysinfo-tool, and the bootreason from the kernel command line.
 
 script="${0##*/}"
 # incorrect number of arguments or first argument starts with "-"
@@ -221,8 +225,20 @@ df|sed 's/ \+/,/g' >> $usage
 # save some less easily parsed /proc/ statistics, ignore errors
 echo "- Open file descriptors"
 ls -l /proc/[0-9]*/fd/ > $path/open-fds 2> /dev/null
+
+# Get bootreason from the kernel command line. /proc/bootreason is deprecated.
+echo "- Bootreason"
+grep "bootreason=" /proc/cmdline | sed 's/^.*bootreason=\([^ ]*\).*$/\1/' > $path/bootreason
+
+# Get HW identification from sysinfo daemon. /proc/component_version is deprecated.
+echo "- HW identification"
+echo "product     `sysinfo-tool -g /component/product   2>/dev/null`"  > $path/component_version
+echo "hw-build    `sysinfo-tool -g /component/hw-build  2>/dev/null`" >> $path/component_version
+echo "nolo        `sysinfo-tool -g /component/nolo      2>/dev/null`" >> $path/component_version
+echo "boot-mode   `sysinfo-tool -g /component/boot-mode 2>/dev/null`" >> $path/component_version
+
 echo "- Other proc files"
-cp /proc/slabinfo /proc/interrupts /proc/stat /proc/component_version /proc/bootreason $path/ 2> /dev/null
+cp /proc/slabinfo /proc/interrupts /proc/stat $path/ 2> /dev/null
 
 # save network and DSME stats
 echo "- /sbin/ifconfig"
