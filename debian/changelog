@@ -1,3 +1,10 @@
+sp-endurance (2.1.7) unstable; urgency=low
+
+  * Remove use of deprecated /proc/component_version and /proc/bootreason
+    interfaces. Fixes: NB#199022
+
+ -- Tommi Rantala <ext-tommi.1.rantala@nokia.com>  Wed, 17 Nov 2010 14:08:53 +0200
+
 sp-endurance (2.1.6) unstable; urgency=low
 
   * endurance_report.py: track DRI2Drawable resource atom count changes.
