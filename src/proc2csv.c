@@ -203,7 +203,7 @@ static int split_key_value(char *buf, char **key, char **value, char sep)
  */
 static void output_fields(FILE *fp, int show, char separator)
 {
-	char buf[128], *key, *value;
+	char buf[512], *key, *value;
 	int fields = 0;
 	
 	while (fgets(buf, sizeof(buf), fp)) {
