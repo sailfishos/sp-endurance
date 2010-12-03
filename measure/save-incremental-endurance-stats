@@ -190,7 +190,7 @@ if [ \! -z $(which sysinfo-tool) ]; then
 	echo "SW-version = $(sysinfo-tool -g /device/sw-release-ver)" >> $usage
 elif [ \! -z $(which sysinfoclient) ]; then
 	# Harmattan
-	echo "SW-version = $(sysinfoclient -g /device/sw-release-ver | cut -b26-)" >> $usage
+	echo "SW-version = $(sysinfoclient -p /device/sw-release-ver)" >> $usage
 elif [ \! -z "$OSSO_VERSION" ]; then
 	# earlier Maemo releases
 	echo "SW-version = $OSSO_VERSION" >> $usage
