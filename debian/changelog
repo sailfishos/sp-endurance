@@ -1,3 +1,15 @@
+sp-endurance (2.1.8) unstable; urgency=low
+
+  * New post-processing tool `endurance_plot'. Fixes: NB#204488
+    - endurance_plot creates a large variety of (RAM, swap, CPU, X resource
+      usage, interrupt, context switch etc) graphs from sp-endurance collected
+      data for trend analysis.
+  * Get bootreason from sysinfo. Fixes: NB#199022
+  * Fix proc2csv errors with long lines. Fixes: NB#208432
+  * Fix unnecessary sysinfoclient output parsing. Fixes: NB#207708
+
+ -- Tommi Rantala <ext-tommi.1.rantala@nokia.com>  Fri, 03 Dec 2010 11:08:54 +0200
+
 sp-endurance (2.1.7) unstable; urgency=low
 
   * Remove use of deprecated /proc/component_version and /proc/bootreason
