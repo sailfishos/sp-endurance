@@ -1,0 +1,74 @@
+.TH ENDURANCE_PLOT 1 "2010-08-24" "sp-endurance"
+.SH NAME
+endurance_plot \- generate graphical representation of endurance data for trend analysis
+.SH SYNOPSIS
+endurance_plot \fIdir1\fP \fIdir2\fP ...
+.SH DESCRIPTION
+\fIendurance_plot\fP creates a large variety of (RAM, swap, CPU, X resource
+usage, interrupt, context switch etc) graphs from sp-endurance collected data
+for trend analysis. \fIendurance_plot\fP processes the given directories
+(\fIdir1\fP, \fIdir2\fP, ...), and creates index.html and a collection of PNG
+figures and corresponding jpeg thumbnails. The HTML file is placed in the
+current working directory, and the figures are placed in a directory
+\fIgraphs/\fP. Another directory called \fIe/\fP is also created, which
+contains the gnuplot files that were used for generating the figures. It may be
+useful for debugging purposes -- it is safe to remove this directory.
+.PP
+The HTML can be published by copying the graphs/ directory, index.html and
+endurance-report.html into a browsable directory. Before publishing, it makes
+sense to further compress the PNG files produced by gnuplot with optipng, see
+below for an example.
+.TP
+\fIendurance_plot\fP has a few features that can be considered optional or experimental:
+
+1. If a file called endurance-report.html (from
+\fIendurance_report.py\fP) exists in the current directory, a link to the file
+will be automatically added to index.html.
+
+2. Swap fragmentation thumbnails will be added to index.html if such graphs
+exist. \fIsave-incremental-endurance-stats\fP does not collect the data needed
+for these graphs by default -- they have to collected by other means for now.
+
+3. \fIendurance_plot\fP may be used to visualize powertop results.
+\fIsave-incremental-endurance-stats\fP does not collect powertop data by
+default -- it has to be manually collected for now. See the
+runendur-with-powertop example provided in the sp-endurance package.
+.PP
+.B NOTE:
+It's important that the measurement directories are given in the same order as
+in which the measurements are done, otherwise the differences shown between the
+measurements are incorrect. It's OK to give a subset of the directories though.
+The measurement data is from \fIsave-incremental-endurance-stats\fP.
+.SH EXAMPLES
+Normal usage:
+.br
+	endurance_plot endurance/*
+.PP
+Display results in web browser:
+.br
+	firefox index.html
+.PP
+Display results in graphics viewer:
+.br
+	display graphs/*.png
+.PP
+Optimize PNG files for size:
+.br
+	optipng graphs/*.png
+.PP
+.SH BUGS
+endurance_plot can choke on some new input data, typically on special
+characters that it tries to use as part of file names.
+.SH SEE ALSO
+.IR proc2csv (1),
+.IR parse-endurance-measurements (1),
+.IR save-incremental-endurance-stats (1),
+.IR gnuplot (1),
+.IR convert (1),
+.IR optipng (1)
+.SH COPYRIGHT
+Copyright (C) 2010 Nokia Corporation.
+.PP
+This is free software. You may redistribute copies of it under the
+terms of the GNU General Public License v2 included with the software.
+There is NO WARRANTY, to the extent permitted by law.

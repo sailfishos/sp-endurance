@@ -1,8 +1,10 @@
+/usr/bin/endurance_plot
 /usr/bin/endurance_report.py
 /usr/bin/syslog_parse.py
 /usr/bin/parse-endurance-measurements
 /usr/bin/split-endurance-measurements
 /usr/bin/extract-endurance-process-smaps
+/usr/share/man/man1/endurance_plot.1
 /usr/share/man/man1/endurance_report.py.1
 /usr/share/man/man1/syslog_parse.py.1
 /usr/share/man/man1/parse-endurance-measurements.1

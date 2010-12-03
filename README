@@ -74,6 +74,10 @@ Files for the endurance data collection:
 Files for the data post-processing:
 - postproc/parse-endurance-measurements
   - runs endurance_report.py with suitable options
+- postproc/endurance_plot
+  - creates a large variety of (RAM, swap, CPU, X resource usage, interrupt,
+    context switch etc) graphs from save-incremental-endurance-stats collected
+    data for trend analysis
 - postproc/endurance_report.py
   - post-processes data files saved by save-incremental-endurance-stats script
 - postproc/syslog_parse.py

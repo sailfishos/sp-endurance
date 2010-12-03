@@ -18,7 +18,7 @@ Description: Endurance measument tools
 
 Package: sp-endurance-postproc
 Architecture: all
-Depends: ${misc:Depends}, python, lzop
+Depends: ${misc:Depends}, python, lzop, perl-base, gnuplot-nox, imagemagick
 Recommends: sp-smaps-visualize, python-psyco
 Description: Postprocessing for endurance data
  Postprocessing scripts to parse and generate a report from the endurance

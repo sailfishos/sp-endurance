@@ -1,0 +1,2960 @@
+#!/usr/bin/perl
+#
+# This file is part of sp-endurance.
+#
+# Copyright (C) 2010 by Nokia Corporation
+#
+# Contact: Eero Tamminen <eero.tamminen@nokia.com>
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# version 2 as published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+# 02110-1301 USA
+
+my $version = "0.24";
+
+# tunables
+my $ticks_per_sec = 100;
+my $max_per_graph_twocolumn = 2*75;
+my $max_per_graph_onecolumn = 78;
+my $page_size = 4;
+my $samples_required = 5;
+my $thumbsize = "320x250";
+my $html_name = "index.html";
+my $graphs_dir = "graphs";
+
+my $sw_version, $hw_build, $hw_product;
+#stuff keyed by graph name with data for each graph:
+my %legend;
+my %unit;
+my %thumblegend;
+
+# names for files by classes, results in grouping,
+# as thumbnails are generated using this list sorted
+my $graph_memory   = "10_memory"; 
+$legend{$graph_memory} = "system-level memory"; 
+$thumblegend{$graph_memory} = "SYSTEM MEMORY";
+$unit{$graph_memory} = "MB";
+
+my $graph_memory_s = "10_memory_s";
+$legend{$graph_memory_s} = "system-level memory smaller values"; 
+$thumblegend{$graph_memory_s} = "MEMORY SMALLER";
+$unit{$graph_memory_s} = "MB";
+
+my $graph_appmem_swapped = "20_appmem_swapped";
+$legend{$graph_appmem_swapped} = "swap used by processes"; 
+$thumblegend{$graph_appmem_swapped} = "APPS SWAP USE";
+$unit{$graph_appmem_swapped} = "MB";
+
+my $graph_appmem_pss =                     "30_appmem_pss";
+$legend{$graph_appmem_pss} = "apps PSS"; 
+$thumblegend{$graph_appmem_pss} = "APPS PSS";
+$unit{$graph_appmem_pss} = "MB";
+
+my $graph_appmem_pss_swap =                "30_appmem_pss_swap";
+$legend{$graph_appmem_pss_swap} = "apps PSS+SWAP"; 
+$thumblegend{$graph_appmem_pss_swap} = "APPS PSS+SWAP";
+$unit{$graph_appmem_pss_swap} = "MB";
+
+#
+# legends for pss_swap graphs generated dynamically
+#
+my $graph_appmem_pss_swap_lines_big =      "30_appmem_pss_swap_lines_big";
+$unit{$graph_appmem_pss_swap_lines_big} = "MB";
+
+my $graph_appmem_pss_swap_lines_small =    "30_appmem_pss_swap_lines_small";
+$unit{$graph_appmem_pss_swap_lines_small} = "MB";
+
+my $graph_appmem_pss_swap_lines_smaller =  "30_appmem_pss_swap_lines_smaller";
+$unit{$graph_appmem_pss_swap_lines_smaller} = "MB";
+
+my $graph_appmem_pss_swap_lines_smallest = "30_appmem_pss_swap_lines_smallest";
+$unit{$graph_appmem_pss_swap_lines_smallest} = "MB";
+
+my $graph_appmem_locked = "34_appmem_locked";
+$legend{$graph_appmem_locked} = "process locked mem size"; 
+$thumblegend{$graph_appmem_locked} = "APPS LOCKED";
+$unit{$graph_appmem_locked} = "MB";
+
+#my $graph_appmem_private_dirty = "35_appmem_private_dirty";
+#$legend{$graph_appmem_private_dirty} = "private dirty mem by processes"; 
+#$thumblegend{$graph_appmem_private_dirty} = "PRIVATE DIRTY";
+#$unit{$graph_appmem_private_dirty} = "MB";
+
+my $graph_appmem_heap = "36_appmem_heap";
+$legend{$graph_appmem_heap} = "process heap mem size"; 
+$thumblegend{$graph_appmem_heap} = "APPS HEAP";
+$unit{$graph_appmem_heap} = "MB";
+
+my $graph_appmem_heap_lines_1 = "36_appmem_heap_lines_1";
+$legend{$graph_appmem_heap_lines_1} = "process heap mem size"; 
+$thumblegend{$graph_appmem_heap_lines_1} = "APPS HEAP";
+$unit{$graph_appmem_heap_lines_1} = "MB";
+
+my $graph_appmem_heap_lines_2 = "36_appmem_heap_lines_2";
+$legend{$graph_appmem_heap_lines_2} = "process heap mem size"; 
+$thumblegend{$graph_appmem_heap_lines_2} = "APPS HEAP SMALLER";
+$unit{$graph_appmem_heap_lines_2} = "MB";
+
+my $graph_appmem_sysvshared = "38_appmem_sysvshared";
+$legend{$graph_appmem_sysvshared} = "process SYSV-shared mem size"; 
+$thumblegend{$graph_appmem_sysvshared} = "SYSV-SHAREDMEM";
+$unit{$graph_appmem_sysvshared} = "MB";
+
+my $graph_mem_shared = "40_mem_shared";
+$legend{$graph_mem_shared} = "shared memory"; 
+$thumblegend{$graph_mem_shared} = "SHMEM";
+$unit{$graph_mem_shared} = "MB";
+
+my $graph_mem_shared_lpid = "40_mem_shared_lpid";
+$legend{$graph_mem_shared_lpid} = "shared by last user (lpid)"; 
+$thumblegend{$graph_mem_shared_lpid} = "SHMEM LAST USER";
+$unit{$graph_mem_shared_lpid} = "MB";
+
+my $graph_mem_shared_cpid = "40_mem_shared_cpid";
+$legend{$graph_mem_shared_cpid} = "shared by creator (cpid)"; 
+$thumblegend{$graph_mem_shared_cpid} = "SHMEM CREATOR";
+$unit{$graph_mem_shared_cpid} = "MB";
+
+my $graph_xresource_sz_pxm =    "50_xresource_pixmaps";
+$legend{$graph_xresource_sz_pxm} = "X reosurce pixmaps size"; 
+$thumblegend{$graph_xresource_sz_pxm} = "X-RESOURCES-PIXMAPS";
+$unit{$graph_xresource_sz_pxm} = "Size of Xres pixmaps, kB";
+
+my $graph_xresource_cnt =    "51_xresource_count";
+$legend{$graph_xresource_cnt} = "X reosurce counts"; 
+$thumblegend{$graph_xresource_cnt} = "X-RESOURCES-COUNT";
+$unit{$graph_xresource_cnt} = "number of Xres objects";
+
+#my $graph_xresource_sz_misc =    "52_xresource_misc";
+#$legend{$graph_xresource_sz_misc} = "X reosurce misc size"; 
+#$thumblegend{$graph_xresource_sz_misc} = "X-RESOURCES-MISC";
+#$unit{$graph_xresource_sz_misc} = "Size of Xres misc, kB";
+
+my $graph_mem_slabs =     "55_mem_slabs";
+$legend{$graph_mem_slabs} = "kernel slab memory"; 
+$thumblegend{$graph_mem_slabs} = "KERNEL SLABS";
+$unit{$graph_mem_slabs} = "kB";
+
+my $graph_cpu_totaltime =  "60_cpu_totaltime";
+$legend{$graph_cpu_totaltime} = "CPU total time"; 
+$thumblegend{$graph_cpu_totaltime} = "TOTAL CPU TIME";
+$unit{$graph_cpu_totaltime} = "percent";
+
+my $graph_cpu_usertime = "61_cpu_usertime";
+$legend{$graph_cpu_usertime} = "CPU user time"; 
+$thumblegend{$graph_cpu_usertime} = "USER CPU TIME";
+$unit{$graph_cpu_usertime} = "percent";
+
+my $graph_cpu_systime =  "61_cpu_systime";
+$legend{$graph_cpu_systime} = "CPU system time"; 
+$thumblegend{$graph_cpu_systime} = "SYSTEM CPU TIME";
+$unit{$graph_cpu_systime} = "percent";
+
+my $graph_loadavg =  "62_loadavg";
+$legend{$graph_loadavg} = "Load average"; 
+$thumblegend{$graph_loadavg} = "LOAD AVG 1m/5m/15m";
+$unit{$graph_loadavg} = "loadavg units";
+
+my $graph_events_swap =             "70_events_swap";
+$legend{$graph_events_swap} = "swap-related events"; 
+$thumblegend{$graph_events_swap} = "SWAP EVENTS";
+$unit{$graph_events_swap} = "count per second";
+
+my $graph_events_ctx_total =    "65_ctx_total";
+$legend{$graph_events_ctx_total} = "process total context switches"; 
+$thumblegend{$graph_events_ctx_total} = "CTX TOTAL";
+$unit{$graph_events_ctx_total} = "count per second";
+
+my $graph_events_ctx_nonvolunt =    "66_ctx_nonvolunt";
+$legend{$graph_events_ctx_nonvolunt} = "process non-voluntary context switches"; 
+$thumblegend{$graph_events_ctx_nonvolunt} = "CTX NONVOLUNTARY";
+$unit{$graph_events_ctx_nonvolunt} = "count per second";
+
+my $graph_events_ctx_volunt =       "66_ctx_volunt";
+$legend{$graph_events_ctx_volunt} = "process voluntary context switches"; 
+$thumblegend{$graph_events_ctx_volunt} = "CTX VOLUNTARY";
+$unit{$graph_events_ctx_volunt} = "count per second";
+
+my $graph_events_major_pagefaults = "70_events_major_pagefaults";
+$legend{$graph_events_major_pagefaults} = "major page faults"; 
+$thumblegend{$graph_events_major_pagefaults} = "PAGE FAULTS";
+$unit{$graph_events_major_pagefaults} = "count per second";
+
+my $graph_interrupts =              "70_interrupts";
+$legend{$graph_interrupts} = "interrupts"; 
+$thumblegend{$graph_interrupts} = "INTERRUPTS";
+$unit{$graph_interrupts} = "count per second";
+
+my $graph_ctx_global =              "70_ctx_global";
+$legend_1{$graph_ctx_global} = "CTX switches"; 
+$legend_2{$graph_ctx_global} = "num of processes"; 
+$thumblegend{$graph_ctx_global} = "CTX-SW,PROC-NUM";
+$unit_1{$graph_ctx_global} = "ctx: per second";
+$unit_2{$graph_ctx_global} = "proc_num: count";
+
+my $graph_processes_global =              "71_processes_created";
+$legend{$graph_processes_global} = "Processes/threads created"; 
+$thumblegend{$graph_processes_global} = "PROC/THREADS CREATED";
+$unit{$graph_processes_global} = "count per minute";
+
+#
+# this is part of 70_ctx graph now
+#
+#my $graph_processes_running =              "72_num_processes";
+#$legend{$graph_processes_running} = "Processes running"; 
+#$thumblegend{$graph_processes_running} = "PROCESSES RUNNING";
+#$unit{$graph_processes_running} = "count";
+
+my $graph_threads_count = "73_threads_count";
+$legend{$graph_threads_count} = "number of threads"; 
+$thumblegend{$graph_threads_count} = "APPS THREADS";
+$unit{$graph_threads_count} = "number";
+
+my $graph_diskspace = "80_diskspace";
+$legend{$graph_diskspace} = "file systems and global FD set";
+$thumblegend{$graph_diskspace} = "DISK USED, GLOBAL FD %";
+$unit{$graph_diskspace} = "percentage used";
+
+my $graph_fdcount =   "80_fdcount";
+$legend{$graph_fdcount} = "FD use by processes";
+$thumblegend{$graph_fdcount} = "FILE DESCR";
+$unit{$graph_fdcount} = "number of FD";
+
+my $graph_appmem_wx = "85_appmem_wx";
+$legend{$graph_appmem_wx} = "executable mem which is writable, security issue"; 
+$thumblegend{$graph_appmem_wx} = "WRITABLE-EXEC";
+$unit{$graph_appmem_wx} = "MB";
+
+#
+# Note: powertop is optional. it's files are not collected
+# by standard sp-endurance, but it is easy to use 
+# "powertop as sleep" in measurement cycle and save 1xx/powertop.out
+# If such was made, we graph something from powertop output
+#
+my $graph_powertop_wakeups =   "900_powertop_wakeups";
+$legend{$graph_powertop_wakeups} = "Powertop-wakeups";
+$thumblegend{$graph_powertop_wakeups} = "WAKEUPS";
+$unit{$graph_powertop_wakeups} = "count per second";
+
+my $graph_powertop_timers =   "905_powertop_timers";
+$legend{$graph_powertop_timers} = "Powertop-timers";
+$thumblegend{$graph_powertop_timers} = "TIMERS";
+$unit{$graph_powertop_timers} = "count per second";
+
+my $graph_powertop_activity_1 =   "901_powertop_activity";
+$legend{$graph_powertop_activity_1} = "Powertop-activity";
+$thumblegend{$graph_powertop_activity_1} = "P-ACTIVITY";
+$unit{$graph_powertop_activity_1} = "events per second";
+
+my $graph_powertop_activity_2 =   "902_powertop_activity";
+$legend{$graph_powertop_activity_2} = "Powertop-activity-2";
+$thumblegend{$graph_powertop_activity_2} = "P-ACTIVITY 2";
+$unit{$graph_powertop_activity_2} = "events per second";
+
+my $graph_powertop_activity_3 =   "903_powertop_activity";
+$legend{$graph_powertop_activity_3} = "Powertop-activity-3";
+$thumblegend{$graph_powertop_activity_3} = "P-ACTIVITY 3";
+$unit{$graph_powertop_activity_3} = "events per second";
+
+my $graph_powertop_activity_4 =   "904_powertop_activity";
+$legend{$graph_powertop_activity_4} = "Powertop-activity-4";
+$thumblegend{$graph_powertop_activity_4} = "P-ACTIVITY 4";
+$unit{$graph_powertop_activity_4} = "events per second";
+
+my $graph_powertop_cf_states =   "910_powertop_cf";
+$legend{$graph_powertop_cf_states} = "Powertop CF-states";
+$thumblegend{$graph_powertop_cf_states} = "CF-STATES";
+$unit{$graph_powertop_cf_states} = "percentage";
+
+my $graph_powertop_domain_states_1 =   "920_powertop_domain";
+$legend{$graph_powertop_domain_states_1} = "Powertop Domain states";
+$thumblegend{$graph_powertop_domain_states_1} = "POWERDOMAIN-STATES 1";
+$unit{$graph_powertop_domain_states_1} = "percentage";
+
+my $graph_powertop_domain_states_2 =   "921_powertop_domain";
+$legend{$graph_powertop_domain_states_2} = "Powertop Domain states";
+$thumblegend{$graph_powertop_domain_states_2} = "POWERDOMAIN-STATES 2";
+$unit{$graph_powertop_domain_states_2} = "percentage";
+
+# optional, swap-fragmentation is generated by another tool 
+# gen_swapfrag-for-apps.pl which is not part of standard sp-endurance;
+# but we put it's thumbnail on same page, if present
+# note different numbering, it survives the removal of previous
+# other graphs when this script deletes graphs/??_* before run
+my $graph_fragmentation_1 =   "951_fragmentation";
+my $graph_fragmentation_2 =   "952_fragmentation";
+my $graph_fragmentation_3 =   "953_fragmentation";
+
+my $num_of_rounds;
+my @dirs;
+my $show_kernelstack = 0;
+my $show_shmem = 0;
+my %val;
+my %all_apps;
+my %pid_by_namepid;
+my %name_by_pid;
+my %has_threads, %has_threads_samples;
+my %all_slabs;
+my %shared_lpid, %shared_cpid;
+my %shared_lpid_cnt, %shared_lpid_cnt_oneround;
+my %shared_cpid_cnt, %shared_cpid_cnt_oneround;
+my %fd_count, %fd_count_samples, %fd_count_diff, %fd_count_prev;
+my %pss_swap_num_samples;
+my %lapsed_time;
+my $global_ctx_prev = 0;
+my $memfree_plot_file_name = "e/memfree";
+my $buffers_plot_file_name = "e/buffers";
+my $cached_plot_file_name = "e/cached";
+my $swapcached_plot_file_name = "e/swapcached";
+my $kernelstack_plot_file_name = "e/kernelstack";
+my $shmem_plot_file_name = "e/shmem";
+my $swapused_plot_file_name = "e/swapused";
+my $dirty_plot_file_name = "e/dirty";
+my $active_file_plot_file_name = "e/active_file";
+my $inactive_file_plot_file_name = "e/inactive_file";
+my $mlocked_plot_file_name = "e/mlocked";
+my $mpixmaps_plot_file_name = "e/mpixmaps";
+my $mapped_plot_file_name = "e/mapped";
+my $slabreclaim_plot_file_name = "e/slabreclaim";
+my $slabunreclaim_plot_file_name = "e/slabunreclaim";
+my $pagetables_plot_file_name = "e/pagetables";
+my $pswp_in_plot_file_name = "e/pswp_in";
+my $pswp_out_plot_file_name = "e/pswp_out";
+my $pgscan_kswapd_normal_plot_file_name = "e/pgscan_kswapd_normal";
+my $pgscan_direct_normal_plot_file_name = "e/pgscan_direct_normal";
+my $slabs_scanned_plot_file_name = "e/slabs_scanned";
+my $kswapd_steal_plot_file_name = "e/kswapd_steal";
+my $shared_locked_plot_file_name = "e/shared_locked";
+my $shared_unlocked_plot_file_name = "e/shared_unlocked";
+my $unaccount_swapped_plot_file_name = "e/unaccount_swapped";
+my $app_swapped_plot_file_name = "e/all_apps_swapped";
+my $app_pss_plot_file_name = "e/all_apps_pss";
+
+my $pswp_in_prev = 0;
+my $pswp_out_prev = 0;
+my $pgscan_kswapd_normal_prev = 0;
+my $pgscan_direct_normal_prev = 0;
+my $slabs_scanned_prev = 0;
+my $kswapd_steal_prev = 0;
+
+my %int_prev;
+my %int_total;
+my %cumul_vol_ctx;
+my %cumul_nonvol_ctx;
+my %cumul_total_ctx;
+my %param_prev_vol_ctx;
+my %param_prev_nonvol_ctx;
+my %param_prev_majflt;
+my %majflt_cumul;
+my %param_prev_utime;
+my %param_prev_stime;
+my %utime_cumul;
+my %stime_cumul;
+my %totaltime_cumul;
+
+my %app_pss;
+my %app_swapped;
+my %app_sum_locked;
+#my %app_private_dirty;
+my %app_sysv_shared;
+my %app_rwxp;
+
+my %app_cumul_pss;
+my %app_cumul_swp;
+#my %app_cumul_private_dirty;
+my %app_cumul_pss_swp;
+my %app_cumul_rwxp;
+
+my %avg_pss;
+my %avg_heap;
+#my %avg_private_dirty;
+my %avg_swp;
+my %avg_pss_swp;
+my %avg_shared_lpid;
+
+my %devcount_pss;
+my %devcount_swp;
+#my %devcount_private_dirty;
+my %devcount_heap;
+my %devcount_pss_swp;
+my %devcount_shared_lpid;
+my %devcount_shared_cpid;
+
+my %sumdev_pss;
+my %sumdev_swp;
+#my %sumdev_private_dirty;
+my %sumdev_heap;
+my %sumdev_pss_swp;
+my %sumdev_shared_lpid;
+my %sumdev_shared_cpid;
+
+my %show_this;
+my %xresource_latest_cnt;
+my %xresource_latest_sz_pxm;
+my %xresource_latest_sz_misc;
+my %xres_pxm_size_total;
+my %filesystem_names;
+
+my %images, %thumbnames;
+my %xres_samples;
+my %p_activity;
+my %seen_powertop_c_levels;
+my %seen_powertop_f_levels;
+my %p_activity_max;
+
+my %sum_heap;
+my %num_heap_samples;
+my %max_heap;
+my %num_activity_samples;
+
+my %files;
+
+sub one_plot_set($$$$$)
+{
+    my $fn = shift;
+    my $lw = shift;
+    my $plot = shift;
+    my $r_cnt = shift;
+    my $emit_zeroes = shift;
+
+    my $num = value_emit($fn, $emit_zeroes);
+
+    if ($num) {
+	if ($$r_cnt > 0) {
+	    print $plot ", ";
+	}
+#
+# linewidth also used as flag. If not zero, it is line width
+# If zero, generate histogram plot cmd instead, "using 2"
+#
+	if ($lw) {
+	    print $plot "'$fn' lw $lw";
+	} else {
+	    print $plot "'$fn' using 2";
+	}
+	$$r_cnt += 1;
+    }
+}
+
+sub value_exists($)
+{
+    my $fn = shift;
+
+    if($files{$fn}) {
+	return 1;
+    } else {
+	return 0;
+    }
+}
+
+sub value_store_zeropad($$$)
+{
+    my $fn = shift;
+    my $rnd = shift;
+    my $val = shift;
+    my $z;
+
+    if (!value_exists($fn)) {
+	for ($z = 0 ; $z < $rnd ; $z++) {
+	    value_store($fn, $z, 0);
+	}
+    }
+    value_store($fn, $rnd, $val);
+}
+
+sub value_store($$$)
+{
+    my $fn = shift;
+    my $rnd = shift;
+    my $val = shift;
+
+    my $rnd_val = $rnd . ":" . $val;
+    my $ra;
+#    print "store: i=[$i] fn[$fn] rnd[$rnd] val[$val] rndval=[$rnd_val]\n";
+
+    if (!value_exists($fn)) {
+	$ra = [ ];
+#	print "  ** store: create new array ra=$ra\n";
+#	print "  ** store: store ref $ra in hash\n";
+	$files{$fn} = $ra;
+    } else {
+	$ra = $files{$fn};
+	if (! $ra) {
+	    print "\n  *** store[$fn rnd=$rnd]: no ref in hash ?????\n";
+	    exit;
+	} else {
+#	    print "  ** store: use existing ra=$ra\n";
+	}
+    }
+#    print "  store: store idx=$rnd val=$val\n";
+#    $ra[$rnd] = $val;
+    push (@$ra, $rnd_val);
+#    my $idx = 0;
+#    foreach $item (@{$files{$fn}}) {
+#	print "  store [$fn]: i=$idx contents=$item\n";
+#	$idx += 1;
+#    }
+}
+
+sub value_emit_all_entries($$)
+{
+    my $ofile = shift;
+    my $ra = shift;
+
+    my $rnd;
+    my $num = 0;
+    foreach $item (@$ra) {
+	($rnd, $val) = split(':' , $item, 2);
+#	print "emit: item[$item] rnd=[$rnd] val[$val]\n";
+	print $ofile "$rnd, $val\n";
+	$num += 1;
+    }
+    return $num;
+}
+
+sub value_emit_nonzero_entries($$)
+{
+    my $ofile = shift;
+    my $ra = shift;
+
+    my $rnd;
+    my $num = 0;
+    foreach $item (@$ra) {
+	($rnd, $val) = split(':' , $item, 2);
+	if ($val) {
+	    print $ofile "$rnd, $val\n";
+	    $num += 1;
+	}
+    }
+    return $num;
+}
+
+sub value_emit($$)
+{
+    my $fn = shift;
+    my $emit_zeroes = shift;
+    my $num = 0;
+
+    my $ra = $files{$fn};
+    if (! $ra) {
+	print "*** emit[$fn]: no ref in hash!?\n";
+	return $num;
+    }
+    unless (open ($ofile, "> $fn")) {
+	print STDERR "Can't create $fn:$!\n";
+	exit;
+    }
+
+#    print "*** emit file=[$fn]\n";
+    if ($emit_zeroes) {
+	$num = value_emit_all_entries($ofile, $ra);
+    } else {
+	$num = value_emit_nonzero_entries($ofile, $ra);
+    }
+    close $ofile;
+    if (!$num) {
+	print "*** emit: file=[$fn] turned out empty, deleting\n";
+	unlink($fn);
+    }
+    return $num;
+}
+
+#
+# Data for histogram-style graph needs pre-padded zero lines
+# or otherwise columns get shifted, (even if entries are numbered!)
+# Line-style graphs in turn shows better without zero entries,
+# or graphs starting not from start would show
+# zero line and then rise to first real sample.
+# In cases we re-use same data file for both,
+# we delete zero lines for line graph generation
+# (which happen come after histogram generation)
+#
+# with new store & emit technique, (starting in 0.22)
+# we always have zero-padded-at-start data files,
+# so we need to "clean" them from zeroes
+# for cases where this is meaningful: threads
+
+sub delete_zero_lines($)
+{
+    $fn = shift;
+    my $tmpf = "zeroing-tmp";
+    my $sz = 0;
+
+    if(! -s $fn) { 
+	print "file $fn is empty zeros-delete!!\n";
+	return $sz;
+    }
+#    printf("zero $fn before:\n==================\n");
+#    system("cat $fn");
+    rename($fn, $tmpf);
+    system("grep -v \', 0\$\' zeroing-tmp > $fn");
+#    printf("after:\n==================\n");
+#    system("cat $fn");
+#    printf("==================\n");
+    $sz = -s $fn;
+#
+# this should not happen if files are generated correctly,
+# but watch out anyway since we delete lines
+# 
+    if(! $sz) { 
+	print "file $fn got truncated by zeros-delete!!\n";
+    }
+    unlink($tmpf);
+    return $sz;
+}
+
+sub split_values($)
+{
+    my $lin = shift;
+    @values = split(',' , $lin);
+    $num_values = @values;
+#    print "split_val: names=$num_names [@names] values=$num_values [@values]\n";
+    $vidx = 0;
+    %val = undef;
+    foreach $n (@names) {
+	$val{$n} = $values[$vidx];
+#	print "line: assign val[$n]=$values[$vidx]\n";
+	$vidx++;
+    }
+}
+
+sub parse_name_state_block($)
+{
+    my $handle= shift;
+    chop $_;
+    chop $_;
+    @names = split(',' , $_);
+    $num_names = @names;
+    while (<$handle>) {
+	$line = $_;
+	chop $line;
+	if ($line eq "") {
+	    last;
+	}
+	split_values($line);
+
+	$Name = $val{"Name"};
+	$Pid = $val{"Pid"};
+	$Name =~ s/\///g;
+	$pname = $Name . "-" . $Pid;
+
+	###############
+	$param = $val{"nonvoluntary_ctxt_switches"};
+	if (!$param_prev_nonvol_ctx{$pname}) {
+	    $nonvol_ctx = 0;
+	} else {
+	    $nonvol_ctx = $param  - $param_prev_nonvol_ctx{$pname};
+	}
+	$param_prev_nonvol_ctx{$pname} = $param;
+	$cumul_nonvol_ctx{$pname} += $nonvol_ctx;
+	if ($lapsed_time{$i}) {
+	    $nonvol_ctx /= $lapsed_time{$i};
+	} else {
+	    $nonvol_ctx /= $secs_per_round;
+	}
+	$fn = "e/$pname-nonvol-ctx";
+	value_store($fn, $i, $nonvol_ctx);
+	###############
+	$param = $val{"voluntary_ctxt_switches"};
+	if (!$param_prev_vol_ctx{$pname}) {
+	    $vol_ctx = 0;
+	} else {
+	    $vol_ctx = $param  - $param_prev_vol_ctx{$pname};
+	}
+	$param_prev_vol_ctx{$pname} = $param;
+	$cumul_vol_ctx{$pname} += $vol_ctx;
+	if($lapsed_time{$i}) {
+	    $vol_ctx /= $lapsed_time{$i};
+	} else {
+	    $vol_ctx /= $secs_per_round;
+	}
+	$fn = "e/$pname-vol-ctx";
+	value_store($fn, $i, $vol_ctx);
+	###############
+	$total_ctx = $nonvol_ctx + $vol_ctx;
+	$fn = "e/$pname-total-ctx";
+	value_store($fn, $i, $total_ctx);
+	$cumul_total_ctx{$pname} += $total_ctx;
+    }
+}
+
+sub parse_shmem_block($)
+{
+    my $handle= shift;
+    my $shared_locked = 0;
+    my $shared_unlocked = 0;
+
+    $line = <$handle>;
+    chop $line;
+    @names = split(',' , $line);
+    $num_names = @names;
+    while (<$handle>) {
+	$line = $_;
+	chop $line;
+	if ($line eq "") {
+	    last;
+	}
+#		    print "use line=[$line]\n";
+
+	split_values($line);
+	$perms = $val{"perms"};
+	$size = $val{"size"};
+	$lpid = $val{"lpid"};
+	$cpid = $val{"cpid"};
+
+	$xperms = hex($perms);
+	$szxx = ($size/1024)/1024;
+	if ($xperms & 0x2000) {
+#		    print "$d: xperm=[$xperms] perm=[$perms], locked\n";
+	    $shared_locked += $szxx;
+	} else {
+#		    print "$d: xperm=[$xperms] perm=[$perms], unlocked\n";
+	    $shared_unlocked += $szxx;
+#		print "$d: unlocked+=$szxx, now $shared_unlocked\n";
+	}
+	$shared_lpid{$lpid} += $szxx;
+	$shared_cpid{$cpid} += $szxx;
+	# by pid only as here we dont see name, will get re-assigned
+	# to name-pid hash at the end of one round
+	$shared_lpid_cnt_oneround{$lpid} += 1;
+	$shared_cpid_cnt_oneround{$cpid} += 1;
+#		print "$d: memfree=$mfree buf=$buffers cached=$cached\n";
+    }
+    value_store_zeropad($shared_locked_plot_file_name, $i, $shared_locked);
+    value_store_zeropad($shared_unlocked_plot_file_name, $i, $shared_unlocked);
+}
+
+sub parse_pid_fd_block($)
+{
+    my $handle= shift;
+    while (<$handle>) {
+	$line = $_;
+	chop $line;
+	if ($line eq "") {
+	    last;
+	}
+	($Pid, $FD_count, $cmdline) = split(',' , $line, 3);
+	($Name, undef) = split(' ' , $cmdline);
+	$last_slash = rindex($Name, '/');
+#		    print "fdcount:[$Name]: lastsl=$last_slash\n";
+	if ($last_slash > 0) {
+	    $Name = substr($Name, $last_slash + 1);
+	}
+#		$Name =~ s/\//\_/g;
+	if ($Name) {
+	    $pname = $Name . "-" . $Pid;
+#		    print "fdcount: $pname: count=$FD_count\n";
+	    $fd_count{$pname} = $FD_count;
+	    $fd_count_samples{$pname} += 1;
+	    $fn = "e/$pname-fd";
+	    value_store($fn, $i, $FD_count);
+	    if ($i > 0) {
+		$fd_diff = $fd_count_prev{$pname} - $FD_count;
+		if ($fd_diff < 0) {
+		    $fd_diff *= -1;
+		}
+		$fd_count_diff{$pname} += $fd_diff;
+	    }
+	    $fd_count_prev{$pname} = $FD_count;
+	}
+    }
+}
+
+sub parse_process_status_block($)
+{
+    my $handle= shift;
+#    chop $_;
+#    chop $_;
+#    @names = split(',' , $_);
+#    $num_names = @names;
+    while (<$handle>) {
+	$line = $_;
+	chop $line;
+	if ($line eq "") {
+	    last;
+	}
+# it should go like this but here usage.csv does not have legend line
+#	split_values($line);
+	($Pid, $Name, $State, $PPid, $PGrp, $Session, $Tty, $TpGid, $Flags, $MinFlt, $CMinFlt, $MajFlt, $CMajFlt, $Utime, $Stime, $CUtime, $CStime, $Prio, $Nice, $NumThreads, $Itrealvalue, $Starttime, $Vsize, $Rss, $Rsslim, $Startcode, $Endcode, $startstack, $kstkesp, $kstkeip, $Signal, $Blocked, $Sigignore, $sigcatch, $wchan, $nswap, $cnswap, $exitsignal, $processor, $rt_prio, $policy, $delaycct_blkio_ticksm, $guest_time, $cguest_time) = split(',' , $line, 44);
+#	$Name = $val{"Name"};
+#	$Pid = $val{"Pid"};
+
+	$Name =~ s/\(//g;
+	$Name =~ s/\)//g;
+	$Name =~ s/\///g;
+	$pname = $Name . "-" . $Pid;
+
+	$param = $MajFlt;
+#	$param = $val{"MajFlt"};
+#	print "$pname: majflt=$param\n";
+	if(!$param_prev_majflt{$pname}) {
+	    $param_show = 0;
+	} else {
+	    $param_show = $param  - $param_prev_majflt{$pname};
+	}
+	$param_prev_majflt{$pname} = $param;
+	$majflt_cumul{$pname} += $param_show;
+	if ($lapsed_time{$i}) { 
+	    $param_show = $param_show/$lapsed_time{$i};
+	} else {
+	    $param_show = 0;
+	}
+	$fn = "e/$pname-majflt";
+	value_store($fn, $i, $param_show);
+
+###########################
+	$param = $Utime;
+	if(!$param_prev_utime{$pname}) {
+	    $utim = 0;
+	} else {
+	    $utim = $param  - $param_prev_utime{$pname};
+	}
+	$param_prev_utime{$pname} = $param;
+	$utime_cumul{$pname} += $utim;
+	if ($lapsed_time{$i}) {
+	    $utim /= $lapsed_time{$i};
+	} else {
+	    $utim /= $secs_per_round;
+	}
+	# to make it percent value 0..100%
+	$utim *= 100;
+	$utim /= $ticks_per_sec;
+	$fn = "e/$pname-utime";
+	value_store($fn, $i, $utim);
+
+###########################
+	$param = $Stime;
+	if(!$param_prev_stime{$pname}) {
+	    $stim = 0;
+	} else {
+	    $stim = $param  - $param_prev_stime{$pname};
+	}
+	$param_prev_stime{$pname} = $param;
+	$stime_cumul{$pname} += $stim;
+	if ($lapsed_time{$i}) {
+	    $stim /= $lapsed_time{$i};
+	} else {
+	    $stim /= $secs_per_round;
+	}
+	# to make it percent value 0..100%
+	$stim *= 100;
+	$stim /= $ticks_per_sec;
+	$fn = "e/$pname-stime";
+	value_store($fn, $i, $stim);
+###########################
+	$ttim = $stim + $utim;
+	$fn = "e/$pname-totaltime";
+	value_store($fn, $i, $ttim);
+	$totaltime_cumul{$pname} += $ttim;
+
+	####
+	$param = $NumThreads;
+#	$param = $val{"Threads"};
+	$fn = "e/$pname-thr";
+	value_store($fn, $i, $param);
+	if ($param > 1) {
+	    $has_threads{$pname} += $param;
+	    $has_threads_samples{$pname} += 1;
+	}
+    }
+}
+
+sub parse_xresource_block($)
+{
+    my $handle= shift;
+    chop $_;
+    @names = split(',' , $_);
+    $num_names = @names;
+
+    my %xres_seen = undef;
+    my $sum_all_pixmaps = 0;
+    while (<$handle>) {
+	$line = $_;
+	chop $line;
+	if ($line eq "") {
+	    last;
+	}
+	split_values($line);
+
+	$Identifier = $val{"Identifier"};
+	$xresPid = $val{"PID"};
+#		print "xresource line: Id=[$Identifier]\n";
+	$Identifier =~ s/ /-/g;
+	$Identifier =~ s/\>//g;
+	$Identifier =~ s/\<//g;
+	$Identifier =~ s/\(//g;
+	$Identifier =~ s/\)//g;
+	$Identifier =~ s/\//-/g;
+	$Identifier =~ s/\|/-/g;
+	$Identifier =~ s/\&/-/g;
+
+	#
+	# truncate too long names
+	#
+	$sz = length $Identifier;
+	if($sz > 14) {
+	    $Identifier = substr($Identifier, 0, 14);
+	}
+	if($xresPid != -1) {
+	    $Identifier = $Identifier . "-" . $xresPid;
+	}
+	if ($Identifier) {
+	    if ($val{"total_resource_count"}) {
+		$param_show = $val{"total_resource_count"};
+	    } else {
+		$param_show = $val{"Windows"} + $val{"Pixmaps"} + $val{"GCs"} + $val{"Fonts"} + 
+		    $val{"Cursors"} + $val{"Colormaps"} + $val{"Map entries"} + $val{"Other clients"} + 
+		    $val{"Grabs"} + $val{"Pictures"} + $val{"Pictformats"} + $val{"Glyphsets"} + 
+		    $val{"CRTCs"} + $val{"Modes"} + $val{"Outputs"} + $val{"Xi clients"} + $val{"Unknown"};
+	    }
+	    # there are multiple "unknown" ids, make unique by appending hex value,
+	    # otherwise they will added up in same line
+	    if ($xres_seen{$Identifier}) {
+		$Identifier = $Identifier . '-' . $val{"res-base"};
+	    }
+	    $xres_seen{$Identifier} = 1;
+	    $xres_samples{$Identifier} += 1;
+
+	    $xresource_latest_cnt{$Identifier} = $param_show;
+	    $fn = "e/$Identifier-xres-count";
+	    value_store($fn, $i, $param_show);
+	    $param_show = $val{"Pixmap mem"};
+	    $param_show =~ s/B//g;
+	    $param_show /= 1024;
+	    $xresource_latest_sz_pxm{$Identifier} = $param_show;
+	    $fn = "e/$Identifier-xres-pxm";
+	    value_store($fn, $i, $param_show);
+	    $sum_all_pixmaps += $param_show;
+	    $xres_pxm_size_total{$Identifier} += $param_show;
+	}
+    }
+# system level file has MB units, so we divide it once more
+    $sum_all_pixmaps /= 1024;
+    value_store($mpixmaps_plot_file_name, $i, $sum_all_pixmaps);
+}
+
+sub parse_filesystem_block($)
+{
+    my $handle= shift;
+    my %fs_entry_seen = undef;
+    while (<$handle>) {
+	$line = $_;
+	chop $line;
+	if ($line eq "") {
+	    last;
+	}
+	($Filesystem,$blocks,$Used,$Available,$Use_perc,$Mounted) = split(',' , $line, 6);
+	if (!$fs_entry_seen{$Mounted}) {
+	    chop $Use_perc;
+	    $fs_entry_seen{$Mounted} += 1;
+	    $Mounted =~ s/\//\_/g;
+#	    print "$i: Mounted=[$Mounted] Used=$Used seen=$fs_entry_seen{$Mounted}\n";
+	    $filesystem_names{$Mounted} = $Used;
+	    $fn = "e/$Mounted-fs-used";
+	    value_store($fn, $i, $Use_perc);
+	}
+    }
+}
+
+sub parse_memtotal_block($)
+{
+    my $handle= shift;
+    chop $_;
+    @names = split(',' , $_);
+    $num_names = @names;
+#		print "names=[@names]\n";
+
+    $line = <$handle>;
+    $line =~ s/kB//g;
+    chop $line;
+    split_values($line);
+
+    $mfree = $val{"MemFree"} /1024 ;
+    value_store($memfree_plot_file_name, $i, $mfree);
+    $cached = $val{"Cached"} /1024;
+    value_store($cached_plot_file_name, $i, $cached);
+    $swapcached = $val{"SwapCached"} / 1024;
+    value_store($swapcached_plot_file_name, $i, $swapcached);
+    $swaptotal = $val{"SwapTotal"} / 1024;
+    $swapfree = $val{"SwapFree"} / 1024;
+
+    $buffers = $val{"Buffers"} / 1024;
+    value_store($buffers_plot_file_name, $i, $buffers);
+    $dirty = $val{"Dirty"} / 1024;
+    value_store($dirty_plot_file_name, $i, $dirty);
+    $active_file = $val{"Active(file)"} / 1024;
+    value_store($active_file_plot_file_name, $i, $active_file);
+    $inactive_file = $val{"Inactive(file)"} / 1024;
+    value_store($inactive_file_plot_file_name, $i, $inactive_file);
+    $mlocked = $val{"Mlocked"} / 1024;
+    value_store($mlocked_plot_file_name, $i, $mlocked);
+#
+# for some reason, (kernel bug?) mlocked gets less
+# every few rounds sometimes, until wraps under zero
+# and shows as awfully large value then..
+# avoid it here and cut to zero as it spoils graph scale
+# Note, this is true for Fremantle, and not seen yet on Harmattan
+#
+    if($mlocked >  1024) {
+	$mlocked = 0;
+    }
+    $pagetables = $val{"PageTables"} / 1024;
+    value_store($pagetables_plot_file_name, $i, $pagetables);
+    $kernelstack = $val{"KernelStack"} / 1024;
+    if ($kernelstack) {
+	value_store($kernelstack_plot_file_name, $i, $kernelstack);
+	$show_kernelstack = 1;
+    }
+    $shmem = $val{"Shmem"} / 1024;
+    if ($shmem) {
+	value_store($shmem_plot_file_name, $i, $shmem);
+	$show_shmem = 1;
+    }
+#		print "$d: memfree=$mfree buf=$buffers cached=$cached kernelstack=$kernelstack shmem=$shmem\n";
+}
+
+sub parse_pages_block($)
+{
+    my $handle= shift;
+    chop $_;
+    chop $_;
+    @names = split(',' , $_);
+    $num_names = @names;
+#		print "names=[@names]\n";
+
+    $line = <$handle>;
+    chop $line;
+    split_values($line);
+
+    $pptablepages = $val{"nr_page_table_pages"};
+    $pslabreclaim = $val{"nr_slab_reclaimable"};
+    $pslabunreclaim = $val{"nr_slab_unreclaimable"};
+    $pswp_in_cumul = $val{"pswpin"};
+    $pswp_out_cumul = $val{"pswpout"};
+    $pgscan_kswapd_normal_cumul = $val{"pgscan_kswapd_normal"};
+    $pgscan_direct_normal_cumul = $val{"pgscan_direct_normal"};
+    $slabs_scanned_cumul = $val{"slabs_scanned"};
+    $kswapd_steal_cumul = $val{"kswapd_steal"};
+    
+    $ptables = ($pptablepages * $page_size)/1024;
+    $slabreclaim = ($pslabreclaim * $page_size)/1024;
+    value_store($slabreclaim_plot_file_name, $i, $slabreclaim);
+    $slabunreclaim = ($pslabunreclaim * $page_size)/1024;
+    value_store($slabunreclaim_plot_file_name, $i, $slabunreclaim);
+
+    $swapused = $swaptotal - $swapfree;
+    value_store($swapused_plot_file_name, $i, $swapused);
+    if (!$pswp_in_prev) {
+	$pswp_in = 0;
+    } else {
+	$pswp_in = ($pswp_in_cumul - $pswp_in_prev)/$lapsed_time{$i};
+	value_store($pswp_in_plot_file_name, $i, $pswp_in);
+    }
+    $pswp_in_prev = $pswp_in_cumul;
+#		print "$d:swpin_cumul=$pswp_in_cumul this=$pswp_in prev=$pswp_in_prev pptable=$pptablepages\n";
+    # check for pagetables value sanity:
+    if ((($pptablepages * $page_size)/1024) != $pagetables) {
+	print "**********************************************************************************\n";
+	print "***** MEM values mismatch. pagetables by mem:$pagetables vs by pages:$pptablepages\n";
+	print "**********************************************************************************\n";
+    }
+
+    if (!$pswp_out_prev) {
+	$pswp_out = 0;
+    } else {
+	$pswp_out = ($pswp_out_cumul - $pswp_out_prev)/$lapsed_time{$i};
+	value_store($pswp_out_plot_file_name, $i, $pswp_out);
+    }
+    $pswp_out_prev = $pswp_out_cumul;
+
+#		$pgrotated = $pgrotated_cumul - $pgrotated_prev;
+#		$pgrotated_prev = $pgrotated_cumul;
+
+    if (!$pgscan_kswapd_normal_prev) {
+	$pgscan_kswapd_normal = 0;
+    } else {
+	$pgscan_kswapd_normal = ($pgscan_kswapd_normal_cumul - $pgscan_kswapd_normal_prev)/$lapsed_time{$i};
+	value_store($pgscan_kswapd_normal_plot_file_name, $i, $pgscan_kswapd_normal);
+    }
+    $pgscan_kswapd_normal_prev = $pgscan_kswapd_normal_cumul;
+
+    if (!$pgscan_direct_normal_prev) {
+	$pgscan_direct_normal = 0;
+    } else {
+	$pgscan_direct_normal = ($pgscan_direct_normal_cumul - $pgscan_direct_normal_prev)/$lapsed_time{$i};
+	value_store($pgscan_direct_normal_plot_file_name, $i, $pgscan_direct_normal);
+    }
+    $pgscan_direct_normal_prev = $pgscan_direct_normal_cumul;
+    
+    if (!$slabs_scanned_prev) {
+	$slabs_scanned = 0;
+    } else {
+	$slabs_scanned = ($slabs_scanned_cumul - $slabs_scanned_prev)/$lapsed_time{$i};
+	value_store($slabs_scanned_plot_file_name, $i, $slabs_scanned);
+    }
+    $slabs_scanned_prev = $slabs_scanned_cumul;
+
+    if (!$kswapd_steal_prev) {
+	$kswapd_steal = 0;
+    } else {
+	$kswapd_steal = ($kswapd_steal_cumul - $kswapd_steal_prev)/$lapsed_time{$i};
+	value_store($kswapd_steal_plot_file_name, $i, $kswapd_steal);
+    }
+    $kswapd_steal_prev = $kswapd_steal_cumul;
+}
+
+sub process_slabinfo()
+{
+    $fn = "$d/slabinfo";
+    unless (open($f, $fn)) {
+	print STDERR "can not open $fn:$!\n";
+#	exit;
+	return;
+    }
+    while (<$f>) {
+	$idx_1 = index($_, "slabinfo");
+	$idx_2 = index($_, "# name");
+	if (($idx_1 != -1) || ($idx_2 != -1)) {
+	    next;
+	}
+	$line = $_;
+	chop $line;
+	($slabname, $active_objs, $num_objs, $obj_size, 
+	 undef, undef, undef, undef, undef, 
+	 undef, undef, undef, undef, undef, undef, undef) = split(' ' , $line, 16);
+
+	$slabname =~ s/ //g;
+	$slabname =~ s/\>//g;
+	$slabname =~ s/\<//g;
+	$slabname =~ s/\(//g;
+	$slabname =~ s/\)//g;
+	$slabname =~ s/\//-/g;
+	$slabname =~ s/\|/-/g;
+
+	$slab_sz = ($active_objs * $obj_size)/1024;
+	$fn = "e/$slabname-slabs";
+	value_store($fn, $i, $slab_sz);
+	$all_slabs{$slabname} += $active_objs;
+    }
+    close $f;
+#	print "   slabinfo_done ";
+}
+
+sub process_smaps()
+{
+#
+# smaps
+#
+    $lzoname = $d . "/smaps.cap.lzo";
+    $gzname = $d . "/smaps.cap.gz";
+    if (-e $lzoname) {
+	system("lzop -d $lzoname");
+    } elsif (-e $gzname) {
+	system("gzip -d $gzname");
+    } 
+    $fn = "$d/smaps.cap";
+    unless (open($f, $fn)) {
+	print STDERR "can not open $fn:$!\n";
+#	    next;
+	exit;
+    }
+    $sum_app_swapped = 0;
+#    $sum_app_private_dirty = 0;
+    $sum_app_pss = 0;
+    %app_swapped = undef;
+#    %app_private_dirty = undef;
+    %app_pss = undef;
+    %app_sysv_shared = undef;
+    %app_rwxp = undef;
+    $skyhost_seen = 0;
+    while (<$f>) {
+	if( index($_, "#Name: ") != -1) {
+	    $line = $_;
+	    chop $line;
+	    (undef, $nm) = split(' ' , $line, 2);
+	    if(index($nm, "skyhost") != -1) { 
+		if ($skyhost_seen) {
+		    $valid = 0;
+		} else {
+		    $valid = 1;
+		}
+		$skyhost_seen = 1;
+		next;
+	    } else {
+		$valid = 1;
+	    }
+	    #
+	    # some are really long names (hald-bla-bla 384 chars)
+	    #
+	    $sz = length $nm;
+	    if($sz > 64) {
+		$nm = substr($nm, 0, 64);
+	    }
+	    $nm =~ s/\(//g;
+	    $nm =~ s/\)//g;
+	    $nm =~ s/\///g;
+#		print "length=$sz nm=[$nm]\n";
+	    next;
+	}
+	if (!$valid) {
+	    next;
+	}
+	if( index($_, "#Pid: ") != -1) {
+	    $line = $_;
+	    chop $line;
+	    (undef, $s_pid) = split(' ' , $line, 2);
+	    $nm = $nm . "-" . $s_pid;
+	    $app_swapped{$nm} = 0;
+#	    $app_private_dirty{$nm} = 0;
+	    $app_pss{$nm} = 0;
+	    # create mapping from pid to name-pid
+	    $pid_by_namepid{$nm} = $s_pid;
+	    $name_by_pid{$s_pid} = $nm;
+	    $all_apps{$nm} = 1;
+	    next;
+	}
+	if( index($_, "#VmLck: ") != -1) {
+	    $line = $_;
+	    chop $line;
+	    (undef, $locked) = split(' ' , $line, 2);
+	    $fn = "e/$nm-locked";
+	    $app_sum_locked{$nm} += $locked;
+	    $xxx = $locked / 1024;
+	    value_store_zeropad($fn, $i, $xxx);
+	    next;
+	}
+	if( index($_, "[heap]") != -1) {
+	    $line = <$f>;
+	    chop $line;
+	    (undef, $heap, undef) = split(' ' , $line, 3);
+
+	    $avg_heap{$nm} = ($avg_heap{$nm} * $i + $heap)/($i+1);
+	    $dev = ($avg_heap{$nm} - $heap);
+	    if ($dev < 0) {
+		$dev = -1 * $dev;
+	    }
+	    $sumdev_heap{$nm} += $dev;
+	    $devcount_heap{$nm} += 1;
+	    if($heap > $max_heap{$nm}) {
+		$max_heap{$nm} = $heap;
+	    }
+	    $fn = "e/$nm-heap";
+	    $sum_heap{$nm} += $heap;
+	    $num_heap_samples{$nm} += 1;
+	    $xxx = $heap / 1024;
+	    value_store_zeropad($fn, $i, $xxx);
+	    next;
+	}
+	if( index($_, "/SYSV00000000") != -1) {
+	    $line = <$f>;
+	    chop $line;
+	    (undef, $sysv_shared, undef) = split(' ' , $line, 3);
+	    $app_sysv_shared{$nm} += $sysv_shared;
+	    next;
+	}
+	if( index($_, " rwxp ") != -1) {
+	    $line = <$f>;
+	    chop $line;
+	    (undef, $sz_wx, undef) = split(' ' , $line, 3);
+	    $app_rwxp{$nm} += $sz_wx;
+	    next;
+	}
+	if( index($_, "Pss:") != -1) {
+	    $line = $_;
+	    chop $line;
+	    (undef, $pss, undef) = split(' ' , $line, 3);
+	    $sum_app_pss += $pss;
+	    $app_pss{$nm} += $pss;
+	    next;
+	}
+#	if( index($_, "Private_Dirty:") != -1) {
+#	    $line = $_;
+#	    chop $line;
+#	    (undef, $pdirty, undef) = split(' ' , $line, 3);
+#	    $sum_app_private_dirty += $pdirty;
+#	    $app_private_dirty{$nm} += $pdirty;
+#	    next;
+#	}
+	if( index($_, "Swap:") != -1) {
+	    $line = $_;
+	    chop $line;
+	    (undef, $swapped, undef) = split(' ' , $line, 3);
+	    $sum_app_swapped += $swapped;
+	    $app_swapped{$nm} += $swapped;
+	    next;
+	}
+    }
+    close $f;
+    system("rm $d/smaps.cap");
+#	print "   smaps_done ";
+    $sum_app_swapped /= 1024;
+#    $sum_app_private_dirty /= 1024;
+    $sum_app_pss /= 1024;
+}
+
+sub process_interrupts()
+{
+#
+# interrupts
+#
+    $fn = $d . "/interrupts";
+    unless (open($f, $fn)) {
+	print STDERR "can not open $fn:$!\n";
+#	exit;
+	return;
+    }
+    while (<$f>) {
+	$line = $_;
+	chop $line;
+	($int_num, $int_cnt, undef, $int_name1, $int_name2, $int_name3, $int_name4) = split(' ' , $line);
+	chop $int_num;
+	$iname = $int_num . '-' . $int_name1 . $int_name2 . $int_name3 . $int_name4;
+	
+	if (!$int_prev{$iname}) {
+	    $ints = 0;
+	} else {
+	    $ints = ($int_cnt - $int_prev{$iname})/$lapsed_time{$i};
+	}
+	$int_prev{$iname} = $int_cnt;
+	$int_total{$iname} += $ints;
+	$fn = "e/$iname-int";
+	value_store($fn, $i, $ints);
+#		print "$i: ints-per-sec=$ints int_cnt=$int_cnt num=[$int_num] name=[$iname] nm=[$int_name1] nm2=[$int_name2] nm3=[$int_name3] nm4=[$int_name4]\n";
+    }
+    close $f;
+}
+
+sub process_stat()
+{
+#
+# CPU stat, global ctxts etc
+#
+    $fn = $d . "/stat";
+    unless (open($f, $fn)) {
+	print STDERR "can not open $fn:$!\n";
+	return;
+    }
+    while (<$f>) {
+	$line = $_;
+	chop $line;
+	if( index($_, "ctxt ") != -1) {
+	    (undef, $ctx) = split(' ' , $line, 2);
+
+	    if (!$global_ctx_prev) {
+		$global_ctx = 0;
+	    } else {
+		$global_ctx = ($ctx - $global_ctx_prev)/$lapsed_time{$i};
+	    }
+	    $global_ctx_prev = $ctx;
+	    $fn = "e/global-ctx";
+	    value_store($fn, $i, $global_ctx);
+	} elsif( index($_, "processes ") != -1) {
+	    (undef, $processes) = split(' ' , $line, 2);
+
+	    if (!$global_processes_prev) {
+		$global_processes = 0;
+	    } else {
+		$global_processes = (60*($processes - $global_processes_prev))/$lapsed_time{$i};
+	    }
+	    $global_processes_prev = $processes;
+	    $fn = "e/global-processes";
+	    value_store($fn, $i, $global_processes);
+	    last;
+	}
+    }
+    close $f;
+}
+
+sub emit_domain_values($$)
+{
+    my $line = shift;
+    my $domain = shift;
+    chop $line;
+#    print "powerdomain $domain: line=[$line]\n";
+    (undef, $off, $ret, $ina, $on) = split('\|' , $line, 6);
+    (undef, $off) = split(':' , $off, 2);
+    (undef, $ret) = split(':' , $ret, 2);
+    (undef, $ina) = split(':' , $ina, 2);
+    (undef, $on) = split(':' , $on, 2);
+
+    value_store_zeropad("e/p-domain-$domain-off", $i, $off);
+    value_store_zeropad("e/p-domain-$domain-ret", $i, $ret);
+    value_store_zeropad("e/p-domain-$domain-ina", $i, $ina);
+    value_store_zeropad("e/p-domain-$domain-on", $i, $on);
+}
+
+sub process_powertop()
+{
+#
+# powertop output if exists
+#
+    $fn = $d . "/powertop.out";
+    unless (open($f, $fn)) {
+	return;
+    }
+    $powertop_data_found = 1;
+    while (<$f>) {
+	$line = $_;
+	chop $line;
+	if( index($_, "Collecting data for ") != -1) {
+	    (undef, undef, undef, $secs, undef) = split(' ' , $line, 5);
+	    next;
+	} elsif( index($_, "C#") != -1) {
+	    $line = <$f>;
+	    while (<$f>) {
+		$line = $_;
+		if ($line eq "\n") {
+		    last;
+		}
+		chop $line;
+		chop $line;
+#		print "power-c line=[$line]\n";
+		($clev, $ratio_c, $dura, $freq, $ratio_f) = split('\|' , $line, 5);
+#		if (index($clev, "C") == -1) {
+#		    last;
+#		}
+		$clev =~ s/ //g;
+#		print "power-c clev=[$clev]\n";
+		value_store_zeropad("e/$clev", $i, $ratio_c);
+		$seen_powertop_c_levels{$clev} = 1;
+		if (index($freq, "MHz") != -1) {
+		    $freq =~ s/ //g;
+#		    print "power-c freq=[$freq]\n";
+		    value_store_zeropad("e/$freq", $i, $ratio_f);
+		    $seen_powertop_f_levels{$freq} = 1;
+		}
+	    }
+	} elsif( index($_, "PID#") != -1) {
+	    $line = <$f>;
+	    while (true) {
+		$line = <$f>;
+#		print "$i:line=[$line]\n";
+		if ($line eq "\n") {
+		    last;
+		}
+		($pid, $activ, $name, $func) = split('\|' , $line, 4);
+		($func, undef) = split(' ' , $func, 2);
+		$id = $name . "-" . $pid . "-" . $func; 
+		$id =~ s/ //g;
+		$id =~ s/\<//g;
+		$id =~ s/\>//g;
+		$id =~ s/\///g;
+#		print "$i:id=[$id] [pid[$pid], activ[$activ], name[$name], func[$func]\n";
+		$activ /= $secs;
+		value_store("e/$id-activity", $i, $activ);
+		$num_activity_samples{$id} += 1;
+		$p_activity{$id} += $activ;
+		if ($activ > $p_activity_max{$id}) {
+		    $p_activity_max{$id} = $activ;
+		}
+	    }
+	} elsif( index($_, "per |OFF:") != -1) {
+	    emit_domain_values($_, "periph");
+	} elsif( index($_, "core |OFF:") != -1) {
+	    emit_domain_values($_, "core");
+	} elsif( index($_, "neon |OFF:") != -1) {
+	    emit_domain_values($_, "neon");
+	} elsif( index($_, "sgx |OFF:") != -1) {
+	    emit_domain_values($_, "sgx");
+	} elsif( index($_, "dss |OFF:") != -1) {
+	    emit_domain_values($_, "dss");
+	} elsif( index($_, "mpu |OFF:") != -1) {
+	    emit_domain_values($_, "mpu");
+	} elsif( index($_, "Total wakeups") != -1) {
+	    $line = $_;
+	    (undef, undef, $wakeups, $wakeups_s, undef, 
+	     undef, $irqs, $irqs_s, undef, 
+	     undef, $timers, $timers_s, undef) = split(' ' , $line, 13);
+	    $wakeups_s =~ s/s//g;
+	    $wakeups_s =~ s/\///g;
+	    value_store("e/p-wakeups", $i, $wakeups_s);
+	    $timers_s =~ s/s//g;
+	    $timers_s =~ s/\///g;
+	    value_store("e/p-timers", $i, $timers_s);
+	}
+    }
+    close $f;
+}
+
+sub loop_over_all_apps()
+{
+#
+# use same hash keys set for two things (and sum of them is 3rd)
+#
+    foreach $x (keys %all_apps) {
+	if (!$x) {
+	    next;
+	}
+#	    print "$x ";
+
+	###############
+	if ($app_pss{$x}) {
+	    $app_cumul_pss{$x} += $app_pss{$x};
+	    $avg_pss{$x} = ($avg_pss{$x} * $i + $app_pss{$x})/($i+1);
+	    $dev = ($avg_pss{$x} - $app_pss{$x});
+	    if ($dev < 0) {
+		$dev = -1 * $dev;
+	    }
+	    $sumdev_pss{$x} += $dev;
+	    $devcount_pss{$x} += 1;
+	}
+#	    print "$i:$x:PSS: pss=$app_pss{$x} dev=$dev dev_cnt=$devcount_pss{$x} avg=$avg_pss{$x}\n";
+
+	$fn = "e/$x-p";
+	$xxx = $app_pss{$x} / 1024;
+	value_store_zeropad($fn, $i, $xxx);
+
+	###############
+	if ($app_sysv_shared{$x}) {
+	    $app_cumul_sysv_shared{$x} += $app_sysv_shared{$x};
+	    $avg_sysv_shared{$x} = ($avg_sysv_shared{$x} * $i + $app_sysv_shared{$x})/($i+1);
+	    $dev = ($avg_sysv_shared{$x} - $app_sysv_shared{$x});
+	    if ($dev < 0) {
+		$dev = -1 * $dev;
+	    }
+	    $sumdev_sysv_shared{$x} += $dev;
+	    $devcount_sysv_shared{$x} += 1;
+	}
+#	print "$i:$x:SYSV: pss=$app_sysv_shared{$x} dev=$dev dev_cnt=$devcount_sysv_shared{$x} avg=$avg_sysv_shared{$x}\n";
+
+	$fn = "e/$x-sysvshm";
+	$xxx = $app_sysv_shared{$x} / 1024;
+	value_store_zeropad($fn, $i, $xxx);
+
+	###############
+	if ($app_swapped{$x}) {
+	    $app_cumul_swp{$x} += $app_swapped{$x};
+
+	    $avg_swp{$x} = ($avg_swp{$x} * $i + $app_swapped{$x})/($i+1);
+	    $dev = ($avg_swp{$x} - $app_swapped{$x});
+	    if ($dev < 0) {
+		$dev = -1 * $dev;
+	    }
+	    $sumdev_swp{$x} += $dev;
+	    $devcount_swp{$x} += 1;
+	}
+	$fn = "e/$x-swp";
+	$xxx = $app_swapped{$x} / 1024;
+	value_store_zeropad($fn, $i, $xxx);
+
+	###############
+	if ($app_rwxp{$x}) {
+	    $app_cumul_rwxp{$x} += $app_rwxp{$x};
+	}
+	$fn = "e/$x-wx";
+	$xxx = $app_rwxp{$x} / 1024;
+	value_store_zeropad($fn, $i, $xxx);
+
+	###############
+#	if ($app_private_dirty{$x}) {
+#	    $app_cumul_private_dirty{$x} += $app_private_dirty{$x};
+#
+#	    $avg_private_dirty{$x} = ($avg_private_dirty{$x} * $i + $app_private_dirty{$x})/($i+1);
+#	    $dev = ($avg_private_dirty{$x} - $app_private_dirty{$x});
+#	    if ($dev < 0) {
+#		$dev = -1 * $dev;
+#	    }
+#	    $sumdev_private_dirty{$x} += $dev;
+#	    $devcount_private_dirty{$x} += 1;
+#	}
+#	$fn = "e/$x-pdirty";
+#	if ( ! -e $fn) {
+#	    for ($z = 0 ; $z < $i ; $z++) {
+#		system("echo '$z, 0' >> $fn");
+#	    }
+#	}
+#	$xxx = $app_private_dirty{$x} / 1024;
+#	system("echo '$i, $xxx' >> $fn");
+
+	###############
+	$pss_swap = ($app_pss{$x} + $app_swapped{$x})/1024;
+	if ($pss_swap) {
+	    $app_cumul_pss_swp{$x} += $pss_swap;
+
+#		$avg_pss_swp{$x} = ($avg_pss_swp{$x} * $i + $pss_swap)/($i+1);
+	    $avg_pss_swp{$x} = ($avg_pss_swp{$x} * $devcount_pss_swp{$x} + $pss_swap)/($devcount_pss_swp{$x} + 1);
+	    $dev = ($avg_pss_swp{$x} - $pss_swap);
+	    if ($dev < 0) {
+		$dev = -1 * $dev;
+	    }
+	    $sumdev_pss_swp{$x} += $dev;
+	    $devcount_pss_swp{$x} += 1;
+	    $pss_swap_num_samples{$x} += 1;
+	}
+	$fn = "e/$x-pswp";
+	value_store_zeropad($fn, $i, $pss_swap);
+	###############
+	$pid = $pid_by_namepid{$x};
+	$shared_lpid_cnt{$x} = $shared_lpid_cnt_oneround{$pid};
+	$shared_cpid_cnt{$x} = $shared_cpid_cnt_oneround{$pid};
+
+	$shared = $shared_lpid{$pid};
+	$fn = "e/$x-shml";
+	if ($shared) {
+#	    print "$i: lpid shared[x=$x pid=$pid] = $shared\n";
+	    value_store_zeropad($fn, $i, $shared);
+	    $avg_shared_lpid{$pid} = ($avg_shared_lpid{$pid} * $i + $shared)/($i+1);
+	    $dev = ($avg_shared_lpid{$pid} - $shared);
+	    if ($dev < 0) {
+		$dev = -1 * $dev;
+	    }
+	    $sumdev_shared_lpid{$x} += $dev/$shared;
+	    $devcount_shared_lpid{$x} += 1;
+#		print "   lpid: inc devcount[$x] now = $devcount_shared_lpid{$x}\n";
+	} else {
+	    value_store_zeropad($fn, $i, 0);
+	}
+	# clear value or it remains there even if that pid has nothing in next round
+	$shared_lpid{$pid} = 0;
+	
+	$shared = $shared_cpid{$pid};
+	$fn = "e/$x-shmc";
+	if ($shared) {
+#	    print "$i: cpid shared[x=$x pid=$pid] = $shared\n";
+	    value_store_zeropad($fn, $i, $shared);
+	    $avg_shared_cpid{$pid} = ($avg_shared_cpid{$pid} * $i + $shared)/($i+1);
+	    $dev = ($avg_shared_cpid{$pid} - $shared);
+	    if ($dev < 0) {
+		$dev = -1 * $dev;
+	    }
+	    $sumdev_shared_cpid{$x} += $dev/$shared;
+	    $devcount_shared_cpid{$x} += 1;
+#		print "   cpid: inc devcount[$x] now = $devcount_shared_lpid{$x}\n";
+	} else {
+	    value_store_zeropad($fn, $i, 0);
+	}
+	$shared_cpid{$pid} = 0;
+    }
+}
+
+sub echo_one_img_line($)
+{
+    my $img = shift;
+
+    $img_fn   = $graphs_dir . "/" . $img . ".png";
+    $thumb_fn = $graphs_dir . "/" . $img . "_thumb.jpg";
+    if (-e $img_fn) {
+	system "convert -thumbnail $thumbsize $img_fn $thumb_fn";
+	system("echo '<table class=\"image\">' >> $html_name");
+	system("echo '<caption align=\"bottom\">$thumbnames{$img}</caption>' >> $html_name");
+	system("echo '<tr><td><a href=$img_fn><img src=$thumb_fn></a></td></tr>' >> $html_name");
+	system("echo '</table>' >> $html_name");
+    }
+}
+
+sub gen_html_page()
+{
+    system("echo '<head>' > $html_name");
+    system("echo '<style>' >> $html_name");
+    system("echo 'table { float: left; margin: 20px 5px 0px 0; }' >> $html_name");
+    system("echo '</style>' >> $html_name");
+    $verstr = "<title> Endurance graph $version [$hw_product][$sw_version] snapshot avg interval";
+    if ($str_hours >= 1) {
+	system("echo '$verstr $str_hours hours</title>' >> $html_name");
+    } elsif ($str_minutes >= 1) {
+	system("echo '$verstr $str_minutes minutes</title>' >> $html_name");
+    } else {
+	system("echo '$verstr $str_seconds seconds</title>' >> $html_name");
+    }
+    system("echo '</head>' >> $html_name");
+    system("echo '<body>' >> $html_name");
+
+# insert link to endurance_report.html (if exsists)
+
+    $fn = "endurance-report.html";
+    if (-e $fn ) {
+	system("echo '<a href='$fn'>$fn</a>' >> $html_name");
+    }
+    foreach $img (sort keys %images) {
+	echo_one_img_line($img);
+    }
+
+# add thumbs of fragmenation.png (if exsists)
+
+    $img = $graph_fragmentation_1;
+    $fn = $graphs_dir . "/" . $img . ".png";
+    if (-e $fn ) {
+	$thumbnames{$img} = "SWAP FRAGMENTATION 1";
+	echo_one_img_line($img);
+    }
+
+    $img = $graph_fragmentation_2;
+    $fn = $graphs_dir . "/" . $img . ".png";
+    if (-e $fn ) {
+	$thumbnames{$img} = "SWAP FRAGMENTATION 2";
+	echo_one_img_line($img);
+    }
+
+    $img = $graph_fragmentation_3;
+    $fn = $graphs_dir . "/" . $img . ".png";
+    if (-e $fn ) {
+	$thumbnames{$img} = "SWAP FRAGMENTATION 3";
+	echo_one_img_line($img);
+    }
+}
+
+sub start_plotfile_common($)
+{
+    my $key = shift;
+
+    my $title = $legend{$key};
+    my $ylabel = $unit{$key};
+    my $plot;
+
+    my $cmdfname = "e/" . $key . ".cmd";
+
+    unless (open ($plot, "> $cmdfname")) {
+	print STDERR "Can't create $cmdfname:$!\n";
+    }
+
+    $title = $title . "\\nSW=" . $sw_version . "\\nPRODUCT=" . $hw_product . " BUILD=" . $hw_build;
+
+    print $plot "set label \"$title\" at graph 0.02,0.98\n";
+    print $plot "set xlabel \"rounds\"\n";
+    print $plot "set ylabel \"$ylabel\"\n";
+    print $plot "set grid xtics ytics\n";
+    print $plot "set term png truecolor size $plot_width, 1100\n";
+    return $plot;
+}
+
+sub start_plotfile_lines_common($$)
+{
+    my $key = shift;
+    my $style = shift;
+    my $plot;
+
+    $plot = start_plotfile_common($key);
+
+    print $plot "set style data $style\n";
+    print $plot "set key autotitle\n";
+    $ii = $i+10;
+    print $plot "plot [0:$ii] ";
+    return $plot;
+}
+
+sub start_plotfile_lines_common_2axes($$)
+{
+    my $key = shift;
+    my $style = shift;
+    my $plot;
+    my $ylabel = $unit_1{$key};
+    my $y2label = $unit_2{$key};
+
+    $plot = start_plotfile_common($key);
+
+    print $plot "set ylabel \"$ylabel\"\n";
+    print $plot "set y2label \"$y2label\"\n";
+    print $plot "set ytics nomirror\n";
+    print $plot "set y2tics\n";
+    print $plot "set style data $style\n";
+    print $plot "set key autotitle\n";
+    print $plot "set xrange [0 : $i]\n";
+    print $plot "set x2range [0 : $i]\n";
+    print $plot "plot ";
+    return $plot;
+}
+
+sub start_plotfile_lines($)
+{
+    my $key = shift;
+    return start_plotfile_lines_common($key, "lines")
+}
+
+sub start_plotfile_lines_2axes($)
+{
+    my $key = shift;
+    return start_plotfile_lines_common_2axes($key, "lines")
+}
+
+sub start_plotfile_linespoints($)
+{
+    my $key = shift;
+    return start_plotfile_lines_common($key, "linespoints")
+}
+
+sub start_plotfile_histogram($)
+{
+    my $key = shift;
+    my $plot;
+
+    $plot = start_plotfile_common($key);
+
+    print $plot "set style data histograms\n";
+    print $plot "set key invert autotitle\n";
+    print $plot "set style histogram rowstacked\n";
+    print $plot "set style fill solid 1.00 border -1\n";
+
+    $ii = $i+18;
+    print $plot "plot [-1:$ii] ";
+
+    return $plot;
+}
+
+sub start_plotfile_histogram_multi($)
+{
+    my $key = shift;
+    my $plot;
+
+    $plot = start_plotfile_common($key);
+
+    print $plot "set style data histograms\n";
+    print $plot "set key invert autotitle\n";
+    print $plot "set style histogram rowstacked\n";
+    print $plot "set style fill solid 1.00 border -1\n";
+    print $plot "set multiplot\n";
+    print $plot "unset label\n";
+
+    return $plot;
+}
+
+sub close_plot($$$)
+{
+    my $count = shift;
+    my $plot = shift;
+    my $key = shift;
+
+    print $plot "\n";
+    close $plot;
+    if ($count) {
+	my $cmdfname = "e/" . $key . ".cmd";
+	$img_fn   = $graphs_dir . "/" . $key . ".png";
+	system "gnuplot $cmdfname > $img_fn";
+	$images{$key} = $key;
+	$thumbnames{$key} = $thumblegend{$key};
+    } else {
+#	print "\nNot enough changes/samples for $key, skipped\n";
+	print "(skip) ";
+    }
+}
+
+sub print_cf_states_plot_cmds($)
+{
+    my $plot = shift;
+    my $cnt_1 = 0, $cnt_2 = 0;
+    my $ii = $i+18;
+
+    print $plot "set size 1.0,0.4\n";
+    print $plot "set origin 0.0,0.0\n";
+    print $plot "set title \"C states\"\n";
+    print $plot "plot [-1:$ii] ";
+    # need number of entries for 
+    # using colors in reverse order so that highest level gets red
+    # (which is lowest lt number)
+    $num_entries = 0;
+    foreach $p (reverse sort keys %seen_powertop_c_levels) {
+	$num_entries += 1;
+    }
+    # and we sort them like this to get highrst stuff to the top
+    foreach $p (reverse sort keys %seen_powertop_c_levels) {
+	if ($cnt_1 > 0) {
+	    print $plot ", ";
+	}
+	print $plot "'e/$p' using 2 lt $num_entries";
+	value_emit("e/$p", 1);
+	$cnt_1 += 1;
+	$num_entries -= 1;
+    }
+    print $plot "\nset size 1.0,0.4\n";
+    print $plot "set origin 0.0,0.5\n";
+    print $plot "set title \"Freq states\"\n";
+    print $plot "plot [-1:$ii] ";
+    $num_entries = 0;
+    foreach $p (reverse sort keys %seen_powertop_f_levels) {
+	$num_entries += 1;
+    }
+    foreach $p (sort { $a <=> $b } keys %seen_powertop_f_levels) {
+	if ($cnt_2 > 0) {
+	    print $plot ", ";
+	}
+	print $plot "'e/$p' using 2 lt $num_entries";
+	value_emit("e/$p", 1);
+	$cnt_2 += 1;
+	$num_entries -= 1;
+    }
+    return ($cnt_1 + $cnt_2);
+}
+
+sub print_domain_plot_cmds($$$$)
+{
+    my $plot = shift;
+    my $domain = shift;
+    my $height = shift;
+    my $offs = shift;
+
+    my $ii = $i+18;
+    value_emit("e/p-domain-$domain-off", 1);
+    value_emit("e/p-domain-$domain-ret", 1);
+    value_emit("e/p-domain-$domain-ina", 1);
+    value_emit("e/p-domain-$domain-on", 1);
+    print $plot "set size 1.0,$height\n";
+    print $plot "set origin 0.0,$offs\n";
+    print $plot "set title \"$domain states\"\n";
+#
+# here we explicitly code bar color, lt=1:red=ON lt=2:green=OFF, others by enum
+#
+    print $plot "plot [-1:$ii] 'e/p-domain-$domain-off' using 2 lt 2, ";
+    print $plot "'e/p-domain-$domain-ret' using 2 lt 3, ";
+    print $plot "'e/p-domain-$domain-ina' using 2 lt 4, ";
+    print $plot "'e/p-domain-$domain-on' using 2 lt 1\n";
+}
+
+sub generate_plots()
+{
+
+############# MEM ######################
+    print "graphs: mem ";
+    $plot = start_plotfile_lines($graph_memory);
+
+    value_emit($swapused_plot_file_name, 0);
+    print $plot "'$swapused_plot_file_name' lt 1 lw 5,";
+    value_emit($app_swapped_plot_file_name, 0);
+    print $plot "'$app_swapped_plot_file_name' lt 1 lw 2,";
+
+    value_emit($memfree_plot_file_name, 0);
+    print $plot "'$memfree_plot_file_name' lw 3, ";
+    value_emit($cached_plot_file_name, 0);
+    print $plot "'$cached_plot_file_name' lw 3, ";
+    value_emit($swapcached_plot_file_name, 0);
+    print $plot "'$swapcached_plot_file_name' lw 3, ";
+    value_emit($active_file_plot_file_name, 0);
+    print $plot "'$active_file_plot_file_name' lw 3,";
+    value_emit($inactive_file_plot_file_name, 0);
+    print $plot "'$inactive_file_plot_file_name' lw 3,";
+    if ($show_shmem) {
+	value_emit($shmem_plot_file_name, 0);
+	print $plot "'$shmem_plot_file_name' lw 3, ";
+    }
+    value_emit($app_pss_plot_file_name, 0);
+    print $plot "'$app_pss_plot_file_name' lw 3";
+
+    close_plot($i, $plot, $graph_memory);
+
+############# MEM SMALLER VALUES ######################
+    $plot = start_plotfile_lines($graph_memory_s);
+
+    value_emit($dirty_plot_file_name, 0);
+    print $plot "'$dirty_plot_file_name' lw 3,";
+    value_emit($buffers_plot_file_name, 0);
+    print $plot "'$buffers_plot_file_name' lw 3, ";
+    value_emit($mlocked_plot_file_name, 0);
+    print $plot "'$mlocked_plot_file_name' lw 3,";
+    value_emit($mpixmaps_plot_file_name, 0);
+    if (-e $mpixmaps_plot_file_name) {
+	print $plot "'$mpixmaps_plot_file_name' lw 3,";
+    }
+    value_emit($pagetables_plot_file_name, 0);
+    print $plot "'$pagetables_plot_file_name' lw 3, ";
+    if ($show_kernelstack) {
+	value_emit($kernelstack_plot_file_name, 0);
+	print $plot "'$kernelstack_plot_file_name' lw 3, ";
+    }
+    value_emit($slabreclaim_plot_file_name, 0);
+    print $plot "'$slabreclaim_plot_file_name' lw 3,";
+    value_emit($slabunreclaim_plot_file_name, 0);
+    print $plot "'$slabunreclaim_plot_file_name' lw 3";
+
+    close_plot($i, $plot, $graph_memory_s);
+
+############# all slabs from slabinfo ######################
+    print "slab ";
+    $plot = start_plotfile_lines($graph_mem_slabs);
+    $cnt = 0;
+    foreach $p (reverse sort {$all_slabs{$a} <=> $all_slabs{$b} } keys %all_slabs) {
+	if ($cnt > $max_per_graph_onecolumn) {
+	    last;
+	} 
+	if ($all_slabs{$p} == 0) {
+	    next;
+	}
+	one_plot_set("e/$p-slabs", 3, $plot, \$cnt, 0);
+    }
+    close_plot($cnt, $plot, $graph_mem_slabs);
+
+############# Processes, total ctxt switches  ######################
+    print "ctx ";
+    $plot = start_plotfile_linespoints($graph_events_ctx_total);
+
+    $cnt = 0;
+    foreach $p (reverse sort {$cumul_total_ctx{$a} <=> $cumul_total_ctx{$b} } keys %cumul_total_ctx) {
+	if ($cnt > $max_per_graph_twocolumn) {
+	    last;
+	} 
+	if ($cumul_total_ctx{$p} == 0) {
+	    last;
+	}
+	one_plot_set("e/$p-total-ctx", 3, $plot, \$cnt, 0);
+    }
+    close_plot($cnt, $plot, $graph_events_ctx_total);
+
+############# Processes, non-voluntary ctxt switches  ######################
+    $plot = start_plotfile_linespoints($graph_events_ctx_nonvolunt);
+
+    $cnt = 0;
+    foreach $p (reverse sort {$cumul_nonvol_ctx{$a} <=> $cumul_nonvol_ctx{$b} } keys %cumul_nonvol_ctx) {
+	if ($cnt > $max_per_graph_twocolumn) {
+	    last;
+	} 
+	if ($cumul_nonvol_ctx{$p} == 0) {
+	    last;
+	}
+	one_plot_set("e/$p-nonvol-ctx", 3, $plot, \$cnt, 0);
+    }
+    close_plot($cnt, $plot, $graph_events_ctx_nonvolunt);
+
+############# Processes, voluntary ctxt switches  ######################
+    $plot = start_plotfile_linespoints($graph_events_ctx_volunt);
+
+    $cnt = 0;
+    foreach $p (reverse sort {$cumul_vol_ctx{$a} <=> $cumul_vol_ctx{$b} } keys %cumul_vol_ctx) {
+	if ($cnt > $max_per_graph_twocolumn) {
+	    last;
+	} 
+	if ($cumul_vol_ctx{$p} == 0) {
+	    last;
+	}
+	one_plot_set("e/$p-vol-ctx", 3, $plot, \$cnt, 0);
+    }
+    close_plot($cnt, $plot, $graph_events_ctx_volunt);
+
+############# loadavg #####################
+    $plot = start_plotfile_lines($graph_loadavg);
+    $fn = "e/load_1_min";
+    print $plot "'$fn' lw 2, ";
+    value_emit($fn, 1);
+
+    $fn = "e/load_5_min";
+    print $plot "'$fn' lw 2, ";
+    value_emit($fn, 1);
+
+    $fn = "e/load_15_min";
+    print $plot "'$fn' lw 2";
+    value_emit($fn, 1);
+
+    close_plot($i, $plot, $graph_loadavg);
+
+############# global ctx switched #####################
+    $plot = start_plotfile_lines_2axes($graph_ctx_global);
+    $fn = "e/global-ctx";
+    print $plot "'$fn' lw 2 axes x1y1";
+    value_emit($fn, 1);
+
+    $fn = "e/num-processes";
+    print $plot ", '$fn' lw 2 axes x2y2";
+    value_emit($fn, 1);
+
+    close_plot($i, $plot, $graph_ctx_global);
+
+############# Processes/threads created #####################
+    $plot = start_plotfile_lines($graph_processes_global);
+    $fn = "e/global-processes";
+    print $plot "'$fn' lw 2";
+    value_emit($fn, 1);
+    close_plot($i, $plot, $graph_processes_global);
+
+############# Processes running #####################
+#
+# XXX moved to be part of global-ctx graph (above)
+#
+#    $plot = start_plotfile_lines($graph_processes_running);
+#    $fn = "e/num-processes";
+#    print $plot "'$fn' lw 2";
+#    value_emit($fn, 1);
+#    close_plot($i, $plot, $graph_processes_running);
+
+############# Processes, major page faults ######################
+    print "pfault ";
+    $plot = start_plotfile_lines($graph_events_major_pagefaults);
+
+    $cnt = 0;
+    foreach $p (reverse sort {$majflt_cumul{$a} <=> $majflt_cumul{$b} } keys %majflt_cumul) {
+#	if ($cnt > $max_per_graph_onecolumn) {
+	if ($cnt > 5) {
+	    last;
+	} 
+	if ($majflt_cumul{$p} == 0) {
+	    last;
+	} 
+	$fn = "e/$p-majflt";
+	one_plot_set($fn, 3, $plot, \$cnt, 1);
+    }
+    close_plot($cnt, $plot, $graph_events_major_pagefaults);
+
+
+############# Processes, utime ######################
+    print "cputime ";
+    $plot = start_plotfile_linespoints($graph_cpu_usertime);
+
+    $cnt = 0;
+    foreach $p (reverse sort {$utime_cumul{$a} <=> $utime_cumul{$b} } keys %utime_cumul) {
+	if ($cnt > $max_per_graph_twocolumn) {
+	    last;
+	} 
+	if ($utime_cumul{$p} == 0) {
+	    last;
+	}
+	one_plot_set("e/$p-utime", 3, $plot, \$cnt, 0);
+    }
+    close_plot($cnt, $plot, $graph_cpu_usertime);
+
+############# Processes, stime ######################
+    $plot = start_plotfile_linespoints($graph_cpu_systime);
+
+    $cnt = 0;
+    foreach $p (reverse sort {$stime_cumul{$a} <=> $stime_cumul{$b} } keys %stime_cumul) {
+	if ($cnt > $max_per_graph_twocolumn) {
+	    last;
+	} 
+	if ($stime_cumul{$p} == 0) {
+	    last;
+	}
+	one_plot_set("e/$p-stime", 3, $plot, \$cnt, 0);
+    }
+    close_plot($cnt, $plot, $graph_cpu_systime);
+
+############# Processes, totaltime=stime+utime ######################
+    $plot = start_plotfile_linespoints($graph_cpu_totaltime);
+
+    $cnt = 0;
+    foreach $p (reverse sort {$totaltime_cumul{$a} <=> $totaltime_cumul{$b} } keys %totaltime_cumul) {
+	if ($cnt > $max_per_graph_twocolumn) {
+	    last;
+	} 
+	if ($totaltime_cumul{$p} == 0) {
+	    last;
+	}
+	one_plot_set("e/$p-totaltime", 3, $plot, \$cnt, 0);
+    }
+    close_plot($cnt, $plot, $graph_cpu_totaltime);
+
+############### Histogram of shared mem #################
+    print "shmem ";
+    $plot = start_plotfile_histogram($graph_mem_shared);
+
+    value_emit($shared_locked_plot_file_name, 1);
+    print $plot "'$shared_locked_plot_file_name' using 2,";
+    value_emit($shared_unlocked_plot_file_name, 1);
+    print $plot "'$shared_unlocked_plot_file_name' using 2";
+
+    close_plot($i, $plot, $graph_mem_shared);
+
+############### Histogram of shared mem lpid #################
+    $plot = start_plotfile_histogram($graph_mem_shared_lpid);
+
+    foreach $p (keys %shared_lpid_cnt) {
+	if ($devcount_shared_lpid{$p}) {
+	    $sumdev_shared_lpid{$p} /= $devcount_shared_lpid{$p};
+	    $sumdev_shared_lpid{$p} += (100*($i - $devcount_shared_lpid{$p}));
+	}
+    }
+
+    $cnt = 0;
+    foreach $p (sort {$sumdev_shared_lpid{$a} <=> $sumdev_shared_lpid{$b} } keys %shared_lpid_cnt) {
+
+#    print "plot_lpid: name=$p, sumdev=$sumdev_shared_lpid{$p} devcount=$devcount_shared_lpid{$p} cnt=$shared_lpid_cnt{$p}\n";
+	if ($devcount_shared_lpid{$p}) {
+	    one_plot_set("e/$p-shml", 0, $plot, \$cnt, 1);
+	}
+    }
+    close_plot($cnt, $plot, $graph_mem_shared_lpid);
+
+############### Histogram of shared mem cpid #################
+    $plot = start_plotfile_histogram($graph_mem_shared_cpid);
+
+    foreach $p (keys %shared_cpid_cnt) {
+	if ($devcount_shared_cpid{$p}) {
+	    $sumdev_shared_cpid{$p} /= $devcount_shared_cpid{$p};
+	    $sumdev_shared_cpid{$p} += (100*($i - $devcount_shared_cpid{$p}));
+	}
+    }
+    $cnt = 0;
+    foreach $p (sort keys %shared_cpid_cnt) {
+
+	if ($devcount_shared_cpid{$p}) {
+#	print "plot_cpid: name-pid=$p, sumdev=$sumdev_shared_cpid{$p} devcount=$devcount_shared_cpid{$p} cnt=$shared_cpid_cnt{$p}\n";
+	    one_plot_set("e/$p-shmc", 0, $plot, \$cnt, 1);
+	}
+    }
+    close_plot($cnt, $plot, $graph_mem_shared_cpid);
+
+############### Histogram of process mlocked #################
+    print "mlocked ";
+    $plot = start_plotfile_histogram($graph_appmem_locked);
+
+    $cnt = 0;
+    foreach $p (reverse sort {$app_sum_locked{$a} <=> $app_sum_locked{$b} } keys %app_sum_locked) {
+	if ($cnt > $max_per_graph_onecolumn -1 ) {
+	    last;
+	} 
+	if (!$app_sum_locked{$p}) {
+	    last;
+	}
+	one_plot_set("e/$p-locked", 0, $plot, \$cnt, 1);
+	$cnt += 1;
+    }
+    close_plot($cnt, $plot, $graph_appmem_locked);
+
+############### Histogram of process heaps #################
+    print "heap ";
+    $plot = start_plotfile_histogram($graph_appmem_heap);
+
+    $cnt = 0;
+    %show_this = undef;
+#
+# on histogram, we show all to get the total size feeling
+#
+    foreach $p (reverse sort {$sum_heap{$a} <=> $sum_heap{$b} } keys %sum_heap) {
+	if ($cnt > $max_per_graph_onecolumn -1 ) {
+	    last;
+	} 
+	$show_this{$p} = 1;
+	$cnt += 1;
+    }
+    foreach $p (sort keys %sum_heap) {
+	if ($show_this{$p}) {
+	    $sumdev_heap{$p} /= $devcount_heap{$p};
+	    $sumdev_heap{$p} += (10000*($i - $devcount_heap{$p}));
+	}
+    }
+    $cnt = 0;
+    foreach $p (sort {$sumdev_heap{$a} <=> $sumdev_heap{$b} } keys %sum_heap) {
+	if ($show_this{$p} != 1) {
+	    next;
+	} 
+	one_plot_set("e/$p-heap", 0, $plot, \$cnt, 1);
+    }
+    close_plot($cnt, $plot, $graph_appmem_heap);
+
+############### Lines of process heaps #################
+    $plot_1 = start_plotfile_linespoints($graph_appmem_heap_lines_1);
+    $plot_2 = start_plotfile_linespoints($graph_appmem_heap_lines_2);
+
+    %show_this = undef;
+    $cnt = 0;
+#
+# on lines graphs, we show changing ones to detect leaks
+#
+    foreach $p (reverse sort {$sum_heap{$a} <=> $sum_heap{$b} } keys %sum_heap) {
+	if (!$sumdev_heap{$p}) {
+	    next;
+	}
+	# if one sample and under 1 MB, do not show
+	if (($num_heap_samples{$p} < 2) && ($avg_heap{$p} < 1024)) {
+	    next;
+	}
+	if ($cnt > 2*($max_per_graph_onecolumn -1) ) {
+	    last;
+	} 
+	$show_this{$p} = 1;
+	$cnt += 1;
+    }
+    $cnt_1 = 0;
+    $cnt_2 = 0;
+    foreach $p (reverse sort {$max_heap{$a} <=> $max_heap{$b} } keys %sum_heap) {
+	if ($show_this{$p} != 1) {
+	    next;
+	} 
+	$fn = "e/$p-heap";
+	if (($cnt_1 + $cnt_2) < $cnt/2) {
+	    one_plot_set("e/$p-heap", 3, $plot_1, \$cnt_1, 0);
+	} else {
+	    one_plot_set("e/$p-heap", 3, $plot_2, \$cnt_2, 0);
+	}
+	delete_zero_lines($fn);
+    }
+    close_plot($cnt_1, $plot_1, $graph_appmem_heap_lines_1);
+    close_plot($cnt_2, $plot_2, $graph_appmem_heap_lines_2);
+
+############### Histogram of process sysv shared mem #################
+    print "sysvshm ";
+    $plot = start_plotfile_histogram($graph_appmem_sysvshared);
+
+    $cnt = 0;
+    %show_this = undef;
+    foreach $p (reverse sort {$app_cumul_sysv_shared{$a} <=> $app_cumul_sysv_shared{$b} } keys %app_cumul_sysv_shared) {
+	if ($cnt > $max_per_graph_onecolumn -1 ) {
+	    last;
+	} 
+#	print "sysvshared: $p: sumdev=$sumdev_sysv_shared{$p}\n";
+	$show_this{$p} = 1;
+	$cnt += 1;
+    }
+    foreach $p (sort keys %app_cumul_sysv_shared) {
+	if ($show_this{$p}) {
+	    $sumdev_sysv_shared{$p} /= $devcount_sysv_shared{$p};
+	    $sumdev_sysv_shared{$p} += (10000*($i - $devcount_sysv_shared{$p}));
+#	    print "sysvshared-adj: $p: sumdev=$sumdev_sysv_shared{$p} count=$devcount_sysv_shared{$p}\n";
+	}
+    }
+    $cnt = 0;
+    foreach $p (sort {$sumdev_sysv_shared{$a} <=> $sumdev_sysv_shared{$b} } keys %app_cumul_sysv_shared) {
+	if ($show_this{$p} != 1) {
+	    next;
+	} 
+	one_plot_set("e/$p-sysvshm", 0, $plot, \$cnt, 1);
+    }
+    close_plot($cnt, $plot, $graph_appmem_sysvshared);
+
+############### Histogram of process write-exec shared mem #################
+    print "write-exec ";
+    $plot = start_plotfile_histogram($graph_appmem_wx);
+    $cnt = 0;
+    foreach $p (reverse sort {$app_cumul_rwxp{$a} <=> $app_cumul_rwxp{$b} } keys %app_cumul_rwxp) {
+	if ($cnt > $max_per_graph_onecolumn -1 ) {
+	    last;
+	} 
+	one_plot_set("e/$p-wx", 0, $plot, \$cnt, 1);
+    }
+    close_plot($cnt, $plot, $graph_appmem_wx);
+
+############# SWAP EVENT COUNTS ######################
+    print "swap ";
+    $n = 0;
+    $plot = start_plotfile_lines($graph_events_swap);
+    if (value_emit($pswp_in_plot_file_name, 0)) {
+	print $plot "'$pswp_in_plot_file_name' lw 3";
+	$n += 1;
+    }
+    if (value_emit($pswp_out_plot_file_name, 0)) {
+	print $plot ", '$pswp_out_plot_file_name' lw 3";
+	$n += 1;
+    }
+    if (value_emit($pgscan_kswapd_normal_plot_file_name, 0)) {
+	print $plot ", '$pgscan_kswapd_normal_plot_file_name' lw 3";
+	$n += 1;
+    }
+    if (value_emit($pgscan_direct_normal_plot_file_name, 0)) {
+	print $plot ", '$pgscan_direct_normal_plot_file_name' lw 3";
+	$n += 1;
+    }
+    if (value_emit($slabs_scanned_plot_file_name, 0)) {
+	print $plot ", '$slabs_scanned_plot_file_name' lw 3";
+	$n += 1;
+    }
+    if (value_emit($kswapd_steal_plot_file_name, 0)) {
+	print $plot ", '$kswapd_steal_plot_file_name' lw 3";
+	$n += 1;
+    }
+    close_plot($n, $plot, $graph_events_swap);
+    
+############### Histogram of processes swapped #################
+    $plot = start_plotfile_histogram($graph_appmem_swapped);
+
+    $cnt = 0;
+    %show_this = undef;
+
+    foreach $p (reverse sort {$app_cumul_swp{$a} <=> $app_cumul_swp{$b} } keys %app_cumul_swp) {
+	if ($cnt > ($max_per_graph_onecolumn - 1)) {
+	    last;
+	} 
+	$show_this{$p} = 1;
+	$cnt += 1;
+#    print "1:cnt=$cnt p=$p\n";
+    }
+    foreach $p (sort keys %app_cumul_swp) {
+	if ($show_this{$p}) {
+	    $sumdev_swp{$p} /= $devcount_swp{$p};
+	    $sumdev_swp{$p} += (100*($i - $devcount_swp{$p}));
+	}
+    }
+    $cnt = 0;
+    foreach $p (sort {$sumdev_swp{$a} <=> $sumdev_swp{$b} } keys %app_cumul_swp) {
+	if ($show_this{$p} != 1) {
+	    next;
+	} 
+	one_plot_set("e/$p-swp", 0, $plot, \$cnt, 1);
+#    print "2:cnt=$cnt p=$p show_this=$show_this{$p}\n";
+    }
+#
+# special: add unaccounted swapped (shared??) mem. (diff:total_swap - apps_swap)
+#
+    value_emit($unaccount_swapped_plot_file_name, 1);
+    print $plot ", 'e/unaccount_swapped' using 2";
+    close_plot($cnt, $plot, $graph_appmem_swapped);
+
+############### Histogram of processes private dirty #################
+#    print "privdirty ";
+#    $plot = start_plotfile_histogram($graph_appmem_private_dirty);
+#
+#    $cnt = 0;
+#    %show_this = undef;
+#
+#    foreach $p (reverse sort {$app_cumul_private_dirty{$a} <=> $app_cumul_private_dirty{$b} } keys %app_cumul_private_dirty) {
+#	if ($cnt > ($max_per_graph_onecolumn - 1)) {
+#	    last;
+#	} 
+#	$show_this{$p} = 1;
+#	$cnt += 1;
+##    print "1:cnt=$cnt p=$p\n";
+#    }
+#    foreach $p (sort keys %app_cumul_private_dirty) {
+#	if ($show_this{$p}) {
+#	    $sumdev_private_dirty{$p} /= $devcount_private_dirty{$p};
+#	    $sumdev_private_dirty{$p} += (100*($i - $devcount_private_dirty{$p}));
+#	}
+#    }
+#    $cnt = 0;
+#    foreach $p (sort {$sumdev_private_dirty{$a} <=> $sumdev_private_dirty{$b} } keys %app_cumul_private_dirty) {
+#	if ($show_this{$p} != 1) {
+#	    next;
+#	} 
+#	if ($cnt > 0) {
+#	    print $plot ", ";
+#	}
+#	print $plot "'e/$p-pdirty' using 2";
+#	$cnt += 1;
+#    }
+#    close_plot($cnt, $plot, $graph_appmem_private_dirty);
+
+############### Histogram of processes PSS #################
+    print "pss ";
+    $plot = start_plotfile_histogram($graph_appmem_pss);
+
+    $cnt = 0;
+    %show_this = undef;
+    foreach $p (reverse sort {$app_cumul_pss{$a} <=> $app_cumul_pss{$b} } keys %app_cumul_pss) {
+	if ($cnt > $max_per_graph_onecolumn) {
+	    last;
+	} 
+	$show_this{$p} = 1;
+	$cnt += 1;
+    }
+    foreach $p (sort keys %app_cumul_pss) {
+	if ($show_this{$p}) {
+	    $sumdev_pss{$p} /= $devcount_pss{$p};
+	    $sumdev_pss{$p} += (100*($i - $devcount_pss{$p}));
+	}
+    }
+    $cnt = 0;
+    foreach $p (sort {$sumdev_pss{$a} <=> $sumdev_pss{$b} } keys %app_cumul_pss) {
+	if ($show_this{$p} != 1) {
+	    next;
+	} 
+#    print "pss:$p: sumdev=$sumdev_pss{$p} devcount=$devcount_pss{$p}\n";
+	one_plot_set("e/$p-p", 0, $plot, \$cnt, 1);
+    }
+    close_plot($cnt, $plot, $graph_appmem_pss);
+
+############### Histogram of processes PSS+SWAP #################
+    $plot = start_plotfile_histogram($graph_appmem_pss_swap);
+
+    $cnt = 0;
+    %show_this = undef;
+    foreach $p (reverse sort {$app_cumul_pss_swp{$a} <=> $app_cumul_pss_swp{$b} } keys %app_cumul_pss_swp) {
+	if ($cnt > $max_per_graph_onecolumn) {
+	    last;
+	} 
+	$show_this{$p} = 1;
+	$cnt += 1;
+    }
+    foreach $p (sort keys %app_cumul_pss_swp) {
+	if ($show_this{$p}) {
+	    $sumdev_pss_swp_adj{$p} = $sumdev_pss_swp{$p} / $devcount_pss_swp{$p};
+	    $sumdev_pss_swp_adj{$p} += (100*($i - $devcount_pss_swp{$p}));
+	}
+    }
+    $cnt = 0;
+    foreach $p (sort {$sumdev_pss_swp_adj{$a} <=> $sumdev_pss_swp_adj{$b} } keys %app_cumul_pss_swp) {
+	if ($show_this{$p} != 1) {
+	    next;
+	} 
+	one_plot_set("e/$p-pswp", 0, $plot, \$cnt, 1);
+    }
+    close_plot($cnt, $plot, $graph_appmem_pss_swap);
+
+
+############### Lines of processes PSS+SWAP, 4 graphs #################
+# find out how many %app_cumul_pss_swp are there and what are dynamic split points
+# to show them on 4 graphs
+    $num_of_pss_swp = 0;
+    %show_this = undef;
+    foreach $p (keys %app_cumul_pss_swp) {
+#	if (($pss_swap_num_samples{$p} < $samples_required) || ($sumdev_pss_swp{$p} < 1)) {
+	if (($pss_swap_num_samples{$p} < 1) || ($sumdev_pss_swp{$p} < 1)) {
+	    next;
+	} 
+	$show_this{$p} = 1;
+	$num_of_pss_swp += 1;
+    }
+    use integer;
+    $elems_per_graph = $num_of_pss_swp / 4;
+#print "num_of_pss_swp_elems = $num_of_pss_swp elems_per_graph=$elems_per_graph\n";
+    if ($elems_per_graph == 0) {
+	$elems_per_graph = 1;
+    }
+    if ($elems_per_graph > $max_per_graph_onecolumn) {
+	$elems_per_graph = $max_per_graph_onecolumn;
+    }
+    $divpoint_1 = 1*$elems_per_graph;
+    $divpoint_2 = 2*$elems_per_graph;
+    $divpoint_3 = 3*$elems_per_graph;
+    no integer;
+#print "div_1=$divpoint_1 div_2=$divpoint_2 div_3=$divpoint_3\n";
+    $cnt = 0;
+    foreach $p (reverse sort {$avg_pss_swp{$a} <=> $avg_pss_swp{$b} } keys %avg_pss_swp) {
+	if ($show_this{$p}) {
+	    if ($cnt == $divpoint_1) {
+		$div = $avg_pss_swp{$p};
+		$sdiv = sprintf("%2.1f", $div);
+#	print "div(1)=$div, sdiv(1)=$sdiv\n";
+		$legend{$graph_appmem_pss_swap_lines_big} = "apps PSS+SWP &gt; $sdiv MB"; 
+		$thumblegend{$graph_appmem_pss_swap_lines_big} = "PSS+SWP &gt; $sdiv MB";
+
+		$legend{$graph_appmem_pss_swap_lines_small} = "apps PSS+SWP &lt; $sdiv MB"; 
+		$thumblegend{$graph_appmem_pss_swap_lines_small} = "PSS+SWP &lt; $sdiv MB";
+	    } elsif ($cnt == $divpoint_2) {
+		$div = $avg_pss_swp{$p};
+		$sdiv = sprintf("%2.1f", $div);
+#	print "div(2)=$div, sdiv(2)=$sdiv\n";
+		$legend{$graph_appmem_pss_swap_lines_smaller} = "apps PSS+SWP &lt; $sdiv MB"; 
+		$thumblegend{$graph_appmem_pss_swap_lines_smaller} = "PSS+SWP &lt; $sdiv MB";
+	    } elsif ($cnt == $divpoint_3) {
+		$div = $avg_pss_swp{$p};
+		$sdiv = sprintf("%2.1f", $div);
+#	print "div(3)=$div, sdiv(3)=$sdiv\n";
+		$legend{$graph_appmem_pss_swap_lines_smallest} = "apps PSS+SWP &lt; $sdiv MB"; 
+		$thumblegend{$graph_appmem_pss_swap_lines_smallest} = "PSS+SWP &lt; $sdiv MB";
+	    }
+	    $cnt += 1;
+	} 
+    }
+############### Lines of processes PSS+SWAP >= $lines_pss_swap_divider_1 MB #################
+    $cnt = 0;
+    $plot_1 = start_plotfile_linespoints($graph_appmem_pss_swap_lines_big);
+    $plot_2 = start_plotfile_linespoints($graph_appmem_pss_swap_lines_small);
+    $plot_3 = start_plotfile_linespoints($graph_appmem_pss_swap_lines_smaller);
+    $plot_4 = start_plotfile_linespoints($graph_appmem_pss_swap_lines_smallest);
+    foreach $p (reverse sort {$avg_pss_swp{$a} <=> $avg_pss_swp{$b} } keys %avg_pss_swp) {
+	if ($show_this{$p}) {
+	    if ($cnt < (1*$elems_per_graph)) {
+		$handle = $plot_1;
+	    } elsif ($cnt < (2*$elems_per_graph)) {
+		$handle = $plot_2;
+	    } elsif ($cnt < (3*$elems_per_graph)) {
+		$handle = $plot_3;
+#	    } elsif ($cnt < (4*$elems_per_graph)) {
+	    } elsif (true) {
+		$handle = $plot_4;
+	    } else {
+		print "graph_appmem_lines: no handle...p=[$p] cnt=$cnt\n";
+		next;
+	    }
+	    if ($cnt_per_file[$handle] > 0) {
+		print $handle ", ";
+	    }
+#    print "cnt=[$cnt]; p=[$p] cumul=$app_cumul_pss_swp{$p} avg=$avg_pss_swp{$p} samples=$pss_swap_num_samples{$p}\n";
+	    $fn = "e/$p-pswp";
+#
+# re-use existing file from histogram pass (above),
+# but data sets may differ so if no file, emit the data set
+#
+	    if (! -e $fn) {
+		value_emit($fn, 0);
+	    }
+	    delete_zero_lines($fn);
+	    print $handle "'e/$p-pswp' lw 3";
+	    $cnt += 1;
+	    $cnt_per_file[$handle] += 1;
+	}
+    }
+    close_plot($cnt_per_file[$plot_1], $plot_1, $graph_appmem_pss_swap_lines_big);
+    close_plot($cnt_per_file[$plot_2], $plot_2, $graph_appmem_pss_swap_lines_small);
+    close_plot($cnt_per_file[$plot_3], $plot_3, $graph_appmem_pss_swap_lines_smaller);
+    close_plot($cnt_per_file[$plot_4], $plot_4, $graph_appmem_pss_swap_lines_smallest);
+
+############### num of threads #################
+    print "threads ";
+    $plot = start_plotfile_lines($graph_threads_count);
+
+    $cnt = 0;
+    foreach $p ( reverse sort {$has_threads{$a} <=> $has_threads{$b} } keys %has_threads) {
+	if ($has_threads{$p} && ($has_threads_samples{$p} > 1)) {
+#	print "thr: [$p] num=$has_threads{$p}\n";
+	    $fn = "e/$p-thr";
+	    one_plot_set($fn, 3, $plot, \$cnt, 0);
+	}
+    }
+    close_plot($cnt, $plot, $graph_threads_count);
+
+############# X resource counts ######################
+    print "xres ";
+    $plot = start_plotfile_linespoints($graph_xresource_cnt);
+
+    $cnt = 0;
+    foreach $p ( reverse sort {$xresource_latest_cnt{$a} <=> $xresource_latest_cnt{$b} } keys %xresource_latest_cnt) {
+	if ($cnt > $max_per_graph_onecolumn) {
+	    last;
+	} 
+	if ($xres_samples{$p} < $samples_required) {
+	    next;
+	}
+	$fn = "e/$p-xres-count";
+	one_plot_set($fn, 3, $plot, \$cnt, 0);
+    }
+    close_plot($cnt, $plot, $graph_xresource_cnt);
+
+############# X resource sizes, pixmaps ######################
+    $plot = start_plotfile_linespoints($graph_xresource_sz_pxm);
+
+    $cnt = 0;
+    foreach $p ( reverse sort {$xresource_latest_sz_pxm{$a} <=> $xresource_latest_sz_pxm{$b} } keys %xresource_latest_sz_pxm) {
+	if ($cnt > $max_per_graph_onecolumn) {
+	    last;
+	} 
+	if ($xres_samples{$p} < $samples_required) {
+	    next;
+	}
+	if (!$xres_pxm_size_total{$p}) {
+	    next;
+	}
+	$fn = "e/$p-xres-pxm";
+	one_plot_set($fn, 3, $plot, \$cnt, 0);
+    }
+    close_plot($cnt, $plot, $graph_xresource_sz_pxm);
+
+############# X resource sizes, misc ######################
+#$plot = start_plotfile_linespoints($graph_xresource_sz_misc);
+#
+#$cnt = 0;
+#foreach $p ( reverse sort {$xresource_latest_sz_misc{$a} <=> $xresource_latest_sz_misc{$b} } keys %xresource_latest_sz_misc) {
+#    if ($cnt > 0) {
+#	print $plot ", ";
+#    }
+#    print $plot "'e/$p-xres-mem-misc' lw 3";
+#    $cnt += 1;
+#}
+#close_plot($cnt, $plot, $graph_xresource_sz_misc);
+
+############# df ######################
+    print "df ";
+    $plot = start_plotfile_lines($graph_diskspace);
+
+    $cnt = 0;
+    foreach $p ( reverse sort {$filesystem_names{$a} <=> $filesystem_names{$b} } keys %filesystem_names) {
+	one_plot_set("e/$p-fs-used", 3, $plot, \$cnt, 1);
+    }
+    one_plot_set("e/global-FD-percentage", 5, $plot, \$cnt, 0);
+    close_plot($cnt, $plot, $graph_diskspace);
+
+############# fd_count for processes #####################
+    $plot = start_plotfile_lines($graph_fdcount);
+
+    $cnt = 0;
+    foreach $p ( reverse sort {$fd_count{$a} <=> $fd_count{$b} } keys %fd_count) {
+	if ($fd_count_samples{$p} < $samples_required) {
+	    next;
+	}
+	if ($fd_count_diff{$p} < 1) {
+	    next;
+	}
+	$fn = "e/$p-fd";
+	one_plot_set($fn, 3, $plot, \$cnt, 0);
+    }
+    close_plot($cnt, $plot, $graph_fdcount);
+
+############# interrupts #####################
+    print "interrupt ";
+    $plot = start_plotfile_lines($graph_interrupts);
+
+    $cnt = 0;
+    foreach $p ( reverse sort {$int_total{$a} <=> $int_total{$b} } keys %int_total) {
+	if ($int_total{$p} < 1) {
+	    next;
+	}
+	one_plot_set("e/$p-int", 2, $plot, \$cnt, 0);
+    }
+    close_plot($cnt, $plot, $graph_interrupts);
+
+############# Powertop data: optional ###################
+    if ($powertop_data_found) {
+	print "powertop ";
+############# powertop C-states, freq-states to same multiplot #####################
+	$plot = start_plotfile_histogram_multi($graph_powertop_cf_states);
+	print_cf_states_plot_cmds($plot);
+	close_plot($cnt, $plot, $graph_powertop_cf_states);
+############# powertop powerdomain core, neon, periph states #####################
+	$plot = start_plotfile_histogram_multi($graph_powertop_domain_states_1);
+	print_domain_plot_cmds($plot, "core", 0.3, 0.0);
+	print_domain_plot_cmds($plot, "neon", 0.3, 0.35);
+	print_domain_plot_cmds($plot, "periph", 0.3, 0.7);
+	close_plot($i, $plot, $graph_powertop_domain_states_1);
+############# powertop powerdomain sgx, dss, mpu states #####################
+	$plot = start_plotfile_histogram_multi($graph_powertop_domain_states_2);
+	print_domain_plot_cmds($plot, "sgx", 0.3, 0.0);
+	print_domain_plot_cmds($plot, "dss", 0.3, 0.35);
+	print_domain_plot_cmds($plot, "mpu", 0.3, 0.7);
+	close_plot($i, $plot, $graph_powertop_domain_states_2);
+############# powertop wakeups #####################
+	$plot = start_plotfile_lines($graph_powertop_wakeups);
+	value_emit("e/p-wakeups", 1);
+	value_emit("e/p-timers", 1);
+	print $plot "'e/p-wakeups' lw 2, ";
+	print $plot "'e/p-timers' lw 2 ";
+	close_plot($i, $plot, $graph_powertop_wakeups);
+############# powertop activity #####################
+	$cnt = 0;
+	%show_this = undef;
+	foreach $p (keys %p_activity) {
+	    if ($num_activity_samples{$p} <= 1) {
+		next;
+	    }
+	    $show_this{$p} = 1;
+	    $cnt += 1;
+	}
+	my $split_point = $cnt/4;
+	if($split_point > $max_per_graph_onecolumn) {
+	    $split_point = $max_per_graph_onecolumn;
+	}
+	$plot_1 = start_plotfile_linespoints($graph_powertop_activity_1);
+	$plot_2 = start_plotfile_linespoints($graph_powertop_activity_2);
+	$plot_3 = start_plotfile_linespoints($graph_powertop_activity_3);
+	$plot_4 = start_plotfile_linespoints($graph_powertop_activity_4);
+	$cnt_1 = $cnt_2 = $cnt_3 = $cnt_4 = 0;
+	foreach $p ( reverse sort {$p_activity_max{$a} <=> $p_activity_max{$b} } keys %p_activity) {
+	    if (($cnt_1 + $cnt_2 + $cnt_3 + $cnt_4) > 4*$max_per_graph_onecolumn) {
+		last;
+	    } 
+	    if (!$show_this{$p}) {
+		next;
+	    }
+	    if (($cnt_1 + $cnt_2 + $cnt_3 + $cnt_4) <= $split_point) {
+		one_plot_set("e/$p-activity", 2, $plot_1, \$cnt_1, 0);
+	    } elsif (($cnt_1 + $cnt_2 + $cnt_3 + $cnt_4) <= 2 * $split_point) {
+		one_plot_set("e/$p-activity", 2, $plot_2, \$cnt_2, 0);
+	    } elsif (($cnt_1 + $cnt_2 + $cnt_3 + $cnt_4) <= 3 * $split_point) {
+		one_plot_set("e/$p-activity", 2, $plot_3, \$cnt_3, 0);
+	    } elsif (($cnt_1 + $cnt_2 + $cnt_3 + $cnt_4) <= 4 * $split_point) {
+		one_plot_set("e/$p-activity", 2, $plot_4, \$cnt_4, 0);
+	    }
+	}
+	close_plot($cnt_1, $plot_1, $graph_powertop_activity_1);
+	close_plot($cnt_2, $plot_2, $graph_powertop_activity_2);
+	close_plot($cnt_3, $plot_2, $graph_powertop_activity_3);
+	close_plot($cnt_4, $plot_2, $graph_powertop_activity_4);
+    }
+}
+################ Start ######################################################
+
+@dirs = @ARGV;
+$num_of_rounds = @dirs;
+
+system("rm -f e/* $graphs_dir/??_* $html_name");
+mkdir "e";
+mkdir "$graphs_dir";
+
+#
+# note: this is global rounds counter! (name not well chosen..)
+#
+$i = 0;
+# first pass, get version, scan uptime lines to determine periods
+$cnt = 0;
+foreach $d (@dirs) {
+#
+# get HW version only from first one
+#
+    if(!$hw_build) {
+	$fn = "$d/component_version";
+	unless (open($f, $fn)) {
+	    print STDERR "can not open $fn:$!\n";
+	    exit;
+	}
+	while (<$f>) {
+	    if( index($_, "product") != -1) {
+		$line = $_;
+		chop $line;
+		(undef, $hw_product) = split(' ', $line, 2);
+		next;
+	    } 
+	    if( index($_, "hw-build") != -1) {
+		$line = $_;
+		chop $line;
+		(undef, $hw_build) = split(' ', $line, 2);
+		last;
+	    } 
+	}
+	close $f;
+#	print "hw_product=[$hw_product] hw_build=[$hw_build]\n";
+    }
+    $fn = "$d/usage.csv";
+    unless (open($f, $fn)) {
+	print STDERR "can not open $fn:$!\n";
+	exit;
+    }
+    while (<$f>) {
+	if( index($_, "SW-version") != -1) {
+	    $line = $_;
+	    chop $line;
+	    (undef, undef, $swver) = split(' ', $line, 3);
+	    if($sw_version && ($sw_version ne $swver)) {
+		print "** NOTE: at $d version changes [$sw_version]->[$swver]; Reflash in sequence??\n"
+	    } 
+	    $sw_version = $swver;
+	    next;
+	} 
+	if( index($_, "Uptime,Idletime ") != -1) {
+	    $line = <$f>;
+	    chop $line;
+	    ($upt, undef) = split(',', $line, 2);
+	    if ($first_upt == 0) {
+		$first_upt = $upt;
+	    }
+	    if ($upt_prev) {
+		$passed = $upt - $upt_prev;
+	    } else {
+		$passed = 0;
+	    }
+	    $lapsed_time{$cnt} = $passed; 
+	    if ($upt < $upt_prev) {
+		print "** NOTE: at $d uptime steps back. Reboot in sequence? Duration calc will have no sense..\n"
+	    }
+	    $upt_prev = $upt;
+	    $cnt += 1;
+	    last;
+	} 
+    }
+    close $f;
+}
+
+use integer;
+$total_duration = $upt - $first_upt;
+if ($cnt > 1) {
+    $secs_per_round = $total_duration/($cnt - 1);
+    $mins_per_round = $secs_per_round/60;
+    $hours_per_round = $secs_per_round/3600;
+    $str_hours = sprintf("%2d", $hours_per_round);
+    $str_minutes = sprintf("%2d", $mins_per_round);
+    $str_seconds = sprintf("%2d", $secs_per_round);
+    if ($cnt > 25) {
+	$samples_required = $cnt / 5;
+    } elsif ($cnt < 5) {
+#	$samples_required = $cnt;
+	$samples_required = 2;
+    } else {
+	$samples_required = 5;
+    }
+} else {
+    print "need at least 2 rounds\n";
+    exit;
+}
+no integer;
+print "gen_endurance_plot $version; ";
+print "rounds=$num_of_rounds; duration=$total_duration sec, avg-per-round: sec=$secs_per_round or min=$mins_per_round or hour=$hours_per_round\n";
+
+print "input: ";
+foreach $d (@dirs) {
+    $fn = "$d/usage.csv";
+    unless (open($f, $fn)) {
+	print STDERR "can not open $fn:$!\n";
+	exit;
+    }
+    print "$d ";
+    %shared_lpid = %shared_cpid = undef;
+    %shared_lpid_cnt_oneround = %shared_cpid_cnt_oneround = undef;
+    while (<$f>) {
+	if( (index($_, "Loadavg ") != -1)) {
+	    $line = <$f>;
+	    chop $line;
+	    ($load_1,$load_5,$load_15,$running_all,$lastpid) = split(',' , $line, 5);
+	    $fn = "e/load_1_min";
+	    value_store($fn, $i, $load_1);
+	    $fn = "e/load_5_min";
+	    value_store($fn, $i, $load_5);
+	    $fn = "e/load_15_min";
+	    value_store($fn, $i, $load_15);
+	    ($running,$all) = split('/' , $running_all, 2);
+	    $fn = "e/num-processes";
+	    value_store($fn, $i, $all);
+	    next;
+	} 
+	if( (index($_, "Allocated FDs,") != -1)) {
+	    $line = <$f>;
+	    chop $line;
+	    ($Allocated_FDs,$Freed_FDs,$Max_FDs) = split(',' , $line, 3);
+	    $perc_fd = (100 * $Allocated_FDs) / $Max_FDs; 
+	    $fn = "e/global-FD-percentage";
+	    value_store($fn, $i, $perc_fd);
+	    next;
+	} 
+	if( index($_, "Name,State") != -1) {
+	    parse_name_state_block($f);
+	    next;
+	} 
+	if( index($_, "Shared memory segments:") != -1) {
+	    parse_shmem_block($f);
+	    next;
+	} 
+	if( index($_, "PID,FD count,Command") != -1) {
+	    parse_pid_fd_block($f);
+	    next;
+	} 
+	if( index($_, "Process status:") != -1) {
+	    parse_process_status_block($f);
+	    next;
+	}
+	if( index($_, "res-base,") != -1) {
+	    parse_xresource_block($f);
+	    next;
+	}
+	if( index($_, "Filesystem,") != -1) {
+	    parse_filesystem_block($f);
+	    next;
+	}
+	if( index($_, "MemTotal") != -1) {
+	    parse_memtotal_block($f);
+	    next;
+	} 
+	if( index($_, "nr_free_pages") != -1) {
+	    parse_pages_block($f);
+	    next;
+	} 
+    }
+    close $f;
+    $swap_events_cumul += $pswp_in + $pswp_out + $pgscan_kswapd_normal + 
+	$pgscan_direct_normal + $slabs_scanned + $kswapd_steal;
+
+    process_slabinfo();
+    process_smaps();
+    process_interrupts();
+    process_stat();
+    process_powertop();
+
+    $unaccount_swapped = $swapused - $sum_app_swapped;
+#	print "swapused=$swapused sum_app=$sum_app_swapped, unacc=$unaccount_swapped\n";
+
+    value_store($app_swapped_plot_file_name, $i, $sum_app_swapped);
+#    print $app_swapped_plot_file "$i, $sum_app_swapped\n";
+    value_store($unaccount_swapped_plot_file_name, $i, $unaccount_swapped);
+#    print $unaccount_swapped_plot_file "$i, $unaccount_swapped\n";
+    value_store($app_pss_plot_file_name, $i, $sum_app_pss);
+#    print $app_pss_plot_file "$i, $sum_app_pss\n";
+
+    loop_over_all_apps();
+
+#    $total_unaccounted = 512*1024 + $swapused - $sum_app_pss - $sum_app_swapped;
+#	print "$i: 256M + $swapused; apps=$sum_app_pss swapped=$sum_app_swapped; total unaccount = $total_unaccounted\n";
+
+    $i++;
+}
+print "\n";
+
+$plot_width = $i * 15 + 400;
+if ($plot_width < 1000) {
+    $plot_width = 1000;
+}
+if ($plot_width > 1500) {
+    $plot_width = 1500;
+}
+
+generate_plots();
+print "$html_name ";
+gen_html_page();
+print "\ndone.\n";
