@@ -1,3 +1,13 @@
+sp-endurance (2.1.9) unstable; urgency=low
+
+  * save-incremental-endurance-stats: collect /proc/diskstats and
+    /proc/zoneinfo. Fixes: NB#212730
+  * endurance_plot:
+    - New IO plots based on /proc/diskstats.
+    - Various small tweaks.
+
+ -- Tommi Rantala <ext-tommi.1.rantala@nokia.com>  Tue, 28 Dec 2010 12:17:54 +0200
+
 sp-endurance (2.1.8) unstable; urgency=low
 
   * New post-processing tool `endurance_plot'. Fixes: NB#204488
