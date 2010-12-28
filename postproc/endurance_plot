@@ -20,10 +20,13 @@
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA
 
-my $version = "0.24";
+use Time::Local;
+
+my $version = "0.29";
 
 # tunables
 my $ticks_per_sec = 100;
+my $sector_sz = 4096;
 my $max_per_graph_twocolumn = 2*75;
 my $max_per_graph_onecolumn = 78;
 my $page_size = 4;
@@ -105,6 +108,11 @@ $legend{$graph_appmem_heap_lines_2} = "process heap mem size";
 $thumblegend{$graph_appmem_heap_lines_2} = "APPS HEAP SMALLER";
 $unit{$graph_appmem_heap_lines_2} = "MB";
 
+my $graph_appmem_devpvr = "37_appmem_devpvr";
+$legend{$graph_appmem_devpvr} = "process /dev/pvrsrvkm"; 
+$thumblegend{$graph_appmem_devpvr} = "PVRSRVKM";
+$unit{$graph_appmem_devpvr} = "MB";
+
 my $graph_appmem_sysvshared = "38_appmem_sysvshared";
 $legend{$graph_appmem_sysvshared} = "process SYSV-shared mem size"; 
 $thumblegend{$graph_appmem_sysvshared} = "SYSV-SHAREDMEM";
@@ -115,28 +123,41 @@ $legend{$graph_mem_shared} = "shared memory";
 $thumblegend{$graph_mem_shared} = "SHMEM";
 $unit{$graph_mem_shared} = "MB";
 
-my $graph_mem_shared_lpid = "40_mem_shared_lpid";
-$legend{$graph_mem_shared_lpid} = "shared by last user (lpid)"; 
-$thumblegend{$graph_mem_shared_lpid} = "SHMEM LAST USER";
-$unit{$graph_mem_shared_lpid} = "MB";
-
 my $graph_mem_shared_cpid = "40_mem_shared_cpid";
 $legend{$graph_mem_shared_cpid} = "shared by creator (cpid)"; 
 $thumblegend{$graph_mem_shared_cpid} = "SHMEM CREATOR";
 $unit{$graph_mem_shared_cpid} = "MB";
 
+my $graph_mem_shared_lpid = "40_mem_shared_lpid";
+$legend{$graph_mem_shared_lpid} = "shared by last user (lpid)"; 
+$thumblegend{$graph_mem_shared_lpid} = "SHMEM LAST USER";
+$unit{$graph_mem_shared_lpid} = "MB";
+
+my $graph_mem_shared_number = "40_mem_shared_number";
+#$legend{$graph_mem_shared_number} = "shared mem number of segments; nattach-0: real orphans"; 
+#$legend{$graph_mem_shared_number} = "shared mem number of segments and attach-avg-age (sec)"; 
+$legend{$graph_mem_shared_number} = "left: num of shmem segments by attached proc; right: num of all shmem segments"; 
+$thumblegend{$graph_mem_shared_number} = "SHMEM NUMBER";
+$unit_1{$graph_mem_shared_number} = "count by attached processes";
+$unit_2{$graph_mem_shared_number} = "count of all";
+
+my $graph_mem_shared_size = "40_mem_shared_size";
+$legend{$graph_mem_shared_size} = "shared by nattach, size"; 
+$thumblegend{$graph_mem_shared_size} = "SHMEM SIZES";
+$unit{$graph_mem_shared_size} = "MB";
+
 my $graph_xresource_sz_pxm =    "50_xresource_pixmaps";
-$legend{$graph_xresource_sz_pxm} = "X reosurce pixmaps size"; 
+$legend{$graph_xresource_sz_pxm} = "X resource pixmaps size"; 
 $thumblegend{$graph_xresource_sz_pxm} = "X-RESOURCES-PIXMAPS";
 $unit{$graph_xresource_sz_pxm} = "Size of Xres pixmaps, kB";
 
 my $graph_xresource_cnt =    "51_xresource_count";
-$legend{$graph_xresource_cnt} = "X reosurce counts"; 
+$legend{$graph_xresource_cnt} = "X resource counts"; 
 $thumblegend{$graph_xresource_cnt} = "X-RESOURCES-COUNT";
 $unit{$graph_xresource_cnt} = "number of Xres objects";
 
 #my $graph_xresource_sz_misc =    "52_xresource_misc";
-#$legend{$graph_xresource_sz_misc} = "X reosurce misc size"; 
+#$legend{$graph_xresource_sz_misc} = "X resource misc size"; 
 #$thumblegend{$graph_xresource_sz_misc} = "X-RESOURCES-MISC";
 #$unit{$graph_xresource_sz_misc} = "Size of Xres misc, kB";
 
@@ -185,19 +206,38 @@ $legend{$graph_events_ctx_volunt} = "process voluntary context switches";
 $thumblegend{$graph_events_ctx_volunt} = "CTX VOLUNTARY";
 $unit{$graph_events_ctx_volunt} = "count per second";
 
+my $graph_diskstats_reads =              "68_diskstats_reads";
+$legend{$graph_diskstats_reads} = "diskstats_reads"; 
+$thumblegend{$graph_diskstats_reads} = "DISK_READS";
+$unit{$graph_diskstats_reads} = "MB per second";
+
+my $graph_diskstats_read_time =              "68_diskstats_read_time";
+$legend{$graph_diskstats_read_time} = "diskstats_read_time"; 
+$thumblegend{$graph_diskstats_read_time} = "DISKREAD TIME";
+$unit{$graph_diskstats_read_time} = "ms per sector";
+
+my $graph_diskstats_writes =              "69_diskstats_writes";
+$legend{$graph_diskstats_writes} = "diskstats_writes"; 
+$thumblegend{$graph_diskstats_writes} = "DISK_WRITES";
+$unit{$graph_diskstats_writes} = "MB per second";
+
+my $graph_diskstats_write_time =              "69_diskstats_write_time";
+$legend{$graph_diskstats_write_time} = "diskstats_write_time"; 
+$thumblegend{$graph_diskstats_write_time} = "DISKWRITE TIME";
+$unit{$graph_diskstats_write_time} = "ms per sector";
+
 my $graph_events_major_pagefaults = "70_events_major_pagefaults";
 $legend{$graph_events_major_pagefaults} = "major page faults"; 
 $thumblegend{$graph_events_major_pagefaults} = "PAGE FAULTS";
 $unit{$graph_events_major_pagefaults} = "count per second";
 
 my $graph_interrupts =              "70_interrupts";
-$legend{$graph_interrupts} = "interrupts"; 
+$legend{$graph_interrupts} = "left:specific interrupts; right: sum of all interrupts"; 
 $thumblegend{$graph_interrupts} = "INTERRUPTS";
 $unit{$graph_interrupts} = "count per second";
 
 my $graph_ctx_global =              "70_ctx_global";
-$legend_1{$graph_ctx_global} = "CTX switches"; 
-$legend_2{$graph_ctx_global} = "num of processes"; 
+$legend{$graph_ctx_global} = "left: CTX switches; right: num of processes"; 
 $thumblegend{$graph_ctx_global} = "CTX-SW,PROC-NUM";
 $unit_1{$graph_ctx_global} = "ctx: per second";
 $unit_2{$graph_ctx_global} = "proc_num: count";
@@ -308,6 +348,7 @@ my %all_slabs;
 my %shared_lpid, %shared_cpid;
 my %shared_lpid_cnt, %shared_lpid_cnt_oneround;
 my %shared_cpid_cnt, %shared_cpid_cnt_oneround;
+my %shared_num, %shared_size;
 my %fd_count, %fd_count_samples, %fd_count_diff, %fd_count_prev;
 my %pss_swap_num_samples;
 my %lapsed_time;
@@ -339,6 +380,10 @@ my $shared_unlocked_plot_file_name = "e/shared_unlocked";
 my $unaccount_swapped_plot_file_name = "e/unaccount_swapped";
 my $app_swapped_plot_file_name = "e/all_apps_swapped";
 my $app_pss_plot_file_name = "e/all_apps_pss";
+my $load_1_file_name = "e/load_1_min";
+my $load_5_file_name = "e/load_5_min";
+my $load_15_file_name = "e/load_15_min";
+my $fd_perc_file_name = "e/global-FD-percentage";
 
 my $pswp_in_prev = 0;
 my $pswp_out_prev = 0;
@@ -347,8 +392,10 @@ my $pgscan_direct_normal_prev = 0;
 my $slabs_scanned_prev = 0;
 my $kswapd_steal_prev = 0;
 
-my %int_prev;
-my %int_total;
+my %int_prev, %int_total;
+my %dev_reads_total, %dev_reads_prev;
+my %dev_writes_total, %dev_writes_prev;
+my %dev_time_per_read_prev, %dev_time_per_write_prev;
 my %cumul_vol_ctx;
 my %cumul_nonvol_ctx;
 my %cumul_total_ctx;
@@ -368,12 +415,16 @@ my %app_sum_locked;
 #my %app_private_dirty;
 my %app_sysv_shared;
 my %app_rwxp;
+my %app_dev_pvr;
 
 my %app_cumul_pss;
 my %app_cumul_swp;
 #my %app_cumul_private_dirty;
 my %app_cumul_pss_swp;
 my %app_cumul_rwxp;
+
+# XXX
+my %exe;
 
 my %avg_pss;
 my %avg_heap;
@@ -418,6 +469,24 @@ my %max_heap;
 my %num_activity_samples;
 
 my %files;
+my %secval;
+
+sub date2seconds($)
+{
+    my $linex = shift;
+    my $retsec, $year, $mon, $day, $hour, $min, $sec;
+
+    my $line = $linex;
+    chop $line;
+    (undef, undef, $date, $time) = split(' ', $line, 4);
+    ($year, $mon, $day) = split('-', $date, 3);
+    ($hour, $min, $sec) = split(':', $time, 3);
+
+#    print "call timelocal d=[$date] f2=[$time] $sec, $min, $hour, $day, $mon, $year\n";                                                                             
+    $retsec = timelocal($sec, $min, $hour, $day, $mon-1, $year-1900);
+#    print "call timelocal returned  $retsec\n";                                                                                                                     
+    return $retsec;
+}
 
 sub one_plot_set($$$$$)
 {
@@ -662,7 +731,7 @@ sub parse_name_state_block($)
 	} else {
 	    $nonvol_ctx /= $secs_per_round;
 	}
-	$fn = "e/$pname-nonvol-ctx";
+	$fn = "e/nonvol-ctx-$pname";
 	value_store($fn, $i, $nonvol_ctx);
 	###############
 	$param = $val{"voluntary_ctxt_switches"};
@@ -678,11 +747,11 @@ sub parse_name_state_block($)
 	} else {
 	    $vol_ctx /= $secs_per_round;
 	}
-	$fn = "e/$pname-vol-ctx";
+	$fn = "e/vol-ctx-$pname";
 	value_store($fn, $i, $vol_ctx);
 	###############
 	$total_ctx = $nonvol_ctx + $vol_ctx;
-	$fn = "e/$pname-total-ctx";
+	$fn = "e/total-ctx-$pname";
 	value_store($fn, $i, $total_ctx);
 	$cumul_total_ctx{$pname} += $total_ctx;
     }
@@ -693,6 +762,9 @@ sub parse_shmem_block($)
     my $handle= shift;
     my $shared_locked = 0;
     my $shared_unlocked = 0;
+    my $a_age_sum = $a_age_cnt = 0;
+    my $d_age_sum = $d_age_cnt = 0;
+    my $shared_cnt = 0;
 
     $line = <$handle>;
     chop $line;
@@ -706,14 +778,52 @@ sub parse_shmem_block($)
 	}
 #		    print "use line=[$line]\n";
 
+	$shared_cnt += 1;
 	split_values($line);
 	$perms = $val{"perms"};
 	$size = $val{"size"};
 	$lpid = $val{"lpid"};
 	$cpid = $val{"cpid"};
+	$nattach = $val{"nattch"};
+	$atime = $val{"atime"};
+	$dtime = $val{"dtime"};
+	$ctime = $val{"ctime"};
 
-	$xperms = hex($perms);
+#	print "use $atime $dtime $ctime $secval\n";
+	if (($nattach == 1) && (($lpid == $cpid) && ($dtime == 0))) {
+	    $a_age = $secval{$d} - $atime;
+	    $a_age_sum += $a_age;
+	    $a_age_cnt += 1;
+
+	    if ($dtime) {
+		$d_age = $secval{$d} - $dtime;
+		$d_age_sum += $d_age;
+		$d_age_cnt += 1;
+	    }
+	}
+
 	$szxx = ($size/1024)/1024;
+	$shared_num{$nattach} += 1;
+	$shared_size{$nattach} += $szxx;
+	if($nattach > $max_nattach) {
+	    $max_nattach = $nattach;
+	}
+	if ($nattach == 1) {
+	#
+        # only one attached process in shared segment, suspicious..
+        #
+#	    print "$d: 1 nattach, cpid=$cpid lpid=$lpid dtime=$dtime perms=$perms size=$size\n";
+	    if (($lpid == $cpid) && ($dtime == 0)) {
+		#
+		# but it is really orphan only if no other process has attached
+		# than creator, so we count those separately as "class zero"
+		#
+#		print "   *** orphan: dtime=0\n";
+		$xnattach = 0;
+		$shared_num{$xnattach} += 1;
+	    }
+	}
+	$xperms = hex($perms);
 	if ($xperms & 0x2000) {
 #		    print "$d: xperm=[$xperms] perm=[$perms], locked\n";
 	    $shared_locked += $szxx;
@@ -730,8 +840,19 @@ sub parse_shmem_block($)
 	$shared_cpid_cnt_oneround{$cpid} += 1;
 #		print "$d: memfree=$mfree buf=$buffers cached=$cached\n";
     }
+#    if ($a_age_cnt) {
+#	$a_age_avg = $a_age_sum / $a_age_cnt;
+#	$fn = "e/nattach-a-age-shm";
+#	value_store($fn, $i, $a_age_avg);
+#    }
+#    if ($d_age_cnt) {
+#	$d_age_avg = $d_age_sum / $d_age_cnt;
+#	$fn = "e/nattach-d-age-shm";
+#	value_store($fn, $i, $d_age_avg);
+#    }
     value_store_zeropad($shared_locked_plot_file_name, $i, $shared_locked);
     value_store_zeropad($shared_unlocked_plot_file_name, $i, $shared_unlocked);
+    value_store_zeropad("e/count-shm", $i, $shared_cnt);
 }
 
 sub parse_pid_fd_block($)
@@ -756,7 +877,7 @@ sub parse_pid_fd_block($)
 #		    print "fdcount: $pname: count=$FD_count\n";
 	    $fd_count{$pname} = $FD_count;
 	    $fd_count_samples{$pname} += 1;
-	    $fn = "e/$pname-fd";
+	    $fn = "e/fd-$pname";
 	    value_store($fn, $i, $FD_count);
 	    if ($i > 0) {
 		$fd_diff = $fd_count_prev{$pname} - $FD_count;
@@ -809,7 +930,7 @@ sub parse_process_status_block($)
 	} else {
 	    $param_show = 0;
 	}
-	$fn = "e/$pname-majflt";
+	$fn = "e/majflt-$pname";
 	value_store($fn, $i, $param_show);
 
 ###########################
@@ -829,7 +950,7 @@ sub parse_process_status_block($)
 	# to make it percent value 0..100%
 	$utim *= 100;
 	$utim /= $ticks_per_sec;
-	$fn = "e/$pname-utime";
+	$fn = "e/utime-$pname";
 	value_store($fn, $i, $utim);
 
 ###########################
@@ -849,7 +970,7 @@ sub parse_process_status_block($)
 	# to make it percent value 0..100%
 	$stim *= 100;
 	$stim /= $ticks_per_sec;
-	$fn = "e/$pname-stime";
+	$fn = "e/stime-$pname";
 	value_store($fn, $i, $stim);
 ###########################
 	$ttim = $stim + $utim;
@@ -860,8 +981,8 @@ sub parse_process_status_block($)
 	####
 	$param = $NumThreads;
 #	$param = $val{"Threads"};
-	$fn = "e/$pname-thr";
-	value_store($fn, $i, $param);
+	$fn = "e/thr-$pname";
+	value_store_zeropad($fn, $i, $param);
 	if ($param > 1) {
 	    $has_threads{$pname} += $param;
 	    $has_threads_samples{$pname} += 1;
@@ -926,13 +1047,13 @@ sub parse_xresource_block($)
 	    $xres_samples{$Identifier} += 1;
 
 	    $xresource_latest_cnt{$Identifier} = $param_show;
-	    $fn = "e/$Identifier-xres-count";
+	    $fn = "e/xres-cnt-$Identifier";
 	    value_store($fn, $i, $param_show);
 	    $param_show = $val{"Pixmap mem"};
 	    $param_show =~ s/B//g;
 	    $param_show /= 1024;
 	    $xresource_latest_sz_pxm{$Identifier} = $param_show;
-	    $fn = "e/$Identifier-xres-pxm";
+	    $fn = "e/xres-pxm-$Identifier";
 	    value_store($fn, $i, $param_show);
 	    $sum_all_pixmaps += $param_show;
 	    $xres_pxm_size_total{$Identifier} += $param_show;
@@ -960,7 +1081,7 @@ sub parse_filesystem_block($)
 	    $Mounted =~ s/\//\_/g;
 #	    print "$i: Mounted=[$Mounted] Used=$Used seen=$fs_entry_seen{$Mounted}\n";
 	    $filesystem_names{$Mounted} = $Used;
-	    $fn = "e/$Mounted-fs-used";
+	    $fn = "e/fs-used-$Mounted";
 	    value_store($fn, $i, $Use_perc);
 	}
     }
@@ -1142,7 +1263,7 @@ sub process_slabinfo()
 	$slabname =~ s/\|/-/g;
 
 	$slab_sz = ($active_objs * $obj_size)/1024;
-	$fn = "e/$slabname-slabs";
+	$fn = "e/slabs-$slabname";
 	value_store($fn, $i, $slab_sz);
 	$all_slabs{$slabname} += $active_objs;
     }
@@ -1176,6 +1297,8 @@ sub process_smaps()
     %app_pss = undef;
     %app_sysv_shared = undef;
     %app_rwxp = undef;
+    %app_dev_pvr = undef;
+    %exe = undef;
     $skyhost_seen = 0;
     while (<$f>) {
 	if( index($_, "#Name: ") != -1) {
@@ -1227,12 +1350,16 @@ sub process_smaps()
 	    $line = $_;
 	    chop $line;
 	    (undef, $locked) = split(' ' , $line, 2);
-	    $fn = "e/$nm-locked";
+	    $fn = "e/locked-$nm";
 	    $app_sum_locked{$nm} += $locked;
 	    $xxx = $locked / 1024;
 	    value_store_zeropad($fn, $i, $xxx);
 	    next;
 	}
+#	if(m/r(w-|-x)p .*(\/lib|bin\/)/) {
+#	    $is_exe = 1;
+#	    next;
+#	} 
 	if( index($_, "[heap]") != -1) {
 	    $line = <$f>;
 	    chop $line;
@@ -1248,11 +1375,14 @@ sub process_smaps()
 	    if($heap > $max_heap{$nm}) {
 		$max_heap{$nm} = $heap;
 	    }
-	    $fn = "e/$nm-heap";
+	    $fn = "e/heap-$nm";
 	    $sum_heap{$nm} += $heap;
 	    $num_heap_samples{$nm} += 1;
 	    $xxx = $heap / 1024;
 	    value_store_zeropad($fn, $i, $xxx);
+#	if ($i == 0) {
+#	    print "$xxx $nm\n";
+#	}
 	    next;
 	}
 	if( index($_, "/SYSV00000000") != -1) {
@@ -1260,6 +1390,13 @@ sub process_smaps()
 	    chop $line;
 	    (undef, $sysv_shared, undef) = split(' ' , $line, 3);
 	    $app_sysv_shared{$nm} += $sysv_shared;
+	    next;
+	}
+	if( index($_, "/dev/pvrsrvkm") != -1) {
+	    $line = <$f>;
+	    chop $line;
+	    (undef, $pvr, undef) = split(' ' , $line, 3);
+	    $app_dev_pvr{$nm} += $pvr;
 	    next;
 	}
 	if( index($_, " rwxp ") != -1) {
@@ -1275,6 +1412,9 @@ sub process_smaps()
 	    (undef, $pss, undef) = split(' ' , $line, 3);
 	    $sum_app_pss += $pss;
 	    $app_pss{$nm} += $pss;
+#	    if ($is_exe) {
+#		$exe{$nm} += $pss/1024;
+#	    }
 	    next;
 	}
 #	if( index($_, "Private_Dirty:") != -1) {
@@ -1291,6 +1431,10 @@ sub process_smaps()
 	    (undef, $swapped, undef) = split(' ' , $line, 3);
 	    $sum_app_swapped += $swapped;
 	    $app_swapped{$nm} += $swapped;
+#	    if ($is_exe) {
+#		$exe{$nm} += $pss/1024;
+#	    }
+#	    $is_exe = 0;
 	    next;
 	}
     }
@@ -1307,6 +1451,8 @@ sub process_interrupts()
 #
 # interrupts
 #
+    my $all_ints = 0;
+
     $fn = $d . "/interrupts";
     unless (open($f, $fn)) {
 	print STDERR "can not open $fn:$!\n";
@@ -1327,9 +1473,96 @@ sub process_interrupts()
 	}
 	$int_prev{$iname} = $int_cnt;
 	$int_total{$iname} += $ints;
-	$fn = "e/$iname-int";
+	$all_ints += $ints;
+	$fn = "e/int-$iname";
 	value_store($fn, $i, $ints);
 #		print "$i: ints-per-sec=$ints int_cnt=$int_cnt num=[$int_num] name=[$iname] nm=[$int_name1] nm2=[$int_name2] nm3=[$int_name3] nm4=[$int_name4]\n";
+    }
+    close $f;
+    value_store("e/count-int", $i, $all_ints);
+}
+
+sub process_diskstats()
+{
+#
+# diskstats
+#
+    $fn = $d . "/diskstats";
+    if (! -e $fn) {
+	#
+        # this is optional as it was added later to snapshots,
+        # just return if not there
+        #
+	return;
+    }
+    unless (open($f, $fn)) {
+	print STDERR "can not open $fn:$!\n";
+	return;
+    }
+    while (<$f>) {
+	$line = $_;
+	chop $line;
+	($majdev, $mindev, $dname, 
+	 $xdev_reads, $xdev_reads_merged, $xsector_reads, $xmsec_reading, $xdev_writes, $dxev_writes_merged,
+	 $xsector_writes, $xmsec_writing, $xios_in_progress, $xmsec_in_io, $xmsec_weighted_in_io) = split(' ' , $line, 14);
+	if (($xdev_reads + $xdev_writes) == 0) {
+	    next;
+	}
+	
+	if (!$dev_reads_prev{$dname}) {
+	    $nreads = 0;
+	    $reads = 0;
+	} else {
+#	    $reads = ($xdev_reads - $dev_reads_prev{$dname})/$lapsed_time{$i};
+	    $nreads = $xsector_reads - $dev_reads_prev{$dname};
+	    $reads = ((($nreads * $sector_sz)/(1024*1024)))/$lapsed_time{$i};
+	}
+#	$dev_reads_prev{$dname} = $xdev_reads;
+	$dev_reads_prev{$dname} = $xsector_reads;
+	$dev_reads_total{$dname} += $reads;
+	$fn = "e/devreads-$dname";
+	value_store($fn, $i, $reads);
+
+	if (!$dev_writes_prev{$dname}) {
+	    $nwrites = 0;
+	    $writes = 0;
+	} else {
+#	    $writes = ($xdev_writes - $dev_writes_prev{$dname})/$lapsed_time{$i};
+	    $nwrites = $xsector_writes - $dev_writes_prev{$dname};
+	    $writes = ((($nwrites * $sector_sz)/(1024*1024)))/$lapsed_time{$i};
+	}
+#	$dev_writes_prev{$dname} = $xdev_writes;
+	$dev_writes_prev{$dname} = $xsector_writes;
+	$dev_writes_total{$dname} += $writes;
+	$fn = "e/devwrites-$dname";
+	value_store($fn, $i, $writes);
+
+	if (!$dev_time_per_read_prev{$dname}) {
+	    $time_per_read = 0;
+	} else {
+	    if ($nreads) {
+		$time_per_read = ($xmsec_reading - $dev_time_per_read_prev{$dname})/$nreads;
+	    } else {
+		$time_per_read = 0;
+	    }
+	}
+	$dev_time_per_read_prev{$dname} = $xmsec_reading;
+	$fn = "e/devreadtime-$dname";
+	value_store($fn, $i, $time_per_read);
+
+	if (!$dev_time_per_write_prev{$dname}) {
+	    $time_per_write = 0;
+	} else {
+	    if ($nwrites) {
+		$time_per_write = ($xmsec_writing - $dev_time_per_write_prev{$dname})/$nwrites;
+	    } else {
+		$time_per_write = 0;
+	    }
+	}
+	$dev_time_per_write_prev{$dname} = $xmsec_writing;
+	$fn = "e/devwritetime-$dname";
+	value_store($fn, $i, $time_per_write);
+
     }
     close $f;
 }
@@ -1356,8 +1589,7 @@ sub process_stat()
 		$global_ctx = ($ctx - $global_ctx_prev)/$lapsed_time{$i};
 	    }
 	    $global_ctx_prev = $ctx;
-	    $fn = "e/global-ctx";
-	    value_store($fn, $i, $global_ctx);
+	    value_store("e/all-ctx-switches", $i, $global_ctx);
 	} elsif( index($_, "processes ") != -1) {
 	    (undef, $processes) = split(' ' , $line, 2);
 
@@ -1367,8 +1599,7 @@ sub process_stat()
 		$global_processes = (60*($processes - $global_processes_prev))/$lapsed_time{$i};
 	    }
 	    $global_processes_prev = $processes;
-	    $fn = "e/global-processes";
-	    value_store($fn, $i, $global_processes);
+	    value_store("e/global-processes", $i, $global_processes);
 	    last;
 	}
     }
@@ -1509,8 +1740,11 @@ sub loop_over_all_apps()
 	    $devcount_pss{$x} += 1;
 	}
 #	    print "$i:$x:PSS: pss=$app_pss{$x} dev=$dev dev_cnt=$devcount_pss{$x} avg=$avg_pss{$x}\n";
+#	if ($i == 0) {
+#	    print "$app_pss{$x} $x\n";
+#	}
 
-	$fn = "e/$x-p";
+	$fn = "e/p-$x";
 	$xxx = $app_pss{$x} / 1024;
 	value_store_zeropad($fn, $i, $xxx);
 
@@ -1527,8 +1761,25 @@ sub loop_over_all_apps()
 	}
 #	print "$i:$x:SYSV: pss=$app_sysv_shared{$x} dev=$dev dev_cnt=$devcount_sysv_shared{$x} avg=$avg_sysv_shared{$x}\n";
 
-	$fn = "e/$x-sysvshm";
+	$fn = "e/sysvshm-$x";
 	$xxx = $app_sysv_shared{$x} / 1024;
+	value_store_zeropad($fn, $i, $xxx);
+
+	###############
+	if ($app_dev_pvr{$x}) {
+	    $app_cumul_dev_pvr{$x} += $app_dev_pvr{$x};
+	    $avg_dev_pvr{$x} = ($avg_dev_pvr{$x} * $i + $app_dev_pvr{$x})/($i+1);
+	    $dev = ($avg_dev_pvr{$x} - $app_dev_pvr{$x});
+	    if ($dev < 0) {
+		$dev = -1 * $dev;
+	    }
+	    $sumdev_dev_pvr{$x} += $dev;
+	    $devcount_dev_pvr{$x} += 1;
+	}
+#	print "$i:$x:SYSV: pss=$app_dev_pvr{$x} dev=$dev dev_cnt=$devcount_dev_pvr{$x} avg=$avg_dev_pvr{$x}\n";
+
+	$fn = "e/devpvr-$x";
+	$xxx = $app_dev_pvr{$x} / 1024;
 	value_store_zeropad($fn, $i, $xxx);
 
 	###############
@@ -1543,7 +1794,7 @@ sub loop_over_all_apps()
 	    $sumdev_swp{$x} += $dev;
 	    $devcount_swp{$x} += 1;
 	}
-	$fn = "e/$x-swp";
+	$fn = "e/swp-$x";
 	$xxx = $app_swapped{$x} / 1024;
 	value_store_zeropad($fn, $i, $xxx);
 
@@ -1591,15 +1842,19 @@ sub loop_over_all_apps()
 	    $devcount_pss_swp{$x} += 1;
 	    $pss_swap_num_samples{$x} += 1;
 	}
-	$fn = "e/$x-pswp";
+	$fn = "e/pswp-$x";
 	value_store_zeropad($fn, $i, $pss_swap);
+
+#	if ($i == 0) {
+#	    print "$pss_swap $x\n";
+#	}
 	###############
 	$pid = $pid_by_namepid{$x};
 	$shared_lpid_cnt{$x} = $shared_lpid_cnt_oneround{$pid};
 	$shared_cpid_cnt{$x} = $shared_cpid_cnt_oneround{$pid};
 
 	$shared = $shared_lpid{$pid};
-	$fn = "e/$x-shml";
+	$fn = "e/shml-$x";
 	if ($shared) {
 #	    print "$i: lpid shared[x=$x pid=$pid] = $shared\n";
 	    value_store_zeropad($fn, $i, $shared);
@@ -1618,7 +1873,7 @@ sub loop_over_all_apps()
 	$shared_lpid{$pid} = 0;
 	
 	$shared = $shared_cpid{$pid};
-	$fn = "e/$x-shmc";
+	$fn = "e/shmc-$x";
 	if ($shared) {
 #	    print "$i: cpid shared[x=$x pid=$pid] = $shared\n";
 	    value_store_zeropad($fn, $i, $shared);
@@ -1723,7 +1978,8 @@ sub start_plotfile_common($)
     print $plot "set xlabel \"rounds\"\n";
     print $plot "set ylabel \"$ylabel\"\n";
     print $plot "set grid xtics ytics\n";
-    print $plot "set term png truecolor size $plot_width, 1100\n";
+    print $plot "set term png small truecolor size $plot_width, 1100\n";
+#    print $plot "set term png truecolor size $plot_width, 1100\n";
     return $plot;
 }
 
@@ -1737,7 +1993,11 @@ sub start_plotfile_lines_common($$)
 
     print $plot "set style data $style\n";
     print $plot "set key autotitle\n";
-    $ii = $i+10;
+    my $add = $i/4;
+    if ($add < 10) {
+	$add = 10;
+    }
+    $ii = $i + $add;
     print $plot "plot [0:$ii] ";
     return $plot;
 }
@@ -1758,8 +2018,9 @@ sub start_plotfile_lines_common_2axes($$)
     print $plot "set y2tics\n";
     print $plot "set style data $style\n";
     print $plot "set key autotitle\n";
-    print $plot "set xrange [0 : $i]\n";
-    print $plot "set x2range [0 : $i]\n";
+    $ii = $i+5;
+    print $plot "set xrange [0 : $ii]\n";
+    print $plot "set x2range [0 : $ii]\n";
     print $plot "plot ";
     return $plot;
 }
@@ -1794,7 +2055,11 @@ sub start_plotfile_histogram($)
     print $plot "set style histogram rowstacked\n";
     print $plot "set style fill solid 1.00 border -1\n";
 
-    $ii = $i+18;
+    my $add = $i/3;
+    if ($add < 25) {
+	$add = 25;
+    }
+    $ii = $i + $add;
     print $plot "plot [-1:$ii] ";
 
     return $plot;
@@ -1976,7 +2241,7 @@ sub generate_plots()
 	if ($all_slabs{$p} == 0) {
 	    next;
 	}
-	one_plot_set("e/$p-slabs", 3, $plot, \$cnt, 0);
+	one_plot_set("e/slabs-$p", 3, $plot, \$cnt, 0);
     }
     close_plot($cnt, $plot, $graph_mem_slabs);
 
@@ -1992,7 +2257,7 @@ sub generate_plots()
 	if ($cumul_total_ctx{$p} == 0) {
 	    last;
 	}
-	one_plot_set("e/$p-total-ctx", 3, $plot, \$cnt, 0);
+	one_plot_set("e/total-ctx-$p", 3, $plot, \$cnt, 0);
     }
     close_plot($cnt, $plot, $graph_events_ctx_total);
 
@@ -2007,7 +2272,7 @@ sub generate_plots()
 	if ($cumul_nonvol_ctx{$p} == 0) {
 	    last;
 	}
-	one_plot_set("e/$p-nonvol-ctx", 3, $plot, \$cnt, 0);
+	one_plot_set("e/nonvol-ctx-$p", 3, $plot, \$cnt, 0);
     }
     close_plot($cnt, $plot, $graph_events_ctx_nonvolunt);
 
@@ -2022,29 +2287,24 @@ sub generate_plots()
 	if ($cumul_vol_ctx{$p} == 0) {
 	    last;
 	}
-	one_plot_set("e/$p-vol-ctx", 3, $plot, \$cnt, 0);
+	one_plot_set("e/vol-ctx-$p", 3, $plot, \$cnt, 0);
     }
     close_plot($cnt, $plot, $graph_events_ctx_volunt);
 
 ############# loadavg #####################
     $plot = start_plotfile_lines($graph_loadavg);
-    $fn = "e/load_1_min";
-    print $plot "'$fn' lw 2, ";
-    value_emit($fn, 1);
-
-    $fn = "e/load_5_min";
-    print $plot "'$fn' lw 2, ";
-    value_emit($fn, 1);
-
-    $fn = "e/load_15_min";
-    print $plot "'$fn' lw 2";
-    value_emit($fn, 1);
+    print $plot "'$load_1_file_name' lw 2, ";
+    value_emit($load_1_file_name, 1);
+    print $plot "'$load_5_file_name' lw 2, ";
+    value_emit($load_5_file_name, 1);
+    print $plot "'$load_15_file_name' lw 2";
+    value_emit($load_15_file_name, 1);
 
     close_plot($i, $plot, $graph_loadavg);
 
 ############# global ctx switched #####################
     $plot = start_plotfile_lines_2axes($graph_ctx_global);
-    $fn = "e/global-ctx";
+    $fn = "e/all-ctx-switches";
     print $plot "'$fn' lw 2 axes x1y1";
     value_emit($fn, 1);
 
@@ -2061,16 +2321,6 @@ sub generate_plots()
     value_emit($fn, 1);
     close_plot($i, $plot, $graph_processes_global);
 
-############# Processes running #####################
-#
-# XXX moved to be part of global-ctx graph (above)
-#
-#    $plot = start_plotfile_lines($graph_processes_running);
-#    $fn = "e/num-processes";
-#    print $plot "'$fn' lw 2";
-#    value_emit($fn, 1);
-#    close_plot($i, $plot, $graph_processes_running);
-
 ############# Processes, major page faults ######################
     print "pfault ";
     $plot = start_plotfile_lines($graph_events_major_pagefaults);
@@ -2084,7 +2334,7 @@ sub generate_plots()
 	if ($majflt_cumul{$p} == 0) {
 	    last;
 	} 
-	$fn = "e/$p-majflt";
+	$fn = "e/majflt-$p";
 	one_plot_set($fn, 3, $plot, \$cnt, 1);
     }
     close_plot($cnt, $plot, $graph_events_major_pagefaults);
@@ -2102,7 +2352,7 @@ sub generate_plots()
 	if ($utime_cumul{$p} == 0) {
 	    last;
 	}
-	one_plot_set("e/$p-utime", 3, $plot, \$cnt, 0);
+	one_plot_set("e/utime-$p", 3, $plot, \$cnt, 0);
     }
     close_plot($cnt, $plot, $graph_cpu_usertime);
 
@@ -2117,7 +2367,7 @@ sub generate_plots()
 	if ($stime_cumul{$p} == 0) {
 	    last;
 	}
-	one_plot_set("e/$p-stime", 3, $plot, \$cnt, 0);
+	one_plot_set("e/stime-$p", 3, $plot, \$cnt, 0);
     }
     close_plot($cnt, $plot, $graph_cpu_systime);
 
@@ -2162,7 +2412,7 @@ sub generate_plots()
 
 #    print "plot_lpid: name=$p, sumdev=$sumdev_shared_lpid{$p} devcount=$devcount_shared_lpid{$p} cnt=$shared_lpid_cnt{$p}\n";
 	if ($devcount_shared_lpid{$p}) {
-	    one_plot_set("e/$p-shml", 0, $plot, \$cnt, 1);
+	    one_plot_set("e/shml-$p", 0, $plot, \$cnt, 1);
 	}
     }
     close_plot($cnt, $plot, $graph_mem_shared_lpid);
@@ -2181,10 +2431,55 @@ sub generate_plots()
 
 	if ($devcount_shared_cpid{$p}) {
 #	print "plot_cpid: name-pid=$p, sumdev=$sumdev_shared_cpid{$p} devcount=$devcount_shared_cpid{$p} cnt=$shared_cpid_cnt{$p}\n";
-	    one_plot_set("e/$p-shmc", 0, $plot, \$cnt, 1);
+	    one_plot_set("e/shmc-$p", 0, $plot, \$cnt, 1);
 	}
     }
     close_plot($cnt, $plot, $graph_mem_shared_cpid);
+
+############### Lines of shared mem segments count, by num of attached proc #################
+#    $plot = start_plotfile_lines($graph_mem_shared_number);
+
+#    $cnt = 0;
+#    for ($z = 0; $z <= $max_nattach ; $z++) {
+#	$fn = "e/nattach-$z-shm";
+#	one_plot_set($fn, 2, $plot, \$cnt, 0);
+#    }
+##    $fn = "e/nattach-a-age-shm";
+##    one_plot_set($fn, 3, $plot, \$cnt, 0);
+##    $fn = "e/nattach-d-age-shm";
+##    one_plot_set($fn, 3, $plot, \$cnt, 0);
+#    close_plot($cnt, $plot, $graph_mem_shared_number);
+############### Lines of shared mem segments count, by num of attached proc #################
+    $plot = start_plotfile_lines_2axes($graph_mem_shared_number);
+
+    $cnt = 0;
+    for ($z = 0; $z <= $max_nattach ; $z++) {
+	if ($cnt > 0) {
+	    print $plot ", ";
+	}
+	$fn = "e/nattach-$z-shm";
+	print $plot "'$fn' lw 2 axes x1y1";
+	$cnt += 1;
+	value_emit($fn, 0);
+    }
+    $fn = "e/count-shm";
+    if ($cnt > 0) {
+	print $plot ", ";
+    }
+    print $plot "'$fn' lw 4 axes x2y2";
+    $cnt += 1;
+    value_emit($fn, 0);
+    close_plot($cnt, $plot, $graph_mem_shared_number);
+
+############### Histogram of shared mem size, by num of attached proc #################
+    $plot = start_plotfile_histogram($graph_mem_shared_size);
+
+    $cnt = 0;
+    for ($z = $max_nattach; $z > 0; $z--) {
+	$fn = "e/nattach-$z-shm-sz";
+	one_plot_set($fn, 0, $plot, \$cnt, 1);
+    }
+    close_plot($cnt, $plot, $graph_mem_shared_size);
 
 ############### Histogram of process mlocked #################
     print "mlocked ";
@@ -2198,7 +2493,7 @@ sub generate_plots()
 	if (!$app_sum_locked{$p}) {
 	    last;
 	}
-	one_plot_set("e/$p-locked", 0, $plot, \$cnt, 1);
+	one_plot_set("e/locked-$p", 0, $plot, \$cnt, 1);
 	$cnt += 1;
     }
     close_plot($cnt, $plot, $graph_appmem_locked);
@@ -2230,7 +2525,7 @@ sub generate_plots()
 	if ($show_this{$p} != 1) {
 	    next;
 	} 
-	one_plot_set("e/$p-heap", 0, $plot, \$cnt, 1);
+	one_plot_set("e/heap-$p", 0, $plot, \$cnt, 1);
     }
     close_plot($cnt, $plot, $graph_appmem_heap);
 
@@ -2263,11 +2558,11 @@ sub generate_plots()
 	if ($show_this{$p} != 1) {
 	    next;
 	} 
-	$fn = "e/$p-heap";
+	$fn = "e/heap-$p";
 	if (($cnt_1 + $cnt_2) < $cnt/2) {
-	    one_plot_set("e/$p-heap", 3, $plot_1, \$cnt_1, 0);
+	    one_plot_set("e/heap-$p", 3, $plot_1, \$cnt_1, 0);
 	} else {
-	    one_plot_set("e/$p-heap", 3, $plot_2, \$cnt_2, 0);
+	    one_plot_set("e/heap-$p", 3, $plot_2, \$cnt_2, 0);
 	}
 	delete_zero_lines($fn);
     }
@@ -2300,9 +2595,39 @@ sub generate_plots()
 	if ($show_this{$p} != 1) {
 	    next;
 	} 
-	one_plot_set("e/$p-sysvshm", 0, $plot, \$cnt, 1);
+	one_plot_set("e/sysvshm-$p", 0, $plot, \$cnt, 1);
     }
     close_plot($cnt, $plot, $graph_appmem_sysvshared);
+
+############### Histogram of process /dev/pvr #################
+    print "devpvr ";
+    $plot = start_plotfile_histogram($graph_appmem_devpvr);
+
+    $cnt = 0;
+    %show_this = undef;
+    foreach $p (reverse sort {$app_cumul_dev_pvr{$a} <=> $app_cumul_dev_pvr{$b} } keys %app_cumul_dev_pvr) {
+	if ($cnt > $max_per_graph_onecolumn -1 ) {
+	    last;
+	} 
+#	print "sysvshared: $p: sumdev=$sumdev_sysv_shared{$p}\n";
+	$show_this{$p} = 1;
+	$cnt += 1;
+    }
+    foreach $p (sort keys %app_cumul_dev_pvr) {
+	if ($show_this{$p}) {
+	    $sumdev_dev_pvr{$p} /= $devcount_dev_pvr{$p};
+	    $sumdev_dev_pvr{$p} += (10000*($i - $devcount_dev_pvr{$p}));
+#	    print "dev_pvr-adj: $p: sumdev=$sumdev_dev_pvr{$p} count=$devcount_dev_pvr{$p}\n";
+	}
+    }
+    $cnt = 0;
+    foreach $p (sort {$sumdev_dev_pvr{$a} <=> $sumdev_dev_pvr{$b} } keys %app_cumul_dev_pvr) {
+	if ($show_this{$p} != 1) {
+	    next;
+	} 
+	one_plot_set("e/devpvr-$p", 0, $plot, \$cnt, 1);
+    }
+    close_plot($cnt, $plot, $graph_appmem_devpvr);
 
 ############### Histogram of process write-exec shared mem #################
     print "write-exec ";
@@ -2371,7 +2696,7 @@ sub generate_plots()
 	if ($show_this{$p} != 1) {
 	    next;
 	} 
-	one_plot_set("e/$p-swp", 0, $plot, \$cnt, 1);
+	one_plot_set("e/swp-$p", 0, $plot, \$cnt, 1);
 #    print "2:cnt=$cnt p=$p show_this=$show_this{$p}\n";
     }
 #
@@ -2440,7 +2765,7 @@ sub generate_plots()
 	    next;
 	} 
 #    print "pss:$p: sumdev=$sumdev_pss{$p} devcount=$devcount_pss{$p}\n";
-	one_plot_set("e/$p-p", 0, $plot, \$cnt, 1);
+	one_plot_set("e/p-$p", 0, $plot, \$cnt, 1);
     }
     close_plot($cnt, $plot, $graph_appmem_pss);
 
@@ -2467,7 +2792,7 @@ sub generate_plots()
 	if ($show_this{$p} != 1) {
 	    next;
 	} 
-	one_plot_set("e/$p-pswp", 0, $plot, \$cnt, 1);
+	one_plot_set("e/pswp-$p", 0, $plot, \$cnt, 1);
     }
     close_plot($cnt, $plot, $graph_appmem_pss_swap);
 
@@ -2506,22 +2831,22 @@ sub generate_plots()
 		$div = $avg_pss_swp{$p};
 		$sdiv = sprintf("%2.1f", $div);
 #	print "div(1)=$div, sdiv(1)=$sdiv\n";
-		$legend{$graph_appmem_pss_swap_lines_big} = "apps PSS+SWP &gt; $sdiv MB"; 
+		$legend{$graph_appmem_pss_swap_lines_big} = "apps PSS+SWP >; $sdiv MB"; 
 		$thumblegend{$graph_appmem_pss_swap_lines_big} = "PSS+SWP &gt; $sdiv MB";
 
-		$legend{$graph_appmem_pss_swap_lines_small} = "apps PSS+SWP &lt; $sdiv MB"; 
+		$legend{$graph_appmem_pss_swap_lines_small} = "apps PSS+SWP <; $sdiv MB"; 
 		$thumblegend{$graph_appmem_pss_swap_lines_small} = "PSS+SWP &lt; $sdiv MB";
 	    } elsif ($cnt == $divpoint_2) {
 		$div = $avg_pss_swp{$p};
 		$sdiv = sprintf("%2.1f", $div);
 #	print "div(2)=$div, sdiv(2)=$sdiv\n";
-		$legend{$graph_appmem_pss_swap_lines_smaller} = "apps PSS+SWP &lt; $sdiv MB"; 
+		$legend{$graph_appmem_pss_swap_lines_smaller} = "apps PSS+SWP <; $sdiv MB"; 
 		$thumblegend{$graph_appmem_pss_swap_lines_smaller} = "PSS+SWP &lt; $sdiv MB";
 	    } elsif ($cnt == $divpoint_3) {
 		$div = $avg_pss_swp{$p};
 		$sdiv = sprintf("%2.1f", $div);
 #	print "div(3)=$div, sdiv(3)=$sdiv\n";
-		$legend{$graph_appmem_pss_swap_lines_smallest} = "apps PSS+SWP &lt; $sdiv MB"; 
+		$legend{$graph_appmem_pss_swap_lines_smallest} = "apps PSS+SWP <; $sdiv MB"; 
 		$thumblegend{$graph_appmem_pss_swap_lines_smallest} = "PSS+SWP &lt; $sdiv MB";
 	    }
 	    $cnt += 1;
@@ -2552,7 +2877,7 @@ sub generate_plots()
 		print $handle ", ";
 	    }
 #    print "cnt=[$cnt]; p=[$p] cumul=$app_cumul_pss_swp{$p} avg=$avg_pss_swp{$p} samples=$pss_swap_num_samples{$p}\n";
-	    $fn = "e/$p-pswp";
+	    $fn = "e/pswp-$p";
 #
 # re-use existing file from histogram pass (above),
 # but data sets may differ so if no file, emit the data set
@@ -2561,7 +2886,7 @@ sub generate_plots()
 		value_emit($fn, 0);
 	    }
 	    delete_zero_lines($fn);
-	    print $handle "'e/$p-pswp' lw 3";
+	    print $handle "'e/pswp-$p' lw 3";
 	    $cnt += 1;
 	    $cnt_per_file[$handle] += 1;
 	}
@@ -2573,14 +2898,17 @@ sub generate_plots()
 
 ############### num of threads #################
     print "threads ";
-    $plot = start_plotfile_lines($graph_threads_count);
+    $plot = start_plotfile_histogram($graph_threads_count);
 
     $cnt = 0;
     foreach $p ( reverse sort {$has_threads{$a} <=> $has_threads{$b} } keys %has_threads) {
+	if ($cnt > $max_per_graph_onecolumn) {
+	    last;
+	} 
 	if ($has_threads{$p} && ($has_threads_samples{$p} > 1)) {
 #	print "thr: [$p] num=$has_threads{$p}\n";
-	    $fn = "e/$p-thr";
-	    one_plot_set($fn, 3, $plot, \$cnt, 0);
+	    $fn = "e/thr-$p";
+	    one_plot_set($fn, 0, $plot, \$cnt, 1);
 	}
     }
     close_plot($cnt, $plot, $graph_threads_count);
@@ -2597,7 +2925,7 @@ sub generate_plots()
 	if ($xres_samples{$p} < $samples_required) {
 	    next;
 	}
-	$fn = "e/$p-xres-count";
+	$fn = "e/xres-cnt-$p";
 	one_plot_set($fn, 3, $plot, \$cnt, 0);
     }
     close_plot($cnt, $plot, $graph_xresource_cnt);
@@ -2616,7 +2944,7 @@ sub generate_plots()
 	if (!$xres_pxm_size_total{$p}) {
 	    next;
 	}
-	$fn = "e/$p-xres-pxm";
+	$fn = "e/xres-pxm-$p";
 	one_plot_set($fn, 3, $plot, \$cnt, 0);
     }
     close_plot($cnt, $plot, $graph_xresource_sz_pxm);
@@ -2640,9 +2968,9 @@ sub generate_plots()
 
     $cnt = 0;
     foreach $p ( reverse sort {$filesystem_names{$a} <=> $filesystem_names{$b} } keys %filesystem_names) {
-	one_plot_set("e/$p-fs-used", 3, $plot, \$cnt, 1);
+	one_plot_set("e/fs-used-$p", 3, $plot, \$cnt, 1);
     }
-    one_plot_set("e/global-FD-percentage", 5, $plot, \$cnt, 0);
+    one_plot_set($fd_perc_file_name, 5, $plot, \$cnt, 0);
     close_plot($cnt, $plot, $graph_diskspace);
 
 ############# fd_count for processes #####################
@@ -2656,23 +2984,62 @@ sub generate_plots()
 	if ($fd_count_diff{$p} < 1) {
 	    next;
 	}
-	$fn = "e/$p-fd";
+	$fn = "e/fd-$p";
 	one_plot_set($fn, 3, $plot, \$cnt, 0);
     }
     close_plot($cnt, $plot, $graph_fdcount);
 
 ############# interrupts #####################
     print "interrupt ";
-    $plot = start_plotfile_lines($graph_interrupts);
+    $plot = start_plotfile_lines_2axes($graph_interrupts);
 
     $cnt = 0;
     foreach $p ( reverse sort {$int_total{$a} <=> $int_total{$b} } keys %int_total) {
 	if ($int_total{$p} < 1) {
 	    next;
 	}
-	one_plot_set("e/$p-int", 2, $plot, \$cnt, 0);
+	if ($cnt > 0) {
+	    print $plot ", ";
+	}
+	$fn = "e/int-$p";
+	print $plot "'$fn' lw 2 axes x1y1";
+	$cnt += 1;
+	value_emit($fn, 0);
+
     }
+    $fn = "e/count-int";
+    if ($cnt > 0) {
+	print $plot ", ";
+    }
+    print $plot "'$fn' lw 4 axes x2y2";
+    $cnt += 1;
+    value_emit($fn, 0);
     close_plot($cnt, $plot, $graph_interrupts);
+
+############# diskstats, reads #####################
+    print "diskstat ";
+    $plot_1 = start_plotfile_lines($graph_diskstats_reads);
+    $plot_2 = start_plotfile_lines($graph_diskstats_read_time);
+
+    $cnt_1 = $cnt_2 = 0;
+    foreach $p ( reverse sort {$dev_reads_total{$a} <=> $dev_reads_total{$b} } keys %dev_reads_total) {
+	one_plot_set("e/devreads-$p", 2, $plot_1, \$cnt_1, 0);
+	one_plot_set("e/devreadtime-$p", 2, $plot_2, \$cnt_2, 0);
+    }
+    close_plot($cnt_1, $plot_1, $graph_diskstats_reads);
+    close_plot($cnt_2, $plot_2, $graph_diskstats_read_time);
+
+############# diskstats, writes #####################
+    $plot_1 = start_plotfile_lines($graph_diskstats_writes);
+    $plot_2 = start_plotfile_lines($graph_diskstats_write_time);
+
+    $cnt_1 = $cnt_2 = 0;
+    foreach $p ( reverse sort {$dev_writes_total{$a} <=> $dev_writes_total{$b} } keys %dev_writes_total) {
+	one_plot_set("e/devwrites-$p", 2, $plot_1, \$cnt_1, 0);
+	one_plot_set("e/devwritetime-$p", 2, $plot_2, \$cnt_2, 0);
+    }
+    close_plot($cnt_1, $plot_1, $graph_diskstats_writes);
+    close_plot($cnt_2, $plot_2, $graph_diskstats_write_time);
 
 ############# Powertop data: optional ###################
     if ($powertop_data_found) {
@@ -2794,13 +3161,21 @@ foreach $d (@dirs) {
 	    $line = $_;
 	    chop $line;
 	    (undef, undef, $swver) = split(' ', $line, 3);
+	    (undef, $swver) = split('_', $swver, 2);
 	    if($sw_version && ($sw_version ne $swver)) {
 		print "** NOTE: at $d version changes [$sw_version]->[$swver]; Reflash in sequence??\n"
 	    } 
 	    $sw_version = $swver;
 	    next;
 	} 
-	if( index($_, "Uptime,Idletime ") != -1) {
+	if(index($_, "date = ") != -1) {
+	    #                                                                                                                                                    
+	    # parse date into num of seconds,                                                                                                                    
+	    #                                                                                                                                                    
+	    $secval{$d} = date2seconds($_);
+	    next;
+	}
+ 	if( index($_, "Uptime,Idletime ") != -1) {
 	    $line = <$f>;
 	    chop $line;
 	    ($upt, undef) = split(',', $line, 2);
@@ -2859,20 +3234,17 @@ foreach $d (@dirs) {
     print "$d ";
     %shared_lpid = %shared_cpid = undef;
     %shared_lpid_cnt_oneround = %shared_cpid_cnt_oneround = undef;
+    %shared_num = %shared_size = undef;
     while (<$f>) {
 	if( (index($_, "Loadavg ") != -1)) {
 	    $line = <$f>;
 	    chop $line;
 	    ($load_1,$load_5,$load_15,$running_all,$lastpid) = split(',' , $line, 5);
-	    $fn = "e/load_1_min";
-	    value_store($fn, $i, $load_1);
-	    $fn = "e/load_5_min";
-	    value_store($fn, $i, $load_5);
-	    $fn = "e/load_15_min";
-	    value_store($fn, $i, $load_15);
+	    value_store($load_1_file_name, $i, $load_1);
+	    value_store($load_5_file_name, $i, $load_5);
+	    value_store($load_15_file_name, $i, $load_15);
 	    ($running,$all) = split('/' , $running_all, 2);
-	    $fn = "e/num-processes";
-	    value_store($fn, $i, $all);
+	    value_store("e/num-processes", $i, $all);
 	    next;
 	} 
 	if( (index($_, "Allocated FDs,") != -1)) {
@@ -2880,8 +3252,7 @@ foreach $d (@dirs) {
 	    chop $line;
 	    ($Allocated_FDs,$Freed_FDs,$Max_FDs) = split(',' , $line, 3);
 	    $perc_fd = (100 * $Allocated_FDs) / $Max_FDs; 
-	    $fn = "e/global-FD-percentage";
-	    value_store($fn, $i, $perc_fd);
+	    value_store($fd_perc_file_name, $i, $perc_fd);
 	    next;
 	} 
 	if( index($_, "Name,State") != -1) {
@@ -2924,6 +3295,7 @@ foreach $d (@dirs) {
     process_slabinfo();
     process_smaps();
     process_interrupts();
+    process_diskstats();
     process_stat();
     process_powertop();
 
@@ -2938,6 +3310,22 @@ foreach $d (@dirs) {
 #    print $app_pss_plot_file "$i, $sum_app_pss\n";
 
     loop_over_all_apps();
+#    $total_shared_num = 0;
+    for ($z = 0; $z <= $max_nattach ; $z++) {
+#	print "round $i: z=$z; shared_num=$shared_num{$z}\n";
+#	$total_shared_num += $shared_num{$z};
+	$fn = "e/nattach-$z-shm";
+	value_store($fn, $i, $shared_num{$z});
+	if ($z > 0) {
+	    $fn = "e/nattach-$z-shm-sz";
+	    if (defined $shared_size{$z}) {
+		value_store($fn, $i, $shared_size{$z});
+	    } else {
+		value_store($fn, $i, 0);
+	    }
+	}
+    }
+#    print "total shared_num=$total_shared_num\n";
 
 #    $total_unaccounted = 512*1024 + $swapused - $sum_app_pss - $sum_app_swapped;
 #	print "$i: 256M + $swapused; apps=$sum_app_pss swapped=$sum_app_swapped; total unaccount = $total_unaccounted\n";
@@ -2946,13 +3334,15 @@ foreach $d (@dirs) {
 }
 print "\n";
 
-$plot_width = $i * 15 + 400;
+$plot_width = $i * 13 + 200;
+#print "desired plot_width $plot_width\n";
 if ($plot_width < 1000) {
     $plot_width = 1000;
 }
-if ($plot_width > 1500) {
-    $plot_width = 1500;
+if ($plot_width > 1920) {
+    $plot_width = 1920;
 }
+#print "plot_width $plot_width\n";
 
 generate_plots();
 print "$html_name ";
