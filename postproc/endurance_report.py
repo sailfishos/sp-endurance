@@ -3,7 +3,7 @@
 #
 # This file is part of sp-endurance.
 #
-# Copyright (C) 2006-2010 by Nokia Corporation
+# Copyright (C) 2006-2011 by Nokia Corporation
 #
 # Contact: Eero Tamminen <eero.tamminen@nokia.com>
 #
@@ -278,6 +278,8 @@
 # 2010-10-26:
 # - Add new per round table "X resource DRI2Drawable count" for tracking DRI
 #   resource atom count changes.
+# 2011-01-19:
+# - Fix IndexError with more than 4 network interfaces.
 # TODO:
 # - Proper option parsing + possibility to state between which
 #   test runs to produce the summaries?
@@ -358,6 +360,8 @@ bar2colors = (Colors.magenta, Colors.red, Colors.orange, Colors.orangeish, Color
 # color values for CPU load (system, user, user nice, iowait, idle)
 bar3colors = (Colors.red, Colors.blue, Colors.light_blue, Colors.magenta, Colors.light_green)
 
+# color values for network interfaces
+interface_colors = (Colors.magenta, Colors.blue, Colors.orange, Colors.light_green, Colors.red, Colors.orangeish, Colors.light_blue, Colors.yellow)
 
 # whether to show memory graphs for all processes
 show_all_processes = False
@@ -1873,11 +1877,12 @@ def output_network_use_graphs(data):
         vals = ["%dkB" % (x/1024) for x in v]
         entries.append(('Test round %02d:' % idx, bars, vals))
     titles = ["Test-case:", "network usage:"] + ["%s:" % x for x in faces]
-    output_graph_table(titles, bar1colors[:len(faces)], entries)
+    ifcolors = [interface_colors[i % len(interface_colors)] for i in range(len(faces))]
+    output_graph_table(titles, ifcolors, entries)
     # Legend
     print '<table><tr><th><th align="left">Legend:'
     for i in range(len(faces)):
-        print '<tr><td bgcolor="%s" height=16 width=16><td>%s' % (bar1colors[i], faces[i])
+        print '<tr><td bgcolor="%s" height=16 width=16><td>%s' % (ifcolors[i], faces[i])
     print '</table>'
 
 
