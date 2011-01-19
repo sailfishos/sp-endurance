@@ -340,15 +340,23 @@ class Colors:
     shm = "EEEEEE"
     kernel = "EFFDF0"
 
+    magenta     = "EE00FF"
+    blue        = "3149BD"
+    light_green = "ADE739"
+    red         = "DE2821"
+    orange      = "E0673E"
+    orangeish   = "EAB040"
+    yellow      = "FBE84A"
+    light_blue  = "4265FF"
+
 # color values for (Swap used, RAM used, memory free, oom-limit)
-#      magenta, blue, light green, red
-bar1colors = ("EE00FF", "3149BD", "ADE739", "DE2821")
+bar1colors = (Colors.magenta, Colors.blue, Colors.light_green, Colors.red)
+
 # color values for (Swap, Dirty, PSS, RSS, Size)
-#      magenta, red, orange, orangeish, yellow
-bar2colors = (bar1colors[0], "DE2821", "E0673E", "EAB040", "FBE84A")
+bar2colors = (Colors.magenta, Colors.red, Colors.orange, Colors.orangeish, Colors.yellow)
+
 # color values for CPU load (system, user, user nice, iowait, idle)
-#      red, blue, light blue, magenta, light green
-bar3colors = (bar2colors[1], bar1colors[1], "4265FF", bar1colors[0], bar1colors[2])
+bar3colors = (Colors.red, Colors.blue, Colors.light_blue, Colors.magenta, Colors.light_green)
 
 
 # whether to show memory graphs for all processes
