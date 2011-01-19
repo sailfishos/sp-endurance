@@ -1,3 +1,10 @@
+sp-endurance (2.2) unstable; urgency=low
+
+  * endurance_report.py: fix IndexError with more than 4 network interfaces.
+    Fixes: NB#220118
+
+ -- Tommi Rantala <ext-tommi.1.rantala@nokia.com>  Wed, 19 Jan 2011 10:56:15 +0200
+
 sp-endurance (2.1.9) unstable; urgency=low
 
   * save-incremental-endurance-stats: collect /proc/diskstats and
