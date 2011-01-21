@@ -21,13 +21,6 @@
  * - PID/fds/ (just the count of open FDs)
  * - PID/stat
  * - PID/status
- * - sys/vm/lowmem_deny_watermark_pages
- * - sys/vm/lowmem_notify_high_pages
- * - sys/vm/lowmem_notify_low_pages
- * - sys/vm/lowmem_deny_watermark
- * - sys/vm/lowmem_notify_high
- * - sys/vm/lowmem_notify_low
- * If the last six do not exist, their values will be zero.
  * 
  * NOTES:
  * - Originally this was a 'top' utility contributed by Eero
@@ -38,7 +31,7 @@
  *   relative to that
  * 
  * Copyright (C) 2003 by Eero Tamminen
- * Copyright (C) 2006,2007,2009 by Nokia Corporation
+ * Copyright (C) 2006,2007,2009,2011 by Nokia Corporation
  * 
  * Contact: Eero Tamminen <eero.tamminen@nokia.com>
  *
@@ -248,77 +241,6 @@ static void show_keyvalue_file(const char *filename, char separator)
 	rewind(fp);
 	output_fields(fp, SHOW_VALUES, separator);
 	fclose(fp);
-}
-
-
-/* output lowmem limits if the co. files exist */
-static void show_lowmem_limits(void)
-{
-	typedef struct {
-		const char *name;
-		int value;
-	} lowmem_t;
-	lowmem_t files[] = {
-		{ "lowmem_notify_low", 0 },
-		{ "lowmem_notify_high", 0 },
-		{ "lowmem_deny_watermark", 0 },
-		{ "lowmem_notify_low_pages", 0 },
-		{ "lowmem_notify_high_pages", 0 },
-		{ "lowmem_deny_watermark_pages", 0 },
-		{ NULL, 0 }
-	};
-	char *tmp, buf[8];
-	FILE *fp;
-	int i;
-	
-	for (i = 0; files[i].name; i++) {
-		if (i) {
-			fputc(',', stdout);
-		}
-		fputs(files[i].name, stdout);
-	}
-	fputs(":\n", stdout);
-
-	if (chdir("sys/vm") < 0) {
-		perror("chdir(sys/vm)");
-		/* not available: zero for the values */
-		for (;;) {
-			fputc('0', stdout);
-			if (--i <= 0) {
-				newline();
-				break;
-			}
-			fputc(',', stdout);
-		}
-		return;
-	}
-
-	for (i = 0; files[i].name; i++) {
-		fp = fopen(files[i].name, "r");
-		if (i) {
-			fputc(',', stdout);
-		}
-		if (!fp) {
-			fprintf(stderr,
-				"INFO: show_lowmem_limits() file open failed for: %s\n",
-				files[i].name);
-			fputc('0', stdout);
-			continue;
-		}
-		fgets(buf, sizeof(buf), fp);
-		for (tmp = buf; *tmp; tmp++) {
-			if (*tmp == '\n') {
-				*tmp = '\0';
-				break;
-			}
-		}
-		fputs(buf, stdout);
-		fclose(fp);
-	}
-	newline();
-	if (chdir("../..") < 0) {
-		perror("chdir(../..)");
-	}
 }
 
 
@@ -533,11 +455,11 @@ static int filter_pids(const struct dirent *dir)
 
 /* compares two directory entry names as numeric strings
  */
-static int num_sort(const void *a, const void *b)
+static int num_sort(const struct dirent **a, const struct dirent **b)
 {
-	int ia = atoi((*(struct dirent * const *)a)->d_name);
-	int ib = atoi((*(struct dirent * const *)b)->d_name);
-	
+	int ia = atoi((*a)->d_name);
+	int ib = atoi((*b)->d_name);
+
 	if (ia == ib) {
 		return 0;
 	}
@@ -603,13 +525,13 @@ int main(int argc, char *argv[])
 	fputs("\nLoadavg 1min,5min,15min,Running/all,Last PID:\n", stdout);
 	show_as_csv("loadavg", 0, 5);
 
-	/* memory usage, vmstat and lowmem limits */
+	/* memory usage and vmstat limits */
 	newline();
 	show_keyvalue_file("meminfo", ':');
 	newline();
 	show_keyvalue_file("vmstat", ' ');
-	newline();
-	show_lowmem_limits();
+	/* compatibility support for old Maemo sp-endurance-postproc */
+	fputs("\nlowmem_maemo,dummy2,dummy3:\n0,0,0\n", stdout);
 
 	/* sysV IPC memory usage */
 	fputs("\nMessage queues:\n", stdout);
