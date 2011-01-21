@@ -155,7 +155,7 @@ if [ $# -gt 1 ]; then
 	echo "- use-case step description"
 	echo "$2" > $path/step.txt
 else
-	echo "- use-case step desription (focused/topmost window)"
+	echo "- use-case step description (focused/topmost window)"
 	if [ -z $(which xprop) ]; then
 		echo "$script: WARNING, 'xprop' tool is missing from PATH" 1>&2
 	else
@@ -187,7 +187,7 @@ fi
 # save most of /proc
 usage=$path/usage.csv
 echo "- /proc/ data in CSV format"
-echo -e "generator = syte-endurance-stats v0.5\n" > $usage
+echo -e "generator = syte-endurance-stats v2.0\n" > $usage
 # software release identification
 if [ \! -z $(which sysinfo-tool) ]; then
 	# Harmattan
