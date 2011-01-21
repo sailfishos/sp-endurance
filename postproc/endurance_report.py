@@ -280,6 +280,9 @@
 #   resource atom count changes.
 # 2011-01-19:
 # - Fix IndexError with more than 4 network interfaces.
+# 2011-01-21:
+# - Replace non-standard & obsolete memory limit support
+#   with the hard-coded OOM-limit from Linux kernel
 # TODO:
 # - Proper option parsing + possibility to state between which
 #   test runs to produce the summaries?
@@ -793,21 +796,6 @@ def parse_csv(file, filename):
         data['/proc/vmstat'] = dict(zip(keys, vals))
     except:
         pass
-
-    # low memory limits
-    skip_to(file, "lowmem_")
-    mem = file.readline().split(',')
-    if len(mem) in (3, 6):
-        data['limitlow'] = int(mem[0])
-        data['limithigh'] = int(mem[1])
-        data['limitdeny'] = int(mem[2])
-        if len(mem) == 6:
-            data['limitlowpages'] = int(mem[3])
-            data['limithighpages'] = int(mem[4])
-            data['limitdenypages'] = int(mem[5])
-    else:
-        # not fatal as lowmem stuff is not in standard kernel
-        sys.stderr.write("\nWarning: CSV file '%s' lowmem limits are missing!\n" % filename)
 
     # get shared memory segment counts
     skip_to(file, "Shared memory segments")
@@ -1906,44 +1894,22 @@ def output_system_memory_graphs(data):
 
         # amount of memory in the device (float for calculations)
         mem_total = float(testcase['ram_total'] + testcase['swap_total'])
-        
-        # Fremantle low mem limits?
-        if 'limitlowpages' in testcase:
-            # limit is given as available free memory in pages
-            mem_low  = mem_total - 4*testcase['limitlowpages']
-            mem_high = mem_total - 4*testcase['limithighpages']
-            mem_deny = mem_total - 4*testcase['limitdenypages']
-        # Diablo low mem limits?
-        elif 'limitlow' in testcase:
-            # convert percentages to real memory values
-            percent = 0.01 * mem_total
-            # memory usage %-limit after which apps are bg-killed
-            mem_low  = testcase['limitlow'] * percent
-            # memory usage %-limit after which apps refuse certain operations
-            mem_high = testcase['limithigh'] * percent
-            # memory usage %-limit after which kernel denies app allocs
-            mem_deny = testcase['limitdeny'] * percent
-        # valid mem low limits?
-        if mem_low + mem_high + mem_deny <= 0:
-            mem_low = mem_high = mem_deny = mem_total
-            sys.stderr.write("Warning: low memory limits are zero -> disabling\n")
-        
+        mem_oom = 97*mem_total/100 # hard-coded OOM-limit in Linux kernel
         mem_used = testcase['ram_used'] + testcase['swap_used']
         mem_free = testcase['ram_free'] + testcase['swap_free']
         # Graphics
         show_swap = testcase['swap_used']/mem_total
         show_ram  = testcase['ram_used']/mem_total
-        if mem_used > mem_deny:
-            show_deny = (mem_total - mem_used)/mem_total
+        if mem_used > mem_oom:
+            show_oom = (mem_total - mem_used)/mem_total
             show_free = 0.0
         else:
-            show_deny = 1.0 - mem_deny/mem_total
-            show_free = 1.0 - show_swap - show_ram - show_deny
-        bars = (show_swap, show_ram, show_free, show_deny)
+            show_oom = 1.0 - mem_oom/mem_total
+            show_free = 1.0 - show_swap - show_ram - show_oom
+        bars = (show_swap, show_ram, show_free, show_oom)
         # Numbers
         def label():
-            if mem_used > mem_high: return "<font color=red><b>%d</b></font>kB"
-            if mem_used > mem_low:  return "<font color=blue><b>%d</b></font>kB"
+            if mem_used >= mem_oom: return "<font color=red><b>%d</b></font>kB"
             return "%dkB"
         memtext = None
         if swaptext: memtext = label() % testcase['swap_used']
@@ -1958,19 +1924,9 @@ def output_system_memory_graphs(data):
     print """
 <tr><td bgcolor="%s" height="16" width="16"><td>RAM used in the device
 <tr><td bgcolor="%s" height="16" width="16"><td>RAM and swap freely usable in the device
-<tr><td bgcolor="%s" height="16" width="16"><td>If memory usage reaches this, applications allocations fail and usually they abort as a result (&gt;= %d MB used)
-""" % (bar1colors[1], bar1colors[2], bar1colors[3], round(mem_deny/1024))
+<tr><td bgcolor="%s" height="16" width="16"><td>OOM-kill limit (&gt;= %d MB used)
+""" % (bar1colors[1], bar1colors[2], bar1colors[3], round(mem_oom/1024))
     print "</table>"
-    if mem_low == mem_total:
-        print "<p>(memory limits are not in effect)"
-        return
-    print """
-<p>Memory usage values which trigger application background killing and disable their
-pre-starting are marked with blue color (&gt;= <font color=blue><b>%d</b></font> MB used).<br>
-After bg-killing and memory low mark comes the memory high pressure mark at which point
-even pre-started applications are killed and e.g. Browser refuses to open new pages,
-these numbers are marked with red color (&gt;= <font color=red><b>%d</b></font> MB used).
-""" % (round(mem_low/1024), round(mem_high/1024))
 
 
 def output_reboots(reboots):
