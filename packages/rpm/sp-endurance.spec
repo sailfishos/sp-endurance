@@ -44,6 +44,7 @@ rm -rf %{buildroot}
 %package postproc
 Summary: Postprocessing for endurance data
 Group: Development/Tools
+BuildArch: noarch
 
 %description postproc
  Postprocessing scripts to parse and generate a report from the endurance
