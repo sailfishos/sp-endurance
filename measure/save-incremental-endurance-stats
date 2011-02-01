@@ -75,6 +75,8 @@
 #   sysinfo-tool, and the bootreason from the kernel command line.
 # 2010-12-28:
 # - Take copies of /proc/diskstats and /proc/zoneinfo.
+# 2011-02-01:
+# - Use sysinfoclient instead of sysinfo-tool.
 
 script="${0##*/}"
 # incorrect number of arguments or first argument starts with "-"
@@ -189,10 +191,7 @@ usage=$path/usage.csv
 echo "- /proc/ data in CSV format"
 echo -e "generator = syte-endurance-stats v2.0\n" > $usage
 # software release identification
-if [ \! -z $(which sysinfo-tool 2>/dev/null) ]; then
-	# Harmattan
-	echo "SW-version = $(sysinfo-tool -g /device/sw-release-ver)" >> $usage
-elif [ \! -z $(which sysinfoclient 2>/dev/null) ]; then
+if [ \! -z $(which sysinfoclient 2>/dev/null) ]; then
 	# Harmattan
 	echo "SW-version = $(sysinfoclient -p /device/sw-release-ver)" >> $usage
 elif [ \! -z "$OSSO_VERSION" ]; then
@@ -232,14 +231,14 @@ ls -l /proc/[0-9]*/fd/ > $path/open-fds 2> /dev/null
 
 # Get bootreason from sysinfo daemon. /proc/bootreason is deprecated.
 echo "- Bootreason"
-sysinfo-tool -g /component/boot-reason 2> /dev/null > $path/bootreason
+sysinfoclient -p /component/boot-reason 2> /dev/null > $path/bootreason
 
 # Get HW identification from sysinfo daemon. /proc/component_version is deprecated.
 echo "- HW identification"
-echo "product     `sysinfo-tool -g /component/product   2>/dev/null`"  > $path/component_version
-echo "hw-build    `sysinfo-tool -g /component/hw-build  2>/dev/null`" >> $path/component_version
-echo "nolo        `sysinfo-tool -g /component/nolo      2>/dev/null`" >> $path/component_version
-echo "boot-mode   `sysinfo-tool -g /component/boot-mode 2>/dev/null`" >> $path/component_version
+echo "product     `sysinfoclient -p /component/product   2>/dev/null`"  > $path/component_version
+echo "hw-build    `sysinfoclient -p /component/hw-build  2>/dev/null`" >> $path/component_version
+echo "nolo        `sysinfoclient -p /component/nolo      2>/dev/null`" >> $path/component_version
+echo "boot-mode   `sysinfoclient -p /component/boot-mode 2>/dev/null`" >> $path/component_version
 
 echo "- Other proc files"
 cp /proc/slabinfo /proc/interrupts /proc/stat /proc/diskstats /proc/zoneinfo $path/ 2> /dev/null
