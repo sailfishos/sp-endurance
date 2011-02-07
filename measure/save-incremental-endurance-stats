@@ -224,7 +224,7 @@ fi
 # output disk usage
 echo "- Disk usage"
 echo >> $usage
-df|sed 's/ \+/,/g' >> $usage
+LC_ALL=C df -k -P|sed 's/ \+/,/g' >> $usage
 
 # save some less easily parsed /proc/ statistics, ignore errors
 echo "- Open file descriptors"
