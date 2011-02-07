@@ -189,7 +189,8 @@ fi
 # save most of /proc
 usage=$path/usage.csv
 echo "- /proc/ data in CSV format"
-echo -e "generator = syte-endurance-stats v2.0\n" > $usage
+echo "generator = syte-endurance-stats v2.0" > $usage
+echo >> $usage
 # software release identification
 if [ \! -z $(which sysinfoclient 2>/dev/null) ]; then
 	# Harmattan
