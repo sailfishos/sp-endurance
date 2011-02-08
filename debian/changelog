@@ -3,6 +3,7 @@ sp-endurance (2.2.1) unstable; urgency=low
   * replace support for obsolete memory limits in old Maemo releases
     with hard-coded Linux kernel OOM limit (with dummy data output by
     proc2csv for compatiblity to old sp-endurance-postproc versions).
+    Fixes: NB#222547
 
  -- Tommi Rantala <ext-tommi.1.rantala@nokia.com>  Wed, 21 Jan 2011 10:56:15 +0200
 
