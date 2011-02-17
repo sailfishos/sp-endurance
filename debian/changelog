@@ -4,8 +4,13 @@ sp-endurance (2.2.1) unstable; urgency=low
     with hard-coded Linux kernel OOM limit (with dummy data output by
     proc2csv for compatiblity to old sp-endurance-postproc versions).
     Fixes: NB#222547
+  * Replace the use of sysinfo-tool with sysinfoclient. Fixes: NB#223953
+  * Do not pass arguments to echo(1), they are not portable. Fixes: NB#225612
+  * Invoke df(1) with POSIX locale and "-k -P" for portability.
+    Fixes: NB#225624
+  * Add battery information to endurance data snapshot. Fixes: NB#222567
 
- -- Tommi Rantala <ext-tommi.1.rantala@nokia.com>  Wed, 21 Jan 2011 10:56:15 +0200
+ -- Tommi Rantala <ext-tommi.1.rantala@nokia.com>  Mon, 28 Feb 2011 17:55:07 +0200
 
 sp-endurance (2.2) unstable; urgency=low
 
