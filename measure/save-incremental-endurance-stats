@@ -3,7 +3,7 @@
 # Script for saving endurance measurements.
 # This file is part of sp-endurance.
 #
-# Copyright (C) 2006-2010 by Nokia Corporation
+# Copyright (C) 2006-2011 by Nokia Corporation
 #
 # Contact: Eero Tamminen <eero.tamminen@nokia.com>
 #
@@ -77,6 +77,8 @@
 # - Take copies of /proc/diskstats and /proc/zoneinfo.
 # 2011-02-01:
 # - Use sysinfoclient instead of sysinfo-tool.
+# 2011-02-28:
+# - Collect battery information with Nokia specific /usr/bin/bmestat.
 
 script="${0##*/}"
 # incorrect number of arguments or first argument starts with "-"
@@ -106,6 +108,7 @@ if [ $# -lt 1 ] || [ $# -gt 2 ] || [ "${1#-}" != "$1" ]; then
 	echo " - syslog.gz    (compressed syslog contents)"
 	echo " - usage.csv    (/proc info + X resource & disk usage in CSV format)"
 	echo " - xres.log     (XRes related error messages from xmeminfo)"
+	echo " - bmestat      (Battery information from Battery Management Entity)"
 	echo " - step.txt     (current use-case step description)"
 	echo "+ 102/"
 	echo "+ 103/"
@@ -243,6 +246,13 @@ echo "boot-mode   `sysinfoclient -p /component/boot-mode 2>/dev/null`" >> $path/
 
 echo "- Other proc files"
 cp /proc/slabinfo /proc/interrupts /proc/stat /proc/diskstats /proc/zoneinfo $path/ 2> /dev/null
+
+# battery
+which bmestat >/dev/null 2>/dev/null
+if [ $? -eq 0 ] ; then
+	echo "- Battery information"
+	bmestat 2>/dev/null > $path/bmestat
+fi
 
 # save network and DSME stats
 echo "- /sbin/ifconfig"
