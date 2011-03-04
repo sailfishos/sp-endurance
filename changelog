@@ -1,3 +1,5 @@
+sp-endurance (2.2.2), ???:
+  * extract-endurance-process-smaps accepts a subset of snapshot dirs
 
 sp-endurance (2.2.1), 28 Feb 2011:
   * replace support for obsolete memory limits in old Maemo releases
