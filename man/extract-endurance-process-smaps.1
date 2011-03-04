@@ -1,25 +1,28 @@
-.TH EXTRACT-ENDURANCE-PROCESS-SMAPS 1 "2009-10-26" "sp-endurance"
+.TH EXTRACT-ENDURANCE-PROCESS-SMAPS 1 "2011-03-04" "sp-endurance"
 .SH NAME
 extract-endurance-process-smaps - extract given process SMAPS information
 .SH SYNOPSIS
-extract-endurance-process-smaps <\fIprocess name\fP>
+extract-endurance-process-smaps <\fIprocess name\fP> [\fIdirectories\fP]
 .SH DESCRIPTION
 \fIextract-endurance-process-smaps\fP extracts the SMAPS data for given
 process from the endurance data.  The extracted files can then be diffed
 to find out more details about what in the SMAPS reported memory usage
 actually changed (heap, stack, memory maps...).
 .PP
-The tool needs to be run in the saved endurance data dir.
+The tool needs either to be run in the saved endurance data dir or
+the endurance snapshot data dirs should be given to it.
 .SH EXAMPLES
-Usage example:
+Usage examples:
 .br
 	extract-endurance-process-smaps pulseaudio
+.br
+	extract-endurance-process-smaps pulseaudio 120 121
 .SH SEE ALSO
 .IR parse-endurance-measurements (1),
 .IR endurance_report.py (1),
 .IR sp_smaps_filter (1)
 .SH COPYRIGHT
-Copyright (C) 2009 Nokia Corporation.
+Copyright (C) 2009-2011 Nokia Corporation.
 .PP
 This is free software.  You may redistribute copies of it under the
 terms of the GNU General Public License v2 included with the software.

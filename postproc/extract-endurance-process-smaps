@@ -3,7 +3,7 @@
 # Extract given process SMAPS data from sp-endurance smaps.cap.lzo files.
 # This file is part of sp-endurance.
 #
-# Copyright (C) 2009 by Nokia Corporation
+# Copyright (C) 2009-2011 by Nokia Corporation
 #
 # Contact: Eero Tamminen <eero.tamminen@nokia.com>
 #
@@ -26,13 +26,16 @@ usage ()
 	name=${0##*/}
 	echo
 	echo "usage:"
-	echo "	$name <program name>"
+	echo "	$name <program name> [directories]"
 	echo 
 	echo "This can be run in the saved endurance data dir to extract"
-	echo "SMAPS information for the named process(es)."
+	echo "SMAPS information for the named process(es). Or you can give"
+	echo "the endurance snapshot directories from which it should"
+	echo "extract the informations."
 	echo
-	echo "Example:"
+	echo "Examples:"
 	echo "	$name pulseaudio"
+	echo "	$name pulseaudio 120 121"
 	echo
 	echo "ERROR: $1!"
 	echo
@@ -43,28 +46,54 @@ if [ -z "$(which lzop)" ]; then
 	usage "'lzop' utility to extract SMAPS .lzo content is missing"
 fi
 
-if [ \! -f 101/smaps.cap.lzo ]; then
-	usage "Endurance SMAPS files like '101/smaps.cap.lzo' are missing"
-fi
-
 prog=$1
+shift
 if [ -z "$prog" ]; then
 	usage "Give a name for program which info should be extracted"
 fi
 
-echo "Searching/extracting SMAPS information for '$prog' from..."
-for file in */smaps.cap.lzo; do
+if [ "$prog" == "-h" ] || [ "$prog" == "--help" ]; then
+	usage "-h/--help given as program name"
+fi
+
+echo "Searching/extracting SMAPS information for '$prog' from snapshots..."
+
+extract_info ()
+{
 	# get snapshot/directory name/number
-	num=${file%/*}
+	num=${1%/*}
 	num=${num##*/}
 	name=$prog-$num.cap
 	echo "- $num"
 	# uncompress, take only program info and store that
-	lzop -c -d $file | awk "
-/^==/ {	show=0 }
+	lzop -c -d $1 | awk "
+/^==/ {	show=0; next }
 /Name: $prog/ {	show=1 }
 { if(show) print }" > $name
-done
+}
+
+capfile=smaps.cap.lzo
+
+if [ $# -gt 0 ]; then
+	for dir in $*; do
+		if [ \! -d "$dir" ]; then
+			usage "Given snapshot directory '$dir' doesn't exist"
+		fi
+		if [ \! -f "$dir/$capfile" ]; then
+			usage "Given snapshot directory '$dir' doesn't have '$capfile' SMAPS capture file"
+		fi
+	done
+	for dir in $*; do
+		extract_info $dir/$capfile
+	done
+else
+	if [ \! -f 101/$capfile ]; then
+		usage "Endurance SMAPS files like '101/smaps.cap.lzo' are missing"
+	fi
+	for file in */$capfile; do
+		extract_info $file
+	done
+fi
 
 fgrep -q "Name: $prog" $prog-*.cap
 if [ $? -ne 0 ]; then
