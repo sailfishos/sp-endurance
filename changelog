@@ -1,0 +1,363 @@
+
+sp-endurance (2.2.1), 28 Feb 2011:
+  * replace support for obsolete memory limits in old Maemo releases
+    with hard-coded Linux kernel OOM limit (with dummy data output by
+    proc2csv for compatiblity to old sp-endurance-postproc versions).
+  * Replace the use of sysinfo-tool with sysinfoclient. 
+  * Do not pass arguments to echo(1), they are not portable. 
+  * Invoke df(1) with POSIX locale and "-k -P" for portability.
+  * Add battery information to endurance data snapshot. 
+
+sp-endurance (2.2), 19 Jan 2011:
+  * endurance_report.py: fix IndexError with more than 4 network interfaces.
+
+sp-endurance (2.1.9), 28 Dec 2010:
+  * save-incremental-endurance-stats: collect /proc/diskstats and
+    /proc/zoneinfo. 
+  * endurance_plot:
+    - New IO plots based on /proc/diskstats.
+    - Various small tweaks.
+
+sp-endurance (2.1.8), 03 Dec 2010:
+  * New post-processing tool `endurance_plot'. 
+    - endurance_plot creates a large variety of (RAM, swap, CPU, X resource
+      usage, interrupt, context switch etc) graphs from sp-endurance collected
+      data for trend analysis.
+  * Get bootreason from sysinfo. 
+  * Fix proc2csv errors with long lines. 
+  * Fix unnecessary sysinfoclient output parsing. 
+
+sp-endurance (2.1.7), 17 Nov 2010:
+  * Remove use of deprecated /proc/component_version and /proc/bootreason
+    interfaces. 
+
+sp-endurance (2.1.6), 26 Oct 2010:
+  * endurance_report.py: track DRI2Drawable resource atom count changes.
+  * save-incremental-endurance-stats: provide default value for DISPLAY.
+
+sp-endurance (2.1.5), 21 Oct 2010:
+  * xmeminfo: add support for new X resource types. This changes the CSV
+    output format produced by xmeminfo.
+  * xmeminfo: optionally report only specified atoms: add new parameter
+    -a/-atom.
+  * endurance_report.py: add support for new xmeminfo CSV format.
+  * Add dependency to sysinfo-tool to fix useless release identification in
+    usage.csv produced by save-incremental-endurance-stats. 
+
+sp-endurance (2.1.4), 05 Oct 2010:
+  * endurance_report.py: report change from initial state - 
+
+sp-endurance (2.1.3), 31 Aug 2010:
+  * endurance-mem-overview: take SwapCached into account.
+  * endurance_report.py: Improve the heuristics for selecting processes for
+    the 'Process memory usage' section:
+        i) Prune processes that do not use any CPU ticks.
+       ii) Include processes that used at least 0.5% of total CPU time during
+           the first and last round.
+
+sp-endurance (2.1.2), 23 Aug 2010:
+  * Update save-incremental-endurance-stats for Harmattan. 
+
+sp-endurance (2.1.1), 18 May 2010:
+  * Prominent notice about reboots in endurance reports. 
+
+sp-endurance (2.1), 21 Apr 2010:
+  * Handle X client names with commas and df filesystem usage output
+    spanning multiple lines. 
+  * Store focused/topmost application name if use-case step description
+    is missing.  
+  * Improved heuristics for removing memove graphs for non-interesting
+    processes, with a fix for swap+dirty accounting and a new --show-all
+    option to get graphs for all processes.  
+
+sp-endurance (2.0.3), 05 Mar 2010:
+  * Use "-a" option for ifconfig.  
+  * Correct swap/page in/out, interrupt and context switch counts,
+    they were 100x off. 
+
+sp-endurance (2.0.2), 21 Jan 2010:
+  * Fix the post-processing exception when network interfaces are
+    active, but have no traffic.  
+  * Add CI test script.
+
+sp-endurance (2.0.1), 12 Nov 2009:
+  * Do not mangle the last character in the process command line.
+  * Proper error handling in case low memory limits are missing from the data.
+
+sp-endurance (2.0), 30 Oct 2009:
+  * "proc2csv" stores the whole process command line; this makes the data
+    format incompatible with older sp-endurance-postproc versions.
+    , NB#144586
+  * "endurance-mem-overview" takes swap into account and it's now possible
+    to specify the shown memory usage range. 
+  * Show X resource count differencies in addition to X resource memory usage
+    in the summary at the end. 
+  * Show network interface transfers graph in the beginning. 
+  * Add "extract-endurance-process-smaps" helper script. 
+  * Support Fremantle low memory limits scheme. 
+  * Update documentation
+
+sp-endurance (1.24), 9 Jun 2009:
+  * Give more detailed X resource usage information and log use of unknown
+    X resources. Data format change is incompatible with previous
+    sp-endurance-postproc versions
+
+sp-endurance (1.23), 9 Jun 2009:
+  * Fix harmless Coverity reported leak on error exit + set freed
+    namelist entries NULL in proc2csv. 
+
+sp-endurance (1.22), 1 Jun 2009:
+  * Fix divide-by-zero error on identical (copied) data. 
+
+sp-endurance (1.21), 19 May 2009:
+  * CPU/swap/interrups/context switch statistics added. 
+
+sp-endurance (1.20), 5 May 2009:
+  * Fix endurance_report.py to work with Scratchbox Python v2.3.
+
+sp-endurance (1.19), 28 Apr 2009:
+  * More statistics added. 
+  * : sp-endurance/syslog parser doesn't catch upstart reported
+    crash/restart messages
+  * : sp-endurance uses obsolete /etc/osso_software_version
+
+sp-endurance (1.18), 16 Apr 2009:
+  * Add PSS and SWAP support to endurance_report.py
+
+sp-endurance (1.17), 3 Mar 2009:
+  * Syslog parser now recognizes and reports D-BUS warnings about
+    applications having too wide signal matching rules. 
+
+sp-endurance (1.16), 4 Dec 2008:
+  * The shared memory segment stats are now included in the main report
+    page. 
+
+sp-endurance (1.15), 21 Aug 2008:
+  * Fixed a Lintian warning.
+
+sp-endurance (1.14), 21 Aug 2008:
+  * Remove support for SleepAVG as newer kernels don't support it.
+
+sp-endurance (1.13), 25 Jun 2008:
+  * The message output introduced by the fix in version 1.12 has been
+    tweaked slightly.
+
+sp-endurance (1.12), 25 Jun 2008:
+  * Parse kernel BUG and onenand_wait issues. 
+
+sp-endurance (1.11), 30 May 2008:
+  * Compatibility issue with older endurance data was fixed. Fixes:
+    NB#86013
+
+sp-endurance (1.10), 30 Apr 2008:
+  * Support for adding use-case test descriptions has been implemented.
+
+sp-endurance (1.9), 16 Apr 2008:
+  * Fixed broken detection of kernel OOM messages caused by change in
+    case. 
+
+sp-endurance (1.8), 4 Apr 2008:
+  * Fixed endurance parsing failure when process smaps data had no
+    private dirty memory. 
+
+sp-endurance (1.7), 1 Apr 2008:
+  * Fixed syslog rotation handling issue. 
+
+sp-endurance (1.6), 22 Feb 2008:
+  * Fixed empty DSME files not being handled gracefully. 
+
+sp-endurance (1.5), 20 Feb 2008:
+  * A rare warning message also triggered an exception in endurance
+    report script. 
+
+sp-endurance (1.4), 14 Jan 2008:
+  * save-incremental-endurance-stats: argument handling robustness has
+    been improved. 
+
+sp-endurance (1.3), 28 Nov 2007:
+  * save-incremental-endurance-stats: when sp_smaps_snapshot is
+    missing, produces (about) same data with few lines of shell
+  * parse-endurance-measurements: handle compressed smaps files
+  * endurance_report.py: show smaps private-dirty information
+    in application memory usage graphs
+  * update/fix README
+
+sp-endurance (1.2), 6 Nov 2007:
+  * save-incremental-endurance-stats: save open file descriptors,
+    use proc2csv in permissive mode so that also non-root can get
+    data required in postprocessing. 
+  * endurance_report.py: link open-fds and smaps.cap files, include
+    SwapCached to system free and show swap change in summary,
+    show differences in process thread counts
+  * compress smaps.cap in save-incremental-endurance-stats and
+    handle that in endurance_report.py. 
+  * endurance_report.py: Fail more gracefully when encountering mixed-
+    version endurance data. 
+
+sp-endurance (1.1.18), 2 Oct 2007:
+  * syslog_parse.py: handle syslog read failures gracefully.
+    Fix to 66123 got dates in Glib errors duplicated, fixed.
+
+sp-endurance (1.1.17), 31 Aug 2007:
+  * Added a missing a comma in a dictionary declaration at
+    syslog_parse.py. 
+
+sp-endurance (1.1.16), 12 Jul 2007:
+  * Include day to the errors parsed from syslog. 
+
+sp-endurance (1.1.15), 12 Jul 2007:
+  * Parse bootup reason from syslog. 
+
+sp-endurance (1.1.14), 24 May 2007:
+  * Parse kernel I/O errors from syslog
+
+sp-endurance (1.1.13), 9 May 2007:
+  * Have complete license text in the source package instead of just
+    referring to system GPL-2 license file. Add copyright and license
+    information to manpages. 
+
+sp-endurance (1.1.12), 3 May 2007:
+  * Sort resource usage tables according to changes, not total
+  * Fix to python exception in get_pid_usage_diffs()
+
+sp-endurance (1.1.11), 26 Apr 2007:
+  * Ignore all resources (i.e. also private memory and FDs)
+    used by extra threads processes have. 
+  * Add endurance-mem-overview Awk script giving a quick memory usage
+    overview ASCII-graph from the endurance data which can be run on
+    the target device (as it doesn't need Python)
+
+sp-endurance (1.1.10), 17 Apr 2007:
+  * List also changes in kernel threads and zombie processes
+  * Fold the script save-incremental-endurance-stats calls back
+  * Fix to new thread ignore code. 
+
+sp-endurance (1.1.9), 16 Apr 2007:
+  * Do not ignore any processes, even my own
+  * Cope with missing SMAPS data in endurance_report.py. 
+
+sp-endurance (1.1.8), 12 Apr 2007:
+  * Fix how threads are indentified for removal from memory usage graphs.
+
+sp-endurance (1.1.7), 4 Apr 2007:
+  * Added manual pages for all the tools and include README to postproc
+    binary package. 
+
+sp-endurance (1.1.6), 13 Mar 2007:
+  * endurance script now parses amount of dirty code pages from smaps
+    data (which indicates incorrectly compiled libraries) and there's
+    a separate sum-dirty-code-pages script for doing the same on the device
+
+sp-endurance (1.1.5), 1 Mar 2007:
+  * syslog_parse.py: Check each syslog line for all recognized messages
+    in case device boots in middle of line and check SysRq messages
+  * endurance_report.py: Do not show bars for repeating process memory
+    values and sort processes better, cleanup SMAPS parsing
+  * *.sh: Remove file name extension to make Lintian happy
+  * Add sum-smaps-private and split-endurance-measurements scripts
+  * sp-smaps-measure is now also optional
+  * Prepare for Open Source release, add proper copyrights etc
+
+sp-endurance (1.1.4), 8 Feb 2007:
+  * Parse private/dirty values from SMAPS data myself instead of relying
+    on sp-smaps-visualize as it was way too slow
+  * Add several options to parse-endurance-measurements.sh for controlling
+    which measurements are parsed, whether to call sp-smaps-visualize and
+    whether to split reports at reboots
+  * Further improvements to the memory usage graphs
+
+sp-endurance (1.1.3), 28 Nov 2006:
+  * Ignore immediately repeated errors in error counts
+  * Fix error message that gave Python exeption
+  * Show FS usage instead of free (as the table title says)
+  * Major improvements and fixes to process memory usage graphs
+  * Use tables for colorbars instead of images so that
+    the HTML can be attached to mails or bugzilla
+
+sp-endurance (1.1.2), 20 Dec 2006:
+  * Fix another bug in case syslogs didn't have any errors
+  * Parse Glib ERRORs + kernel OOMs and alloc denials from syslog
+  * Add contents list to error HTML file
+  * Don't remove SMAPS diff file
+
+sp-endurance (1.1.1), 28 Nov 2006:
+  * Fix bug in case syslogs didn't have any errors
+
+sp-endurance (1.1), 24 Nov 2006:
+  * Packaging:
+    - devel package, postproc is "Architecture: all" + relevant rules fixes
+  * Measurements:
+    - compress whole syslog and remove syslog grepping
+    - save the measurement files in to separate directories
+    - proc2csv parses also /proc/vmstat
+    - add /sbin/ifconfig and interrupts/slabinfo/stat files from /proc
+    - save DSME statistics
+  * Syslog errors postprocessing:
+    - separated syslog parsing to separate syslog_parse.py file so that
+      it can be used also standalone
+    - parse normal/separate syslog files instead of CSV endurance file
+    - add support for gzipped syslog files
+    - separate different types of DSME and Glib errors
+    - parse and count kernel Oopses, reboots, DSP errors and
+      connectivity errors&warnings from syslogs
+    - support both HTML and ASCII output
+    - parsing debug option
+    - error summary
+    - fix bug in syslog parsing with appended syslogs
+  * SMAPS data parsing:
+    - Don't redo SMAPS CSV files if they already exist
+  * Other endurance data postprocessing:
+    - rename endurance-report.py to endurance_report.py
+    - always print error message before failing exit
+    - arguments are directories instead of file names
+    - syslog data is now parsed from file separate from the CSV file
+      and parsing put the separate file (see above)
+    - output disk free changes (for '/' and '/tmp')
+    - show whole device /proc/sys/fs/file-nr changes
+    - output also X resource usage decreases
+    - save errors to separate HTML pages
+    - output statistics and summary of different error types
+    - output summary of disk/memory/X resource/FD usage changes
+    - add process changed/total counts with started/exited processes
+      listed side by side
+    - remove "sleep" from all the lists
+    - color code tables containing different data
+    - add change totals to all tables
+    - HTML comment summary of all statistics for maturity metrics
+    - parse process statistics from /proc/PID/status files
+    - add bars of RSS memory changes per process (for processes
+      which max. RSS usage changes between tests)
+    - add contents and otherwise fine-tune report output
+  * Documentation:
+    - Update README according to changes
+
+sp-endurance (1.0-7), 14 Sep 2006:
+  * save also full syslog and /proc/slabinfo data
+  * shows the warnings from syslog although syslogs don't seem to match
+  * fix to Browser X client name idiocy
+
+sp-endurance (1.0-6), 6 Jul 2006:
+  * fix bug in memory calculation introduced by last update
+
+sp-endurance (1.0-5), 9 Jun 2006:
+  * I fixed a bug that didn't always handle correctly processes that exited when proc2csv was running
+  * now also takes the memory limits from /proc i.e. the bargraphs take now also swap into account
+
+sp-endurance (1.0-4), 16 May 2006:
+  * With this you'll get again correct names in the report for
+    the maemo-launched binaries (smaps diff never before contained them,
+    but earlier my own script could map the names itself because earlier
+    diff file used real PIDs)
+
+sp-endurance (1.0-3), 4 May 2006:
+  * Updated endurance parser to support the new smaps format 
+
+sp-endurance (1.0-2), 4 May 2006:
+  * Updated package to include changes to path's in script
+  * Removed .svn dirs
+  * Improved README
+  * changelog
+  * debian/changelog
+
+sp-endurance (1.0-1), 24 Mar 2006:
+  * Initial release 
