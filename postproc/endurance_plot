@@ -22,7 +22,7 @@
 
 use Time::Local;
 
-my $version = "0.29";
+my $version = "0.33";
 
 # tunables
 my $ticks_per_sec = 100;
@@ -40,6 +40,8 @@ my $sw_version, $hw_build, $hw_product;
 my %legend;
 my %unit;
 my %thumblegend;
+
+my $secs_per_round = 0;
 
 # names for files by classes, results in grouping,
 # as thumbnails are generated using this list sorted
@@ -191,6 +193,12 @@ $legend{$graph_events_swap} = "swap-related events";
 $thumblegend{$graph_events_swap} = "SWAP EVENTS";
 $unit{$graph_events_swap} = "count per second";
 
+my $graph_ramzswap =             "72_ramzswap";
+$legend{$graph_ramzswap} = "compressed swap counters; left:reads/writes right:used amount, bold"; 
+$thumblegend{$graph_ramzswap} = "COMPR-SWAP";
+$unit_1{$graph_ramzswap} = "MB per second";
+$unit_2{$graph_ramzswap} = "MB used";
+
 my $graph_events_ctx_total =    "65_ctx_total";
 $legend{$graph_events_ctx_total} = "process total context switches"; 
 $thumblegend{$graph_events_ctx_total} = "CTX TOTAL";
@@ -275,6 +283,12 @@ $legend{$graph_appmem_wx} = "executable mem which is writable, security issue";
 $thumblegend{$graph_appmem_wx} = "WRITABLE-EXEC";
 $unit{$graph_appmem_wx} = "MB";
 
+my $graph_battery =              "88_battery";
+$legend{$graph_battery} = "battery: left:charge left; right: voltage"; 
+$thumblegend{$graph_battery} = "BATTERY";
+$unit_1{$graph_battery} = "charge-percent, temp-C";
+$unit_2{$graph_battery} = "mV";
+
 #
 # Note: powertop is optional. it's files are not collected
 # by standard sp-endurance, but it is easy to use 
@@ -348,7 +362,7 @@ my %all_slabs;
 my %shared_lpid, %shared_cpid;
 my %shared_lpid_cnt, %shared_lpid_cnt_oneround;
 my %shared_cpid_cnt, %shared_cpid_cnt_oneround;
-my %shared_num, %shared_size;
+my %shared_num, %shared_size, %shared_used;
 my %fd_count, %fd_count_samples, %fd_count_diff, %fd_count_prev;
 my %pss_swap_num_samples;
 my %lapsed_time;
@@ -384,6 +398,18 @@ my $load_1_file_name = "e/load_1_min";
 my $load_5_file_name = "e/load_5_min";
 my $load_15_file_name = "e/load_15_min";
 my $fd_perc_file_name = "e/global-FD-percentage";
+
+my $batt_charge_left_file_name = "e/batt-charge-left";
+#my $batt_reporting_file_name = "e/batt-reporting";
+my $batt_voltage_file_name = "e/batt-voltage";
+my $batt_temperature_file_name = "e/batt-temp";
+
+my $ramzswap_bdreads_file_name = "e/ramzswap-bdreads";
+my $ramzswap_reads_file_name = "e/ramzswap-reads";
+my $ramzswap_bdwrites_file_name = "e/ramzswap-bdwrites";
+my $ramzswap_writes_file_name = "e/ramzswap-writes";
+my $ramzswap_zerop_file_name = "e/ramzswap-zerop";
+my $ramzswap_used_file_name = "e/ramzswap-used";
 
 my $pswp_in_prev = 0;
 my $pswp_out_prev = 0;
@@ -470,6 +496,13 @@ my %num_activity_samples;
 
 my %files;
 my %secval;
+my %cnt_per_file;
+
+my $have_diskstats = 0;
+my $have_ramzswap = 0;
+my $have_bme = 0;
+my $swapused_total = 0;
+my $swap_pgout_total = 0;
 
 sub date2seconds($)
 {
@@ -805,6 +838,7 @@ sub parse_shmem_block($)
 	$szxx = ($size/1024)/1024;
 	$shared_num{$nattach} += 1;
 	$shared_size{$nattach} += $szxx;
+	$shared_used{$nattach} = 1;
 	if($nattach > $max_nattach) {
 	    $max_nattach = $nattach;
 	}
@@ -1075,11 +1109,12 @@ sub parse_filesystem_block($)
 	    last;
 	}
 	($Filesystem,$blocks,$Used,$Available,$Use_perc,$Mounted) = split(',' , $line, 6);
-	if (!$fs_entry_seen{$Mounted}) {
+	if ($Mounted && !$fs_entry_seen{$Mounted}) {
+	    $om = $Mounted;
 	    chop $Use_perc;
 	    $fs_entry_seen{$Mounted} += 1;
 	    $Mounted =~ s/\//\_/g;
-#	    print "$i: Mounted=[$Mounted] Used=$Used seen=$fs_entry_seen{$Mounted}\n";
+#	    print "$i: om=[$om] Mounted=[$Mounted] Used=$Used seen=$fs_entry_seen{$Mounted}\n";
 	    $filesystem_names{$Mounted} = $Used;
 	    $fn = "e/fs-used-$Mounted";
 	    value_store($fn, $i, $Use_perc);
@@ -1174,11 +1209,19 @@ sub parse_pages_block($)
     value_store($slabunreclaim_plot_file_name, $i, $slabunreclaim);
 
     $swapused = $swaptotal - $swapfree;
+    $swapused_total += $swapused;
     value_store($swapused_plot_file_name, $i, $swapused);
+
+    if ($lapsed_time{$i}) {
+	$divider = $lapsed_time{$i};
+    } else {
+	$divider = $secs_per_round;
+    }
+
     if (!$pswp_in_prev) {
 	$pswp_in = 0;
     } else {
-	$pswp_in = ($pswp_in_cumul - $pswp_in_prev)/$lapsed_time{$i};
+	$pswp_in = ($pswp_in_cumul - $pswp_in_prev)/$divider;
 	value_store($pswp_in_plot_file_name, $i, $pswp_in);
     }
     $pswp_in_prev = $pswp_in_cumul;
@@ -1193,10 +1236,11 @@ sub parse_pages_block($)
     if (!$pswp_out_prev) {
 	$pswp_out = 0;
     } else {
-	$pswp_out = ($pswp_out_cumul - $pswp_out_prev)/$lapsed_time{$i};
+	$pswp_out = ($pswp_out_cumul - $pswp_out_prev)/$divider;
 	value_store($pswp_out_plot_file_name, $i, $pswp_out);
     }
     $pswp_out_prev = $pswp_out_cumul;
+    $swap_pgout_total += $pswp_out;
 
 #		$pgrotated = $pgrotated_cumul - $pgrotated_prev;
 #		$pgrotated_prev = $pgrotated_cumul;
@@ -1204,7 +1248,7 @@ sub parse_pages_block($)
     if (!$pgscan_kswapd_normal_prev) {
 	$pgscan_kswapd_normal = 0;
     } else {
-	$pgscan_kswapd_normal = ($pgscan_kswapd_normal_cumul - $pgscan_kswapd_normal_prev)/$lapsed_time{$i};
+	$pgscan_kswapd_normal = ($pgscan_kswapd_normal_cumul - $pgscan_kswapd_normal_prev)/$divider;
 	value_store($pgscan_kswapd_normal_plot_file_name, $i, $pgscan_kswapd_normal);
     }
     $pgscan_kswapd_normal_prev = $pgscan_kswapd_normal_cumul;
@@ -1212,7 +1256,7 @@ sub parse_pages_block($)
     if (!$pgscan_direct_normal_prev) {
 	$pgscan_direct_normal = 0;
     } else {
-	$pgscan_direct_normal = ($pgscan_direct_normal_cumul - $pgscan_direct_normal_prev)/$lapsed_time{$i};
+	$pgscan_direct_normal = ($pgscan_direct_normal_cumul - $pgscan_direct_normal_prev)/$divider;
 	value_store($pgscan_direct_normal_plot_file_name, $i, $pgscan_direct_normal);
     }
     $pgscan_direct_normal_prev = $pgscan_direct_normal_cumul;
@@ -1220,7 +1264,7 @@ sub parse_pages_block($)
     if (!$slabs_scanned_prev) {
 	$slabs_scanned = 0;
     } else {
-	$slabs_scanned = ($slabs_scanned_cumul - $slabs_scanned_prev)/$lapsed_time{$i};
+	$slabs_scanned = ($slabs_scanned_cumul - $slabs_scanned_prev)/$divider;
 	value_store($slabs_scanned_plot_file_name, $i, $slabs_scanned);
     }
     $slabs_scanned_prev = $slabs_scanned_cumul;
@@ -1228,7 +1272,7 @@ sub parse_pages_block($)
     if (!$kswapd_steal_prev) {
 	$kswapd_steal = 0;
     } else {
-	$kswapd_steal = ($kswapd_steal_cumul - $kswapd_steal_prev)/$lapsed_time{$i};
+	$kswapd_steal = ($kswapd_steal_cumul - $kswapd_steal_prev)/$divider;
 	value_store($kswapd_steal_plot_file_name, $i, $kswapd_steal);
     }
     $kswapd_steal_prev = $kswapd_steal_cumul;
@@ -1286,8 +1330,8 @@ sub process_smaps()
     $fn = "$d/smaps.cap";
     unless (open($f, $fn)) {
 	print STDERR "can not open $fn:$!\n";
-#	    next;
-	exit;
+	return;
+#	exit;
     }
     $sum_app_swapped = 0;
 #    $sum_app_private_dirty = 0;
@@ -1476,7 +1520,7 @@ sub process_interrupts()
 	$all_ints += $ints;
 	$fn = "e/int-$iname";
 	value_store($fn, $i, $ints);
-#		print "$i: ints-per-sec=$ints int_cnt=$int_cnt num=[$int_num] name=[$iname] nm=[$int_name1] nm2=[$int_name2] nm3=[$int_name3] nm4=[$int_name4]\n";
+#	print "$i: ints-per-sec=$ints int_cnt=$int_cnt num=[$int_num] name=[$iname] nm=[$int_name1] nm2=[$int_name2] nm3=[$int_name3] nm4=[$int_name4]\n";
     }
     close $f;
     value_store("e/count-int", $i, $all_ints);
@@ -1562,10 +1606,132 @@ sub process_diskstats()
 	$dev_time_per_write_prev{$dname} = $xmsec_writing;
 	$fn = "e/devwritetime-$dname";
 	value_store($fn, $i, $time_per_write);
-
+	$have_diskstats = 1;
     }
     close $f;
 }
+
+sub process_bme()
+{
+#
+# bme values (battery mgmt)
+#
+    $fn = $d . "/bmestat";
+    if (! -e $fn) {
+	#
+        # as this is new (added in sp-endurance 2.2.1+0m6 in 2011w9), 
+	# it may be missing in snapshots, just return silently if not there
+        #
+	return;
+    }
+    unless (open($f, $fn)) {
+	print STDERR "can not open $fn:$!\n";
+	return;
+    }
+    $have_bme = 1;
+    while (<$f>) {
+	if (m/battery pct. level:/) {
+	    (undef, undef, undef, $batt_lev) = split(' ' , $_, 4);
+	    chop $batt_lev;
+#	    print "$i: batt_lev=[$batt_lev]\n";
+	    value_store($batt_charge_left_file_name, $i, $batt_lev);
+	} 
+	elsif (m/battery cur. voltage:/) {
+	    (undef, undef, undef, $volt) = split(' ' , $_, 4);
+	    chop $volt;
+#	    print "$i: batt_volt=[$volt]\n";
+	    value_store($batt_voltage_file_name, $i, $volt);
+	}
+	elsif (m/battery temperature:/) {
+	    (undef, undef, $batt_temp) = split(' ' , $_, 3);
+	    chop $batt_temp;
+#	    print "$i: batt_temp=[$batt_temp]\n";
+	    value_store($batt_temperature_file_name, $i, $batt_temp);
+	}
+    }
+    close $f;
+}
+
+
+sub process_ramzswap()
+{
+#
+# Compressed swap values
+#
+    $fn = $d . "/ramzswap";
+    if (! -e $fn) {
+	#
+        # as this is optional, may be missing in snapshots,
+        # just return silently if not there
+        #
+	return;
+    }
+    unless (open($f, $fn)) {
+	print STDERR "can not open $fn:$!\n";
+	return;
+    }
+    $have_ramzswap = 1;
+    if ($lapsed_time{$i}) {
+	$divider = $lapsed_time{$i};
+    } else {
+	$divider = $secs_per_round;
+    }
+    while (<$f>) {
+	if (m/BDevNumReads:/) {
+	    (undef, $param) = split(' ' , $_, 2);
+	    if (!$prev_ramzswap_bdreads) {
+		$n_bdreads = 0;
+	    } else {
+		$n_bdreads = ($param  - $prev_ramzswap_bdreads)/$divider;
+	    }
+#	    print "$i: n_bdreads=$n_bdreads\n";
+	    value_store($ramzswap_bdreads_file_name, $i, $n_bdreads);
+	    $prev_ramzswap_bdreads = $param;
+	} elsif (m/NumReads:/) {
+	    (undef, $param) = split(' ' , $_, 2);
+	    if (!$prev_ramzswap_reads) {
+		$n_reads = 0;
+	    } else {
+		$n_reads = ($param  - $prev_ramzswap_reads)/$divider;
+	    }
+#	    print "$i: n_reads=$n_reads div=$divider\n";
+	    value_store($ramzswap_reads_file_name, $i, $n_reads);
+	    $prev_ramzswap_reads = $param;
+	} elsif (m/BDevNumWrites:/) {
+	    (undef, $param) = split(' ' , $_, 2);
+	    if (!$prev_ramzswap_bdwrites) {
+		$n_bdwrites = 0;
+	    } else {
+		$n_bdwrites = ($param  - $prev_ramzswap_bdwrites)/$divider;
+	    }
+#	    print "$i: n_bdwrites=$n_bdwrites\n";
+	    value_store($ramzswap_bdwrites_file_name, $i, $n_bdwrites);
+	    $prev_ramzswap_bdwrites = $param;
+	} elsif (m/NumWrites:/) {
+	    (undef, $param) = split(' ' , $_, 2);
+	    if (!$prev_ramzswap_writes) {
+		$n_writes = 0;
+	    } else {
+		$n_writes = ($param  - $prev_ramzswap_writes)/$divider;
+	    }
+#	    print "$i: n_writes=$n_writes\n";
+	    value_store($ramzswap_writes_file_name, $i, $n_writes);
+	    $prev_ramzswap_writes = $param;
+	} elsif (m/ZeroPages:/) {
+	    (undef, $zerop) = split(' ' , $_, 2);
+	    $zerom = ($zerop * $page_size)/1024;
+#	    print "$i: n_zerop=$zerom\n";
+	    value_store($ramzswap_zerop_file_name, $i, $zerom);
+	} elsif (m/PagesUsed:/) {
+	    (undef, $n_usedp) = split(' ' , $_, 2);
+	    $used = ($n_usedp * $page_size)/1024;
+#	    print "$i: nused=$n_usedp used=$used\n";
+	    value_store($ramzswap_used_file_name, $i, $used);
+	}
+    }
+    close $f;
+}
+
 
 sub process_stat()
 {
@@ -1580,7 +1746,7 @@ sub process_stat()
     while (<$f>) {
 	$line = $_;
 	chop $line;
-	if( index($_, "ctxt ") != -1) {
+	if( m/ctxt /) {
 	    (undef, $ctx) = split(' ' , $line, 2);
 
 	    if (!$global_ctx_prev) {
@@ -1590,7 +1756,7 @@ sub process_stat()
 	    }
 	    $global_ctx_prev = $ctx;
 	    value_store("e/all-ctx-switches", $i, $global_ctx);
-	} elsif( index($_, "processes ") != -1) {
+	} elsif( m/processes /) {
 	    (undef, $processes) = split(' ' , $line, 2);
 
 	    if (!$global_processes_prev) {
@@ -1637,7 +1803,7 @@ sub process_powertop()
     while (<$f>) {
 	$line = $_;
 	chop $line;
-	if( index($_, "Collecting data for ") != -1) {
+	if( m/Collecting data for /) {
 	    (undef, undef, undef, $secs, undef) = split(' ' , $line, 5);
 	    next;
 	} elsif( index($_, "C#") != -1) {
@@ -1649,7 +1815,28 @@ sub process_powertop()
 		}
 		chop $line;
 		chop $line;
+# 
+# it used to be like this:
+#C#      | Ratio  | Avg/dura | Frequency | Ratio
+#--------+--------+----------+-----------+--------+
+#     C0 |  95.4% |          |  1000 MHz |  95.4% |
+#     C1 |   0.2% |   11.2ms |   800 MHz |   0.0% |
+#
+#but startin with powertop  1.13.61 changed to separate tables:
+#----------------------------+  +--------------------+
+#     Available C-States     |  |   Available Freqs  |
+#--------+--------+----------+  +-----------+--------+
+#C#      | Ratio  | Avg/dura |  | Frequency | Ratio  |
+#--------+--------+----------+  +-----------+--------+
+#     C0 |   0.4% |          |  |  1000 MHz |   0.0% |
+#     C1 |   0.4% |    0.3ms |  |   800 MHz |   0.0% |
+
+#
+# so I replace "|  |" with "|" (i.e. to have old style) for uniform parsing
+#
 #		print "power-c line=[$line]\n";
+		$line =~ s/\|  \|/|/g;
+#		print "xxxpower-c line=[$line]\n";
 		($clev, $ratio_c, $dura, $freq, $ratio_f) = split('\|' , $line, 5);
 #		if (index($clev, "C") == -1) {
 #		    last;
@@ -2098,6 +2285,7 @@ sub close_plot($$$)
 	$thumbnames{$key} = $thumblegend{$key};
     } else {
 #	print "\nNot enough changes/samples for $key, skipped\n";
+#	print "(skip $key) ";
 	print "(skip) ";
     }
 }
@@ -2119,7 +2307,7 @@ sub print_cf_states_plot_cmds($)
     foreach $p (reverse sort keys %seen_powertop_c_levels) {
 	$num_entries += 1;
     }
-    # and we sort them like this to get highrst stuff to the top
+    # and we sort them like this to get highest stuff to the top
     foreach $p (reverse sort keys %seen_powertop_c_levels) {
 	if ($cnt_1 > 0) {
 	    print $plot ", ";
@@ -2180,17 +2368,19 @@ sub generate_plots()
     print "graphs: mem ";
     $plot = start_plotfile_lines($graph_memory);
 
-    value_emit($swapused_plot_file_name, 0);
-    print $plot "'$swapused_plot_file_name' lt 1 lw 5,";
-    value_emit($app_swapped_plot_file_name, 0);
-    print $plot "'$app_swapped_plot_file_name' lt 1 lw 2,";
+    if ($swapused_total) {
+	value_emit($swapused_plot_file_name, 0);
+	print $plot "'$swapused_plot_file_name' lt 1 lw 5,";
+	value_emit($app_swapped_plot_file_name, 0);
+	print $plot "'$app_swapped_plot_file_name' lt 1 lw 2,";
+	value_emit($swapcached_plot_file_name, 0);
+	print $plot "'$swapcached_plot_file_name' lw 3, ";
+    }
 
     value_emit($memfree_plot_file_name, 0);
     print $plot "'$memfree_plot_file_name' lw 3, ";
     value_emit($cached_plot_file_name, 0);
     print $plot "'$cached_plot_file_name' lw 3, ";
-    value_emit($swapcached_plot_file_name, 0);
-    print $plot "'$swapcached_plot_file_name' lw 3, ";
     value_emit($active_file_plot_file_name, 0);
     print $plot "'$active_file_plot_file_name' lw 3,";
     value_emit($inactive_file_plot_file_name, 0);
@@ -2454,6 +2644,10 @@ sub generate_plots()
 
     $cnt = 0;
     for ($z = 0; $z <= $max_nattach ; $z++) {
+#	print "shared_used[$z] = \n";
+	if (!$shared_used{$z}) {
+	    next;
+	}
 	if ($cnt > 0) {
 	    print $plot ", ";
 	}
@@ -2642,70 +2836,86 @@ sub generate_plots()
     close_plot($cnt, $plot, $graph_appmem_wx);
 
 ############# SWAP EVENT COUNTS ######################
-    print "swap ";
-    $n = 0;
-    $plot = start_plotfile_lines($graph_events_swap);
-    if (value_emit($pswp_in_plot_file_name, 0)) {
-	print $plot "'$pswp_in_plot_file_name' lw 3";
-	$n += 1;
-    }
-    if (value_emit($pswp_out_plot_file_name, 0)) {
-	print $plot ", '$pswp_out_plot_file_name' lw 3";
-	$n += 1;
-    }
-    if (value_emit($pgscan_kswapd_normal_plot_file_name, 0)) {
-	print $plot ", '$pgscan_kswapd_normal_plot_file_name' lw 3";
-	$n += 1;
-    }
-    if (value_emit($pgscan_direct_normal_plot_file_name, 0)) {
-	print $plot ", '$pgscan_direct_normal_plot_file_name' lw 3";
-	$n += 1;
-    }
-    if (value_emit($slabs_scanned_plot_file_name, 0)) {
-	print $plot ", '$slabs_scanned_plot_file_name' lw 3";
-	$n += 1;
-    }
-    if (value_emit($kswapd_steal_plot_file_name, 0)) {
-	print $plot ", '$kswapd_steal_plot_file_name' lw 3";
-	$n += 1;
-    }
-    close_plot($n, $plot, $graph_events_swap);
-    
-############### Histogram of processes swapped #################
-    $plot = start_plotfile_histogram($graph_appmem_swapped);
-
-    $cnt = 0;
-    %show_this = undef;
-
-    foreach $p (reverse sort {$app_cumul_swp{$a} <=> $app_cumul_swp{$b} } keys %app_cumul_swp) {
-	if ($cnt > ($max_per_graph_onecolumn - 1)) {
-	    last;
-	} 
-	$show_this{$p} = 1;
-	$cnt += 1;
-#    print "1:cnt=$cnt p=$p\n";
-    }
-    foreach $p (sort keys %app_cumul_swp) {
-	if ($show_this{$p}) {
-	    $sumdev_swp{$p} /= $devcount_swp{$p};
-	    $sumdev_swp{$p} += (100*($i - $devcount_swp{$p}));
+    if (($swapused_total + $swap_pgout_total) > 0) {
+	print "swap ";
+	$n = 0;
+	$plot = start_plotfile_lines($graph_events_swap);
+	if (value_emit($pswp_in_plot_file_name, 0)) {
+	    print $plot "'$pswp_in_plot_file_name' lw 3";
+	    $n += 1;
 	}
-    }
-    $cnt = 0;
-    foreach $p (sort {$sumdev_swp{$a} <=> $sumdev_swp{$b} } keys %app_cumul_swp) {
-	if ($show_this{$p} != 1) {
-	    next;
-	} 
-	one_plot_set("e/swp-$p", 0, $plot, \$cnt, 1);
+	if (value_emit($pswp_out_plot_file_name, 0)) {
+	    if ($n > 0) {
+		print $plot ", ";
+	    }
+	    print $plot "'$pswp_out_plot_file_name' lw 3";
+	    $n += 1;
+	}
+	if (value_emit($pgscan_kswapd_normal_plot_file_name, 0)) {
+	    if ($n > 0) {
+		print $plot ", ";
+	    }
+	    print $plot "'$pgscan_kswapd_normal_plot_file_name' lw 3";
+	    $n += 1;
+	}
+	if (value_emit($pgscan_direct_normal_plot_file_name, 0)) {
+	    if ($n > 0) {
+		print $plot ", ";
+	    }
+	    print $plot "'$pgscan_direct_normal_plot_file_name' lw 3";
+	    $n += 1;
+	}
+	if (value_emit($slabs_scanned_plot_file_name, 0)) {
+	    if ($n > 0) {
+		print $plot ", ";
+	    }
+	    print $plot "'$slabs_scanned_plot_file_name' lw 3";
+	    $n += 1;
+	}
+	if (value_emit($kswapd_steal_plot_file_name, 0)) {
+	    if ($n > 0) {
+		print $plot ", ";
+	    }
+	    print $plot "'$kswapd_steal_plot_file_name' lw 3";
+	    $n += 1;
+	}
+	close_plot($n, $plot, $graph_events_swap);
+	
+############### Histogram of processes swapped #################
+	$plot = start_plotfile_histogram($graph_appmem_swapped);
+
+	$cnt = 0;
+	%show_this = undef;
+
+	foreach $p (reverse sort {$app_cumul_swp{$a} <=> $app_cumul_swp{$b} } keys %app_cumul_swp) {
+	    if ($cnt > ($max_per_graph_onecolumn - 1)) {
+		last;
+	    } 
+	    $show_this{$p} = 1;
+	    $cnt += 1;
+#    print "1:cnt=$cnt p=$p\n";
+	}
+	foreach $p (sort keys %app_cumul_swp) {
+	    if ($show_this{$p}) {
+		$sumdev_swp{$p} /= $devcount_swp{$p};
+		$sumdev_swp{$p} += (100*($i - $devcount_swp{$p}));
+	    }
+	}
+	$cnt = 0;
+	foreach $p (sort {$sumdev_swp{$a} <=> $sumdev_swp{$b} } keys %app_cumul_swp) {
+	    if ($show_this{$p} != 1) {
+		next;
+	    } 
+	    one_plot_set("e/swp-$p", 0, $plot, \$cnt, 1);
 #    print "2:cnt=$cnt p=$p show_this=$show_this{$p}\n";
-    }
+	}
 #
 # special: add unaccounted swapped (shared??) mem. (diff:total_swap - apps_swap)
 #
-    value_emit($unaccount_swapped_plot_file_name, 1);
-    print $plot ", 'e/unaccount_swapped' using 2";
-    close_plot($cnt, $plot, $graph_appmem_swapped);
-
+	value_emit($unaccount_swapped_plot_file_name, 1);
+	print $plot ", 'e/unaccount_swapped' using 2";
+	close_plot($cnt, $plot, $graph_appmem_swapped);
+    }
 ############### Histogram of processes private dirty #################
 #    print "privdirty ";
 #    $plot = start_plotfile_histogram($graph_appmem_private_dirty);
@@ -2742,6 +2952,7 @@ sub generate_plots()
 
 ############### Histogram of processes PSS #################
     print "pss ";
+    sleep 5;
     $plot = start_plotfile_histogram($graph_appmem_pss);
 
     $cnt = 0;
@@ -2831,33 +3042,38 @@ sub generate_plots()
 		$div = $avg_pss_swp{$p};
 		$sdiv = sprintf("%2.1f", $div);
 #	print "div(1)=$div, sdiv(1)=$sdiv\n";
-		$legend{$graph_appmem_pss_swap_lines_big} = "apps PSS+SWP >; $sdiv MB"; 
+		$legend{$graph_appmem_pss_swap_lines_big} = "apps PSS+SWP > $sdiv MB"; 
 		$thumblegend{$graph_appmem_pss_swap_lines_big} = "PSS+SWP &gt; $sdiv MB";
 
-		$legend{$graph_appmem_pss_swap_lines_small} = "apps PSS+SWP <; $sdiv MB"; 
+		$legend{$graph_appmem_pss_swap_lines_small} = "apps PSS+SWP < $sdiv MB"; 
 		$thumblegend{$graph_appmem_pss_swap_lines_small} = "PSS+SWP &lt; $sdiv MB";
 	    } elsif ($cnt == $divpoint_2) {
 		$div = $avg_pss_swp{$p};
 		$sdiv = sprintf("%2.1f", $div);
 #	print "div(2)=$div, sdiv(2)=$sdiv\n";
-		$legend{$graph_appmem_pss_swap_lines_smaller} = "apps PSS+SWP <; $sdiv MB"; 
+		$legend{$graph_appmem_pss_swap_lines_smaller} = "apps PSS+SWP < $sdiv MB"; 
 		$thumblegend{$graph_appmem_pss_swap_lines_smaller} = "PSS+SWP &lt; $sdiv MB";
 	    } elsif ($cnt == $divpoint_3) {
 		$div = $avg_pss_swp{$p};
 		$sdiv = sprintf("%2.1f", $div);
 #	print "div(3)=$div, sdiv(3)=$sdiv\n";
-		$legend{$graph_appmem_pss_swap_lines_smallest} = "apps PSS+SWP <; $sdiv MB"; 
+		$legend{$graph_appmem_pss_swap_lines_smallest} = "apps PSS+SWP < $sdiv MB"; 
 		$thumblegend{$graph_appmem_pss_swap_lines_smallest} = "PSS+SWP &lt; $sdiv MB";
 	    }
 	    $cnt += 1;
 	} 
     }
+
 ############### Lines of processes PSS+SWAP >= $lines_pss_swap_divider_1 MB #################
+#
+# XXX ??? here between _11.1 and _12, mem use jumps high!!
+#
     $cnt = 0;
     $plot_1 = start_plotfile_linespoints($graph_appmem_pss_swap_lines_big);
     $plot_2 = start_plotfile_linespoints($graph_appmem_pss_swap_lines_small);
     $plot_3 = start_plotfile_linespoints($graph_appmem_pss_swap_lines_smaller);
     $plot_4 = start_plotfile_linespoints($graph_appmem_pss_swap_lines_smallest);
+    $cnt_per_file = undef;
     foreach $p (reverse sort {$avg_pss_swp{$a} <=> $avg_pss_swp{$b} } keys %avg_pss_swp) {
 	if ($show_this{$p}) {
 	    if ($cnt < (1*$elems_per_graph)) {
@@ -2873,7 +3089,7 @@ sub generate_plots()
 		print "graph_appmem_lines: no handle...p=[$p] cnt=$cnt\n";
 		next;
 	    }
-	    if ($cnt_per_file[$handle] > 0) {
+	    if ($cnt_per_file{$handle} > 0) {
 		print $handle ", ";
 	    }
 #    print "cnt=[$cnt]; p=[$p] cumul=$app_cumul_pss_swp{$p} avg=$avg_pss_swp{$p} samples=$pss_swap_num_samples{$p}\n";
@@ -2888,13 +3104,13 @@ sub generate_plots()
 	    delete_zero_lines($fn);
 	    print $handle "'e/pswp-$p' lw 3";
 	    $cnt += 1;
-	    $cnt_per_file[$handle] += 1;
+	    $cnt_per_file{$handle} += 1;
 	}
     }
-    close_plot($cnt_per_file[$plot_1], $plot_1, $graph_appmem_pss_swap_lines_big);
-    close_plot($cnt_per_file[$plot_2], $plot_2, $graph_appmem_pss_swap_lines_small);
-    close_plot($cnt_per_file[$plot_3], $plot_3, $graph_appmem_pss_swap_lines_smaller);
-    close_plot($cnt_per_file[$plot_4], $plot_4, $graph_appmem_pss_swap_lines_smallest);
+    close_plot($cnt_per_file{$plot_1}, $plot_1, $graph_appmem_pss_swap_lines_big);
+    close_plot($cnt_per_file{$plot_2}, $plot_2, $graph_appmem_pss_swap_lines_small);
+    close_plot($cnt_per_file{$plot_3}, $plot_3, $graph_appmem_pss_swap_lines_smaller);
+    close_plot($cnt_per_file{$plot_4}, $plot_4, $graph_appmem_pss_swap_lines_smallest);
 
 ############### num of threads #################
     print "threads ";
@@ -2938,9 +3154,9 @@ sub generate_plots()
 	if ($cnt > $max_per_graph_onecolumn) {
 	    last;
 	} 
-	if ($xres_samples{$p} < $samples_required) {
-	    next;
-	}
+#	if ($xres_samples{$p} < $samples_required) {
+#	    next;
+#	}
 	if (!$xres_pxm_size_total{$p}) {
 	    next;
 	}
@@ -3016,31 +3232,70 @@ sub generate_plots()
     value_emit($fn, 0);
     close_plot($cnt, $plot, $graph_interrupts);
 
+    if ($have_diskstats) {
 ############# diskstats, reads #####################
-    print "diskstat ";
-    $plot_1 = start_plotfile_lines($graph_diskstats_reads);
-    $plot_2 = start_plotfile_lines($graph_diskstats_read_time);
+	print "diskstat ";
+	$plot_1 = start_plotfile_lines($graph_diskstats_reads);
+	$plot_2 = start_plotfile_lines($graph_diskstats_read_time);
 
-    $cnt_1 = $cnt_2 = 0;
-    foreach $p ( reverse sort {$dev_reads_total{$a} <=> $dev_reads_total{$b} } keys %dev_reads_total) {
-	one_plot_set("e/devreads-$p", 2, $plot_1, \$cnt_1, 0);
-	one_plot_set("e/devreadtime-$p", 2, $plot_2, \$cnt_2, 0);
-    }
-    close_plot($cnt_1, $plot_1, $graph_diskstats_reads);
-    close_plot($cnt_2, $plot_2, $graph_diskstats_read_time);
+	$cnt_1 = $cnt_2 = 0;
+	foreach $p ( reverse sort {$dev_reads_total{$a} <=> $dev_reads_total{$b} } keys %dev_reads_total) {
+	    one_plot_set("e/devreads-$p", 2, $plot_1, \$cnt_1, 0);
+	    one_plot_set("e/devreadtime-$p", 2, $plot_2, \$cnt_2, 0);
+	}
+	close_plot($cnt_1, $plot_1, $graph_diskstats_reads);
+	close_plot($cnt_2, $plot_2, $graph_diskstats_read_time);
 
 ############# diskstats, writes #####################
-    $plot_1 = start_plotfile_lines($graph_diskstats_writes);
-    $plot_2 = start_plotfile_lines($graph_diskstats_write_time);
+	$plot_1 = start_plotfile_lines($graph_diskstats_writes);
+	$plot_2 = start_plotfile_lines($graph_diskstats_write_time);
 
-    $cnt_1 = $cnt_2 = 0;
-    foreach $p ( reverse sort {$dev_writes_total{$a} <=> $dev_writes_total{$b} } keys %dev_writes_total) {
-	one_plot_set("e/devwrites-$p", 2, $plot_1, \$cnt_1, 0);
-	one_plot_set("e/devwritetime-$p", 2, $plot_2, \$cnt_2, 0);
+	$cnt_1 = $cnt_2 = 0;
+	foreach $p ( reverse sort {$dev_writes_total{$a} <=> $dev_writes_total{$b} } keys %dev_writes_total) {
+	    one_plot_set("e/devwrites-$p", 2, $plot_1, \$cnt_1, 0);
+	    one_plot_set("e/devwritetime-$p", 2, $plot_2, \$cnt_2, 0);
+	}
+	close_plot($cnt_1, $plot_1, $graph_diskstats_writes);
+	close_plot($cnt_2, $plot_2, $graph_diskstats_write_time);
+
     }
-    close_plot($cnt_1, $plot_1, $graph_diskstats_writes);
-    close_plot($cnt_2, $plot_2, $graph_diskstats_write_time);
+############# battery #####################
+    if ($have_bme) {
+	print "battery ";
+	$plot = start_plotfile_lines_2axes($graph_battery);
 
+	print $plot "'$batt_charge_left_file_name' lw 4 axes x1y1";
+	value_emit($batt_charge_left_file_name, 1);
+
+	print $plot ", '$batt_temperature_file_name' lw 2 axes x1y1";
+	value_emit($batt_temperature_file_name, 1);
+
+	print $plot ", '$batt_voltage_file_name' lw 2 axes x2y2";
+	value_emit($batt_voltage_file_name, 1);
+
+	close_plot($i, $plot, $graph_battery);
+    }
+############# rmazswap (compressed swap) #####################
+    if ($have_ramzswap) {
+	print "ramzswap ";
+	$plot = start_plotfile_lines_2axes($graph_ramzswap);
+
+	print $plot "'$ramzswap_bdreads_file_name' lw 2 axes x1y1";
+	value_emit($ramzswap_bdreads_file_name, 1);
+	print $plot ", '$ramzswap_reads_file_name' lw 2 axes x1y1";
+	value_emit($ramzswap_reads_file_name, 1);
+	print $plot ", '$ramzswap_bdwrites_file_name' lw 2 axes x1y1";
+	value_emit($ramzswap_bdwrites_file_name, 1);
+	print $plot ", '$ramzswap_writes_file_name' lw 2 axes x1y1";
+	value_emit($ramzswap_writes_file_name, 1);
+
+	print $plot ", '$ramzswap_zerop_file_name' lw 4 axes x2y2";
+	value_emit($ramzswap_zerop_file_name, 1);
+	print $plot ", '$ramzswap_used_file_name' lw 4 axes x2y2";
+	value_emit($ramzswap_used_file_name, 1);
+
+	close_plot($i, $plot, $graph_ramzswap);
+    }
 ############# Powertop data: optional ###################
     if ($powertop_data_found) {
 	print "powertop ";
@@ -3135,13 +3390,13 @@ foreach $d (@dirs) {
 	    exit;
 	}
 	while (<$f>) {
-	    if( index($_, "product") != -1) {
+	    if( m/product/) {
 		$line = $_;
 		chop $line;
 		(undef, $hw_product) = split(' ', $line, 2);
 		next;
 	    } 
-	    if( index($_, "hw-build") != -1) {
+	    elsif( m/hw-build/) {
 		$line = $_;
 		chop $line;
 		(undef, $hw_build) = split(' ', $line, 2);
@@ -3157,25 +3412,32 @@ foreach $d (@dirs) {
 	exit;
     }
     while (<$f>) {
-	if( index($_, "SW-version") != -1) {
+	if( m/SW-version/) {
 	    $line = $_;
 	    chop $line;
-	    (undef, undef, $swver) = split(' ', $line, 3);
-	    (undef, $swver) = split('_', $swver, 2);
+	    my $flds = split(' ', $line);
+	    if ($flds == 3) {
+# SW-version = DFL61_HARMATTAN_0.2011.03-2_RD_001
+		(undef, undef, $swver) = split(' ', $line, 3);
+		(undef, $swver) = split('_', $swver, 2);
+	    } else {
+# SW-version = Linux 2.6.35.3-10.3-n900 armv7l
+		(undef, undef, $swver) = split(' ', $line, 3);
+	    }
 	    if($sw_version && ($sw_version ne $swver)) {
 		print "** NOTE: at $d version changes [$sw_version]->[$swver]; Reflash in sequence??\n"
 	    } 
 	    $sw_version = $swver;
 	    next;
 	} 
-	if(index($_, "date = ") != -1) {
+	if( m/date = /) {
 	    #                                                                                                                                                    
 	    # parse date into num of seconds,                                                                                                                    
 	    #                                                                                                                                                    
 	    $secval{$d} = date2seconds($_);
 	    next;
 	}
- 	if( index($_, "Uptime,Idletime ") != -1) {
+ 	if( m/Uptime,Idletime /) {
 	    $line = <$f>;
 	    chop $line;
 	    ($upt, undef) = split(',', $line, 2);
@@ -3220,8 +3482,12 @@ if ($cnt > 1) {
     print "need at least 2 rounds\n";
     exit;
 }
+if (!$secs_per_round) {
+    print "zero duration, can not calculate much\n";
+    exit;
+}
 no integer;
-print "gen_endurance_plot $version; ";
+print "endurance_plot $version; ";
 print "rounds=$num_of_rounds; duration=$total_duration sec, avg-per-round: sec=$secs_per_round or min=$mins_per_round or hour=$hours_per_round\n";
 
 print "input: ";
@@ -3298,6 +3564,8 @@ foreach $d (@dirs) {
     process_diskstats();
     process_stat();
     process_powertop();
+    process_bme();
+    process_ramzswap();
 
     $unaccount_swapped = $swapused - $sum_app_swapped;
 #	print "swapused=$swapused sum_app=$sum_app_swapped, unacc=$unaccount_swapped\n";
