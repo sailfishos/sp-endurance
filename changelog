@@ -1,5 +1,9 @@
-sp-endurance (2.2.2), ???:
+sp-endurance (2.2.2), 7 Mar 2011:
   * extract-endurance-process-smaps accepts a subset of snapshot dirs
+  * endurance_plot:
+    - Fixed cases where endurance_plot used gigabytes of memory.
+    - Battery information (bmestat) visualization.
+    - Compressed swap (ramzswap) visualization.
 
 sp-endurance (2.2.1), 28 Feb 2011:
   * replace support for obsolete memory limits in old Maemo releases
