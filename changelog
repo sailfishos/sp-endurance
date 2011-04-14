@@ -1,3 +1,6 @@
+sp-endurance (2.2.3), 14 Apr 2011:
+  * syslog_parse.py: fix kernel OOM message detection
+
 sp-endurance (2.2.2), 7 Mar 2011:
   * extract-endurance-process-smaps accepts a subset of snapshot dirs
   * endurance_plot:

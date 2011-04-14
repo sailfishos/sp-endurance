@@ -1,3 +1,10 @@
+sp-endurance (2.2.3) unstable; urgency=low
+
+  * Fixes: NB#246002 - syslog parser does not catch kernel OOM-killed messages
+    in syslog
+
+ -- Tommi Rantala <ext-tommi.1.rantala@nokia.com>  Thu, 14 Apr 2011 15:36:23 +0300
+
 sp-endurance (2.2.2) unstable; urgency=low
 
   * Fixes: NB#233493 - endurance_plot takes GBs of RAM
