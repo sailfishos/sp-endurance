@@ -645,7 +645,7 @@ def parse_syslog(write, syslog):
                           messages['swresets'], messages['hwresets'], line)
         if line.find('Oops:') >= 0 or line.find('BUG at') >= 0:
             parse_kernel(messages['oopses'], messages['BUGs'], line)
-        if line.find('Memory:') >= 0 or line.find('lowmem:') >= 0:
+        if line.find('ut of memory') >= 0 or line.find('Memory:') >= 0 or line.find('lowmem:') >= 0:
             parse_oom(messages['ooms'], line)
         if line.find('I/O error') >= 0 or line.find(' onenand') >= 0:
             parse_fs(messages['io_errors'], messages['nand_errors'], line)
