@@ -81,6 +81,7 @@
 # - Collect battery information with Nokia specific /usr/bin/bmestat.
 # 2011-04-15:
 # - Collect /var/log/messages.
+# - Collect /proc/pagetypeinfo.
 
 script="${0##*/}"
 # incorrect number of arguments or first argument starts with "-"
@@ -247,7 +248,7 @@ echo "nolo        `sysinfoclient -p /component/nolo      2>/dev/null`" >> $path/
 echo "boot-mode   `sysinfoclient -p /component/boot-mode 2>/dev/null`" >> $path/component_version
 
 echo "- Other proc files"
-cp /proc/slabinfo /proc/interrupts /proc/stat /proc/diskstats /proc/zoneinfo $path/ 2> /dev/null
+cp /proc/slabinfo /proc/interrupts /proc/stat /proc/diskstats /proc/zoneinfo /proc/pagetypeinfo $path/ 2> /dev/null
 
 # battery
 which bmestat >/dev/null 2>/dev/null
