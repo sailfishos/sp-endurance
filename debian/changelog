@@ -1,3 +1,10 @@
+sp-endurance (2.2.4) unstable; urgency=low
+
+  * Fixes: NB#242899 - Endurance report memory usage graph pixel width not
+    respected by browser zoom, results to misleading visualization
+
+ -- Tommi Rantala <ext-tommi.1.rantala@nokia.com>  Fri, 15 Apr 2011 09:57:38 +0300
+
 sp-endurance (2.2.3) unstable; urgency=low
 
   * Fixes: NB#246002 - syslog parser does not catch kernel OOM-killed messages

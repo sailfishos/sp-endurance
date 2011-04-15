@@ -1,3 +1,7 @@
+sp-endurance (2.2.4), 15 Apr 2011:
+  * endurance_report.py: fix disproportional graph visualization when using
+    browser zoom
+
 sp-endurance (2.2.3), 14 Apr 2011:
   * syslog_parse.py: fix kernel OOM message detection
 
