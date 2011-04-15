@@ -79,6 +79,8 @@
 # - Use sysinfoclient instead of sysinfo-tool.
 # 2011-02-28:
 # - Collect battery information with Nokia specific /usr/bin/bmestat.
+# 2011-04-15:
+# - Collect /var/log/messages.
 
 script="${0##*/}"
 # incorrect number of arguments or first argument starts with "-"
@@ -262,24 +264,24 @@ cp -a /var/lib/dsme $path/
  
 # and syslog...
 echo "- Syslog(s)"
+logs=""
 if [ -f /var/ftd-log/syslog ]; then
-	# old FTD rotated syslogs?
-	logs="/var/ftd-log/logs/syslog /var/ftd-log/syslog"
-elif [ -f /var/log/syslog ]; then
-	# new FTD rotated syslogs?
-	if [ -f /var/log/logs/syslog ]; then
-		logs="/var/log/logs/syslog /var/log/syslog"
-	else
-		# plain syslog
-		if [ -f /var/log/syslog.old ]; then
-			logs="/var/log/syslog.old /var/log/syslog"
-		else
-			logs="/var/log/syslog"
-		fi
-	fi
-else
-	# no syslog
-	echo "Syslog file(s) missing!" 1>&2
-	exit 0
+	logs="/var/ftd-log/logs/syslog /var/ftd-log/syslog $logs"
 fi
-cat $logs | lzop -c > $path/syslog.lzo
+if [ -f /var/log/syslog ]; then
+	logs="/var/log/syslog $logs"
+fi
+if [ -f /var/log/syslog.old ]; then
+	logs="/var/log/syslog.old $logs"
+fi
+if [ -f /var/log/logs/syslog ] ; then
+	logs="/var/log/logs/syslog $logs"
+fi
+if [ -f /var/log/messages ] ; then
+	logs="/var/log/messages $logs"
+fi
+if [ -z "$logs" ] ; then
+	echo "Syslog file(s) missing!" 1>&2
+else
+	cat $logs | lzop -c > $path/syslog.lzo
+fi
