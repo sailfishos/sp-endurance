@@ -283,6 +283,9 @@
 # 2011-01-21:
 # - Replace non-standard & obsolete memory limit support
 #   with the hard-coded OOM-limit from Linux kernel
+# 2011-04-15:
+# - Fix disproportional graph visualization sometimes seen when using web
+#   browser zoom.
 # TODO:
 # - Proper option parsing + possibility to state between which
 #   test runs to produce the summaries?
@@ -1470,15 +1473,30 @@ def output_graph_table(titles, colors, data):
         else:
             print "<th></th>"
     print "</tr>"
+    # Determine largest width we have for all rows for the 'graphical bar'.
+    maxw = 0
+    for item in data:
+        w = 0
+        for idx in range(len(colors)):
+            w = w + int(item[1][idx]*width)
+        maxw = max(maxw, w)
     for item in data:
         # row title
         print '<tr><td>%s</td>' % item[0]
         # graphical bar
         print "<td><table border=0 cellpadding=0 cellspacing=0><tr>"
+        wpad = maxw
         for idx in range(len(colors)):
             w = int(item[1][idx]*width)
             if w:
                 sys.stdout.write('<td bgcolor="%s" width=%d height=16></td>' % (colors[idx], w))
+                wpad = wpad - w
+        # Pad with invisible <td> element so that the embedded <table> inside
+        # for each row will be of equal width. Browser zooming may change the
+        # widths of the per-row <table>s, and if they are not of equal width,
+        # the result can be misleading.
+        if wpad > 0:
+            print "<td width='%d' height='16'></td>" % wpad
         print "</tr></table></td>"
         # texts at end
         for text in item[2]:
