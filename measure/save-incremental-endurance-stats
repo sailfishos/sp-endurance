@@ -82,6 +82,7 @@
 # 2011-04-15:
 # - Collect /var/log/messages.
 # - Collect /proc/pagetypeinfo.
+# - If the xprop or xmeminfo fail, warn about Xauthority settings.
 
 script="${0##*/}"
 # incorrect number of arguments or first argument starts with "-"
@@ -169,13 +170,20 @@ else
 	else
 		# _NET_ACTIVE_WINDOW standard property tells focused window,
 		# WM_CLASS tells the "name" of the application owning that.
-		win=$(xprop -root _NET_ACTIVE_WINDOW|cut -s -d'#' -f2)
-		if [ \! -z $win ]; then
-			app=$(xprop -id $win WM_CLASS|cut -s -d'"' -f2)
-			if [ -z "$app" ]; then
-				app=$(xprop -id $win WM_NAME|cut -s -d'"' -f2)
+		win=$(xprop -root _NET_ACTIVE_WINDOW)
+		RET=$?
+		if [ $RET -ne 0 ] ; then
+			echo "$script: WARNING, xprop failed with exit code $RET, check \$DISPLAY and \$XAUTHORITY." 1>&2
+			echo "$script: For some platforms, copy of ~/.Xauthority from the user owning the X session is needed." 1>&2
+		else
+			win=$(echo "$win" | cut -s -d'#' -f2)
+			if [ \! -z $win ]; then
+				app=$(xprop -id $win WM_CLASS|cut -s -d'"' -f2)
+				if [ -z "$app" ]; then
+					app=$(xprop -id $win WM_NAME|cut -s -d'"' -f2)
+				fi
+				echo "$app" > $path/step.txt
 			fi
-			echo "$app" > $path/step.txt
 		fi
 	fi
 fi
@@ -225,7 +233,7 @@ xmeminfo >> $usage 2> $path/xres.log
 RET=$?
 if [ $RET -ne 0 ]; then
 	cat $path/xres.log 1>&2
-	echo "$script: WARNING, xmeminfo failed with exit code $RET, is DISPLAY set?" 1>&2
+	echo "$script: WARNING, xmeminfo failed with exit code $RET, check \$DISPLAY and \$XAUTHORITY." 1>&2
 fi
 # output disk usage
 echo "- Disk usage"
