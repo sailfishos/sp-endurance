@@ -1,3 +1,10 @@
+sp-endurance (2.2.5), 18 Apr 2011:
+ * save-incremental-endurance-stats:
+   - Collect /var/log/messages.
+   - Collect /proc/pagetypeinfo.
+   - If xprop or xmeminfo report a failure, give a warning about Xauthority
+     settings.
+
 sp-endurance (2.2.4), 15 Apr 2011:
   * endurance_report.py: fix disproportional graph visualization when using
     browser zoom

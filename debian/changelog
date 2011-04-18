@@ -1,3 +1,10 @@
+sp-endurance (2.2.5) unstable; urgency=low
+
+  * Fixes: NB#240984 - sp-endurance doesn't find syslog on normal Linux
+    desktop or MeeGo
+
+ -- Tommi Rantala <ext-tommi.1.rantala@nokia.com>  Mon, 18 Apr 2011 15:18:39 +0300
+
 sp-endurance (2.2.4) unstable; urgency=low
 
   * Fixes: NB#242899 - Endurance report memory usage graph pixel width not
