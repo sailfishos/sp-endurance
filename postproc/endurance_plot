@@ -2308,14 +2308,22 @@ sub gen_html_page()
     system("echo '<style>' >> $html_name");
     system("echo 'table { float: left; margin: 20px 5px 0px 0; }' >> $html_name");
     system("echo '</style>' >> $html_name");
-    $verstr = "<title> Endurance graph $version [$hw_product][$sw_version] snapshot avg interval";
+    my $verstr = "Endurance graph $version [$hw_product][$sw_version] snapshot avg interval";
     if ($str_hours >= 1) {
-	system("echo '$verstr $str_hours hours</title>' >> $html_name");
+	$verstr .= " $str_hours hours";
     } elsif ($str_minutes >= 1) {
-	system("echo '$verstr $str_minutes minutes</title>' >> $html_name");
+	$verstr .= " $str_minutes minutes";
     } else {
-	system("echo '$verstr $str_seconds seconds</title>' >> $html_name");
+	$verstr .= " $str_seconds seconds";
     }
+    my $hours = int($total_duration / 3600);
+    my $minutes = int(($total_duration % 3600) / 60);
+    if ($hours > 0) {
+	$verstr .= ", total duration ${hours}h ${minutes}min.";
+    } else {
+	$verstr .= ", total duration ${minutes}min.";
+    }
+    system("echo '<title>$verstr</title>' >> $html_name");
     system("echo '</head>' >> $html_name");
     system("echo '<body>' >> $html_name");
 
