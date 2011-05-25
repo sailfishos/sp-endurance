@@ -2290,7 +2290,7 @@ sub add_use_case_names()
     if (!$steps_files) {
 	return;
     }
-    system("echo '<p>Steps:<br>' >> $html_name");
+    system("echo '<p style='float:left'>Steps:<br>' >> $html_name");
     foreach $d (@dirs) {
 	my $dfn = "$d/step.txt";
 	if (-e $dfn) {
