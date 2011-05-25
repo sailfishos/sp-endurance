@@ -2326,13 +2326,16 @@ sub gen_html_page()
     system("echo '<title>$verstr</title>' >> $html_name");
     system("echo '</head>' >> $html_name");
     system("echo '<body>' >> $html_name");
+    system("echo '<p><b>$verstr</b>' >> $html_name");
 
 # insert link to endurance_report.html (if exsists)
 
     $fn = "endurance-report.html";
     if (-e $fn ) {
-	system("echo '<a href='$fn'>$fn</a>' >> $html_name");
+	system("echo ' <a href='$fn'>$fn</a>' >> $html_name");
     }
+    system("echo '</p>' >> $html_name");
+
     foreach $img (sort keys %images) {
 	echo_one_img_line($img);
     }
