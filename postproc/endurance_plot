@@ -2453,6 +2453,7 @@ sub start_plotfile_histogram($)
     print $plot "set key invert autotitle\n";
     print $plot "set style histogram rowstacked\n";
     print $plot "set style fill solid 1.00 border -1\n";
+    print $plot "set yrange [0 : ]\n";
 
     my $add = $i/3;
     if ($add < 25) {
