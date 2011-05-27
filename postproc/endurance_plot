@@ -1535,14 +1535,14 @@ sub process_smaps()
 #
     my $heap = 0;
 
+    $fn = "$d/smaps.cap";
     $lzoname = $d . "/smaps.cap.lzo";
     $gzname = $d . "/smaps.cap.gz";
     if (-e $lzoname) {
-	system("lzop -d $lzoname");
+	$fn = "lzop -dc $lzoname |";
     } elsif (-e $gzname) {
-	system("gzip -d $gzname");
+	$fn = "zcat $gzname |";
     } 
-    $fn = "$d/smaps.cap";
     unless (open($f, $fn)) {
 	print STDERR "can not open $fn:$!\n";
 	return;
@@ -1730,7 +1730,6 @@ sub process_smaps()
 	}
     }
     close $f;
-    system("rm $d/smaps.cap");
 #	print "   smaps_done ";
     $sum_app_swapped /= 1024;
 #    $sum_app_private_dirty /= 1024;
