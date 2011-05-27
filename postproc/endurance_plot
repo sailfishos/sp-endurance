@@ -320,6 +320,46 @@ $legend{$graph_fdcount} = "FD use by processes";
 $thumblegend{$graph_fdcount} = "FILE DESCR";
 $unit{$graph_fdcount} = "number of FD";
 
+my $graph_fdcount_inotify = "80_fdcount_inotify";
+$legend{$graph_fdcount_inotify} = "inotify FD use by processes";
+$thumblegend{$graph_fdcount_inotify} = "INOTIFY FILE DESCR";
+$unit{$graph_fdcount_inotify} = "number of FD";
+
+my $graph_fdcount_pipe = "80_fdcount_pipe";
+$legend{$graph_fdcount_pipe} = "pipe FD use by processes";
+$thumblegend{$graph_fdcount_pipe} = "PIPE FILE DESCR";
+$unit{$graph_fdcount_pipe} = "number of FD";
+
+my $graph_fdcount_socket = "80_fdcount_socket";
+$legend{$graph_fdcount_socket} = "socket FD use by processes";
+$thumblegend{$graph_fdcount_socket} = "SOCKET FILE DESCR";
+$unit{$graph_fdcount_socket} = "number of FD";
+
+my $graph_fdcount_tmpfs = "80_fdcount_tmpfs";
+$legend{$graph_fdcount_tmpfs} = "/dev, /sys, /syspart, /proc, /tmp, /var/run FD use by processes";
+$thumblegend{$graph_fdcount_tmpfs} = "TMPFS FILE DESCR";
+$unit{$graph_fdcount_tmpfs} = "number of FD";
+
+my $graph_fdcount_eventfd = "80_fdcount_eventfd";
+$legend{$graph_fdcount_eventfd} = "eventfd FD use by processes";
+$thumblegend{$graph_fdcount_eventfd} = "EVENTFD FILE DESCR";
+$unit{$graph_fdcount_eventfd} = "number of FD";
+
+my $graph_fdcount_epoll = "80_fdcount_epoll";
+$legend{$graph_fdcount_epoll} = "epoll FD use by processes";
+$thumblegend{$graph_fdcount_epoll} = "EPOLL FILE DESCR";
+$unit{$graph_fdcount_epoll} = "number of FD";
+
+my $graph_fdcount_signalfd = "80_fdcount_signalfd";
+$legend{$graph_fdcount_signalfd} = "signalfd FD use by processes";
+$thumblegend{$graph_fdcount_signalfd} = "SIGNALFD FILE DESCR";
+$unit{$graph_fdcount_signalfd} = "number of FD";
+
+my $graph_fdcount_disk = "80_fdcount_disk";
+$legend{$graph_fdcount_disk} = "disk FD use by processes";
+$thumblegend{$graph_fdcount_disk} = "DISK FILE DESCR";
+$unit{$graph_fdcount_disk} = "number of FD";
+
 my $graph_appmem_wx = "85_appmem_wx";
 $legend{$graph_appmem_wx} = "executable mem which is writable, security issue"; 
 $thumblegend{$graph_appmem_wx} = "WRITABLE-EXEC";
@@ -478,6 +518,19 @@ my %param_prev_stime;
 my %utime_cumul;
 my %stime_cumul;
 my %totaltime_cumul;
+
+my %fd_samples;
+my %fd_inotify;
+my %fd_pipe;
+my %fd_socket;
+my %fd_dev;
+my %fd_sys;
+my %fd_syspart;
+my %fd_proc;
+my %fd_eventfd;
+my %fd_epoll;
+my %fd_signalfd;
+my %fd_disk;
 
 my %app_pss;
 my %app_swapped;
@@ -661,6 +714,23 @@ sub value_store($$$)
 #	print "  store [$fn]: i=$idx contents=$item\n";
 #	$idx += 1;
 #    }
+}
+
+sub count_nonzero_entries
+{
+    my ($ofile) = @_;
+    my $ra = $files{$ofile};
+    if (not $ra) {
+	return 0;
+    }
+    my $num = 0;
+    foreach (@$ra) {
+	my (undef, $val) = split(':' , $_, 2);
+	if ($val) {
+	    $num += 1;
+	}
+    }
+    return $num;
 }
 
 sub value_emit_all_entries($$)
@@ -1369,6 +1439,93 @@ sub process_slabinfo()
     }
     close $f;
 #	print "   slabinfo_done ";
+}
+
+#/proc/12/fd/:
+#total 0
+#
+#/proc/1205/fd/:
+#total 0
+#lrwx------    1 user     users           64 Feb  4 01:57 0 -> /dev/console
+#lrwx------    1 user     users           64 Feb  4 01:57 1 -> /dev/console
+#lrwx------    1 user     users           64 Feb  4 01:57 2 -> /dev/console
+#lrwx------    1 user     users           64 Feb  4 01:57 3 -> socket:[9304]
+#lrwx------    1 user     users           64 Feb  4 01:57 4 -> socket:[9307]
+#
+#/proc/1213/fd/:
+#total 0
+#lrwx------    1 user     users           64 Feb  4 01:57 0 -> /dev/console
+#lrwx------    1 user     users           64 Feb  4 01:57 1 -> /dev/console
+#lr-x------    1 user     users           64 Feb  4 01:57 10 -> inotify
+#lr-x------    1 user     users           64 Feb  4 01:57 12 -> inotify
+#lr-x------    1 user     users           64 Feb  4 01:57 13 -> pipe:[9718]
+#l-wx------    1 user     users           64 Feb  4 01:57 14 -> pipe:[9718]
+#lr-x------    1 user     users           64 Feb  4 01:57 15 -> pipe:[9719]
+#l-wx------    1 user     users           64 Feb  4 01:57 16 -> pipe:[9719]
+#lrwx------    1 user     users           64 Feb  4 01:57 17 -> socket:[9735]
+#lr-x------    1 user     users           64 Feb  4 01:57 18 -> pipe:[9740]
+#l-wx------    1 user     users           64 Feb  4 01:57 19 -> pipe:[9740]
+#lrwx------    1 user     users           64 Feb  4 01:57 2 -> /dev/console
+sub process_openfds()
+{
+    my $fn = "$d/open-fds";
+    if (not open(OPENFDS, $fn)) {
+	print STDERR "can not open $fn:$!\n";
+	return;
+    }
+    my $pid;
+    while (<OPENFDS>) {
+	if (m#/proc/(\d+)/fd/:#) {
+	    if ($pid) {
+		value_store_zeropad("e/fd_inotify-$name_by_pid{$pid}-$pid",   $i, $fd_inotify{$pid});
+		value_store_zeropad("e/fd_pipe-$name_by_pid{$pid}-$pid",      $i, $fd_pipe{$pid});
+		value_store_zeropad("e/fd_socket-$name_by_pid{$pid}-$pid",    $i, $fd_socket{$pid});
+		value_store_zeropad("e/fd_tmpfs-$name_by_pid{$pid}-$pid",     $i, $fd_tmpfs{$pid});
+		value_store_zeropad("e/fd_eventfd-$name_by_pid{$pid}-$pid",   $i, $fd_eventfd{$pid});
+		value_store_zeropad("e/fd_epoll-$name_by_pid{$pid}-$pid",     $i, $fd_epoll{$pid});
+		value_store_zeropad("e/fd_signalfd-$name_by_pid{$pid}-$pid",  $i, $fd_signalfd{$pid});
+		value_store_zeropad("e/fd_disk-$name_by_pid{$pid}-$pid",      $i, $fd_disk{$pid});
+	    }
+	    $pid = $1;
+	    $fd_samples{$pid} += 1;
+	    $fd_inotify{$pid} = 0;
+	    $fd_pipe{$pid} = 0;
+	    $fd_socket{$pid} = 0;
+	    $fd_tmpfs{$pid} = 0;
+	    $fd_eventfd{$pid} = 0;
+	    $fd_epoll{$pid} = 0;
+	    $fd_signalfd{$pid} = 0;
+	    $fd_disk{$pid} = 0;
+	} elsif (m#^.[rwx-]{9}\s+\d+\s+(\S+)\s+\S+\s+.*\d+ -> (\S+)#) {
+	    my $username = $1;
+	    my $target = $2;
+	    if ($target eq 'inotify') {
+		$fd_inotify{$pid} += 1;
+	    } elsif ($target =~ m/^pipe:\[\d+\]$/) {
+		$fd_pipe{$pid} += 1;
+	    } elsif ($target =~ m/^socket:\[\d+\]$/) {
+		$fd_socket{$pid} += 1;
+	    } elsif ($target =~ m#^/dev/# or
+	             $target =~ m#^/sys/# or
+	             $target =~ m#^/syspart/# or
+	             $target =~ m#^/proc/# or
+	             $target =~ m#^/tmp/# or
+	             $target =~ m#^/var/run/#) {
+		$fd_tmpfs{$pid} += 1;
+	    } elsif ($target eq 'anon_inode:[eventfd]') {
+		$fd_eventfd{$pid} += 1;
+	    } elsif ($target eq 'anon_inode:[eventpoll]') {
+		$fd_epoll{$pid} += 1;
+	    } elsif ($target eq 'anon_inode:[signalfd]') {
+		$fd_signalfd{$pid} += 1;
+	    } elsif ($target =~ m#^/#) {
+		$fd_disk{$pid} += 1;
+	    } else {
+		print STDERR "UNCLASSIFIED open-fds entry: $_";
+	    }
+	}
+    }
+    close(OPENFDS);
 }
 
 sub process_smaps()
@@ -3476,10 +3633,10 @@ sub generate_plots()
     close_plot($cnt, $plot, $graph_diskspace);
 
 ############# fd_count for processes #####################
+    print "fd ";
     $plot = start_plotfile_lines($graph_fdcount);
-
     $cnt = 0;
-    foreach $p ( reverse sort {$fd_count{$a} <=> $fd_count{$b} } keys %fd_count) {
+    foreach $p (reverse sort {$fd_count{$a} <=> $fd_count{$b} } keys %fd_count) {
 	if ($fd_count_samples{$p} < $samples_required) {
 	    next;
 	}
@@ -3490,6 +3647,102 @@ sub generate_plots()
 	one_plot_set($fn, 3, $plot, \$cnt, 0);
     }
     close_plot($cnt, $plot, $graph_fdcount);
+
+############# fd_count_inotify for processes #####################
+    print "fd_inotify ";
+    $plot = start_plotfile_histogram($graph_fdcount_inotify);
+    $cnt = 0;
+    foreach $p (reverse sort {$fd_inotify{$a} <=> $fd_inotify{$b} } keys %fd_inotify) {
+	if ($fd_samples{$p} < $samples_required) { next; }
+	$fn = "e/fd_inotify-$name_by_pid{$p}-$p";
+	if (count_nonzero_entries($fn) <= 0) { next; }
+	one_plot_set($fn, 0, $plot, \$cnt, 1);
+    }
+    close_plot($cnt, $plot, $graph_fdcount_inotify);
+
+############# fd_count_pipe for processes #####################
+    print "fd_pipe ";
+    $plot = start_plotfile_histogram($graph_fdcount_pipe);
+    $cnt = 0;
+    foreach $p (reverse sort {$fd_pipe{$a} <=> $fd_pipe{$b} } keys %fd_pipe) {
+	if ($fd_samples{$p} < $samples_required) { next; }
+	$fn = "e/fd_pipe-$name_by_pid{$p}-$p";
+	if (count_nonzero_entries($fn) <= 0) { next; }
+	one_plot_set($fn, 0, $plot, \$cnt, 1);
+    }
+    close_plot($cnt, $plot, $graph_fdcount_pipe);
+
+############# fd_count_socket for processes #####################
+    print "fd_socket ";
+    $plot = start_plotfile_histogram($graph_fdcount_socket);
+    $cnt = 0;
+    foreach $p (reverse sort {$fd_socket{$a} <=> $fd_socket{$b} } keys %fd_socket) {
+	if ($fd_samples{$p} < $samples_required) { next; }
+	$fn = "e/fd_socket-$name_by_pid{$p}-$p";
+	if (count_nonzero_entries($fn) <= 0) { next; }
+	one_plot_set($fn, 0, $plot, \$cnt, 1);
+    }
+    close_plot($cnt, $plot, $graph_fdcount_socket);
+
+############# fd_count_tmpfs for processes #####################
+    print "fd_tmpfs ";
+    $plot = start_plotfile_histogram($graph_fdcount_tmpfs);
+    $cnt = 0;
+    foreach $p (reverse sort {$fd_tmpfs{$a} <=> $fd_tmpfs{$b} } keys %fd_tmpfs) {
+	if ($fd_samples{$p} < $samples_required) { next; }
+	$fn = "e/fd_tmpfs-$name_by_pid{$p}-$p";
+	if (count_nonzero_entries($fn) <= 0) { next; }
+	one_plot_set($fn, 0, $plot, \$cnt, 1);
+    }
+    close_plot($cnt, $plot, $graph_fdcount_tmpfs);
+
+############# fd_count_eventfd for processes #####################
+    print "fd_eventfd ";
+    $plot = start_plotfile_histogram($graph_fdcount_eventfd);
+    $cnt = 0;
+    foreach $p (reverse sort {$fd_eventfd{$a} <=> $fd_eventfd{$b} } keys %fd_eventfd) {
+	if ($fd_samples{$p} < $samples_required) { next; }
+	$fn = "e/fd_eventfd-$name_by_pid{$p}-$p";
+	if (count_nonzero_entries($fn) <= 0) { next; }
+	one_plot_set($fn, 0, $plot, \$cnt, 1);
+    }
+    close_plot($cnt, $plot, $graph_fdcount_eventfd);
+
+############# fd_count_epoll for processes #####################
+    print "fd_epoll ";
+    $plot = start_plotfile_histogram($graph_fdcount_epoll);
+    $cnt = 0;
+    foreach $p (reverse sort {$fd_epoll{$a} <=> $fd_epoll{$b} } keys %fd_epoll) {
+	if ($fd_samples{$p} < $samples_required) { next; }
+	$fn = "e/fd_epoll-$name_by_pid{$p}-$p";
+	if (count_nonzero_entries($fn) <= 0) { next; }
+	one_plot_set($fn, 0, $plot, \$cnt, 1);
+    }
+    close_plot($cnt, $plot, $graph_fdcount_epoll);
+
+############# fd_count_signalfd for processes #####################
+    print "fd_signalfd ";
+    $plot = start_plotfile_histogram($graph_fdcount_signalfd);
+    $cnt = 0;
+    foreach $p (reverse sort {$fd_signalfd{$a} <=> $fd_signalfd{$b} } keys %fd_signalfd) {
+	if ($fd_samples{$p} < $samples_required) { next; }
+	$fn = "e/fd_signalfd-$name_by_pid{$p}-$p";
+	if (count_nonzero_entries($fn) <= 0) { next; }
+	one_plot_set($fn, 0, $plot, \$cnt, 1);
+    }
+    close_plot($cnt, $plot, $graph_fdcount_signalfd);
+
+############# fd_count_disk for processes #####################
+    print "fd_disk ";
+    $plot = start_plotfile_histogram($graph_fdcount_disk);
+    $cnt = 0;
+    foreach $p (reverse sort {$fd_disk{$a} <=> $fd_disk{$b} } keys %fd_disk) {
+	if ($fd_samples{$p} < $samples_required) { next; }
+	$fn = "e/fd_disk-$name_by_pid{$p}-$p";
+	if (count_nonzero_entries($fn) <= 0) { next; }
+	one_plot_set($fn, 0, $plot, \$cnt, 1);
+    }
+    close_plot($cnt, $plot, $graph_fdcount_disk);
 
 ############# interrupts #####################
     print "interrupt ";
@@ -3894,6 +4147,7 @@ foreach $d (@dirs) {
     process_bme();
     process_ramzswap();
     process_pagetypeinfo();
+    process_openfds();
 
 #    $unaccount_swapped = $swapused - $sum_app_swapped;
 #    print "swap: total=$swaptotal free=$swapfree used=$swapused sum_app=$sum_app_swapped, unacc=$unaccount_swapped\n";
