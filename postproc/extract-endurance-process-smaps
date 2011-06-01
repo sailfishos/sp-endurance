@@ -47,14 +47,13 @@ if [ -z "$(which lzop)" ]; then
 fi
 
 prog=$1
-shift
 if [ -z "$prog" ]; then
 	usage "Give a name for program which info should be extracted"
 fi
-
 if [ "$prog" == "-h" ] || [ "$prog" == "--help" ]; then
 	usage "-h/--help given as program name"
 fi
+shift
 
 echo "Searching/extracting SMAPS information for '$prog' from snapshots..."
 
