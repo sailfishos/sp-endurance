@@ -1584,7 +1584,7 @@ def output_apps_memory_graphs(cases):
                 except: swap = 0
                 try:    size = data[pid][idx]['SMAPS_SIZE']
                 except: size = data[pid][idx]['VmSize']
-                dirty = priv+swap;
+                dirty = priv+swap
                 max_size  = max(size, max_size)
                 min_size  = min(size, min_size)
                 # skip initial state for dirty and change checks
