@@ -286,6 +286,8 @@
 # 2011-04-15:
 # - Fix disproportional graph visualization sometimes seen when using web
 #   browser zoom.
+# 2011-06-06:
+# - Fix div-by-zero seen with incomplete smaps capture file.
 # TODO:
 # - Proper option parsing + possibility to state between which
 #   test runs to produce the summaries?
@@ -1625,8 +1627,10 @@ def output_apps_memory_graphs(cases):
                 max_dirty = max(prev_dirty, dirty)
 
             dirty_max_diff = max_dirty - min_dirty
-            dirty_change_per_round = float(dirty_max_diff) / max_dirty / pidrounds
-            size_change_per_round = (float)(max_size - min_size) / max_size / pidrounds
+            try: dirty_change_per_round = float(dirty_max_diff) / max_dirty / pidrounds
+            except ZeroDivisionError: dirty_change_per_round = 0
+            try: size_change_per_round = (float)(max_size - min_size) / max_size / pidrounds
+            except ZeroDivisionError: size_change_per_round = 0
 
             # if >0.2% average memory change per round in dirty or Size, or
             # size/dirty changes on more than half of all the rounds, add
