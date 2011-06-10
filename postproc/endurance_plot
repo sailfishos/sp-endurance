@@ -1503,15 +1503,15 @@ sub process_openfds()
     while (<OPENFDS>) {
 	if (m#/proc/(\d+)/fd/:#) {
 	    if ($pid) {
-		value_store_zeropad("e/fd_inotify-$name_by_pid{$pid}-$pid",   $i, $fd_inotify{$pid});
-		value_store_zeropad("e/fd_pipe-$name_by_pid{$pid}-$pid",      $i, $fd_pipe{$pid});
-		value_store_zeropad("e/fd_socket-$name_by_pid{$pid}-$pid",    $i, $fd_socket{$pid});
-		value_store_zeropad("e/fd_tmpfs-$name_by_pid{$pid}-$pid",     $i, $fd_tmpfs{$pid});
-		value_store_zeropad("e/fd_eventfd-$name_by_pid{$pid}-$pid",   $i, $fd_eventfd{$pid});
-		value_store_zeropad("e/fd_epoll-$name_by_pid{$pid}-$pid",     $i, $fd_epoll{$pid});
-		value_store_zeropad("e/fd_signalfd-$name_by_pid{$pid}-$pid",  $i, $fd_signalfd{$pid});
-		value_store_zeropad("e/fd_timerfd-$name_by_pid{$pid}-$pid",   $i, $fd_timerfd{$pid});
-		value_store_zeropad("e/fd_disk-$name_by_pid{$pid}-$pid",      $i, $fd_disk{$pid});
+		value_store("e/fd_inotify-$name_by_pid{$pid}-$pid",   $i, $fd_inotify{$pid});
+		value_store("e/fd_pipe-$name_by_pid{$pid}-$pid",      $i, $fd_pipe{$pid});
+		value_store("e/fd_socket-$name_by_pid{$pid}-$pid",    $i, $fd_socket{$pid});
+		value_store("e/fd_tmpfs-$name_by_pid{$pid}-$pid",     $i, $fd_tmpfs{$pid});
+		value_store("e/fd_eventfd-$name_by_pid{$pid}-$pid",   $i, $fd_eventfd{$pid});
+		value_store("e/fd_epoll-$name_by_pid{$pid}-$pid",     $i, $fd_epoll{$pid});
+		value_store("e/fd_signalfd-$name_by_pid{$pid}-$pid",  $i, $fd_signalfd{$pid});
+		value_store("e/fd_timerfd-$name_by_pid{$pid}-$pid",   $i, $fd_timerfd{$pid});
+		value_store("e/fd_disk-$name_by_pid{$pid}-$pid",      $i, $fd_disk{$pid});
 	    }
 	    $pid = $1;
 	    $fd_samples{$pid} += 1;
