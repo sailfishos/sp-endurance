@@ -733,6 +733,26 @@ sub count_nonzero_entries
     return $num;
 }
 
+sub changes_found
+{
+    my ($ofile) = @_;
+    my $ra = $files{$ofile};
+    if (not $ra) {
+	return 0;
+    }
+    my $changed = 0;
+    my $prev_value;
+    foreach (@$ra) {
+	my (undef, $value) = split(':' , $_, 2);
+	if ($prev_value && $value ne $prev_value) {
+	    $changed = 1;
+	    break;
+	}
+	$prev_value = $value;
+    }
+    return $changed;
+}
+
 sub value_emit_all_entries($$)
 {
     my $ofile = shift;
@@ -3648,99 +3668,163 @@ sub generate_plots()
 
 ############# fd_count_inotify for processes #####################
     print "fd_inotify ";
-    $plot = start_plotfile_histogram($graph_fdcount_inotify);
-    $cnt = 0;
+    %show_this = undef;
     foreach $p (reverse sort {$fd_inotify{$a} <=> $fd_inotify{$b} } keys %fd_inotify) {
 	if ($fd_samples{$p} < $samples_required) { next; }
 	$fn = "e/fd_inotify-$name_by_pid{$p}-$p";
 	if (count_nonzero_entries($fn) <= 0) { next; }
-	one_plot_set($fn, 0, $plot, \$cnt, 1);
+	$show_this{$p} = changes_found($fn);
     }
-    close_plot($cnt, $plot, $graph_fdcount_inotify);
+    if (%show_this) {
+	$cnt = 0;
+	$plot = start_plotfile_linespoints($graph_fdcount_inotify);
+	foreach $p (reverse sort {$fd_inotify{$a} <=> $fd_inotify{$b} } keys %fd_inotify) {
+	    if ($show_this{$p} != 1) { next; }
+	    $fn = "e/fd_inotify-$name_by_pid{$p}-$p";
+	    one_plot_set($fn, 3, $plot, \$cnt, 1);
+	}
+	close_plot($cnt, $plot, $graph_fdcount_inotify);
+    }
 
 ############# fd_count_pipe for processes #####################
     print "fd_pipe ";
-    $plot = start_plotfile_histogram($graph_fdcount_pipe);
-    $cnt = 0;
+    %show_this = undef;
     foreach $p (reverse sort {$fd_pipe{$a} <=> $fd_pipe{$b} } keys %fd_pipe) {
 	if ($fd_samples{$p} < $samples_required) { next; }
 	$fn = "e/fd_pipe-$name_by_pid{$p}-$p";
 	if (count_nonzero_entries($fn) <= 0) { next; }
-	one_plot_set($fn, 0, $plot, \$cnt, 1);
+	$show_this{$p} = changes_found($fn);
     }
-    close_plot($cnt, $plot, $graph_fdcount_pipe);
+    if (%show_this) {
+	$cnt = 0;
+	$plot = start_plotfile_linespoints($graph_fdcount_pipe);
+	foreach $p (reverse sort {$fd_pipe{$a} <=> $fd_pipe{$b} } keys %fd_pipe) {
+	    if ($show_this{$p} != 1) { next; }
+	    $fn = "e/fd_pipe-$name_by_pid{$p}-$p";
+	    one_plot_set($fn, 3, $plot, \$cnt, 1);
+	}
+	close_plot($cnt, $plot, $graph_fdcount_pipe);
+    }
 
 ############# fd_count_socket for processes #####################
     print "fd_socket ";
-    $plot = start_plotfile_histogram($graph_fdcount_socket);
-    $cnt = 0;
+    %show_this = undef;
     foreach $p (reverse sort {$fd_socket{$a} <=> $fd_socket{$b} } keys %fd_socket) {
 	if ($fd_samples{$p} < $samples_required) { next; }
 	$fn = "e/fd_socket-$name_by_pid{$p}-$p";
 	if (count_nonzero_entries($fn) <= 0) { next; }
-	one_plot_set($fn, 0, $plot, \$cnt, 1);
+	$show_this{$p} = changes_found($fn);
     }
-    close_plot($cnt, $plot, $graph_fdcount_socket);
+    if (%show_this) {
+	$plot = start_plotfile_linespoints($graph_fdcount_socket);
+	$cnt = 0;
+	foreach $p (reverse sort {$fd_socket{$a} <=> $fd_socket{$b} } keys %fd_socket) {
+	    if ($show_this{$p} != 1) { next; }
+	    $fn = "e/fd_socket-$name_by_pid{$p}-$p";
+	    one_plot_set($fn, 3, $plot, \$cnt, 1);
+	}
+	close_plot($cnt, $plot, $graph_fdcount_socket);
+    }
 
 ############# fd_count_tmpfs for processes #####################
     print "fd_tmpfs ";
-    $plot = start_plotfile_histogram($graph_fdcount_tmpfs);
-    $cnt = 0;
+    %show_this = undef;
     foreach $p (reverse sort {$fd_tmpfs{$a} <=> $fd_tmpfs{$b} } keys %fd_tmpfs) {
 	if ($fd_samples{$p} < $samples_required) { next; }
 	$fn = "e/fd_tmpfs-$name_by_pid{$p}-$p";
 	if (count_nonzero_entries($fn) <= 0) { next; }
-	one_plot_set($fn, 0, $plot, \$cnt, 1);
+	$show_this{$p} = changes_found($fn);
     }
-    close_plot($cnt, $plot, $graph_fdcount_tmpfs);
+    if (%show_this) {
+	$plot = start_plotfile_linespoints($graph_fdcount_tmpfs);
+	$cnt = 0;
+	foreach $p (reverse sort {$fd_tmpfs{$a} <=> $fd_tmpfs{$b} } keys %fd_tmpfs) {
+	    if ($show_this{$p} != 1) { next; }
+	    $fn = "e/fd_tmpfs-$name_by_pid{$p}-$p";
+	    one_plot_set($fn, 3, $plot, \$cnt, 1);
+	}
+	close_plot($cnt, $plot, $graph_fdcount_tmpfs);
+    }
 
 ############# fd_count_eventfd for processes #####################
     print "fd_eventfd ";
-    $plot = start_plotfile_histogram($graph_fdcount_eventfd);
-    $cnt = 0;
+    %show_this = undef;
     foreach $p (reverse sort {$fd_eventfd{$a} <=> $fd_eventfd{$b} } keys %fd_eventfd) {
 	if ($fd_samples{$p} < $samples_required) { next; }
 	$fn = "e/fd_eventfd-$name_by_pid{$p}-$p";
 	if (count_nonzero_entries($fn) <= 0) { next; }
-	one_plot_set($fn, 0, $plot, \$cnt, 1);
+	$show_this{$p} = changes_found($fn);
     }
-    close_plot($cnt, $plot, $graph_fdcount_eventfd);
+    if (%show_this) {
+	$plot = start_plotfile_linespoints($graph_fdcount_eventfd);
+	$cnt = 0;
+	foreach $p (reverse sort {$fd_eventfd{$a} <=> $fd_eventfd{$b} } keys %fd_eventfd) {
+	    if ($show_this{$p} != 1) { next; }
+	    $fn = "e/fd_eventfd-$name_by_pid{$p}-$p";
+	    one_plot_set($fn, 3, $plot, \$cnt, 1);
+	}
+	close_plot($cnt, $plot, $graph_fdcount_eventfd);
+    }
 
 ############# fd_count_epoll for processes #####################
     print "fd_epoll ";
-    $plot = start_plotfile_histogram($graph_fdcount_epoll);
-    $cnt = 0;
+    %show_this = undef;
     foreach $p (reverse sort {$fd_epoll{$a} <=> $fd_epoll{$b} } keys %fd_epoll) {
 	if ($fd_samples{$p} < $samples_required) { next; }
 	$fn = "e/fd_epoll-$name_by_pid{$p}-$p";
 	if (count_nonzero_entries($fn) <= 0) { next; }
-	one_plot_set($fn, 0, $plot, \$cnt, 1);
+	$show_this{$p} = changes_found($fn);
     }
-    close_plot($cnt, $plot, $graph_fdcount_epoll);
+    if (%show_this) {
+	$plot = start_plotfile_linespoints($graph_fdcount_epoll);
+	$cnt = 0;
+	foreach $p (reverse sort {$fd_epoll{$a} <=> $fd_epoll{$b} } keys %fd_epoll) {
+	    if ($show_this{$p} != 1) { next; }
+	    $fn = "e/fd_epoll-$name_by_pid{$p}-$p";
+	    one_plot_set($fn, 3, $plot, \$cnt, 1);
+	}
+	close_plot($cnt, $plot, $graph_fdcount_epoll);
+    }
 
 ############# fd_count_signalfd for processes #####################
     print "fd_signalfd ";
-    $plot = start_plotfile_histogram($graph_fdcount_signalfd);
-    $cnt = 0;
+    %show_this = undef;
     foreach $p (reverse sort {$fd_signalfd{$a} <=> $fd_signalfd{$b} } keys %fd_signalfd) {
 	if ($fd_samples{$p} < $samples_required) { next; }
 	$fn = "e/fd_signalfd-$name_by_pid{$p}-$p";
 	if (count_nonzero_entries($fn) <= 0) { next; }
-	one_plot_set($fn, 0, $plot, \$cnt, 1);
+	$show_this{$p} = changes_found($fn);
     }
-    close_plot($cnt, $plot, $graph_fdcount_signalfd);
+    if (%show_this) {
+	$plot = start_plotfile_linespoints($graph_fdcount_signalfd);
+	$cnt = 0;
+	foreach $p (reverse sort {$fd_signalfd{$a} <=> $fd_signalfd{$b} } keys %fd_signalfd) {
+	    if ($show_this{$p} != 1) { next; }
+	    $fn = "e/fd_signalfd-$name_by_pid{$p}-$p";
+	    one_plot_set($fn, 3, $plot, \$cnt, 1);
+	}
+	close_plot($cnt, $plot, $graph_fdcount_signalfd);
+    }
 
 ############# fd_count_disk for processes #####################
     print "fd_disk ";
-    $plot = start_plotfile_histogram($graph_fdcount_disk);
-    $cnt = 0;
+    %show_this = undef;
     foreach $p (reverse sort {$fd_disk{$a} <=> $fd_disk{$b} } keys %fd_disk) {
 	if ($fd_samples{$p} < $samples_required) { next; }
 	$fn = "e/fd_disk-$name_by_pid{$p}-$p";
 	if (count_nonzero_entries($fn) <= 0) { next; }
-	one_plot_set($fn, 0, $plot, \$cnt, 1);
+	$show_this{$p} = changes_found($fn);
     }
-    close_plot($cnt, $plot, $graph_fdcount_disk);
+    if (%show_this) {
+	$plot = start_plotfile_linespoints($graph_fdcount_disk);
+	$cnt = 0;
+	foreach $p (reverse sort {$fd_disk{$a} <=> $fd_disk{$b} } keys %fd_disk) {
+	    if ($show_this{$p} != 1) { next; }
+	    $fn = "e/fd_disk-$name_by_pid{$p}-$p";
+	    one_plot_set($fn, 3, $plot, \$cnt, 1);
+	}
+	close_plot($cnt, $plot, $graph_fdcount_disk);
+    }
 
 ############# interrupts #####################
     print "interrupt ";
