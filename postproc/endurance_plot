@@ -355,6 +355,11 @@ $legend{$graph_fdcount_signalfd} = "signalfd FD use by processes";
 $thumblegend{$graph_fdcount_signalfd} = "SIGNALFD FILE DESCR";
 $unit{$graph_fdcount_signalfd} = "number of FD";
 
+my $graph_fdcount_timerfd = "80_fdcount_timerfd";
+$legend{$graph_fdcount_timerfd} = "timerfd FD use by processes";
+$thumblegend{$graph_fdcount_timerfd} = "TIMERFD FILE DESCR";
+$unit{$graph_fdcount_timerfd} = "number of FD";
+
 my $graph_fdcount_disk = "80_fdcount_disk";
 $legend{$graph_fdcount_disk} = "disk FD use by processes";
 $thumblegend{$graph_fdcount_disk} = "DISK FILE DESCR";
@@ -530,6 +535,7 @@ my %fd_proc;
 my %fd_eventfd;
 my %fd_epoll;
 my %fd_signalfd;
+my %fd_timerfd;
 my %fd_disk;
 
 my %app_pss;
@@ -1504,6 +1510,7 @@ sub process_openfds()
 		value_store_zeropad("e/fd_eventfd-$name_by_pid{$pid}-$pid",   $i, $fd_eventfd{$pid});
 		value_store_zeropad("e/fd_epoll-$name_by_pid{$pid}-$pid",     $i, $fd_epoll{$pid});
 		value_store_zeropad("e/fd_signalfd-$name_by_pid{$pid}-$pid",  $i, $fd_signalfd{$pid});
+		value_store_zeropad("e/fd_timerfd-$name_by_pid{$pid}-$pid",   $i, $fd_timerfd{$pid});
 		value_store_zeropad("e/fd_disk-$name_by_pid{$pid}-$pid",      $i, $fd_disk{$pid});
 	    }
 	    $pid = $1;
@@ -1515,6 +1522,7 @@ sub process_openfds()
 	    $fd_eventfd{$pid} = 0;
 	    $fd_epoll{$pid} = 0;
 	    $fd_signalfd{$pid} = 0;
+	    $fd_timerfd{$pid} = 0;
 	    $fd_disk{$pid} = 0;
 	} elsif (m#^.[rwx-]{9}\s+\d+\s+(\S+)\s+\S+\s+.*\d+ -> (\S+)#) {
 	    my $username = $1;
@@ -1538,6 +1546,8 @@ sub process_openfds()
 		$fd_epoll{$pid} += 1;
 	    } elsif ($target eq 'anon_inode:[signalfd]') {
 		$fd_signalfd{$pid} += 1;
+	    } elsif ($target eq 'anon_inode:[timerfd]') {
+		$fd_timerfd{$pid} += 1;
 	    } elsif ($target =~ m#^/#) {
 		$fd_disk{$pid} += 1;
 	    } else {
@@ -3804,6 +3814,26 @@ sub generate_plots()
 	    one_plot_set($fn, 3, $plot, \$cnt, 1);
 	}
 	close_plot($cnt, $plot, $graph_fdcount_signalfd);
+    }
+
+############# fd_count_timerfd for processes #####################
+    print "fd_timerfd ";
+    %show_this = undef;
+    foreach $p (reverse sort {$fd_timerfd{$a} <=> $fd_timerfd{$b} } keys %fd_timerfd) {
+	if ($fd_samples{$p} < $samples_required) { next; }
+	$fn = "e/fd_timerfd-$name_by_pid{$p}-$p";
+	if (count_nonzero_entries($fn) <= 0) { next; }
+	$show_this{$p} = changes_found($fn);
+    }
+    if (%show_this) {
+	$plot = start_plotfile_linespoints($graph_fdcount_timerfd);
+	$cnt = 0;
+	foreach $p (reverse sort {$fd_timerfd{$a} <=> $fd_timerfd{$b} } keys %fd_timerfd) {
+	    if ($show_this{$p} != 1) { next; }
+	    $fn = "e/fd_timerfd-$name_by_pid{$p}-$p";
+	    one_plot_set($fn, 3, $plot, \$cnt, 1);
+	}
+	close_plot($cnt, $plot, $graph_fdcount_timerfd);
     }
 
 ############# fd_count_disk for processes #####################
