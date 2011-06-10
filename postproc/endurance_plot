@@ -1521,7 +1521,7 @@ sub process_openfds()
 	    } elsif ($target =~ m#^/#) {
 		$fd_disk{$pid} += 1;
 	    } else {
-		print STDERR "UNCLASSIFIED open-fds entry: $_";
+		#print STDERR "UNCLASSIFIED open-fds entry: $_";
 	    }
 	}
     }
