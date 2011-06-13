@@ -1698,7 +1698,7 @@ sub process_smaps()
 
 	    next;
 	}
-	if( index($_, "/SYSV00000000") != -1) {
+	if( m#/SYSV[0-9a-f]{8,}# ) {
 	    $line = <$f>;
 	    chop $line;
 	    (undef, $sysv_shared, undef) = split(' ' , $line, 3);
