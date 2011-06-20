@@ -1,3 +1,10 @@
+sp-endurance (2.2.6), 20 Jun 2011:
+ * extract-endurance-process-smaps: fix bashisms, fix zero return value when
+   no processes matching the user given string is found.
+ * endurance_report.py: fix div-by-zero seen with incomplete smaps capture
+   file
+ * endurance_plot: new graphs, and several small fixes.
+
 sp-endurance (2.2.5), 18 Apr 2011:
  * save-incremental-endurance-stats:
    - Collect /var/log/messages.
