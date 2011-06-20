@@ -1375,7 +1375,7 @@ sub parse_pages_block($)
 	$pswp_in = 0;
     } else {
 	$pswp_in = ($pswp_in_cumul - $pswp_in_prev)/$divider;
-	value_store($pswp_in_plot_file_name, $i, $pswp_in);
+	value_store_zeropad($pswp_in_plot_file_name, $i, $pswp_in);
     }
     $pswp_in_prev = $pswp_in_cumul;
 #		print "$d:swpin_cumul=$pswp_in_cumul this=$pswp_in prev=$pswp_in_prev pptable=$pptablepages\n";
@@ -1390,7 +1390,7 @@ sub parse_pages_block($)
 	$pswp_out = 0;
     } else {
 	$pswp_out = ($pswp_out_cumul - $pswp_out_prev)/$divider;
-	value_store($pswp_out_plot_file_name, $i, $pswp_out);
+	value_store_zeropad($pswp_out_plot_file_name, $i, $pswp_out);
     }
     $pswp_out_prev = $pswp_out_cumul;
     $swap_pgout_total += $pswp_out;
@@ -1402,7 +1402,7 @@ sub parse_pages_block($)
 	$pgscan_kswapd_normal = 0;
     } else {
 	$pgscan_kswapd_normal = ($pgscan_kswapd_normal_cumul - $pgscan_kswapd_normal_prev)/$divider;
-	value_store($pgscan_kswapd_normal_plot_file_name, $i, $pgscan_kswapd_normal);
+	value_store_zeropad($pgscan_kswapd_normal_plot_file_name, $i, $pgscan_kswapd_normal);
     }
     $pgscan_kswapd_normal_prev = $pgscan_kswapd_normal_cumul;
 
@@ -1410,7 +1410,7 @@ sub parse_pages_block($)
 	$pgscan_direct_normal = 0;
     } else {
 	$pgscan_direct_normal = ($pgscan_direct_normal_cumul - $pgscan_direct_normal_prev)/$divider;
-	value_store($pgscan_direct_normal_plot_file_name, $i, $pgscan_direct_normal);
+	value_store_zeropad($pgscan_direct_normal_plot_file_name, $i, $pgscan_direct_normal);
     }
     $pgscan_direct_normal_prev = $pgscan_direct_normal_cumul;
     
@@ -1418,7 +1418,7 @@ sub parse_pages_block($)
 	$slabs_scanned = 0;
     } else {
 	$slabs_scanned = ($slabs_scanned_cumul - $slabs_scanned_prev)/$divider;
-	value_store($slabs_scanned_plot_file_name, $i, $slabs_scanned);
+	value_store_zeropad($slabs_scanned_plot_file_name, $i, $slabs_scanned);
     }
     $slabs_scanned_prev = $slabs_scanned_cumul;
 
@@ -1426,7 +1426,7 @@ sub parse_pages_block($)
 	$kswapd_steal = 0;
     } else {
 	$kswapd_steal = ($kswapd_steal_cumul - $kswapd_steal_prev)/$divider;
-	value_store($kswapd_steal_plot_file_name, $i, $kswapd_steal);
+	value_store_zeropad($kswapd_steal_plot_file_name, $i, $kswapd_steal);
     }
     $kswapd_steal_prev = $kswapd_steal_cumul;
 }
@@ -3307,39 +3307,39 @@ sub generate_plots()
 	print "swap ";
 	$n = 0;
 	$plot = start_plotfile_lines($graph_events_swap);
-	if (value_emit($pswp_in_plot_file_name, 0)) {
+	if (value_emit($pswp_in_plot_file_name, 1)) {
 	    print $plot "'$pswp_in_plot_file_name' lw 3";
 	    $n += 1;
 	}
-	if (value_emit($pswp_out_plot_file_name, 0)) {
+	if (value_emit($pswp_out_plot_file_name, 1)) {
 	    if ($n > 0) {
 		print $plot ", ";
 	    }
 	    print $plot "'$pswp_out_plot_file_name' lw 3";
 	    $n += 1;
 	}
-	if (value_emit($pgscan_kswapd_normal_plot_file_name, 0)) {
+	if (value_emit($pgscan_kswapd_normal_plot_file_name, 1)) {
 	    if ($n > 0) {
 		print $plot ", ";
 	    }
 	    print $plot "'$pgscan_kswapd_normal_plot_file_name' lw 3";
 	    $n += 1;
 	}
-	if (value_emit($pgscan_direct_normal_plot_file_name, 0)) {
+	if (value_emit($pgscan_direct_normal_plot_file_name, 1)) {
 	    if ($n > 0) {
 		print $plot ", ";
 	    }
 	    print $plot "'$pgscan_direct_normal_plot_file_name' lw 3";
 	    $n += 1;
 	}
-	if (value_emit($slabs_scanned_plot_file_name, 0)) {
+	if (value_emit($slabs_scanned_plot_file_name, 1)) {
 	    if ($n > 0) {
 		print $plot ", ";
 	    }
 	    print $plot "'$slabs_scanned_plot_file_name' lw 3";
 	    $n += 1;
 	}
-	if (value_emit($kswapd_steal_plot_file_name, 0)) {
+	if (value_emit($kswapd_steal_plot_file_name, 1)) {
 	    if ($n > 0) {
 		print $plot ", ";
 	    }
