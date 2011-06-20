@@ -1132,7 +1132,6 @@ sub parse_process_status_block($)
 	} else {
 	    $utim = $param  - $param_prev_utime{$pname};
 	}
-	$param_prev_utime{$pname} = $param;
 	$utime_cumul{$pname} += $utim;
 	if ($lapsed_time{$i}) {
 	    $utim /= $lapsed_time{$i};
@@ -1142,8 +1141,11 @@ sub parse_process_status_block($)
 	# to make it percent value 0..100%
 	$utim *= 100;
 	$utim /= $ticks_per_sec;
-	$fn = "e/utime-$pname";
-	value_store($fn, $i, $utim);
+	if (defined $param_prev_utime{$pname}) {
+	    $fn = "e/utime-$pname";
+	    value_store($fn, $i, $utim);
+	}
+	$param_prev_utime{$pname} = $param;
 
 ###########################
 	$param = $Stime;
@@ -1152,7 +1154,6 @@ sub parse_process_status_block($)
 	} else {
 	    $stim = $param  - $param_prev_stime{$pname};
 	}
-	$param_prev_stime{$pname} = $param;
 	$stime_cumul{$pname} += $stim;
 	if ($lapsed_time{$i}) {
 	    $stim /= $lapsed_time{$i};
@@ -1162,15 +1163,16 @@ sub parse_process_status_block($)
 	# to make it percent value 0..100%
 	$stim *= 100;
 	$stim /= $ticks_per_sec;
-	$fn = "e/stime-$pname";
-	value_store($fn, $i, $stim);
-###########################
 	$ttim = $stim + $utim;
-	$fn = "e/$pname-totaltime";
-	value_store($fn, $i, $ttim);
+	if (defined $param_prev_stime{$pname}) {
+	    $fn = "e/stime-$pname";
+	    value_store($fn, $i, $stim);
+	    $fn = "e/$pname-totaltime";
+	    value_store($fn, $i, $ttim);
+	}
 	$totaltime_cumul{$pname} += $ttim;
-
-	####
+	$param_prev_stime{$pname} = $param;
+###########################
 	$param = $NumThreads;
 #	$param = $val{"Threads"};
 	$fn = "e/thr-$pname";
@@ -2951,7 +2953,7 @@ sub generate_plots()
 	if ($utime_cumul{$p} == 0) {
 	    last;
 	}
-	one_plot_set("e/utime-$p", 3, $plot, \$cnt, 0);
+	one_plot_set("e/utime-$p", 3, $plot, \$cnt, 1);
     }
     close_plot($cnt, $plot, $graph_cpu_usertime);
 
@@ -2966,7 +2968,7 @@ sub generate_plots()
 	if ($stime_cumul{$p} == 0) {
 	    last;
 	}
-	one_plot_set("e/stime-$p", 3, $plot, \$cnt, 0);
+	one_plot_set("e/stime-$p", 3, $plot, \$cnt, 1);
     }
     close_plot($cnt, $plot, $graph_cpu_systime);
 
@@ -2981,7 +2983,7 @@ sub generate_plots()
 	if ($totaltime_cumul{$p} == 0) {
 	    last;
 	}
-	one_plot_set("e/$p-totaltime", 3, $plot, \$cnt, 0);
+	one_plot_set("e/$p-totaltime", 3, $plot, \$cnt, 1);
     }
     close_plot($cnt, $plot, $graph_cpu_totaltime);
 
