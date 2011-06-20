@@ -3896,8 +3896,8 @@ sub generate_plots()
 
 	$cnt_1 = $cnt_2 = 0;
 	foreach $p ( reverse sort {$dev_reads_total{$a} <=> $dev_reads_total{$b} } keys %dev_reads_total) {
-	    one_plot_set("e/devreads-$p", 2, $plot_1, \$cnt_1, 0);
-	    one_plot_set("e/devreadtime-$p", 2, $plot_2, \$cnt_2, 0);
+	    one_plot_set("e/devreads-$p", 2, $plot_1, \$cnt_1, 1);
+	    one_plot_set("e/devreadtime-$p", 2, $plot_2, \$cnt_2, 1);
 	}
 	close_plot($cnt_1, $plot_1, $graph_diskstats_reads);
 	close_plot($cnt_2, $plot_2, $graph_diskstats_read_time);
@@ -3908,8 +3908,8 @@ sub generate_plots()
 
 	$cnt_1 = $cnt_2 = 0;
 	foreach $p ( reverse sort {$dev_writes_total{$a} <=> $dev_writes_total{$b} } keys %dev_writes_total) {
-	    one_plot_set("e/devwrites-$p", 2, $plot_1, \$cnt_1, 0);
-	    one_plot_set("e/devwritetime-$p", 2, $plot_2, \$cnt_2, 0);
+	    one_plot_set("e/devwrites-$p", 2, $plot_1, \$cnt_1, 1);
+	    one_plot_set("e/devwritetime-$p", 2, $plot_2, \$cnt_2, 1);
 	}
 	close_plot($cnt_1, $plot_1, $graph_diskstats_writes);
 	close_plot($cnt_2, $plot_2, $graph_diskstats_write_time);
