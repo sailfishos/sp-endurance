@@ -2024,7 +2024,7 @@ sub process_stat()
 	$line = $_;
 	chop $line;
 	if( m/ctxt /) {
-	    (undef, $ctx) = split(' ' , $line, 2);
+	    my (undef, $ctx) = split(' ' , $line, 2);
 
 	    if (!$global_ctx_prev) {
 		$global_ctx = 0;
@@ -2038,7 +2038,7 @@ sub process_stat()
 		value_store("e/all-ctx-switches", $i, $global_ctx);
 	    }
 	} elsif( m/processes /) {
-	    (undef, $processes) = split(' ' , $line, 2);
+	    my (undef, $processes) = split(' ' , $line, 2);
 
 	    if (!$global_processes_prev) {
 		$global_processes = 0;
