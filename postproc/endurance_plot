@@ -3521,6 +3521,7 @@ sub generate_plots()
 	
     foreach $p (reverse sort {$avg_pss_swp{$a} <=> $avg_pss_swp{$b} } keys %avg_pss_swp) {
 	if ($show_this{$p}) {
+	    $cnt += 1;
 	    if ($cnt == $divpoint_1) {
 		$div = $avg_pss_swp{$p};
 		$sdiv = sprintf("%2.1f", $div);
@@ -3543,7 +3544,6 @@ sub generate_plots()
 		$legend{$graph_appmem_pss_swap_lines_smallest} = "apps $pss_txt < $sdiv MB"; 
 		$thumblegend{$graph_appmem_pss_swap_lines_smallest} = "$pss_txt &lt; $sdiv MB";
 	    }
-	    $cnt += 1;
 	} 
     }
 
