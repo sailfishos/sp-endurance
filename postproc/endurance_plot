@@ -909,15 +909,17 @@ sub parse_name_state_block($)
 	} else {
 	    $nonvol_ctx = $param  - $param_prev_nonvol_ctx{$pname};
 	}
-	$param_prev_nonvol_ctx{$pname} = $param;
 	$cumul_nonvol_ctx{$pname} += $nonvol_ctx;
 	if ($lapsed_time{$i}) {
 	    $nonvol_ctx /= $lapsed_time{$i};
 	} else {
 	    $nonvol_ctx /= $secs_per_round;
 	}
-	$fn = "e/nonvol-ctx-$pname";
-	value_store($fn, $i, $nonvol_ctx);
+	if (defined $param_prev_nonvol_ctx{$pname}) {
+	    $fn = "e/nonvol-ctx-$pname";
+	    value_store($fn, $i, $nonvol_ctx);
+	}
+	$param_prev_nonvol_ctx{$pname} = $param;
 	###############
 	$param = $val{"voluntary_ctxt_switches"};
 	if (!$param_prev_vol_ctx{$pname}) {
@@ -925,20 +927,21 @@ sub parse_name_state_block($)
 	} else {
 	    $vol_ctx = $param  - $param_prev_vol_ctx{$pname};
 	}
-	$param_prev_vol_ctx{$pname} = $param;
 	$cumul_vol_ctx{$pname} += $vol_ctx;
 	if($lapsed_time{$i}) {
 	    $vol_ctx /= $lapsed_time{$i};
 	} else {
 	    $vol_ctx /= $secs_per_round;
 	}
-	$fn = "e/vol-ctx-$pname";
-	value_store($fn, $i, $vol_ctx);
-	###############
 	$total_ctx = $nonvol_ctx + $vol_ctx;
-	$fn = "e/total-ctx-$pname";
-	value_store($fn, $i, $total_ctx);
+	if (defined $param_prev_vol_ctx{$pname}) {
+	    $fn = "e/vol-ctx-$pname";
+	    value_store($fn, $i, $vol_ctx);
+	    $fn = "e/total-ctx-$pname";
+	    value_store($fn, $i, $total_ctx);
+	}
 	$cumul_total_ctx{$pname} += $total_ctx;
+	$param_prev_vol_ctx{$pname} = $param;
     }
 }
 
@@ -2851,7 +2854,7 @@ sub generate_plots()
 	if ($cumul_total_ctx{$p} == 0) {
 	    last;
 	}
-	one_plot_set("e/total-ctx-$p", 3, $plot, \$cnt, 0);
+	one_plot_set("e/total-ctx-$p", 3, $plot, \$cnt, 1);
     }
     close_plot($cnt, $plot, $graph_events_ctx_total);
 
@@ -2866,7 +2869,7 @@ sub generate_plots()
 	if ($cumul_nonvol_ctx{$p} == 0) {
 	    last;
 	}
-	one_plot_set("e/nonvol-ctx-$p", 3, $plot, \$cnt, 0);
+	one_plot_set("e/nonvol-ctx-$p", 3, $plot, \$cnt, 1);
     }
     close_plot($cnt, $plot, $graph_events_ctx_nonvolunt);
 
@@ -2881,7 +2884,7 @@ sub generate_plots()
 	if ($cumul_vol_ctx{$p} == 0) {
 	    last;
 	}
-	one_plot_set("e/vol-ctx-$p", 3, $plot, \$cnt, 0);
+	one_plot_set("e/vol-ctx-$p", 3, $plot, \$cnt, 1);
     }
     close_plot($cnt, $plot, $graph_events_ctx_volunt);
 
