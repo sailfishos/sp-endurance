@@ -1113,15 +1113,17 @@ sub parse_process_status_block($)
 	} else {
 	    $param_show = $param  - $param_prev_majflt{$pname};
 	}
-	$param_prev_majflt{$pname} = $param;
 	$majflt_cumul{$pname} += $param_show;
 	if ($lapsed_time{$i}) { 
 	    $param_show = $param_show/$lapsed_time{$i};
 	} else {
 	    $param_show = 0;
 	}
-	$fn = "e/majflt-$pname";
-	value_store($fn, $i, $param_show);
+	if (defined $param_prev_majflt{$pname}) {
+	    $fn = "e/majflt-$pname";
+	    value_store($fn, $i, $param_show);
+	}
+	$param_prev_majflt{$pname} = $param;
 
 ###########################
 	$param = $Utime;
