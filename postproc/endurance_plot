@@ -606,6 +606,7 @@ my %num_activity_samples;
 my %files;
 my %secval;
 my %cnt_per_file;
+my %round_date;
 
 my $have_diskstats = 0;
 my $have_ramzswap = 0;
@@ -2483,7 +2484,7 @@ sub add_use_case_names()
 	    $step = `cat $dfn`;
 	    chop $step;
 	    $dcnt = $d - 101;
-	    system("echo '$dcnt: $step<br>' >> $html_name");
+	    system("echo '$dcnt: [$round_date{$d}] $step<br>' >> $html_name");
 	}
     }
 }
@@ -4117,7 +4118,8 @@ foreach $d (@dirs) {
 	    $sw_version = $swver;
 	    next;
 	} 
-	if( m/date = /) {
+	if( m/date = (.*)/) {
+	    $round_date{$d} = $1;
 	    #                                                                                                                                                    
 	    # parse date into num of seconds,                                                                                                                    
 	    #                                                                                                                                                    
