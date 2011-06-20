@@ -2034,7 +2034,9 @@ sub process_stat()
 		$global_ctx = ($ctx - $global_ctx_prev)/$lapsed_time{$i};
 	    }
 	    $global_ctx_prev = $ctx;
-	    value_store("e/all-ctx-switches", $i, $global_ctx);
+	    if ($i > 0) {
+		value_store("e/all-ctx-switches", $i, $global_ctx);
+	    }
 	} elsif( m/processes /) {
 	    (undef, $processes) = split(' ' , $line, 2);
 
@@ -2044,7 +2046,9 @@ sub process_stat()
 		$global_processes = (60*($processes - $global_processes_prev))/$lapsed_time{$i};
 	    }
 	    $global_processes_prev = $processes;
-	    value_store("e/global-processes", $i, $global_processes);
+	    if ($i > 0) {
+		value_store("e/global-processes", $i, $global_processes);
+	    }
 	    last;
 	}
     }
