@@ -41,18 +41,18 @@ usage ()
 	echo "As arguments expects the endurance data directories."
 	echo
 	echo "Options:"
-	echo -e "\t--base=<MBs>\tMinimum/base value on the ASCII graph in MBs."
-	echo -e "\t--range=<MBs>\tMemory range shown on the ASCII graph in MBs"
-	echo -e "\t\t\tfrom the min/base value upwards."
-	echo -e "\t--show=t|r|s\tWhether to show [T]otal (default),"
-	echo -e "\t\t\t[R]AM or [S]wap usage."
+	echo "        --base=<MBs>    Minimum/base value on the ASCII graph in MBs."
+	echo "        --range=<MBs>   Memory range shown on the ASCII graph in MBs"
+	echo "                        from the min/base value upwards."
+	echo "        --show=t|r|s    Whether to show [T]otal (default),"
+	echo "                        [R]AM or [S]wap usage."
 	echo
 	echo "If no options are shown, graph is scaled to fit all memory"
 	echo "usage changes within the selected endurance data dirs."
 	echo
 	echo "Examples:"
-	echo -e "\t$name --range=200 --base=100 --show=t [0-9]*"
-	echo -e "\t$name --range=100 [0-9]*"
+	echo "        $name --range=200 --base=100 --show=t [0-9]*"
+	echo "        $name --range=100 [0-9]*"
 	echo
 	echo "ERROR: $1!"
 	echo
