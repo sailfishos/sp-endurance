@@ -1,3 +1,10 @@
+sp-endurance (2.2.7) unstable; urgency=low
+
+  * Fixes: NB#268293 - sp-endurance: collect ramzswap statistics with
+    rzscontrol
+
+ -- Tommi Rantala <ext-tommi.1.rantala@nokia.com>  Thu, 23 Jun 2011 14:20:55 +0300
+
 sp-endurance (2.2.6) unstable; urgency=low
 
   * Fixes: NB#262046 - endurance_report.py dies during analysis

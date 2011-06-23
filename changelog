@@ -1,3 +1,8 @@
+sp-endurance (2.2.7), 23 Jun 2011:
+ * save-incremental-endurance-stats:
+   - Collect /syspart recursively for Cgroup information.
+   - Collect ramzswap statistics.
+
 sp-endurance (2.2.6), 20 Jun 2011:
  * extract-endurance-process-smaps: fix bashisms, fix zero return value when
    no processes matching the user given string is found.
