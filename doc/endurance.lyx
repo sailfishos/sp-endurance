@@ -1,0 +1,4239 @@
+#LyX 1.6.7 created this file. For more info see http://www.lyx.org/
+\lyxformat 345
+\begin_document
+\begin_header
+\textclass article
+\begin_preamble
+\lhead{Company confidential}
+\chead{}
+\rhead{Draft}
+\lfoot{Section \thesection}
+\cfoot{}
+\rfoot{\thepage (\pageref{last_page})}
+\end_preamble
+\use_default_options false
+\language english
+\inputencoding auto
+\font_roman times
+\font_sans helvet
+\font_typewriter courier
+\font_default_family default
+\font_sc false
+\font_osf false
+\font_sf_scale 100
+\font_tt_scale 100
+
+\graphics default
+\paperfontsize default
+\spacing single
+\use_hyperref false
+\papersize a4paper
+\use_geometry false
+\use_amsmath 1
+\use_esint 0
+\cite_engine basic
+\use_bibtopic false
+\paperorientation portrait
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation skip
+\defskip medskip
+\quotes_language english
+\papercolumns 1
+\papersides 1
+\paperpagestyle fancy
+\tracking_changes false
+\output_changes false
+\author "" 
+\author "" 
+\end_header
+
+\begin_body
+
+\begin_layout Title
+Endurance measuring
+\end_layout
+
+\begin_layout Author
+\begin_inset Tabular
+<lyxtabular version="3" rows="4" columns="2">
+<features>
+<column alignment="right" valignment="top" width="0">
+<column alignment="left" valignment="top" width="0">
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Author:
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Eero Tamminen <eero.tamminen@nokia.com>
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Scope:
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Maemo v5 system and application analysis
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Date:
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+2009-11-16
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Status:
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Draft
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Abstract
+The aim of endurance measurement is not (just) to detect the problems, but
+ to get them fixed.
+ Problems that cannot be replicated, cannot be fixed.
+\end_layout
+
+\begin_layout Abstract
+Re-producing endurance problems is not feasible schedule-wise and developer
+ effort required even just to 
+\emph on
+test
+\emph default
+ whether problem is reproducible, may be too time consuming
+\begin_inset Foot
+status collapsed
+
+\begin_layout Plain Layout
+If triggering the bug took a week, developer can start assuming that the
+ problem is not reproducible only after a week, and with confidence he can
+ say that it's not reproducible only after several weeks of testing (or
+ several developers testing for a week).
+\end_layout
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Abstract
+If the measurements don't indicate the correct component for the problem,
+ there will be additional time wasted when the problem is moved between
+ components
+\begin_inset Foot
+status collapsed
+
+\begin_layout Plain Layout
+Which involves the corresponding developers searching for information about
+ suitable debugging tools, installing them, re-compiling dependent libraries,
+ and finally noticing that the problem is not in their component before
+ moving it to another component.
+ Because this takes time that they don't have, they don't start this kind
+ of things immediately.
+ Result is huge waste of time.
+\end_layout
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Abstract
+
+\emph on
+Only with sufficient measurements produced when endurance problem occurs,
+ the problems can be fixed.
+ Information that there is a problem, is
+\emph default
+ 
+\series bold
+\emph on
+not
+\series default
+\emph default
+ 
+\emph on
+enough!
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+
+\backslash
+pagestyle{plain}
+\end_layout
+
+\end_inset
+
+
+\begin_inset Newpage newpage
+\end_inset
+
+
+\begin_inset VSpace vfill
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsubsection*
+Legal notice
+\end_layout
+
+\begin_layout Standard
+Copyright © 2007--2009 Nokia Corporation.
+ All rights reserved.
+\end_layout
+
+\begin_layout Standard
+Nokia and Maemo are trademarks or registered trademarks of Nokia Corporation.
+ Other product and company names mentioned herein may be trademarks or trade
+ names of their respective owners.
+\end_layout
+
+\begin_layout Subsubsection*
+Disclaimer
+\end_layout
+
+\begin_layout Standard
+The information in this document is provided 
+\begin_inset Quotes eld
+\end_inset
+
+as is,
+\begin_inset Quotes erd
+\end_inset
+
+ with no warranties whatsoever, including any warranty of merchantability,
+ fitness for any particular purpose, or any warranty otherwise arising out
+ of any proposal, specification, or sample.
+ This document is provided for informational purposes only.
+\end_layout
+
+\begin_layout Standard
+Nokia Corporation disclaims all liability, including liability for infringement
+ of any proprietary rights, relating to implementation of information presented
+ in this document.
+ Nokia Corporation does not warrant or represent that such use will not
+ infringe such rights.
+\end_layout
+
+\begin_layout Standard
+Nokia Corporation retains the right to make changes to this material at
+ any time, without notice.
+\end_layout
+
+\begin_layout Subsubsection*
+License
+\end_layout
+
+\begin_layout Standard
+Permission is granted to copy, distribute and/or modify this document under
+ the terms of the GNU Free Documentation License, Version 1.2 or any later
+ version published by the Free Software Foundation; with no Invariant Sections,
+ no Front-Cover Texts, and no Back-Cover Texts.
+\end_layout
+
+\begin_layout Standard
+The full license text can be found at 
+\family typewriter
+http://www.gnu.org/copyleft/fdl.html.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newpage newpage
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section*
+Changelog
+\end_layout
+
+\begin_layout Description
+TODO Add sp-rtrace & functracer.
+ Document sp-memusage mallinfo thing.
+ Consider la-trace.
+ How to set clock in Fremantle from cmdline?
+\end_layout
+
+\begin_layout Description
+2009-11-24 Add license page
+\end_layout
+
+\begin_layout Description
+2009-11-16 List Maemo releases in Terminology.
+ Listed issues where UBIFS is improved over JFFS-2.
+ Mention file system usage issues on system updates.
+ Discuss FAT and its corruption issues.
+ Changed most mentions of Flash into (root) file system.
+ Folded the separate UI reliability document to a new UI reliability issues
+ section.
+ Minor text fine-tuning
+\end_layout
+
+\begin_layout Description
+2009-05-22 Minor text improvements + additional TODOs
+\end_layout
+
+\begin_layout Description
+2009-04-30 Moved open/resolved issues to appendix, TODO and reference fixes
+\end_layout
+
+\begin_layout Description
+2008-09-16 Fixes to debugging sections and cleanup of previous changes
+\end_layout
+
+\begin_layout Description
+2008-09-05 Major updates as part of publication cleanup and IT2008 updates:
+ removed useless risk matrix, items discussed in the performance measurement
+ document and things implemented into sp-endurance, sp-memusage and sp-rich-core
+ tools.
+ libleaks or functracer?
+\end_layout
+
+\begin_layout Description
+2007-02-16 Major updates for IT2007: added sections on solved issues and
+ sp-endurance usage, added notes about maemo-summoner and a SMAPS helper
+ script, removed automatic backtraces on device section (it's not currently
+ feasible on ARM) and added debugging issues appendix
+\end_layout
+
+\begin_layout Description
+2006-03-24 Updated the document for IT2006 in regards to open issues and
+ how the problem detection and measurements are done.
+ Updated instructions, references and URLs.
+ Removed old/obsolete information
+\end_layout
+
+\begin_layout Description
+2005-12-21 Recommend first leak testing to be done on x68 with Valgrind.
+ Everything else is waste of time because of the large amount of false positives
+ reported by the other tools.
+ Added note about X server resource usage and more URLs and document IDs
+\end_layout
+
+\begin_layout Description
+2005-12-20 Added notes about use-time, system V IPC resource measurements,
+ script for endurance measurements and section on randomized tests
+\end_layout
+
+\begin_layout Description
+2005-12-15 Added Proposed measurements section and fixes according to comments.
+ Script fixes
+\end_layout
+
+\begin_layout Description
+2005-12-13 Added out-of-scope, problem occurrence frequency sections and
+ other updates to the overview and detection sections based on feedback.
+ Moved battery removal issues to out-of-scope (for SW endurance).
+ Added risk analysis section
+\end_layout
+
+\begin_layout Description
+2005-12-09 Wrote section on detecting and measuring the problems, major
+ update to fixing section, improved subsection headers, added abstract,
+ other minor updates
+\end_layout
+
+\begin_layout Description
+2005-12-01 Started the document
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newpage newpage
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset toc
+LatexCommand tableofcontents
+
+\end_inset
+
+
+\begin_inset Newpage newpage
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+
+\backslash
+pagestyle{fancy}
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Introduction
+\end_layout
+
+\begin_layout Standard
+This document describes the potential 
+\emph on
+software
+\emph default
+ endurance problems, how they can be measured and problems in measuring.
+ The document is composed of the following sections:
+\end_layout
+
+\begin_layout Itemize
+Overview of endurance measuring, see section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "overview"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+Categorization of the endurance problems, see section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "categorization"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+What are the known endurance problems, how user can recover from them and
+ the problem risk analysis, see section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "problems"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+How to detect & debug and measure these problems, see section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "detecting"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+How to locate and fix these problems within the components where they are
+ detected, see section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fixing"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Target audience
+\end_layout
+
+\begin_layout Standard
+Target audience of this document is system engineers and anybody who is
+ interested about the possible software endurance problems and how to handle
+ them.
+\end_layout
+
+\begin_layout Subsection
+Terminology and typography
+\end_layout
+
+\begin_layout Standard
+Current Maemo release names are:
+\end_layout
+
+\begin_layout Description
+Harmattan Maemo v6, not yet released
+\end_layout
+
+\begin_layout Description
+Fremantle Maemo v5, released in 2009
+\end_layout
+
+\begin_layout Description
+Diablo Maemo v4, released in 2008
+\end_layout
+
+\begin_layout Standard
+Earlier Maemo operating system releases used names like IT2005 which tell
+ in which year they were released.
+\end_layout
+
+\begin_layout Standard
+References to outside documents are marked like this: 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "debug"
+
+\end_inset
+
+.
+ The references are listed in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "references"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+Commands run in shell are marked with 
+\family typewriter
+monotype font
+\family default
+.
+ In the commands 
+\emph on
+PID
+\emph default
+ should be replaced with the process ID of an appropriate process.
+\end_layout
+
+\begin_layout Standard
+
+\emph on
+User
+\emph default
+ refers to a typical device user.
+\end_layout
+
+\begin_layout Section
+Overview
+\begin_inset CommandInset label
+LatexCommand label
+name "overview"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Endurance means that software behaves consistently over a long period of
+ (use-)time without functionality loss or performance degradation.
+ The emphasize on long period of time has several implications:
+\end_layout
+
+\begin_layout Enumerate
+Issues are hard to re-produce because in practice it's impossible to re-construc
+t everything that user has done over a large period of time before encountering
+ the issue.
+ Users don't remember (potentially) crucial details after long period of
+ ad-hoc testing
+\end_layout
+
+\begin_layout Enumerate
+There are no clearly defined pre-conditions for the bugs, as the necessary
+ pre-condition(s) can be determined properly only after the reason for the
+ bug has been resolved from the code inspection
+\end_layout
+
+\begin_layout Enumerate
+Endurance issues are often impossible to verify properly until the reason
+ for the issue has been resolved
+\end_layout
+
+\begin_layout Standard
+After the reason for the problem is found, the events triggering it can
+ be simulated in much shorter time.
+\end_layout
+
+\begin_layout Standard
+When the problem can be (quickly) re-produced, it's not anymore an endurance
+ problem, just a normal bug.
+\end_layout
+
+\begin_layout Subsection
+Measuring objectives
+\end_layout
+
+\begin_layout Standard
+Because of the endurance problems re-reproducibility issue, measurements
+ done during the testing have to:
+\end_layout
+
+\begin_layout Itemize
+Provide enough details to replicate the pre-conditions for triggering the
+ issue, and/or
+\end_layout
+
+\begin_layout Itemize
+Clearly identify the component responsible for the issue so that amount
+ of code to inspect is reasonable
+\end_layout
+
+\begin_layout Standard
+Therefore the point of the endurance work is to provide testers and developers
+ the tools and processes which produce these measurements.
+\end_layout
+
+\begin_layout Subsection
+Out of scope
+\end_layout
+
+\begin_layout Standard
+Following are out of scope for this document:
+\end_layout
+
+\begin_layout Itemize
+Problems with hardware endurance such as low battery, flash wearing, plugging
+ things in&out etc.
+\end_layout
+
+\begin_layout Itemize
+Measuring factors affecting the device use-time.
+ Discussed more in 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "performance"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Itemize
+Endurance regression testing.
+ This document doesn't concern problem fix followup; only detecting, measuring
+ and fixing them.
+\end_layout
+
+\begin_layout Itemize
+Power users' use-cases.
+ Power users can enable device R&D mode, do things from the command line
+ or as root and therefore break the device in many interesting ways that
+ normal users cannot or won't.
+\end_layout
+
+\begin_layout Subsection
+Problem categories
+\begin_inset CommandInset label
+LatexCommand label
+name "categorization"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Endurance problems can be divided into a couple of categories (with decreasing
+ severity):
+\end_layout
+
+\begin_layout Enumerate
+System functionality or performance significantly decreases after use and
+ cannot be recovered by the user (except by reflashing the device)
+\end_layout
+
+\begin_layout Enumerate
+Specific functionality or its performance significantly decreases after
+ use and cannot be recovered by the user
+\end_layout
+
+\begin_layout Enumerate
+Loss of user data
+\end_layout
+
+\begin_layout Enumerate
+Functionality or performance significantly decreases after use, but it can
+ be recovered with reboot
+\end_layout
+
+\begin_layout Enumerate
+Functionality or performance significantly decreases after use, but user
+ can recover it easily without reboot
+\end_layout
+
+\begin_layout Enumerate
+Decreased device use-time
+\end_layout
+
+\begin_layout Standard
+Only way to create degradation in software functionality or performance
+ that persists over reboot is to modify state that persists over reboot.
+ RAM contents don't persist over reboot, disk contents do.
+ Therefore categories 1-2 problems are related to files and file system
+ and problems in categories 4-5 are typically related to resource leaks,
+ memory fragmentation and memory usage in general.
+\end_layout
+
+\begin_layout Standard
+User data loss that occurs as a result of system functionality/performance
+ degradation over time
+\begin_inset Foot
+status open
+
+\begin_layout Plain Layout
+Other types of data loss are not endurance problems.
+\end_layout
+
+\end_inset
+
+, are category 3 problems.
+ They can be results of both disk and memory usage problems (disk full,
+ out of memory, no free file descriptors).
+\end_layout
+
+\begin_layout Standard
+There are also bugs that are very hard to trigger, and therefore they usually
+ appear only after a long use-time.
+ For example low memory situation makes the device slower and can therefore
+ be only way to trigger timing related bugs in normal use.
+ If process termination in such conditions results in other processes terminatin
+g, and especially if that's a user visible issue, the device is be rebooted
+ automatically
+\begin_inset Foot
+status collapsed
+
+\begin_layout Plain Layout
+The automated reaction naturally needs to be optional for debugging purposes.
+\end_layout
+
+\end_inset
+
+ to return it to better working condition.
+\end_layout
+
+\begin_layout Standard
+Some applications can get slow although device itself still works quite
+ well.
+ These problems are too application specific to be be discussed in this
+ document.
+\end_layout
+
+\begin_layout Subsection
+Problem occurrence frequency
+\end_layout
+
+\begin_layout Standard
+For risk analysis the device use time can be divided into few significant
+ categories:
+\end_layout
+
+\begin_layout Description
+Hours Time it takes until full battery runs out when device is 
+\emph on
+continuously
+\emph default
+ used
+\end_layout
+
+\begin_layout Description
+Days Time it takes until full battery runs out when device is 
+\emph on
+idling
+\emph default
+ after the device has been used
+\end_layout
+
+\begin_layout Description
+Weeks Time the device can be used normally without rebooting just by recharging
+ it occasionally
+\end_layout
+
+\begin_layout Description
+Months Prolonged time the device can be used without rebooting just by rechargin
+g it occasionally.
+ Assumes battery nor device performance doesn't degrade significantly to
+ force user to an early reboot and that user doesn't do operations requiring
+ reboot (SW image update, backup restore, language change)
+\end_layout
+
+\begin_layout Description
+Years The device lifetime, includes numerous reboots in addition to recharging
+\end_layout
+
+\begin_layout Standard
+Time when the device is powered off doesn't count because that doesn't exercise
+ its software or file system, and has minimal or no effect on hardware.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newpage newpage
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Known endurance problems and recovering from them
+\begin_inset CommandInset label
+LatexCommand label
+name "problems"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+This section describes potential endurance problems in the present and past
+ Maemo releases and how system and user recover from them.
+ Some of the larger old issues and their solutions are listed as reference
+ for future systems designs.
+\end_layout
+
+\begin_layout Subsection
+System problems from which user cannot recover the device
+\end_layout
+
+\begin_layout Standard
+Complex desktop like systems such as Maemo need to do writes to the file
+ system at bootup, so there always needs to be some free space on the root
+ filesystem for bootup to work properly.
+ There's some flash space reserved by the file system which only the 
+\emph on
+root
+\emph default
+ user processes can fill, non-
+\emph on
+root
+\emph default
+ user processes cannot fill the root file system completely.
+ 
+\end_layout
+
+\begin_layout Standard
+If a 
+\emph on
+root
+\emph default
+ user process (such as package installation scripts called by 
+\family typewriter
+dpkg
+\family default
+) manages to fill the root file system completely, the device can end up
+ in a reboot-loop.
+ This is the worst category 1 problem, 
+\emph on
+user cannot correct it
+\emph default
+.
+ Package manager usually recovers from installation errors by removing the
+ failed package, but this cannot always free (enough) space (see also 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Recover-with-reboot"
+
+\end_inset
+
+).
+\end_layout
+
+\begin_layout Standard
+If a process involved in the device startup and covered by the SW watchdog
+ doesn't handle device root file system being full (to an amount non-
+\emph on
+root
+\emph default
+ user process can fill it) and crashes, this causes also a reboot loop.
+\end_layout
+
+\begin_layout Standard
+It's also possible that some cache etc.
+ files grow without limits (see e.g.
+ 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:IT2005-specific-problems"
+
+\end_inset
+
+).
+ If user doesn't see and cannot remove these files, 
+\emph on
+user cannot correct the issue
+\emph default
+ and eventually such files will fill the file system and device will stop
+ working.
+\end_layout
+
+\begin_layout Subsubsection
+Problems specific to JFFS-2 (Diablo and earlier releases)
+\end_layout
+
+\begin_layout Standard
+When the JFFS-2 partition starts to get full, the device performance will
+ start to significantly degrade.
+ There are several factors contributing to this:
+\end_layout
+
+\begin_layout Itemize
+JFFS-2 keeps the whole file system structure in memory.
+ This takes more RAM (and slows down mounting)
+\end_layout
+
+\begin_layout Itemize
+Does too optimistic free space estimation for user-space (which causes more
+ out-of-space issues) and reserves fairly little space for itself (which
+ make next issue worse)
+\end_layout
+
+\begin_layout Itemize
+Less space for garbage collection
+\end_layout
+
+\begin_layout Standard
+UBIFS replaced JFFS-2 file system in Fremantle.
+ It fixes or at least significantly improves these issues.
+ For more details, see UBIFS documentation 
+\begin_inset Flex URL
+status collapsed
+
+\begin_layout Plain Layout
+
+http://www.linux-mtd.infradead.org/doc/ubifs.html
+\end_layout
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsubsection
+IT2005 specific problems
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:IT2005-specific-problems"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+In IT2005 image thumbnails were never removed, but in later 770 device releases
+ File manager takes care of that by removing the corresponding thumbnail
+ when local file is deleted, and purging old thumbnails regularly.
+\end_layout
+
+\begin_layout Standard
+As mentioned above, JFFS2 stores the whole file system structure in memory.
+ Older JFFS-2 memory usage increased and performance decreased dramatically
+ with very large (megabytes) files which were written in very small pieces
+\begin_inset Foot
+status collapsed
+
+\begin_layout Plain Layout
+For example syslog writes files line at the time.
+\end_layout
+
+\end_inset
+
+.
+ The effect was worst if some process had the file open
+\begin_inset Foot
+status collapsed
+
+\begin_layout Plain Layout
+The memory effect is ~4x worse when the file is open.
+\end_layout
+
+\end_inset
+
+, but only 
+\emph on
+removing the file corrected the problem
+\emph default
+ completely.
+ Many small files were less of a problem than one large one because their
+ fragments are more likely to aligned and it's less likely that all of them
+ are open at the same.
+ Such files are usually generated to places where user cannot remove them,
+ and if they are not removed automatically, they are category 1 problem.
+\end_layout
+
+\begin_layout Standard
+In releases after IT2005 this is solved by JFFS2 rewriting too fragmented
+ (4kB) parts of the files as they get filled.
+\end_layout
+
+\begin_layout Subsection
+Specific use-case problems from which user cannot (easily) recover the device
+\end_layout
+
+\begin_layout Subsubsection
+Corrupted FAT file system
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Corrupted-FAT-file"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+User data is on a FAT file system for compatibility reasons.
+ FAT itself isn't a robust file system (no journaling etc), but additionally
+ it's also exported out of the device over USB as a mass-storage device,
+ so that its contents can be changed from the PC, outside of the device
+ control.
+\end_layout
+
+\begin_layout Standard
+While the FAT file system contents are being changed from the device
+\begin_inset Foot
+status collapsed
+
+\begin_layout Plain Layout
+directly by user, or indirectly e.g.
+ by media stream buffering/caching
+\end_layout
+
+\end_inset
+
+, or from the PC over USB, following things can corrupt its contents:
+\end_layout
+
+\begin_layout Itemize
+Unplugging the USB cable or rebooting / powering off the device without
+ using the 
+\begin_inset Quotes eld
+\end_inset
+
+Safely remove
+\begin_inset Quotes erd
+\end_inset
+
+ functionality on the PC first
+\end_layout
+
+\begin_layout Itemize
+Removing the battery (or even just removing the battery cover)
+\end_layout
+
+\begin_layout Itemize
+Device HW watchdog rebooting the device (except for USB mass-storage case,
+ SW watchdog reboots are safe)
+\end_layout
+
+\begin_layout Standard
+User should get a notification about the file system corruption when system
+ first notices it, but if user happens to miss that, applications may not
+ just work correctly due to the file system being read-only (to prevent
+ further damage).
+\end_layout
+
+\begin_layout Standard
+I have listed this as category 2 as it's not obvious or easy for a normal
+ user to recover the device functionality and it's possible that many users
+ will encounter this issue.
+ Recovery is done 
+\emph on
+by repairing the file system from the PC or by formatting it on the device,
+\emph default
+ of which latter option loses user's data on that file system.
+\end_layout
+
+\begin_layout Subsubsection
+Full file systems
+\end_layout
+
+\begin_layout Standard
+There may be (3rd party) applications which don't handle properly full file
+ system; they write data or configuration files at startup and either crash,
+ don't work properly or fail to report an appropriate error message to the
+ user.
+ In worst case they lose user data.
+\end_layout
+
+\begin_layout Standard
+I have listed this as category 2 as it's not obvious to the user that the
+ functionality may be recovered
+\emph on
+ by removing some files to make more space.
+\end_layout
+
+\begin_layout Subsection
+Problems from which user can recover with a reboot
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Recover-with-reboot"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsubsection
+Resource leakage in system processes
+\end_layout
+
+\begin_layout Standard
+If there are even small memory leaks in always running processes, eventually
+ they will make the device run out of the memory.
+ In this case either the offending process is killed or if it's OOM-protected
+\begin_inset Foot
+status collapsed
+
+\begin_layout Plain Layout
+Process owned by 
+\emph on
+root
+\emph default
+ or which 
+\family typewriter
+/proc/PID/oom_adj
+\family default
+ has value of -17.
+\end_layout
+
+\end_inset
+
+ system process, some other process(es) are killed.
+ This may (eventually) cause also a device reboot.
+ File descriptor and System V IPC (shared memory, semaphore etc) leaks are
+ more rare, but if the device runs out of file descriptors or shared memory
+ (or its handles), it doesn't work properly.
+\end_layout
+
+\begin_layout Standard
+Except for shared memory segments which have file system semantics, these
+ problems go away when the offending process is re-started.
+ To restart an always running system process, 
+\emph on
+user needs to reboot the device
+\emph default
+.
+ 
+\end_layout
+
+\begin_layout Standard
+System updates also cause a problem which can be (completely) solved only
+ by a reboot.
+ If files (such as libraries or data files used by system processes) are
+ updated, but there are processes still keeping them open, file system needs
+ to keep the old file contents around until those processes either terminate,
+ or otherwise (are forced to) release the old versions of the files.
+ If such files are replaced/modified when packages are removed, it's possible
+ that the package removal actually decreases disk space instead of freeing
+ it, at least until next reboot.
+\end_layout
+
+\begin_layout Subsubsection
+UI deadlocks
+\end_layout
+
+\begin_layout Standard
+There are several things UI design needs to take into account so that it
+ doesn't ruin the device relability:
+\end_layout
+
+\begin_layout Itemize
+Provide ways both to terminate and switch away from frozen (fullscreen)
+ applications.
+ Even a well-tested, pre-installed application like Browser
+\begin_inset Foot
+status collapsed
+
+\begin_layout Plain Layout
+Browser loads and executes 
+\begin_inset Quotes eld
+\end_inset
+
+random
+\begin_inset Quotes erd
+\end_inset
+
+ programs from the internet in several different scripting languages / virtual
+ machines with 
+\begin_inset Quotes eld
+\end_inset
+
+random
+\begin_inset Quotes erd
+\end_inset
+
+ data while going through millions of lines of code.
+\end_layout
+
+\end_inset
+
+ can freeze or deadlock, not just 3rd party programs.
+ Frozen application may also ruin device use-time if it's using CPU, not
+ just frozen to user.
+\end_layout
+
+\begin_layout Itemize
+Make sure that applications cannot block above kind of system functionality,
+ by grabbing input (without a way to break the grab) or by (accidentally)
+ stacking their windows above system windows etc.
+ This is a basic requirement for well behaving UI libraries, not a guarantee
+ against intentionally malicious programs.
+\end_layout
+
+\begin_layout Itemize
+Way to cleanly switch the device off in case its UI against all odds freezes.
+ See 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Corrupted-FAT-file"
+
+\end_inset
+
+ for reasons.
+\end_layout
+
+\begin_layout Standard
+Whether these are properly designed can be checked just by sending SIGSTOP
+ to appropriate UI processes and trying to close the application or switch
+ the device off.
+\end_layout
+
+\begin_layout Subsection
+Problems from which user can easily recover without a reboot
+\end_layout
+
+\begin_layout Standard
+Severity of resource leaks in applications depend on how large they are
+ and how often they can happen (e.g.
+ in a repeating network error case) and in how common use-case they are.
+\end_layout
+
+\begin_layout Standard
+In applications where memory usage is highly dynamic (such as browser),
+ it's also possible that the memory used by the application cannot be returned
+ back to system because of memory fragmentation once the the application
+ returns to a state where it wouldn't need all that memory.
+ The effect of this is very specific to how such a process does in-memory
+ caching and what kind of allocator(s) it uses for that.
+\end_layout
+
+\begin_layout Standard
+The problem goes away when 
+\emph on
+user re-starts the application
+\emph default
+.
+\end_layout
+
+\begin_layout Standard
+Some applications might not terminate when user closes them, to speed up
+ their later 
+\begin_inset Quotes eld
+\end_inset
+
+startup
+\begin_inset Quotes erd
+\end_inset
+
+.
+ 
+\emph on
+Such applications MUST be very carefully reviewed and tested not to leak
+ any resources.
+ 
+\emph default
+If such a process can freeze while it's not visible, it's a higher category
+ problem.
+\end_layout
+
+\begin_layout Subsection
+Problems with device use-time
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Problems-with-device"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+On desktop, games often update the screen constantly in a busy-loop instead
+ of as a response to the user activity.
+ This kind of constant activity should be stopped when the device screen
+ is blanked and otherwise it shouldn't be done constantly but with a short
+ timer.
+ Otherwise device battery drains significantly faster because the CPU cannot
+ sleep.
+\end_layout
+
+\begin_layout Standard
+The problem is not an issue if 
+\emph on
+user doesn't use such an application
+\emph default
+.
+\end_layout
+
+\begin_layout Standard
+It's also possible that some change in the environment causes a process
+ to enter into a state where it uses CPU constantly
+\begin_inset Foot
+status collapsed
+
+\begin_layout Plain Layout
+bugs.maemo.org has had metalayer-crawler and Modest bugs on this.
+\end_layout
+
+\end_inset
+
+.
+ If it's a system process, user can only reboot the device to get it's use-time
+ back to normal and even this doesn't succeed if some change in the device
+ data triggers this at bootup
+\begin_inset Foot
+status collapsed
+
+\begin_layout Plain Layout
+Like having corrupted memory card inserted could trigger in ITOS2006 infinitely
+ looping media meta-data collection.
+\end_layout
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newpage newpage
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Detecting and measuring the problems
+\begin_inset CommandInset label
+LatexCommand label
+name "detecting"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Measurement testing overview
+\begin_inset CommandInset label
+LatexCommand label
+name "measuring"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Measurements without a use-case that produced them are worthless.
+ All measurements should be accompanied with as accurate use-case as possible,
+ either one written manually or a log that contains all relevant information
+ to replicate the use-case.
+\end_layout
+
+\begin_layout Standard
+
+\emph on
+It's not enough to detect that there is a problem, with endurance problems
+ measurements have to point out also what causes the problem.
+
+\emph default
+ Therefore below are listed first a way to detect a problem, and then a
+ way to detect the cause for it.
+\end_layout
+
+\begin_layout Subsubsection
+Testing for resource leakages
+\end_layout
+
+\begin_layout Standard
+There are two kinds of resource leaks:
+\end_layout
+
+\begin_layout Itemize
+Resources that application loses, and
+\end_layout
+
+\begin_layout Itemize
+Resources that application 
+\begin_inset Quotes eld
+\end_inset
+
+collects
+\begin_inset Quotes erd
+\end_inset
+
+ unnecessarily
+\end_layout
+
+\begin_layout Standard
+Former type of memory leaks can be reliably detected with the Valgrind tool
+ (works only on x86, see section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "find-leaks"
+
+\end_inset
+
+).
+\end_layout
+
+\begin_layout Standard
+Latter type of resource leakage and other than memory leakage (disk space,
+ file descriptors...) can with current tools be detected only by indirect observati
+on i.e:
+\end_layout
+
+\begin_layout Itemize
+First doing the use-case once or twice to initialize everything that requires
+ initialization.
+ Note that the size of usage increase this incurs depends from everything
+ that is done before the use-case
+\begin_inset Foot
+status collapsed
+
+\begin_layout Plain Layout
+E.g.
+ whether the font used to draw the UI text is already loaded by something
+ else.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+Then repeating the same use-case multiple times
+\end_layout
+
+\begin_layout Itemize
+And observing whether the component resource usage increases on the use-case
+ repeats
+\end_layout
+
+\begin_layout Standard
+If the use-case repeat times are exponential, they reveal the leakage trends
+ more clearly and discount better the effect of buffer/cache size increases
+ etc.
+ that happen only occasionally.
+ In most cases 2, 4, 8 and 16 successive repeats are enough to clearly indicate
+ the leak, but sometimes more (32, 64...) are needed.
+\end_layout
+
+\begin_layout Standard
+Because of the required repetitiveness, for regression testing running of
+ these use-cases should be automated once a suitable set of use-cases is
+ found.
+\end_layout
+
+\begin_layout Subsubsection
+Too large base/default resource usage
+\end_layout
+
+\begin_layout Standard
+First time the use-case is run gives the base resource usage (initializations
+ etc.) needed by the use-case.
+ Because of the limited resources, base memory usage can also be a problem,
+ but that needs careful analysis about proper compromises between performance
+ and memory usage etc., large memory usage cannot outright classified as
+ a bug.
+ For more information, see section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "memory-reduction"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsubsection
+Testing for hard-to-reproduce crashes
+\end_layout
+
+\begin_layout Standard
+Repeated test-cases don't catch hard-to-reproduce crashes, tests that use
+ different timings or in general stress the software extraordinarily are
+ required for this.
+ I.e.
+ 
+\begin_inset Quotes eld
+\end_inset
+
+randomized
+\begin_inset Quotes erd
+\end_inset
+
+ testing.
+\end_layout
+
+\begin_layout Standard
+Required random elements may be:
+\end_layout
+
+\begin_layout Itemize
+Test order
+\end_layout
+
+\begin_layout Itemize
+Timings
+\end_layout
+
+\begin_layout Itemize
+Input events
+\end_layout
+
+\begin_layout Itemize
+Input data
+\end_layout
+
+\begin_layout Itemize
+Load on the system (CPU, RAM, network usage)
+\end_layout
+
+\begin_layout Standard
+There are some Open Source tools available for fuzzying i.e.
+ randomizing program input and data, but there should be also program specific
+ randomized functionality testing (and manual ad-hoc testing).
+\end_layout
+
+\begin_layout Standard
+What is done needs to be logged along with the measurements for tests to
+ be repeatable later on!
+\end_layout
+
+\begin_layout Subsubsection
+Test automation
+\end_layout
+
+\begin_layout Standard
+Unit tests can be used for non-UI programs and libraries.
+ As there's plenty of documentation on that (and tools like 
+\family typewriter
+check
+\family default
+ which is used e.g.
+ by Gstreamer), this concentrates on UI testing.
+\end_layout
+
+\begin_layout Standard
+On Maemo there are several ways to simulate user actions without modifying
+ the applications:
+\end_layout
+
+\begin_layout Itemize
+Introspecting the actions available in the application UI through the widget
+ accessibility interfaces and then invoking the actions
+\begin_inset Foot
+status collapsed
+
+\begin_layout Plain Layout
+For example with Dogtail or LDTP tools.
+\end_layout
+
+\end_inset
+
+.
+ This doesn't go through the widget and event handling mechanism and cannot
+ do things like drag and drop
+\end_layout
+
+\begin_layout Itemize
+Synthesizing stylus and key events through XTest Xserver extension
+\begin_inset Foot
+status collapsed
+
+\begin_layout Plain Layout
+For example with Xnee or Xresponse from the Maemo tools repository.
+\end_layout
+
+\end_inset
+
+.
+ With this it's possible to do everything user does, but the test result
+ correctness verification needs to be done using some other mechanism
+\end_layout
+
+\begin_layout Itemize
+Invoking application services through their D-BUS APIs
+\end_layout
+
+\begin_layout Standard
+Best would be to use XTest to simulate user actions and accessibility APIs
+ for introspecting what actions can be done and to verify the results.
+ At least the synthetized events and their time-stamps need to be logged.
+ Use-case setup might be sometimes easier with D-BUS (e.g.
+ opening browser for a specific URL).
+\end_layout
+
+\begin_layout Standard
+Major point of endurance testing work is to make sure that appropriate measureme
+nts can and are being collected while the tests are done, that the number
+ of test repeats can be controlled and that the test-cases are linked to
+ the measurements.
+\end_layout
+
+\begin_layout Subsection
+Detecting FAT file system corruption
+\end_layout
+
+\begin_layout Standard
+If kernel detects problems in file system metadata, it will re-mount the
+ file system as read-only.
+ Kernel can send a message to user-space when this happens.
+ However, as the file system might have already earlier been corrupted and
+ its contents being corrupted more by further writes on it, this leaves
+ something to be desired...
+\end_layout
+
+\begin_layout Standard
+Detecting the corruption earlier requires full file system metadata consistency
+ cross-check.
+ Unfortunately Linux 
+\family typewriter
+dosfsck
+\family default
+ has multiple issues which make running it infeasible before the device
+ FAT file system is mounted (on bootup or when USB cable is disconnected):
+\end_layout
+
+\begin_layout Itemize
+For the cross-check, 
+\family typewriter
+dosfsck
+\family default
+ needs the whole file system metadata in memory.
+ For the (unlikely) worst case file system with tens of GBs of data, this
+ requires hundreds of MBs of RAM.
+ If device is already low on memory, the check will cause large amount of
+ swapping or even fail and cause some application(s) to abort due to their
+ memory allocations failing which isn't acceptable.
+\end_layout
+
+\begin_layout Itemize
+If 
+\family typewriter
+dosfsck
+\family default
+ goes to swap, the checking will be very slow.
+ For the worst case, it can easily take tens of minutes.
+ User cannot wait this long until being able to use (write to) the mounted
+ file system.
+ It will also prevent mounting the file system back to PC, if user forgot
+ something and re-connects USB-cable
+\begin_inset Foot
+status collapsed
+
+\begin_layout Plain Layout
+File indexer can prevent this too if there's lots of files.
+\end_layout
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+So, there's no good solution for this.
+ There are no good and well tested alternatives for FAT either which would
+ be as compatible.
+\end_layout
+
+\begin_layout Subsection
+Measuring system disk space usage increase
+\end_layout
+
+\begin_layout Standard
+Total disk usage can be measured with the following command:
+\begin_inset Newline newline
+\end_inset
+
+
+\family typewriter
+df
+\end_layout
+
+\begin_layout Standard
+To see which files get modified by a use-case, use a date few days forward:
+\family typewriter
+
+\begin_inset Newline newline
+\end_inset
+
+datetime=$(date -I|awk -F- '{printf("%s-%s-%02d/00:00:00",$1,$1,$3+2)}')
+\end_layout
+
+\begin_layout Standard
+And set clock accordingly.
+ On Maemo4 and earlier releases this can be done with:
+\family typewriter
+
+\begin_inset Newline newline
+\end_inset
+
+/mnt/initfs/usr/bin/retutime -T $datetime
+\end_layout
+
+\begin_layout Standard
+\begin_inset Note Note
+status open
+
+\begin_layout Plain Layout
+
+\series bold
+TODO
+\series default
+: clock setting in Fremantle?
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Do your test-case and check which files were modified:
+\begin_inset Newline newline
+\end_inset
+
+
+\family typewriter
+find / -mtime -1|grep -vE '/(proc|sys|tmp|dev)/'
+\end_layout
+
+\begin_layout Standard
+(You need to set clock forward because Busybox 
+\family typewriter
+find
+\family default
+ doesn't support better granularity for file modification changes than days,
+ such as the 
+\family typewriter
+-mmin
+\family default
+ (minutes) option supported by the GNU 
+\family typewriter
+find
+\family default
+...)
+\end_layout
+
+\begin_layout Subsubsection
+Detecting file system writes that make the device slower
+\begin_inset CommandInset label
+LatexCommand label
+name "slowfs"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Currently there's no tool that would give the information about how fragmented
+ a JFFS-2 or UBIFS file systems are.
+\end_layout
+
+\begin_layout Standard
+However, once there's a list of files that are modified during the use-case,
+ it can be checked whether any of them are written inefficiently / in an
+ way that would slow down the device (i.e.
+ in small pieces) by tracing the process writing the file.
+\end_layout
+
+\begin_layout Standard
+First you need to check which file descriptors the process has open, so
+ that you can discount socket and pipe writes:
+\begin_inset Newline newline
+\end_inset
+
+
+\family typewriter
+lsof -p PID|grep '[0-9]
+\backslash
++[wu]'
+\end_layout
+
+\begin_layout Standard
+Then you can check what sized writes the process does during the use-case.
+ Writes which are (considerably) smaller than 4KB are problems if file contains
+ a lot of them (First write() argument is file descriptor and return value
+ is how much was written):
+\begin_inset Newline newline
+\end_inset
+
+
+\family typewriter
+strace -p PID 2>&1|grep 'write('
+\end_layout
+
+\begin_layout Standard
+You can use also strace-account 
+\begin_inset Flex URL
+status collapsed
+
+\begin_layout Plain Layout
+
+http://www.gnome.org/~mortenw/files/strace-account
+\end_layout
+
+\end_inset
+
+ to get an overview about issues like this.
+\end_layout
+
+\begin_layout Standard
+With old JFFS-2 these small writes could be even a reliability issue (see
+ 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:IT2005-specific-problems"
+
+\end_inset
+
+), in newer releases they're 
+\begin_inset Quotes eld
+\end_inset
+
+only
+\begin_inset Quotes erd
+\end_inset
+
+ a performance issue.
+\end_layout
+
+\begin_layout Subsection
+Measuring file descriptor leaks
+\end_layout
+
+\begin_layout Standard
+Count of used file descriptors in the whole system is in the 
+\family typewriter
+/proc/fs/file-nr
+\family default
+ file.
+ Note that you might need to wait a short while after the last process has
+ exited as kernel might not free the file descriptors immediately.
+ Kernel also allocates the file descriptors in larger amounts so the reported
+ value can be larger than expected.
+\end_layout
+
+\begin_layout Standard
+List of files open by a single process are listed under the 
+\family typewriter
+/proc/
+\emph on
+PID
+\emph default
+/fd/
+\family default
+ directory:
+\family typewriter
+
+\begin_inset Newline newline
+\end_inset
+
+ls -l /proc/
+\emph on
+PID
+\emph default
+/fd/
+\end_layout
+
+\begin_layout Standard
+
+\family typewriter
+lsof
+\family default
+ utility can also be used to list the open files in system: 
+\begin_inset Newline newline
+\end_inset
+
+
+\family typewriter
+lsof -d0-255|sort
+\end_layout
+
+\begin_layout Subsection
+Measuring system memory leaks
+\end_layout
+
+\begin_layout Standard
+Free memory in the system can be measured from the 
+\family typewriter
+/proc/meminfo
+\family default
+ file by adding together the 
+\emph on
+MemFree
+\emph default
+, 
+\emph on
+Buffers
+\emph default
+ and 
+\emph on
+Cached
+\emph default
+ values (and corresponding ones for swap if swap is in use).
+ 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "sp-memusage"
+
+\end_inset
+
+ package scripts can be used to monitor this.
+\end_layout
+
+\begin_layout Standard
+System System V IPC resource usage can be measured from the files in the
+ 
+\family typewriter
+/proc/sysvipc/
+\family default
+ directory (see 
+\family typewriter
+man 5 ipc
+\family default
+).
+ These report also which files are using the resources.
+ Maximum values for these resources on the device are reported by the 
+\family typewriter
+/proc/sys/kernel/msg*
+\family default
+ and 
+\family typewriter
+/proc/sys/kernel/shm*
+\family default
+ files (see 
+\family typewriter
+man proc
+\family default
+).
+ 
+\end_layout
+
+\begin_layout Standard
+Scripts in the 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "sp-endurance"
+
+\end_inset
+
+ package can be used to store these (and many other) system values while
+ the software test-cases are run.
+\end_layout
+
+\begin_layout Subsubsection
+Kernel memory usage
+\end_layout
+
+\begin_layout Standard
+Although an approximation for the kernel memory usage at boot-up can be
+ deduced by subtracting the 
+\family typewriter
+/proc/meminfo
+\family default
+ 
+\emph on
+MemTotal
+\emph default
+ value from the amount of physical RAM in the device, there's no really
+ reliable way to tell how kernel internal memory usage changes when the
+ device is actually used
+\begin_inset Foot
+status collapsed
+
+\begin_layout Plain Layout
+On normal device kernel, there are kernel patches / config options for allocatio
+n tracking though.
+\end_layout
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+What one can do is to compare the changes in 
+\family typewriter
+/proc/meminfo
+\family default
+ information against the changes in the processes memory usage information
+ reported by SMAPS (see 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "memory-reduction"
+
+\end_inset
+
+) and to see whether the missing amount of memory would be found from the
+ changes in the 
+\family typewriter
+/proc/slabinfo
+\family default
+ statistics about the kernel internal memory pool usage.
+ GNU 
+\family typewriter
+procps
+\family default
+ package provides 
+\family typewriter
+slabtop
+\family default
+ tool to monitor 
+\family typewriter
+/proc/slabinfo
+\family default
+ content changes.
+ 
+\family typewriter
+/proc/slabinfo
+\family default
+ doesn't necessarily tell where the used/leaked memory goes inside the kernel
+ though, just from what memory pool it was taken.
+\end_layout
+
+\begin_layout Subsubsection
+System user-space memory usage
+\end_layout
+
+\begin_layout Standard
+Easiest way to see into which processes system memory is going, is using
+ 
+\family typewriter
+top
+\family default
+ (or preferably, the separately installable 
+\family typewriter
+htop
+\family default
+).
+ They get their information from the 
+\family typewriter
+statm
+\family default
+/
+\family typewriter
+status
+\family default
+ files in the corresponding process 
+\family typewriter
+/proc/PID/
+\family default
+ directory.
+\end_layout
+
+\begin_layout Standard
+However, these measurements are fairly inaccurate because part of the memory
+ reported to be used is shared with the other processes.
+ To measure more reliably where the system memory is really going i.e.
+ what memory is private to given process, you need to read the data from
+ 
+\family typewriter
+/proc/PID/smaps
+\family default
+ files (see 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "memory-reduction"
+
+\end_inset
+
+).
+ For checking state of a single process, you can use tools and scripts provided
+ by the 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "sp-memusage"
+
+\end_inset
+
+ package.
+ On Linux Desktop, the desktop environment system monitor tools can give
+ similar information too.
+\end_layout
+
+\begin_layout Standard
+To get private memory usage information on 
+\emph on
+all
+\emph default
+ processes, see 
+\family typewriter
+
+\begin_inset CommandInset citation
+LatexCommand cite
+key "smaps"
+
+\end_inset
+
+
+\family default
+.
+\end_layout
+
+\begin_layout Subsection
+Measuring process specific memory leaks and fragmentation
+\begin_inset CommandInset label
+LatexCommand label
+name "process-memory"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+For process specific memory leaks more detail is required because SMAPS
+ reports only system view to the process memory usage, not the actual memory
+ usage inside the process heap.
+ Heap can contain data that application has already freed, but hasn't been
+ able to return back to the system due to the memory fragmentation.
+ The data may also be cached or allocated in larger blocks by the C-library
+ or some higher level library to speed up further allocations.
+ Heap size changes are multiples of 4KB (the memory page size).
+\end_layout
+
+\begin_layout Standard
+Therefore the smaller leaks inside the process may show up in system memory
+ measurements only after much larger number of test-case repeats.
+ To find these faster, separate tools and measurements are needed.
+ Easiest way to detect application memory usage leaks is to request memory
+ information from the Glibc allocator 
+\family typewriter
+mallinfo()
+\family default
+ function before and after each use-case repeat cycle and compare the results.
+ 
+\family typewriter
+Mallinfo()
+\family default
+ can also provide information necessary for analyzing device memory fragmentatio
+n i.e.
+ how much of the memory freed by the application is not returned back to
+ the system.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Note Note
+status open
+
+\begin_layout Plain Layout
+
+\series bold
+TODO
+\series default
+: document sp-memusage mallinfo tool.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The reason why fixing even small memory leaks may be important is that there
+ could for example be leaking error handling code that isn't triggered normally
+ but could in specific conditions be triggered very frequently.
+ Worst case is leaking error handling code that loops until the error goes
+ away, as in some cases they don't, at least before the device runs out
+ of memory...
+\end_layout
+
+\begin_layout Standard
+Error handling may be even 1/3 of mature code base, so testing it properly
+ requires a lot of effort.
+ Static code analysis tools are recommended to finding leaks in those though
+ as leaks in error handling are often fairly trivial i.e.
+ easy to find statically.
+ Best static code analysis tools are commercial and out of scope for this
+ document.
+\end_layout
+
+\begin_layout Standard
+Because repeating the test-cases is time consuming and produced measurements
+ can require extensive analysis for weaning out false positives, it's preferable
+ that first testing is done on x86 to find and fix definitive leaks that
+ are reliably detected with Valgrind, see section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "find-leaks"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+To see more in detail where the rest of the memory goes, Massif or e.g.
+ Functracer can be used, see section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "memory-reduction"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsection
+Detecting process crashes and device reboots
+\end_layout
+
+\begin_layout Standard
+\begin_inset Note Note
+status open
+
+\begin_layout Plain Layout
+
+\series bold
+TODO
+\series default
+: Upstart? New Harmattan services?
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Applications and other processes in the device are started through the following
+ services:
+\end_layout
+
+\begin_layout Description
+DSME
+\begin_inset space ~
+\end_inset
+
+Lifeguard Starts system processes and either restarts the process or the
+ device if the service exits, see 
+\family typewriter
+dsmetool -h
+\end_layout
+
+\begin_layout Description
+D-BUS Starts the receiver for a message if message has auto-activation flag.
+ This is used for starting all applications in the device
+\end_layout
+
+\begin_layout Description
+Maemo-launcher All built-in applications launched by D-BUS are started actually
+ through this for performance reasons (application name is linked to 
+\family typewriter
+maemo-invoker
+\family default
+ which asks 
+\family typewriter
+maemo-launcher
+\family default
+ to fork, dlopen() the application .launch ELF binary, and call its main())
+\end_layout
+
+\begin_layout Description
+Hildon
+\begin_inset space ~
+\end_inset
+
+Desktop UI process which lists the applications and allows user to invoke
+ them.
+ Can also exec non-integrated 3rd party applications directly (instead of
+ through D-BUS and/or Maemo-launcher)
+\end_layout
+
+\begin_layout Standard
+DSME and Maemo-launcher log to the syslog the exit state of the applications
+ run through them so that crashes of most of the applications can be catched.
+ D-BUS doesn't log the exit status of processes started by it, but as all
+ default applications are started through Maemo-launcher, that's not really
+ a problem except for 3rd party applications.
+ Product releases don't have syslog, but it (or 
+\family typewriter
+sp-error-visualizer
+\family default
+) can be installed from the Maemo tools repository.
+\end_layout
+
+\begin_layout Standard
+DSME SW watchdog logs also the reason for SW reset (reboot) or shutdown;
+ it could be either user action, battery low, or critical system process
+ crashing.
+ HW watchdog will reboot the device if it's unresponsive long enough.
+ Information about these is available on next boot-up from 
+\family typewriter
+/proc/bootreason
+\family default
+ and stored into files under 
+\family typewriter
+/var/lib/dsme/stats/
+\family default
+.
+\end_layout
+
+\begin_layout Standard
+To find out what within the process is responsible for the crashing, backtraces
+ are needed.
+ There are two ways to get these, getting the backtraces directly from the
+ processes, or enabling core files, see section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "crashcore"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsection
+Detecting polling and busy-looping
+\end_layout
+
+\begin_layout Standard
+See 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "performance"
+
+\end_inset
+
+ document for more details on this.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newpage newpage
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Endurance metrics
+\end_layout
+
+\begin_layout Subsection
+What information is collected
+\end_layout
+
+\begin_layout Standard
+Here are listed the main endurance metrics measured by the 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "sp-endurance"
+
+\end_inset
+
+ package scripts:
+\end_layout
+
+\begin_layout Itemize
+System uptime, load average, CPU usage, context switches and interrupts:
+\begin_inset Newline newline
+\end_inset
+
+
+\family typewriter
+/proc/uptime
+\begin_inset Newline newline
+\end_inset
+
+/proc/loadavg
+\begin_inset Newline newline
+\end_inset
+
+/proc/stat
+\begin_inset Newline newline
+\end_inset
+
+/proc/interrupts
+\end_layout
+
+\begin_layout Itemize
+System memory usage:
+\begin_inset Newline newline
+\end_inset
+
+
+\family typewriter
+/proc/meminfo
+\begin_inset Newline newline
+\end_inset
+
+/proc/slabinfo
+\begin_inset Newline newline
+\end_inset
+
+/proc/sysvipc/*
+\end_layout
+
+\begin_layout Itemize
+Number of used system file descriptors:
+\begin_inset Newline newline
+\end_inset
+
+
+\family typewriter
+/proc/sys/fs/file-nr
+\end_layout
+
+\begin_layout Itemize
+How many file descriptors each process has open:
+\begin_inset Newline newline
+\end_inset
+
+
+\family typewriter
+/proc/[1-9]*/fd/*
+\end_layout
+
+\begin_layout Itemize
+Misc process information (memory usage, signal masks etc):
+\family typewriter
+
+\begin_inset Newline newline
+\end_inset
+
+/proc/[1-9]*/status
+\end_layout
+
+\begin_layout Itemize
+Memory private to each running process as reported by SMAPS:
+\begin_inset Newline newline
+\end_inset
+
+
+\family typewriter
+/proc/[1-9]*/smaps
+\end_layout
+
+\begin_layout Itemize
+Processes CPU usage:
+\family typewriter
+
+\begin_inset Newline newline
+\end_inset
+
+/proc/[1-9]*/stat
+\end_layout
+
+\begin_layout Itemize
+X server resources used by its clients as reported by the XResource extension
+\end_layout
+
+\begin_layout Itemize
+System disk usage:
+\begin_inset Newline newline
+\end_inset
+
+
+\family typewriter
+df
+\end_layout
+
+\begin_layout Itemize
+System network usage:
+\begin_inset Newline newline
+\end_inset
+
+ifconfig
+\end_layout
+
+\begin_layout Itemize
+DSME, Maemo-launcher and Glib error messages from the syslog
+\end_layout
+
+\begin_layout Itemize
+DSME restart/reboot statistics
+\end_layout
+
+\begin_layout Standard
+For more information, see the sources of that package.
+\end_layout
+
+\begin_layout Subsection
+When to collect the measurements
+\end_layout
+
+\begin_layout Standard
+It's proposed that the endurance metrics scripts are run:
+\end_layout
+
+\begin_layout Itemize
+After booting
+\end_layout
+
+\begin_layout Itemize
+After the pre-conditions for the testing round are executed (starting an
+ application etc.)
+\end_layout
+
+\begin_layout Itemize
+After one full testing round
+\end_layout
+
+\begin_layout Itemize
+After N additional test rounds, N grows exponentially: 2, 4, 8, 16...
+\end_layout
+
+\begin_layout Itemize
+(After the device has idled overnight with screen blanked after the tests)
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newpage newpage
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Fixing/avoiding the problems
+\begin_inset CommandInset label
+LatexCommand label
+name "fixing"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Fixing file leaks
+\end_layout
+
+\begin_layout Standard
+File system problems can be fixed by improving the code of offending processes
+ and libraries:
+\end_layout
+
+\begin_layout Itemize
+Limit their file growth
+\end_layout
+
+\begin_layout Itemize
+Make them robust against file system errors
+\end_layout
+
+\begin_layout Standard
+In general:
+\end_layout
+
+\begin_layout Itemize
+Root processes file write code should be audited very carefully so that
+ they don't try to write files if there's too little space and that they
+ will clean up all their files in all error cases
+\end_layout
+
+\begin_layout Itemize
+All processes should be able to handle file open and write failures gracefully
+ and notify user about it if it's relevant to her
+\end_layout
+
+\begin_layout Itemize
+Total size of all files a process writes MUST be limited when they are where
+ user cannot acces them directly.
+ It would be preferable if there's some way for the user to remove them
+ (e.g.
+ 
+\begin_inset Quotes eld
+\end_inset
+
+Clear cache
+\begin_inset Quotes erd
+\end_inset
+
+ option) and the space they take is listed separately in the memory applet
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset citation
+LatexCommand cite
+key "MXR"
+
+\end_inset
+
+tool can be used to find code accessing a particular file.
+\end_layout
+
+\begin_layout Subsection
+Fixing memory and file descriptor usage and leaks
+\end_layout
+
+\begin_layout Standard
+There are several ways to improve the memory situation:
+\end_layout
+
+\begin_layout Itemize
+Reduce system memory overhead
+\end_layout
+
+\begin_layout Itemize
+Reduce generic application process memory overhead
+\end_layout
+
+\begin_layout Itemize
+Reduce memory usage in specific use-case, and
+\end_layout
+
+\begin_layout Itemize
+Fix all resource leaks
+\end_layout
+
+\begin_layout Standard
+A rough approximation on how the application memory usage changes at real-time
+ can be seen with:
+\begin_inset Newline newline
+\end_inset
+
+
+\family typewriter
+top
+\end_layout
+
+\begin_layout Subsubsection
+Memory usage reduction
+\begin_inset CommandInset label
+LatexCommand label
+name "memory-reduction"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Best tools currently available for tracking where exactly the process memory
+ goes are:
+\end_layout
+
+\begin_layout Description
+SMAPS Smaps is 2.6.14+ kernel feature which reports reliably memory that is
+ private to the process or swapped out from it
+\begin_inset Foot
+status collapsed
+
+\begin_layout Plain Layout
+But not whether the swapped out memory was private to process or shared
+ with other processes.
+\end_layout
+
+\end_inset
+
+.
+ Whole system SMAPS data can be collected with 
+\family typewriter
+sp-smaps-measure
+\family default
+ package (used by 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "sp-endurance"
+
+\end_inset
+
+) and post-processed by the 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "sp-smaps-visualize"
+
+\end_inset
+
+ package.
+ 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "sp-memusage"
+
+\end_inset
+
+ package scripts give an overview of system and process memory usage using
+ SMAPS.
+\end_layout
+
+\begin_layout Description
+Sp-endurance Sp-endurance is a package for the target device which collects
+ endurance information, like SMAPS data.
+ Its post-processing scripts visualize the resources usage changes and list
+ logged errors.
+ It can be used to analyze reliability issues as it 
+\emph on
+detects
+\emph default
+ resource usage changes.
+ However, it doesn't help in 
+\emph on
+analyzing
+\emph default
+ the cause for these resource leaks.
+ See 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Finding-resource-leakage"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Description
+Massif This is a Valgrind plugin i.e.
+ x86 only.
+ It gives an ASCII graph of the application data+heap usage over time and
+ function callgraphs to the largest allocations at suitable intervals (including
+ the peak allocation).
+ This is easiest to use of the tools and part of the SDK.
+ It's best to use Massif through the 
+\family typewriter
+run-with-massif
+\family default
+ helper script from 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "debug-tools"
+
+\end_inset
+
+.
+ This flags some functions from the Maemo libraries as allocation functions
+ which makes the callgraphs more readable and knows about maemo-launched
+ applications
+\end_layout
+
+\begin_layout Description
+Kmemleaks A patch to kernel which will report (some of the potential) kernel
+ memory leaks
+\end_layout
+
+\begin_layout Description
+Kmemtrace A 2.6.30+ kernel feature to trace kernel memory allocations.
+ This gives information on how and how much memory kernel itself uses.
+ However, Maemo kernel is older than this
+\end_layout
+
+\begin_layout Standard
+\begin_inset Note Note
+status open
+
+\begin_layout Description
+TODO what to do about these old tools? Document Functracer!
+\end_layout
+
+\begin_layout Description
+
+\series medium
+Libleaks
+\begin_inset space ~
+\end_inset
+
++
+\begin_inset space ~
+\end_inset
+
+Alloc-Tree Alloc-tree is a script coming with Libleaks which visualizes
+ the Libleaks reports using GraphViz
+\begin_inset Foot
+status collapsed
+
+\begin_layout Plain Layout
+See GraphViz 
+\begin_inset Flex URL
+status collapsed
+
+\begin_layout Plain Layout
+
+http://www.graphviz.org/
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+.
+ First see section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "libleaks"
+
+\end_inset
+
+ on how to get Libleaks reports with useful backtraces on PC (on ARM you
+ cannot currently get useful backtraces).
+ Then you can just:
+\begin_inset Newline newline
+\end_inset
+
+
+\family typewriter
+leaks-graphs-overview.sh *.trace
+\begin_inset Newline newline
+\end_inset
+
+leaks-graphs-function.sh some_function 0.1 *.trace
+\end_layout
+
+\begin_layout Description
+
+\series medium
+Malloc
+\begin_inset space ~
+\end_inset
+
+info This gives information on all allocations done during the process lifetime
+ and its post-processing tools can produce graphs out of the information.
+ It's main advantage over Massif is that it catches also shared memory usage
+ and memory maps and it uses fairly good heuristics to assign blame for
+ the allocations.
+ Massif is much easier to use though and it reports backtraces to the allocation
+s.
+ See 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "mallocinfo"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Except for 
+\family typewriter
+/proc/slabinfo
+\family default
+, there's currently no tool in Maemo to track where kernel memory goes inside
+ the kernel, how much each kernel driver accounts for etc.
+ Device driver memory usage could be tested by disabling each of the kernel
+ devices and configuration options one at the time, boot the device with
+ new kernel and check the device memory usage.
+\end_layout
+
+\begin_layout Subsubsection
+Finding resource leakage and errors with sp-endurance
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Finding-resource-leakage"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Note: Before using 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "sp-endurance"
+
+\end_inset
+
+, it would be best if you automate your test-cases so that they are easy
+ to repeat (see section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "detecting"
+
+\end_inset
+
+).
+\end_layout
+
+\begin_layout Standard
+Install 
+\emph on
+sp-endurance
+\emph default
+ package to the target and 
+\emph on
+sp-endurance-postproc
+\emph default
+ package to the PC (both are available from the repositories).
+\end_layout
+
+\begin_layout Standard
+To collect endurance data, do following after each test-case repeat on the
+ target:
+\begin_inset Newline newline
+\end_inset
+
+
+\family typewriter
+save-incremental-endurance-stats <test-case name> [step description]
+\end_layout
+
+\begin_layout Standard
+Then transfer the data stored under the 
+\emph on
+test-case-name
+\emph default
+ directory to the PC and run following:
+\begin_inset Newline newline
+\end_inset
+
+
+\family typewriter
+parse-endurance-measurements <test-case-name>/[0-9]*
+\end_layout
+
+\begin_layout Standard
+This will produce 
+\family typewriter
+endurance-report.html
+\family default
+ report which contains bar-graphs of the device and processes memory & CPU
+ usage changes, tables about other resource usage and process changes and
+ lists of the logged errors etc.
+\end_layout
+
+\begin_layout Subsubsection
+Finding memory and file descriptor leaks with Valgrind
+\begin_inset CommandInset label
+LatexCommand label
+name "find-leaks"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Locating memory and file descriptor leaks within a process is easiest with
+ Valgrind.
+\end_layout
+
+\begin_layout Standard
+Just run the leaking process with:
+\begin_inset Newline newline
+\end_inset
+
+
+\family typewriter
+valgrind --tool=memcheck --num-callers=50 --leak-check=yes --track-fds=yes
+ /usr/bin/app
+\end_layout
+
+\begin_layout Standard
+For Maemo UI applications it's best to do this with the 
+\family typewriter
+run-with-memcheck
+\family default
+ script from 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "debug-tools"
+
+\end_inset
+
+ package as this automates some things that are needed when using Maemo
+ applications with Valgrind (running maemo-launched binaries with 
+\family typewriter
+maemo-summoner
+\family default
+, exporting 
+\family typewriter
+G_SLICE=always-malloc
+\family default
+ for glib).
+\end_layout
+
+\begin_layout Standard
+This will give you a text report of all the allocations and file descriptors
+ which process has lost when the process exits (or is killed).
+ See also 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "debug"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+It's better to kill the application (with a signal like 
+\family typewriter
+SIGUSR2
+\family default
+ which processes don't normally catch but Valgrind 
+\emph on
+can
+\emph default
+) instead of closing it normally as usually you're not interested about
+ leakage that application may have at exit
+\begin_inset Foot
+status collapsed
+
+\begin_layout Plain Layout
+Once the process disappears, kernel automatically cleans all memory used
+ by it so freeing memory just before exit() just slows down program exit.
+\end_layout
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsubsection
+Finding memory leaks with Functracer
+\end_layout
+
+\begin_layout Standard
+There can also be leaks within the use-case into which process still retains
+ a pointer.
+ I.e.
+ they are not lost, just not freed.
+ Memcheck is not very good at pointing those out and Massif is useful for
+ that only if the leaks are large.
+ Functracer can be used to find also small leaks.
+\end_layout
+
+\begin_layout Paragraph
+Using Functracer
+\begin_inset CommandInset label
+LatexCommand label
+name "par:Using-Functracer"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset citation
+LatexCommand cite
+key "functracer"
+
+\end_inset
+
+ can either start a process directly or attach to an already existing process.
+ It then traces all allocations done by the process and collects their backtrace
+s.
+ This tracing can be started when 
+\family typewriter
+functracer
+\family default
+ is started:
+\family typewriter
+
+\begin_inset Newline newline
+\end_inset
+
+functracer --file --start --depth=8 xrestop
+\end_layout
+
+\begin_layout Standard
+and/or toggled by signaling the traced process with 
+\family typewriter
+SIGUSR1
+\family default
+.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Note Note
+status open
+
+\begin_layout Plain Layout
+
+\series bold
+TODO
+\series default
+: functracer is going to use sp-rtrace for post-processing, means trace
+ file name change also
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+
+\family typewriter
+functracer
+\family default
+ doesn't by default resolve the function names in the backtraces for performance
+ reasons and because 
+\family typewriter
+functracer-postproc
+\family default
+ can resolve them better:
+\begin_inset Newline newline
+\end_inset
+
+
+\family typewriter
+functracer-postproc --leak allocs-4254.0.trace
+\end_layout
+
+\begin_layout Standard
+
+\emph on
+To get useful backtraces (more than 1-2 frames on ARM) and for resolving
+ function names, matching debug symbol packages need to be installed for
+ the binary and all relevant libraries though.
+\end_layout
+
+\begin_layout Standard
+As this tool just reports allocations and post-processing only removes non-freed
+ allocations from the list, it's not possible to know whether they are actually
+ leaks.
+ For this the use-case needs to be repeated multiple times to see whether
+ the amount of allocations increases correspondingly:
+\begin_inset Newline newline
+\end_inset
+
+
+\family typewriter
+functracer -f -s app &
+\family default
+
+\begin_inset Newline newline
+\end_inset
+
+<check process PID with 'ps'>
+\begin_inset Newline newline
+\end_inset
+
+
+\family typewriter
+kill -SIGUSR1 PID
+\family default
+
+\begin_inset Newline newline
+\end_inset
+
+<do the use-case first time>
+\begin_inset Newline newline
+\end_inset
+
+
+\family typewriter
+kill -SIGUSR1 PID
+\begin_inset Newline newline
+\end_inset
+
+kill -SIGUSR1 PID
+\family default
+
+\begin_inset Newline newline
+\end_inset
+
+<do the use-case multiple times>
+\begin_inset Newline newline
+\end_inset
+
+
+\family typewriter
+kill -SIGUSR1 PID
+\family default
+
+\begin_inset Newline newline
+\end_inset
+
+<repeat above three steps with exponentially increasing number of use-case
+ repeats>
+\end_layout
+
+\begin_layout Standard
+Then you can post-process the resulting allocation logs and compare them
+ with each other to see whether there's leakage.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Note Note
+status open
+
+\begin_layout Plain Layout
+
+\series bold
+TODO
+\series default
+: sp-rtrace-visualize for functracer data!
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsubsection
+Finding application resource leaks on the X server side
+\end_layout
+
+\begin_layout Standard
+Applications can keep a lot of their data on the X server side
+\begin_inset Foot
+status collapsed
+
+\begin_layout Plain Layout
+For example ITOS2008 World Clock application uses several times more memory
+ from the X server for it's world map than what is private in its own process.
+\end_layout
+
+\end_inset
+
+, and application X resource leaks are seen as X server memory increases.
+ These can be found with the 
+\family typewriter
+\emph on
+xrestop
+\emph default
+
+\begin_inset Foot
+status collapsed
+
+\begin_layout Plain Layout
+See: Maemo tools 
+\begin_inset Flex URL
+status collapsed
+
+\begin_layout Plain Layout
+
+http://maemo.org/development/tools/
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\family default
+ tool which works similarly to 
+\family typewriter
+top
+\family default
+, it just reports X client resource usage
+\begin_inset Foot
+status collapsed
+
+\begin_layout Plain Layout
+It has some issues in reporting Composite extension related images.
+\end_layout
+
+\end_inset
+
+ instead of process memory usage.
+\end_layout
+
+\begin_layout Subsection
+Dealing with unavoidable memory leaks and fragmentation
+\end_layout
+
+\begin_layout Subsubsection
+Detecting memory fragmentation
+\end_layout
+
+\begin_layout Standard
+Memory fragmentation can be detected by calling Glibc mallinfo() function
+ and comparing amounts of allocated and freed memory
+\begin_inset Foot
+status collapsed
+
+\begin_layout Plain Layout
+So far only problems in this are have been Browser/Flashplayer (do complex
+ allocations and caching) and D-BUS (has complex, badly performing allocator)
+\end_layout
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Note Note
+status open
+
+\begin_layout Plain Layout
+
+\series bold
+TODO
+\series default
+: update allocmap to Fremantle and other alloc tools
+\end_layout
+
+\begin_layout Plain Layout
+If you're using Libleaks, the 
+\emph on
+sp-libleaks-postproc
+\emph default
+ package contains the 
+\emph on
+alloc_map
+\emph default
+ tool which can be used to visualize how the allocations reside in the process
+ heap.
+ Just trigger
+\begin_inset Foot
+status collapsed
+
+\begin_layout Plain Layout
+
+\family typewriter
+raise(SIGUSR1);
+\end_layout
+
+\end_inset
+
+ Libleaks at the beginning of the main() function and at the place
+\begin_inset Foot
+status collapsed
+
+\begin_layout Plain Layout
+kill -SIGUSR1 <process PID>
+\end_layout
+
+\end_inset
+
+ where you want to know/see see the memory fragmentation.
+ Then give the resulting leak report to 
+\family typewriter
+leaks-alloc_map.sh
+\family default
+ script.
+\end_layout
+
+\begin_layout Plain Layout
+sp-rtrace (that will replace libleaks) is also going to have support for
+ this.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsubsection
+Using different allocator
+\end_layout
+
+\begin_layout Standard
+Applications which have very dynamic and complex memory allocation patterns
+ can use a different memory allocator which handles the application specific
+ allocation needs better than Glibc ptmalloc (generic allocator in C-library)
+ or Glib Gslice allocator (improves allocation performance with threads).
+ This can help with the memory fragmentation but it doesn't completely fix
+ it.
+\end_layout
+
+\begin_layout Standard
+For example in IT2005 the BSD allocator was used in the Browser.
+ The base memory usage with BSD allocator is significantly larger than with
+ the default Glibc allocator and it's somewhat slower, especially in freeing
+ the memory, but it's more resistant (uses 
+\family typewriter
+mmap
+\family default
+() and 
+\family typewriter
+madvise
+\family default
+() instead of heap, Glibc uses 
+\family typewriter
+mmap
+\family default
+() only for larger allocations) to memory fragmentation which with Glibc
+ is much worse problem, 
+\emph on
+especially
+\emph default
+ when the process leaks memory.
+\end_layout
+
+\begin_layout Subsubsection
+Workarounds (mainly in ITOS2008)
+\end_layout
+
+\begin_layout Standard
+Sometimes it's not possible to fix memory usage growth induced either by
+ memory fragmentation or leaks.
+\end_layout
+
+\begin_layout Standard
+This can be worked around by making the components re-startable.
+ This works already for most applications through state saving and background
+ killing mechanisms explained in the Maemo Architecture document (
+\begin_inset CommandInset citation
+LatexCommand cite
+key "architecture"
+
+\end_inset
+
+), but all processes using a lot of memory don't implement it:
+\end_layout
+
+\begin_layout Description
+Browser Web-service pages and AJAX applications can have state also on the
+ server side which user would lose when the Browser connection breaks at
+ process exit.
+\end_layout
+
+\begin_layout Description
+Home In ITOS2008 and earlier releases Home was part of the Desktop process
+ along with the Task Navigator and Status Bar (to save RAM).
+ Re-starting it takes a long time due to all the graphics and applets and
+ would be too user visible.
+\end_layout
+
+\begin_layout Standard
+There are also several system UI processes which are restartable, but do
+ not participate in background killing because they need to be 
+\begin_inset Quotes eld
+\end_inset
+
+instantly
+\begin_inset Quotes erd
+\end_inset
+
+ available.
+ These are 
+\series bold
+System UI
+\series default
+, 
+\series bold
+Connectivity dialogs
+\series default
+ and 
+\series bold
+Input method
+\series default
+.
+\end_layout
+
+\begin_layout Standard
+There hasn't been any issue in their memory usage, but if there were services
+ that do have issues, they could be modified to exit() themselves when they:
+\end_layout
+
+\begin_layout Itemize
+receive memory low notification,
+\end_layout
+
+\begin_layout Itemize
+notice that their memory has fragmented too much
+\begin_inset Foot
+status collapsed
+
+\begin_layout Plain Layout
+I.e.
+ amount of freed memory reported by mallinfo() that's not returned to the
+ system has exceeded certain limit.
+\end_layout
+
+\end_inset
+
+, and
+\end_layout
+
+\begin_layout Itemize
+they're not visible.
+\end_layout
+
+\begin_layout Standard
+Lifeguard (software watchdog) would then restart them.
+\end_layout
+
+\begin_layout Standard
+It's also possible that kernel memory fragments.
+ Upstream kernel is moving to 4KB stack (from 8KB) which could help in this
+ and there are kernel facilities for monitoring its stack usage.
+\end_layout
+
+\begin_layout Subsection
+Fixing process crashes
+\end_layout
+
+\begin_layout Standard
+See 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "debug"
+
+\end_inset
+
+ for the instructions and issues that there are on debugging in the device
+ and Maemo Scratchbox environment.
+\end_layout
+
+\begin_layout Subsubsection
+Getting crash backtraces from within the processes
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Getting-crash-backtraces"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+On x86 the crashes could be catched and a backtrace printed with the Glibc
+ 
+\family typewriter
+backtrace()
+\family default
+ function.
+ It works in in most cases on Fremantle too, but not on earlier releases.
+\end_layout
+
+\begin_layout Standard
+However, catching SIGABRT etc.
+ signals within the process and doing other operations in the signal handler
+ context can ruin your core-dumps completely (e.g.
+ if you catch abort Glibc does when it detects memory corruption) so this
+ is 
+\emph on
+strongly
+\emph default
+ discouraged.
+ Also, Glibc 
+\family typewriter
+backtrace()
+\family default
+ cannot give completely backtraces, for that you need to resolve them with
+ debug symbols (sometimes code needs even to be re-compiled & re-run to
+ get full function frames needed for this).
+\end_layout
+
+\begin_layout Standard
+Therefore it's best to use Gdb and provide full debugging symbols anything
+ for which one needs backtraces (to debug crashes, performance, memory usage...).
+\end_layout
+
+\begin_layout Subsubsection
+Getting core dumps from crashes
+\begin_inset CommandInset label
+LatexCommand label
+name "crashcore"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+In the Maemo releases core dumping can be enabled just by adding 
+\family typewriter
+core-dumps
+\family default
+ directory to a memory cards root directory (that is is set to the core
+ dump file name pattern in 
+\family typewriter
+/proc/sys/kernel/core_pattern
+\family default
+) or in Fremantle release under (
+\family typewriter
+/home/user/
+\family default
+)
+\family typewriter
+MyDocs
+\family default
+ directory.
+\end_layout
+
+\begin_layout Standard
+It's recommented to install also 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "sp-rich-core"
+
+\end_inset
+
+ as that adds some additional system information to the core dumps and compresse
+s them to save space and speed up large core dump saving.
+ The data from the 
+\begin_inset Quotes eld
+\end_inset
+
+rich cores
+\begin_inset Quotes erd
+\end_inset
+
+ can be extracted with 
+\family typewriter
+rich-core-extract
+\family default
+.
+\end_layout
+
+\begin_layout Subsubsection
+Finding the crash reason without a useful core or backtrace
+\end_layout
+
+\begin_layout Standard
+If there's no core file but crash is re-producible, then finding it's cause
+ should be easy.
+ You could either:
+\end_layout
+
+\begin_layout Itemize
+Run the code under 
+\emph on
+Gdb
+\emph default
+ on x86 if the problem is reproducible also on x86.
+ This is the preferably method as you have enough memory to run a debugger
+ with all the debug symbols and unlike on target the backtraces work without
+ re-compiling everything with 
+\family typewriter
+-g
+\family default
+.
+\end_layout
+
+\begin_layout Itemize
+Run the code under gdbserver on the device and connect to it from the PC
+ with Gdb, for more information see Scratchbox.org 
+\begin_inset Flex URL
+status collapsed
+
+\begin_layout Plain Layout
+
+http://www.scratchbox.org/
+\end_layout
+
+\end_inset
+
+ documentation.
+ If you find gdbserver awkward to use, you might also try swapping to an
+ MMC card or USB hard disk so that device will have enough memory to run
+ Gdb.
+\end_layout
+
+\begin_layout Standard
+Note: The above memory issues should be mostly resolved with Fremantle release.
+\end_layout
+
+\begin_layout Standard
+If what Gdb shows when the crash happens doesn't make sense, the problem
+ could have happened earlier or the process stack is smashed.
+ In this case it might help to use 
+\emph on
+Valgrind
+\emph default
+ (described above) on x86 to see whether there are any memory access errors
+ before the crash and fixing those first.
+ Valgrind can launch Gdb when it detects a problem so that you can examine
+ the process state.
+\end_layout
+
+\begin_layout Standard
+On x86 GCC also supports the 
+\family typewriter
+--fstack-protector
+\family default
+ option which can be used to find (some) stack overwrite issues.
+ For more information, see the GCC manual page.
+\end_layout
+
+\begin_layout Standard
+For issues on debugging in this environment, see 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "debug"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+Sometimes 
+\emph on
+Duma
+\begin_inset Foot
+status collapsed
+
+\begin_layout Plain Layout
+Duma is a further enhanced version of 
+\emph on
+Electric Fence
+\emph default
+, see Duma 
+\begin_inset Flex URL
+status collapsed
+
+\begin_layout Plain Layout
+
+http://duma.sourceforge.net/
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\emph default
+ malloc debugger library produces more useful results than Valgrind.
+ Because of memory requirements it may also be easier to run on x86.
+\end_layout
+
+\begin_layout Standard
+Any Glib errors reported from the application should be fixed before wasting
+ time with debugging.
+ Critical warnings indicate the application internal state isn't anymore
+ to be trusted.
+ Glib errors can be catched e.g.
+ by setting a breakpoint to the 
+\family typewriter
+g_logv()
+\family default
+ function (which outputs these Glib assert error messages) before doing
+ the action triggering the error.
+\end_layout
+
+\begin_layout Subsection
+Fixing device use-time issues
+\end_layout
+
+\begin_layout Standard
+Besides avoiding polling in normal operations, nothing should be recursed
+ infinitely and there should be strict retry count limits for failed operations
+ as data coming from the outside may be broken (such as infinite MMC directory
+ lenght or depth) or never available.
+ Failure should be graceful.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newpage newpage
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset label
+LatexCommand label
+name "references"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+label "Performance measuring and analysis"
+key "performance"
+
+\end_inset
+
+Performance measuring and analysis, 
+\series bold
+TODO
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+label "Debugging Guide"
+key "debug"
+
+\end_inset
+
+Maemo developer documentation, Debugging Guide, Debugging Guide 
+\begin_inset Flex URL
+status collapsed
+
+\begin_layout Plain Layout
+
+maemo.org/maemo_release_documentation/maemo4.1.x/Debugging.pdf
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+label "Maemo architecture"
+key "architecture"
+
+\end_inset
+
+Maemo architecture, Maemo architecture 
+\begin_inset Flex URL
+status collapsed
+
+\begin_layout Plain Layout
+
+http://maemo.org/maemo_release_documentation/maemo4.1.x/Architecture.pdf
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+label "Endurance measuring"
+key "sp-endurance"
+
+\end_inset
+
+
+\family typewriter
+sp-endurance
+\family default
+ and 
+\family typewriter
+sp-endurance-postproc
+\family default
+ tools for measuring resource usage and logged software faults, Maemo tools
+ 
+\begin_inset Flex URL
+status collapsed
+
+\begin_layout Plain Layout
+
+http://maemo.org/development/tools/
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+label "Memory usage"
+key "sp-memusage"
+
+\end_inset
+
+
+\family typewriter
+sp-memusage
+\family default
+ tools for measuring system and process memory usage reliably, Maemo tools
+ 
+\begin_inset Flex URL
+status collapsed
+
+\begin_layout Plain Layout
+
+http://maemo.org/development/tools/
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+label "SMAPS scripts"
+key "sp-smaps-visualize"
+
+\end_inset
+
+SMAPS data visualization scripts, Maemo tools 
+\begin_inset Flex URL
+status collapsed
+
+\begin_layout Plain Layout
+
+http://maemo.org/development/tools/
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+label "Functracer"
+key "functracer"
+
+\end_inset
+
+Allocation tracking utility, Maemo tools 
+\begin_inset Flex URL
+status collapsed
+
+\begin_layout Plain Layout
+
+http://maemo.org/development/tools/
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+label "Rich core"
+key "sp-rich-core"
+
+\end_inset
+
+System information collection for richer core dumps, Maemo tools 
+\begin_inset Flex URL
+status collapsed
+
+\begin_layout Plain Layout
+
+http://maemo.org/development/tools/
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+label "Debug scripts"
+key "maemo-debug-scripts"
+
+\end_inset
+
+ Maemo-debug-scripts package contains helper scripts for debugging and wrappers
+ for different Valgrind plugins, Maemo tools 
+\begin_inset Flex URL
+status collapsed
+
+\begin_layout Plain Layout
+
+http://maemo.org/development/tools/
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+label "Valgrind"
+key "valgrind"
+
+\end_inset
+
+Valgrind 
+\begin_inset Flex URL
+status collapsed
+
+\begin_layout Plain Layout
+
+http://valgrind.org/
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+label "Maemo MXR"
+key "MXR"
+
+\end_inset
+
+Maemo source code cross-reference, MXR source-code cross-reference 
+\begin_inset Flex URL
+status collapsed
+
+\begin_layout Plain Layout
+
+http://mxr.maemo.org/
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newpage newpage
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+\start_of_appendix
+Open issues
+\end_layout
+
+\begin_layout Itemize
+Could some common library have a signal handler that reports the 
+\family typewriter
+mallinfo()
+\family default
+ values and which could be enabled with an environment variable? This would
+ help in detecting small memory usage increase and fragmentation and (the
+ code for that would be trivial/small and wouldn't affect performance so
+ it could be enabled all the time).
+\end_layout
+
+\begin_layout Itemize
+Is it possible to have a 
+\emph on
+HW
+\emph default
+ watchdog handler that saves information about what caused the reboot (where
+ kernel or watchdog kicker got stuck so that watchdog couldn't be updated)?
+\end_layout
+
+\begin_layout Itemize
+Could the SW watchdog show on screen what service exit/crash will causes
+ the device reboot e.g.
+ when R&D mode is enable (it would be much more convenient for testers and
+ developers than digging this information from /var/lib/dsme/)?
+\end_layout
+
+\begin_layout Subsection
+Resolved issues
+\end_layout
+
+\begin_layout Itemize
+Can there be beta releases of all opened Maemo SW packages in the device
+ so that power users and 3rd party developers can also test them and report
+ bugs before they are put into sales release?
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Yes, starting from Fremantle SDK.
+ The software is also included into the Maemo community 
+\emph on
+Mer
+\emph default
+ distribution working on top of Ubuntu
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+How to easily enable core dumps? See section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "crashcore"
+
+\end_inset
+
+
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+To generate core-dumps in Diablo, it's enough to insert a memory card having
+ a 
+\begin_inset Quotes eld
+\end_inset
+
+core-dumps
+\begin_inset Quotes erd
+\end_inset
+
+ directory
+\end_layout
+
+\begin_layout Itemize
+In Fremantle one needs to install 
+\family typewriter
+sp-rich-core
+\family default
+ and create 
+\begin_inset Quotes eld
+\end_inset
+
+core-dumps
+\begin_inset Quotes erd
+\end_inset
+
+ directory either to MyDocs directory or to memory card.
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+How to measure which files in the JFFS-2 are fragmented (through a new /proc/
+ API)? 
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+IT2006 JFFS-2 rewrites completed blocks that are too fragmented, so this
+ isn't anymore such an issue.
+ See section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "slowfs"
+
+\end_inset
+
+
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+Device doesn't handle full rootfs gracefully
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+In IT2006 some space is reserved only for root so that system can be booted.
+ Device functionality (naturally) will be limited until space is available
+ also for other processes (configuration cannot be changed permanently,
+ application state save may be limited, saving doesn't work, but all application
+s can be started without issues)
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+Will Maemo-launcher log application crashes?
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Yes, to syslog, in IT2006
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+Will there be crash backtrace logging either in libosso or Maemo-launcher?
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+In IT2006 Desktop can show to user abnormal application exits reported by
+ maemo-launcher.
+ Backtraces are not possible on target without debug symbols and is otherwise
+ inadvisable, see 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Getting-crash-backtraces"
+
+\end_inset
+
+
+\end_layout
+
+\end_deeper
+\begin_layout Standard
+\begin_inset CommandInset label
+LatexCommand label
+name "last_page"
+
+\end_inset
+
+
+\end_layout
+
+\end_body
+\end_document
