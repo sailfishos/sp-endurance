@@ -1,3 +1,7 @@
+sp-endurance (2.2.8), 15 Aug 2011:
+ * Fix the sp-endurance-postproc debian packaging to depend on perl instead of
+   perl-base.
+
 sp-endurance (2.2.7), 23 Jun 2011:
  * save-incremental-endurance-stats:
    - Collect /syspart recursively for Cgroup information.
