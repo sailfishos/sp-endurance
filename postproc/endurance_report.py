@@ -406,10 +406,10 @@ def parse_smaps(file):
         if not line:
             continue
         #print line        #DEBUG
-        if line.startswith('='):
+        if line[0] == '=':
             # ==> /proc/767/smaps <==
             continue
-        if line.startswith('#'):
+        if line[0] == '#':
             if line.find("#Pid: ") == 0:
                 pid = line[6:]
                 smaps[pid] = { 'private_dirty' : 0,
