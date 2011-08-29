@@ -422,26 +422,28 @@ def parse_smaps(file):
             # sanity check
             sys.stderr.write("ERROR: Pid missing for SMAPS line %d:\n  %s\n" % (idx, line))
             sys.exit(1)
-        if line.startswith("Private_Dirty:"):
-            amount = int(line[15:-2])
-            if code and amount:
-                #print line
-                #sys.stderr.write("dirty code: %s, %dkB\n" %(mmap, amount))
-                private_code += amount
-            smaps[pid]['private_dirty'] += amount
-            #print "ADD"        #DEBUG
-            continue
-        if line.startswith("Swap:"):
-            smaps[pid]['swap'] += int(line[6:-2])
-            continue
-        if line.startswith("Pss:"):
-            smaps[pid]['pss'] += int(line[5:-2])
-            continue
-        if line.startswith("Rss:"):
-            smaps[pid]['rss'] += int(line[5:-2])
-            continue
-        if line.startswith("Size:"):
-            smaps[pid]['size'] += int(line[6:-2])
+        if line[0] >= 'A' and line[0] <= 'Z':
+            if line.startswith("Private_Dirty:"):
+                amount = int(line[15:-2])
+                if code and amount:
+                    #print line
+                    #sys.stderr.write("dirty code: %s, %dkB\n" %(mmap, amount))
+                    private_code += amount
+                smaps[pid]['private_dirty'] += amount
+                #print "ADD"        #DEBUG
+                continue
+            if line.startswith("Swap:"):
+                smaps[pid]['swap'] += int(line[6:-2])
+                continue
+            if line.startswith("Pss:"):
+                smaps[pid]['pss'] += int(line[5:-2])
+                continue
+            if line.startswith("Rss:"):
+                smaps[pid]['rss'] += int(line[5:-2])
+                continue
+            if line.startswith("Size:"):
+                smaps[pid]['size'] += int(line[6:-2])
+                continue
             continue
         match = smaps_mmap.search(line)
         if match:
