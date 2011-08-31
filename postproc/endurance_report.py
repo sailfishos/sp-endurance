@@ -393,12 +393,7 @@ def parse_smaps(file):
     """
     private_code = code = pid = idx = 0
     smaps = {}
-    while 1:
-        try:
-            line = file.readline()
-        except IOError, e:
-            syslog.parse_error(write, "ERROR: SMAPS file '%s': %s" % (file, e))
-            break
+    for line in file:
         if not line:
             break
         idx += 1
