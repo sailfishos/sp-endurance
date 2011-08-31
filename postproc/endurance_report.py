@@ -410,7 +410,7 @@ def parse_smaps(file):
             # ==> /proc/767/smaps <==
             continue
         if line[0] == '#':
-            if line.find("#Pid: ") == 0:
+            if line[0:6] == "#Pid: ":
                 pid = line[6:]
                 smaps[pid] = { 'private_dirty' : 0,
                                'swap'          : 0,
@@ -423,7 +423,7 @@ def parse_smaps(file):
             sys.stderr.write("ERROR: Pid missing for SMAPS line %d:\n  %s\n" % (idx, line))
             sys.exit(1)
         if line[0] >= 'A' and line[0] <= 'Z':
-            if line.startswith("Private_Dirty:"):
+            if line[0:14] == "Private_Dirty:":
                 amount = int(line[15:-2])
                 if code and amount:
                     #print line
@@ -432,16 +432,16 @@ def parse_smaps(file):
                 smaps[pid]['private_dirty'] += amount
                 #print "ADD"        #DEBUG
                 continue
-            if line.startswith("Swap:"):
+            if line[0:5] == 'Swap:':
                 smaps[pid]['swap'] += int(line[6:-2])
                 continue
-            if line.startswith("Pss:"):
+            if line[0:4] == "Pss:":
                 smaps[pid]['pss'] += int(line[5:-2])
                 continue
-            if line.startswith("Rss:"):
+            if line[0:4] == 'Rss:':
                 smaps[pid]['rss'] += int(line[5:-2])
                 continue
-            if line.startswith("Size:"):
+            if line[0:5] == 'Size:':
                 smaps[pid]['size'] += int(line[6:-2])
                 continue
             continue
