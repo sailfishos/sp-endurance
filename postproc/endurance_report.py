@@ -402,7 +402,7 @@ def parse_smaps(file):
         if not line:
             break
         idx += 1
-        line = line.strip()
+        line = line[:-1]
         if not line:
             continue
         #print line        #DEBUG
