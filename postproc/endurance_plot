@@ -2648,6 +2648,9 @@ sub loop_over_all_apps()
 
 	} else {
 	    value_store_zeropad($fn, $i, 0);
+	    if ($lpid_name) {
+		$shared_lpid_names_sz{$lpid_name} += 0;
+	    }
 	}
 	# clear value or it remains there even if that pid has nothing in next round
 	$shared_lpid{$pid} = 0;
@@ -3247,7 +3250,7 @@ sub generate_plots()
     $cnt = 0;
     foreach $p (reverse sort {$shared_lpid_names_all_sz{$a} <=> $shared_lpid_names_all_sz{$b} } keys %shared_lpid_names_all_sz) {
 	$fn = "e/shmln-$p";
-	one_plot_set($fn, 3, $plot, \$cnt, 0);
+	one_plot_set($fn, 3, $plot, \$cnt, 1);
 #	one_plot_set($fn, 0, $plot, \$cnt, 1);
     }
     close_plot($cnt, $plot, $graph_mem_shared_lpid_name);
