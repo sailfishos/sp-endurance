@@ -1,3 +1,9 @@
+sp-endurance (2.2.9), 7 Sep 2011:
+ * endurance_report.py: improve report generation speed.
+ * endurance_plot:
+   - Visualize collected Cgroup information.
+   - CPU utilization histogram added.
+
 sp-endurance (2.2.8), 15 Aug 2011:
  * Fix the sp-endurance-postproc debian packaging to depend on perl instead of
    perl-base.
