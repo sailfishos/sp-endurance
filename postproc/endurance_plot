@@ -376,6 +376,91 @@ $thumblegend{$graph_battery} = "BATTERY";
 $unit_1{$graph_battery} = "charge-percent, temp-C";
 $unit_2{$graph_battery} = "mV";
 
+my $graph_cgroups_mem = "89_cgroups-mem";
+$legend{$graph_cgroups_mem} = "memory usage per cgroup";
+$thumblegend{$graph_cgroups_mem} = "CGROUPS MEMORY";
+$unit{$graph_cgroups_mem} = "MB";
+
+my $graph_cgroups_swap = "89_cgroups-swap";
+$legend{$graph_cgroups_swap} = "swap usage per cgroup";
+$thumblegend{$graph_cgroups_swap} = "CGROUPS SWAP";
+$unit{$graph_cgroups_swap} = "MB";
+
+my $graph_cgroups_memsw = "89_cgroups-memsw";
+$legend{$graph_cgroups_memsw} = "memory+swap usage per cgroup";
+$thumblegend{$graph_cgroups_memsw} = "CGROUPS MEMORY+SWAP";
+$unit{$graph_cgroups_memsw} = "MB";
+
+my $graph_cgroups_cache = "90_cgroups-cache";
+$legend{$graph_cgroups_cache} = "page cache per cgroup";
+$thumblegend{$graph_cgroups_cache} = "CGROUPS PAGE CACHE";
+$unit{$graph_cgroups_cache} = "MB";
+
+my $graph_cgroups_rss = "90_cgroups-rss";
+$legend{$graph_cgroups_rss} = "rss (anonymous + swap cache) per cgroup";
+$thumblegend{$graph_cgroups_rss} = "CGROUPS RSS";
+$unit{$graph_cgroups_rss} = "MB";
+
+my $graph_cgroups_mapped_file = "90_cgroups-mapped_file";
+$legend{$graph_cgroups_mapped_file} = "mapped file per cgroup";
+$thumblegend{$graph_cgroups_mapped_file} = "CGROUPS MAPPED FILE";
+$unit{$graph_cgroups_mapped_file} = "MB";
+
+my $graph_cgroups_unevictable = "90_cgroups-unevictable";
+$legend{$graph_cgroups_unevictable} = "unevictable memory per cgroup";
+$thumblegend{$graph_cgroups_unevictable} = "CGROUPS UNEVICTABLE";
+$unit{$graph_cgroups_unevictable} = "MB";
+
+my $graph_cgroups_inactive_anon = "91_cgroups-inactive_anon";
+$legend{$graph_cgroups_inactive_anon} = "anon + swap cache on inactive LRU list per cgroup";
+$thumblegend{$graph_cgroups_inactive_anon} = "CGROUPS INACTIVE ANON";
+$unit{$graph_cgroups_inactive_anon} = "MB";
+
+my $graph_cgroups_active_anon = "91_cgroups-active_anon";
+$legend{$graph_cgroups_active_anon} = "anon + swap cache on active LRU list per cgroup";
+$thumblegend{$graph_cgroups_active_anon} = "CGROUPS ACTIVE ANON";
+$unit{$graph_cgroups_active_anon} = "MB";
+
+my $graph_cgroups_inactive_file = "92_cgroups-inactive_file";
+$legend{$graph_cgroups_inactive_file} = "file-backed memory on inactive LRU list per cgroup";
+$thumblegend{$graph_cgroups_inactive_file} = "CGROUPS INACTIVE FILE";
+$unit{$graph_cgroups_inactive_file} = "MB";
+
+my $graph_cgroups_active_file = "92_cgroups-active_file";
+$legend{$graph_cgroups_active_file} = "file-backed memory on active LRU list per cgroup";
+$thumblegend{$graph_cgroups_active_file} = "CGROUPS ACTIVE FILE";
+$unit{$graph_cgroups_active_file} = "MB";
+
+my $graph_cgroups_pgpgin = "93_cgroups-pgpgin";
+$legend{$graph_cgroups_pgpgin} = "cgroups pages paged in";
+$thumblegend{$graph_cgroups_pgpgin} = "CGROUPS PGPGIN";
+$unit{$graph_cgroups_pgpgin} = "number of events";
+
+my $graph_cgroups_pgpgout = "93_cgroups-pgpgout";
+$legend{$graph_cgroups_pgpgout} = "cgroups pages paged out";
+$thumblegend{$graph_cgroups_pgpgout} = "CGROUPS PGPGOUT";
+$unit{$graph_cgroups_pgpgout} = "number of events";
+
+my $graph_cgroups_process_cnt = "93_cgroups-process-cnt";
+$legend{$graph_cgroups_process_cnt} = "cgroups process count";
+$thumblegend{$graph_cgroups_process_cnt} = "CGROUPS PROCESS CNT";
+$unit{$graph_cgroups_process_cnt} = "processes";
+
+my $graph_cgroups_task_cnt = "93_cgroups-task_cnt";
+$legend{$graph_cgroups_task_cnt} = "cgroups thread (task) count";
+$thumblegend{$graph_cgroups_task_cnt} = "CGROUPS THREAD CNT";
+$unit{$graph_cgroups_task_cnt} = "tasks";
+
+my $graph_cgroups_mem_failcnt = "94_cgroups-mem_failcnt";
+$legend{$graph_cgroups_mem_failcnt} = "cgroups memory fail count";
+$thumblegend{$graph_cgroups_mem_failcnt} = "CGROUPS MEMORY FAILCNT";
+$unit{$graph_cgroups_mem_failcnt} = "number of events";
+
+my $graph_cgroups_memsw_failcnt = "94_cgroups-memsw_failcnt";
+$legend{$graph_cgroups_memsw_failcnt} = "cgroups memory+swap fail count";
+$thumblegend{$graph_cgroups_memsw_failcnt} = "CGROUPS MEMORY+SWAP FAILCNT";
+$unit{$graph_cgroups_memsw_failcnt} = "number of events";
+
 #
 # Note: powertop is optional. it's files are not collected
 # by standard sp-endurance, but it is easy to use 
@@ -523,6 +608,9 @@ my %param_prev_stime;
 my %utime_cumul;
 my %stime_cumul;
 my %totaltime_cumul;
+my %prev_cgroups_stats;
+my %prev_cgroups_mem_failcnt;
+my %prev_cgroups_memsw_failcnt;
 
 my %fd_samples;
 my %fd_inotify;
@@ -618,6 +706,8 @@ my $swap_pgout_total = 0;
 
 my %num_of_smaps_segments, %prevnum_of_smaps_segments, %changes_in_num_of_smaps_segments;
 my $steps_files = 0;
+
+my %cgroups;
 
 sub date2seconds($)
 {
@@ -1564,6 +1654,136 @@ sub process_openfds()
 	}
     }
     close(OPENFDS);
+}
+
+# Sanitize the Control Group name so that we can use it as a file name:
+# "system/applications/standby/" -> "system_applications_standby"
+sub sanitize_cgroup_name
+{
+    my ($name) = @_;
+    $name =~ s#/$##;
+    $name =~ tr#/#_#;
+    if ($name eq "") {
+	$name = 'root';
+    }
+    return $name;
+}
+
+sub process_cgroups()
+{
+    my $fn = "$d/cgroups";
+    if (not open(CGROUPS, $fn)) {
+	return;
+    }
+    while (<CGROUPS>) {
+	my $cgroup_name;
+	if (m#^==> /syspart/(\S*)memory\.memsw\.usage_in_bytes <==#) {
+	    $cgroup_name = sanitize_cgroup_name($1);
+	    my $memsw_usage = int(<CGROUPS>) / (1024*1024);
+	    value_store_zeropad("e/cgroup-${cgroup_name}-memsw", $i, $memsw_usage);
+	} elsif (m#^==> /syspart/(\S*)memory\.usage_in_bytes <==#) {
+	    $cgroup_name = sanitize_cgroup_name($1);
+	    my $mem_usage = int(<CGROUPS>) / (1024*1024);
+	    value_store_zeropad("e/cgroup-${cgroup_name}-mem", $i, $mem_usage);
+	} elsif (m#^==> /syspart/(\S*)memory\.limit_in_bytes <==#) {
+	    $cgroup_name = sanitize_cgroup_name($1);
+	    my $mem_limit = int(<CGROUPS>);
+	    if ($mem_limit != 9223372036854775807) {
+		$mem_limit /= (1024*1024);
+		value_store_zeropad("e/cgroup-${cgroup_name}-memlimit", $i, $mem_limit);
+	    }
+	} elsif (m#^==> /syspart/(\S*)memory\.stat <==#) {
+	    # ==> /syspart/system/desktop/memory.stat <==
+	    # cache 49410048
+	    # rss 68714496
+	    # mapped_file 45260800
+	    # pgpgin 465491
+	    # pgpgout 436652
+	    # swap 17645568
+	    # inactive_anon 57729024
+	    # active_anon 11051008
+	    # inactive_file 2899968
+	    # active_file 46440448
+	    # unevictable 4096
+	    # hierarchical_memory_limit 157286400
+	    # hierarchical_memsw_limit 9223372036854775807
+	    # total_cache 49410048
+	    # total_rss 68714496
+	    # total_mapped_file 45260800
+	    # total_pgpgin 465491
+	    # total_pgpgout 436652
+	    # total_swap 17645568
+	    # total_inactive_anon 57729024
+	    # total_active_anon 11051008
+	    # total_inactive_file 2899968
+	    # total_active_file 46440448
+	    # total_unevictable 4096
+	    #
+	    # ==> ...
+	    $cgroup_name = sanitize_cgroup_name($1);
+	    my %stat;
+	    while (<CGROUPS> =~ m#^([a-z_]+) (\d+)$#) {
+		my ($key, $val) = ($1, $2);
+		$stat{$key} = int($val);
+	    }
+	    # pgpgin and pgpgout are event counts, so collect differences
+	    # between rounds:
+	    if (exists $prev_cgroups_stats{$cgroup_name}) {
+		my %prev_stat = %{$prev_cgroups_stats{$cgroup_name}};
+		foreach (qw/pgpgin pgpgout/) {
+		    my $val_now = $stat{$_};
+		    my $val_prev = $prev_stat{$_};
+		    my $val = $val_now - $val_prev;
+		    $val = 0 if ($val < 0);
+		    value_store("e/cgroup-${cgroup_name}-$_", $i, $val);
+		}
+	    }
+	    $prev_cgroups_stats{$cgroup_name} = \%stat;
+	    foreach (qw/cache rss mapped_file swap inactive_anon
+			active_anon inactive_file active_file unevictable/) {
+		value_store_zeropad("e/cgroup-${cgroup_name}-$_", $i,
+		    $stat{$_} / (1024*1024));
+	    }
+	} elsif (m#^==> /syspart/(\S*)cgroup\.procs <==#) {
+	    $cgroup_name = sanitize_cgroup_name($1);
+	    my $procs_count = 0;
+	    while (<CGROUPS> =~ m#^\d+$#) {
+		$procs_count++;
+	    }
+	    value_store_zeropad("e/cgroup-${cgroup_name}-process-cnt", $i, $procs_count);
+	} elsif (m#^==> /syspart/(\S*)tasks <==#) {
+	    $cgroup_name = sanitize_cgroup_name($1);
+	    my $task_count = 0;
+	    while (<CGROUPS> =~ m#^\d+$#) {
+		$task_count++;
+	    }
+	    value_store_zeropad("e/cgroup-${cgroup_name}-task-cnt", $i, $task_count);
+	} elsif (m#^==> /syspart/(\S*)memory\.failcnt <==#) {
+	    $cgroup_name = sanitize_cgroup_name($1);
+	    my $failcnt = int(<CGROUPS>);
+	    if (exists $prev_cgroups_mem_failcnt{$cgroup_name}) {
+		my $failcnt_prev = $prev_cgroups_mem_failcnt{$cgroup_name};
+		my $val = $failcnt - $failcnt_prev;
+		$val = 0 if ($val < 0);
+		value_store("e/cgroup-${cgroup_name}-mem-failcnt", $i, $val);
+	    }
+	    $prev_cgroups_mem_failcnt{$cgroup_name} = $failcnt;
+	} elsif (m#^==> /syspart/(\S*)memory\.memsw\.failcnt <==#) {
+	    $cgroup_name = sanitize_cgroup_name($1);
+	    my $failcnt = int(<CGROUPS>);
+	    if (exists $prev_cgroups_memsw_failcnt{$cgroup_name}) {
+		my $failcnt_prev = $prev_cgroups_memsw_failcnt{$cgroup_name};
+		my $val = $failcnt - $failcnt_prev;
+		$val = 0 if ($val < 0);
+		value_store("e/cgroup-${cgroup_name}-memsw-failcnt", $i, $val);
+	    }
+	    $prev_cgroups_memsw_failcnt{$cgroup_name} = $failcnt;
+	}
+	if ($cgroup_name) {
+	    $cgroups{$cgroup_name} = 1;
+	}
+    }
+    close(CGROUPS);
 }
 
 sub process_smaps()
@@ -3959,6 +4179,184 @@ sub generate_plots()
 
 	close_plot($i, $plot, $graph_ramzswap);
     }
+############# cgroups #####################
+    if (%cgroups) {
+	print "cgroups ";
+	my $omit;
+	my @grouplist = sort keys %cgroups;
+	# mem:
+	$cnt = 0;
+	$plot = start_plotfile_lines($graph_cgroups_mem);
+	foreach $cgroup (@grouplist) {
+	    $fn = "e/cgroup-${cgroup}-mem";
+	    one_plot_set($fn, 3, $plot, \$cnt, 1);
+	}
+	# Plot the limits to the same graph. We want the colors (=linetype) to
+	# match the groups, hence manually amend the plotting command.
+	$cnt = 1;
+	foreach $cgroup (@grouplist) {
+	    $fn = "e/cgroup-${cgroup}-memlimit";
+	    if (count_nonzero_entries($fn) > 0) {
+		one_plot_set($fn, 5, $plot, \$cnt, 1);
+		print $plot ' lt ' . ($cnt-1);
+	    } else {
+		$cnt++;
+	    }
+	}
+	close_plot($i, $plot, $graph_cgroups_mem);
+	# swap:
+	$cnt = 0;
+	$plot = start_plotfile_lines($graph_cgroups_swap);
+	foreach $cgroup (@grouplist) {
+	    $fn = "e/cgroup-${cgroup}-swap";
+	    one_plot_set($fn, 3, $plot, \$cnt, 1);
+	}
+	close_plot($i, $plot, $graph_cgroups_swap);
+	# mem + swap:
+	$cnt = 0;
+	$plot = start_plotfile_lines($graph_cgroups_memsw);
+	foreach $cgroup (@grouplist) {
+	    $fn = "e/cgroup-${cgroup}-memsw";
+	    one_plot_set($fn, 3, $plot, \$cnt, 1);
+	}
+	close_plot($i, $plot, $graph_cgroups_memsw);
+	# cache:
+	$cnt = 0;
+	$plot = start_plotfile_lines($graph_cgroups_cache);
+	foreach $cgroup (@grouplist) {
+	    $fn = "e/cgroup-${cgroup}-cache";
+	    one_plot_set($fn, 3, $plot, \$cnt, 1);
+	}
+	close_plot($i, $plot, $graph_cgroups_cache);
+	# rss:
+	$cnt = 0;
+	$plot = start_plotfile_lines($graph_cgroups_rss);
+	foreach $cgroup (@grouplist) {
+	    $fn = "e/cgroup-${cgroup}-rss";
+	    one_plot_set($fn, 3, $plot, \$cnt, 1);
+	}
+	close_plot($i, $plot, $graph_cgroups_rss);
+	# mapped_file:
+	$cnt = 0;
+	$plot = start_plotfile_lines($graph_cgroups_mapped_file);
+	foreach $cgroup (@grouplist) {
+	    $fn = "e/cgroup-${cgroup}-mapped_file";
+	    one_plot_set($fn, 3, $plot, \$cnt, 1);
+	}
+	close_plot($i, $plot, $graph_cgroups_mapped_file);
+	# unevictable:
+	$cnt = 0;
+	$plot = start_plotfile_lines($graph_cgroups_unevictable);
+	foreach $cgroup (@grouplist) {
+	    $fn = "e/cgroup-${cgroup}-unevictable";
+	    one_plot_set($fn, 3, $plot, \$cnt, 1);
+	}
+	close_plot($i, $plot, $graph_cgroups_unevictable);
+	# inactive_anon:
+	$cnt = 0;
+	$plot = start_plotfile_lines($graph_cgroups_inactive_anon);
+	foreach $cgroup (@grouplist) {
+	    $fn = "e/cgroup-${cgroup}-inactive_anon";
+	    one_plot_set($fn, 3, $plot, \$cnt, 1);
+	}
+	close_plot($i, $plot, $graph_cgroups_inactive_anon);
+	# active_anon:
+	$cnt = 0;
+	$plot = start_plotfile_lines($graph_cgroups_active_anon);
+	foreach $cgroup (@grouplist) {
+	    $fn = "e/cgroup-${cgroup}-active_anon";
+	    one_plot_set($fn, 3, $plot, \$cnt, 1);
+	}
+	close_plot($i, $plot, $graph_cgroups_active_anon);
+	# inactive_file:
+	$cnt = 0;
+	$plot = start_plotfile_lines($graph_cgroups_inactive_file);
+	foreach $cgroup (@grouplist) {
+	    $fn = "e/cgroup-${cgroup}-inactive_file";
+	    one_plot_set($fn, 3, $plot, \$cnt, 1);
+	}
+	close_plot($i, $plot, $graph_cgroups_inactive_file);
+	# active_file:
+	$cnt = 0;
+	$plot = start_plotfile_lines($graph_cgroups_active_file);
+	foreach $cgroup (@grouplist) {
+	    $fn = "e/cgroup-${cgroup}-active_file";
+	    one_plot_set($fn, 3, $plot, \$cnt, 1);
+	}
+	close_plot($i, $plot, $graph_cgroups_active_file);
+	# pgpgin:
+	$cnt = 0;
+	$plot = start_plotfile_lines($graph_cgroups_pgpgin);
+	foreach $cgroup (@grouplist) {
+	    $fn = "e/cgroup-${cgroup}-pgpgin";
+	    one_plot_set($fn, 3, $plot, \$cnt, 1);
+	}
+	close_plot($i, $plot, $graph_cgroups_pgpgin);
+	# pgpgout:
+	$cnt = 0;
+	$plot = start_plotfile_lines($graph_cgroups_pgpgout);
+	foreach $cgroup (@grouplist) {
+	    $fn = "e/cgroup-${cgroup}-pgpgout";
+	    one_plot_set($fn, 3, $plot, \$cnt, 1);
+	}
+	close_plot($i, $plot, $graph_cgroups_pgpgout);
+	# process-cnt:
+	$cnt = 0;
+	$plot = start_plotfile_lines($graph_cgroups_process_cnt);
+	foreach $cgroup (@grouplist) {
+	    $fn = "e/cgroup-${cgroup}-process-cnt";
+	    one_plot_set($fn, 3, $plot, \$cnt, 1);
+	}
+	close_plot($i, $plot, $graph_cgroups_process_cnt);
+	# task-cnt:
+	$cnt = 0;
+	$plot = start_plotfile_lines($graph_cgroups_task_cnt);
+	foreach $cgroup (@grouplist) {
+	    $fn = "e/cgroup-${cgroup}-task-cnt";
+	    one_plot_set($fn, 3, $plot, \$cnt, 1);
+	}
+	close_plot($i, $plot, $graph_cgroups_task_cnt);
+	# mem-failcnt:
+	$cnt = 0;
+	$omit = 1;
+	foreach $cgroup (@grouplist) {
+	    $fn = "e/cgroup-${cgroup}-mem-failcnt";
+	    if (count_nonzero_entries($fn) > 0) {
+		$omit = 0;
+		break;
+	    }
+	}
+	if (!$omit) {
+	    $plot = start_plotfile_lines($graph_cgroups_mem_failcnt);
+	    foreach $cgroup (@grouplist) {
+		$fn = "e/cgroup-${cgroup}-mem-failcnt";
+		if (count_nonzero_entries($fn) > 0) {
+		    one_plot_set($fn, 3, $plot, \$cnt, 1);
+		}
+	    }
+	    close_plot($i, $plot, $graph_cgroups_mem_failcnt);
+	}
+	# memsw-failcnt:
+	$cnt = 0;
+	$omit = 1;
+	foreach $cgroup (@grouplist) {
+	    $fn = "e/cgroup-${cgroup}-memsw-failcnt";
+	    if (count_nonzero_entries($fn) > 0) {
+		$omit = 0;
+		break;
+	    }
+	}
+	if (!$omit) {
+	    $plot = start_plotfile_lines($graph_cgroups_memsw_failcnt);
+	    foreach $cgroup (@grouplist) {
+		$fn = "e/cgroup-${cgroup}-memsw-failcnt";
+		if (count_nonzero_entries($fn) > 0) {
+		    one_plot_set($fn, 3, $plot, \$cnt, 1);
+		}
+	    }
+	    close_plot($i, $plot, $graph_cgroups_memsw_failcnt);
+	}
+    }
 ############# pagetypeinfo #####################
     if ($have_pagetypeinfo) {
 	print "pagetypeinfo ";
@@ -4273,6 +4671,7 @@ foreach $d (@dirs) {
     process_ramzswap();
     process_pagetypeinfo();
     process_openfds();
+    process_cgroups();
 
 #    $unaccount_swapped = $swapused - $sum_app_swapped;
 #    print "swap: total=$swaptotal free=$swapfree used=$swapused sum_app=$sum_app_swapped, unacc=$unaccount_swapped\n";
