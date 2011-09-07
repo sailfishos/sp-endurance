@@ -190,6 +190,11 @@ $legend{$graph_mem_slabs} = "kernel slab memory";
 $thumblegend{$graph_mem_slabs} = "KERNEL SLABS";
 $unit{$graph_mem_slabs} = "kB";
 
+my $graph_cpu =  "59_cpu";
+$legend{$graph_cpu} = "CPU utilization";
+$thumblegend{$graph_cpu} = "CPU UTILIZATION";
+$unit{$graph_cpu} = "percent";
+
 my $graph_cpu_totaltime =  "60_cpu_totaltime";
 $legend{$graph_cpu_totaltime} = "CPU total time"; 
 $thumblegend{$graph_cpu_totaltime} = "TOTAL CPU TIME";
@@ -608,6 +613,7 @@ my %param_prev_stime;
 my %utime_cumul;
 my %stime_cumul;
 my %totaltime_cumul;
+my %prev_cpu_ticks;
 my %prev_cgroups_stats;
 my %prev_cgroups_mem_failcnt;
 my %prev_cgroups_memsw_failcnt;
@@ -2264,6 +2270,25 @@ sub process_stat()
 	    if ($i > 0) {
 		value_store("e/all-ctx-switches", $i, $global_ctx);
 	    }
+	} elsif(m/cpu  (\d+) (\d+) (\d+) (\d+) (\d+) (\d+) (\d+)/) {
+	    my %cpu_ticks = (
+		sum => $1 + $2 + $3 + $4 + $5 + $6 + $7,
+		user => $1,
+		nice => $2,
+		sys => $3,
+		idle => $4,
+		iowait => $5,
+		irq => $6,
+		softirq => $7,
+	    );
+	    if (%prev_cpu_ticks) {
+		foreach (qw/user nice sys idle iowait irq softirq/) {
+		    value_store_zeropad("e/cpu-$_", $i,
+			100 * (($cpu_ticks{$_} - $prev_cpu_ticks{$_}) /
+			    ($cpu_ticks{sum} - $prev_cpu_ticks{sum})));
+		}
+	    }
+	    %prev_cpu_ticks = %cpu_ticks;
 	} elsif( m/processes /) {
 	    my (undef, $processes) = split(' ' , $line, 2);
 
@@ -3164,8 +3189,25 @@ sub generate_plots()
     close_plot($cnt, $plot, $graph_events_major_pagefaults);
 
 
-############# Processes, utime ######################
+############# CPU utilization  ######################
     print "cputime ";
+    $plot = start_plotfile_histogram($graph_cpu);
+    $cnt = 0;
+    my %cpu_colors = (
+	    "cpu-user" => "#3149BD",
+	    "cpu-nice" => "#4265FF",
+	    "cpu-sys" => "#DE2821",
+	    "cpu-irq" => "#FF0000",
+	    "cpu-softirq" => "#EF0000",
+	    "cpu-iowait" => "#EE00FF",
+	    "cpu-idle" => "#ADE739");
+    foreach (qw/cpu-sys cpu-irq cpu-softirq cpu-user cpu-nice cpu-iowait cpu-idle/) {
+	one_plot_set("e/$_", 0, $plot, \$cnt, 1);
+	print $plot " lc rgb '${cpu_colors{$_}}'";
+    }
+    close_plot($cnt, $plot, $graph_cpu);
+
+############# Processes, utime ######################
     $plot = start_plotfile_linespoints($graph_cpu_usertime);
 
     $cnt = 0;
