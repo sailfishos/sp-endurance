@@ -181,7 +181,7 @@ def open_compressed(filename, fatal = False):
        of the file and if not, assumes file to be non-compressed.
        If the file doesn't exist, return None.
     """
-    for suffix in ("", ".gz", ".lzo"):
+    for suffix in ("", ".gz", ".lzo", ".xz"):
         tmp = filename + suffix
         if os.path.exists(tmp):
             filename = tmp
@@ -207,6 +207,13 @@ def open_compressed(filename, fatal = False):
             file = os.popen("lzop -dc %s" % filename)
         else:
             error_exit("file '%s' was compressed with lzop, but decompression program not available" % filename)
+
+    elif filename.endswith(".xz"):
+        if os.system("which xzcat >/dev/null") == 0:
+            file = os.popen("xzcat %s" % filename)
+        else:
+            error_exit("file '%s' was compressed with XZ, but decompression program not available" % filename)
+
     else:
         file = open(filename, "r")
 
