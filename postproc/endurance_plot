@@ -469,6 +469,16 @@ $legend{$graph_cgroups_memsw_failcnt} = "cgroups memory+swap fail count";
 $thumblegend{$graph_cgroups_memsw_failcnt} = "CGROUPS MEMORY+SWAP FAILCNT";
 $unit{$graph_cgroups_memsw_failcnt} = "number of events";
 
+my $graph_networking_bytes = "95_networking-bytes";
+$legend{$graph_networking_bytes} = "RX and TX bytes per interface in kB";
+$thumblegend{$graph_networking_bytes} = "NET RX/TX BYTES";
+$unit{$graph_networking_bytes} = "kB";
+
+my $graph_networking_packets = "95_networking-packets";
+$legend{$graph_networking_packets} = "RX and TX packets per interface in kB";
+$thumblegend{$graph_networking_packets} = "NET RX/TX PACKETS";
+$unit{$graph_networking_packets} = "packets";
+
 #
 # Note: powertop is optional. it's files are not collected
 # by standard sp-endurance, but it is easy to use 
@@ -717,6 +727,11 @@ my %num_of_smaps_segments, %prevnum_of_smaps_segments, %changes_in_num_of_smaps_
 my $steps_files = 0;
 
 my %cgroups;
+my %interfaces_seen;
+my %interfaces_prev_rx_packets;
+my %interfaces_prev_tx_packets;
+my %interfaces_prev_rx_kB;
+my %interfaces_prev_tx_kB;
 
 sub date2seconds($)
 {
@@ -1793,6 +1808,77 @@ sub process_cgroups()
 	}
     }
     close(CGROUPS);
+}
+
+sub process_ifconfig()
+{
+    my $fn = "$d/ifconfig";
+    if (not open(IFCONFIG, $fn)) {
+	return;
+    }
+    while (<IFCONFIG>) {
+	if (m/^[^ ]/) {
+	    my ($interface, undef) = split(' ', $_, 2);
+	    if ($interface eq '') {
+		next;
+	    }
+	    $interface =~ tr/:/_/;
+	    $interfaces_seen{$interface} = 1;
+	    while (<IFCONFIG>) {
+		if ($_ eq "\n") {
+		    last;
+		}
+		my $value;
+		if (m/RX packets:([0-9]+)/) {
+		    my $rx = int($1);
+		    if (defined $interfaces_prev_rx_packets{$interface}) {
+			my $prev_rx = $interfaces_prev_rx_packets{$interface};
+			if ($prev_rx <= $rx) {
+			    $value = $rx - $prev_rx;
+			} else {
+			    $value = $rx;
+			}
+			value_store("e/iface-$interface-rx-packets", $i, $value);
+		    }
+		    $interfaces_prev_rx_packets{$interface} = $rx;
+		} elsif (m/TX packets:([0-9]+)/) {
+		    my $tx = int($1);
+		    if (defined $interfaces_prev_tx_packets{$interface}) {
+			my $prev_tx = $interfaces_prev_tx_packets{$interface};
+			if ($prev_tx <= $tx) {
+			    $value = $tx - $prev_tx;
+			} else {
+			    $value = $tx;
+			}
+			value_store("e/iface-$interface-tx-packets", $i, $value);
+		    }
+		    $interfaces_prev_tx_packets{$interface} = $tx;
+		} elsif (m/RX bytes:([0-9]+).*TX bytes:([0-9]+)/) {
+		    my $rx = int($1) / 1024;
+		    my $tx = int($2) / 1024;
+		    if (defined $interfaces_prev_rx_kB{$interface}) {
+			my $prev_rx = $interfaces_prev_rx_kB{$interface};
+			if ($prev_rx <= $rx) {
+			    $value = $rx - $prev_rx;
+			} else {
+			    $value = $rx;
+			}
+			value_store("e/iface-$interface-rx-kB", $i, $value);
+			my $prev_tx = $interfaces_prev_tx_kB{$interface};
+			if ($prev_tx <= $tx) {
+			    $value = $tx - $prev_tx;
+			} else {
+			    $value = $tx;
+			}
+			value_store("e/iface-$interface-tx-kB", $i, $value);
+		    }
+		    $interfaces_prev_rx_kB{$interface} = $rx;
+		    $interfaces_prev_tx_kB{$interface} = $tx;
+		}
+	    }
+	}
+    }
+    close(IFCONFIG);
 }
 
 sub process_smaps()
@@ -4413,6 +4499,36 @@ sub generate_plots()
 	    close_plot($i, $plot, $graph_cgroups_memsw_failcnt);
 	}
     }
+############# ifconfig #####################
+    if (%interfaces_seen) {
+	print "networking ";
+	$plot = start_plotfile_lines($graph_networking_bytes);
+	$cnt = 0;
+	foreach my $interface (keys %interfaces_seen) {
+	    $fn = "e/iface-$interface-rx-kB";
+	    if (count_nonzero_entries($fn) > 0) {
+		one_plot_set($fn, 3, $plot, \$cnt, 1);
+	    }
+	    $fn = "e/iface-$interface-tx-kB";
+	    if (count_nonzero_entries($fn) > 0) {
+		one_plot_set($fn, 3, $plot, \$cnt, 1);
+	    }
+	}
+	close_plot($i, $plot, $graph_networking_bytes);
+	$plot = start_plotfile_lines($graph_networking_packets);
+	$cnt = 0;
+	foreach my $interface (keys %interfaces_seen) {
+	    $fn = "e/iface-$interface-rx-packets";
+	    if (count_nonzero_entries($fn) > 0) {
+		one_plot_set($fn, 3, $plot, \$cnt, 1);
+	    }
+	    $fn = "e/iface-$interface-tx-packets";
+	    if (count_nonzero_entries($fn) > 0) {
+		one_plot_set($fn, 3, $plot, \$cnt, 1);
+	    }
+	}
+	close_plot($i, $plot, $graph_networking_packets);
+    }
 ############# pagetypeinfo #####################
     if ($have_pagetypeinfo) {
 	print "pagetypeinfo ";
@@ -4728,6 +4844,7 @@ foreach $d (@dirs) {
     process_pagetypeinfo();
     process_openfds();
     process_cgroups();
+    process_ifconfig();
 
 #    $unaccount_swapped = $swapused - $sum_app_swapped;
 #    print "swap: total=$swaptotal free=$swapfree used=$swapused sum_app=$sum_app_swapped, unacc=$unaccount_swapped\n";
