@@ -35,7 +35,8 @@ my $page_size = 4;
 my $pg_bytes = 4096;
 my $MB_bytes = 1024*1024;
 my $samples_required = 5;
-my $thumbsize = "320x250";
+my $thumb_width = 320;
+my $thumb_height = 250;
 my $html_name = "index.html";
 my $graphs_dir = "graphs";
 
@@ -2724,7 +2725,7 @@ sub echo_one_img_line($)
     $img_fn   = $graphs_dir . "/" . $img . ".png";
     $thumb_fn = $graphs_dir . "/" . $img . "_thumb.jpg";
     if (-e $img_fn) {
-	system "convert -thumbnail $thumbsize $img_fn $thumb_fn";
+	system("pngtopnm $img_fn | pnmscalefixed -width=$thumb_width -height=$thumb_height | pnmtojpeg > $thumb_fn");
 	system("echo '<table class=\"image\">' >> $html_name");
 	system("echo '<caption align=\"bottom\">$thumbnames{$img}</caption>' >> $html_name");
 	system("echo '<tr><td><a href=$img_fn><img src=$thumb_fn></a></td></tr>' >> $html_name");
