@@ -1805,11 +1805,14 @@ sub process_smaps()
     $fn = "$d/smaps.cap";
     $lzoname = $d . "/smaps.cap.lzo";
     $gzname = $d . "/smaps.cap.gz";
+    my $xzname = $d . "/smaps.cap.xz";
     if (-e $lzoname) {
 	$fn = "lzop -dc $lzoname |";
     } elsif (-e $gzname) {
 	$fn = "zcat $gzname |";
-    } 
+    } elsif (-e $xzname) {
+	$fn = "xzcat $xzname |";
+    }
     unless (open($f, $fn)) {
 	print STDERR "can not open $fn:$!\n";
 	return;
