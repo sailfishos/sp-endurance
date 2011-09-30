@@ -806,7 +806,7 @@ sub value_store($$$)
 	$ra = $files{$fn};
 	if (! $ra) {
 	    print "\n  *** store[$fn rnd=$rnd]: no ref in hash ?????\n";
-	    exit;
+	    exit(1);
 	} else {
 #	    print "  ** store: use existing ra=$ra\n";
 	}
@@ -904,7 +904,7 @@ sub value_emit($$)
     }
     unless (open ($ofile, "> $fn")) {
 	print STDERR "Can't create $fn:$!\n";
-	exit;
+	exit(1);
     }
 
 #    print "*** emit file=[$fn]\n";
@@ -4536,7 +4536,7 @@ foreach $d (@dirs) {
 	$fn = "$d/component_version";
 	unless (open($f, $fn)) {
 	    print STDERR "can not open $fn:$!\n";
-	    exit;
+	    exit(1);
 	}
 	while (<$f>) {
 	    if( m/product/) {
@@ -4558,7 +4558,7 @@ foreach $d (@dirs) {
     $fn = "$d/usage.csv";
     unless (open($f, $fn)) {
 	print STDERR "can not open $fn:$!\n";
-	exit;
+	exit(1);
     }
     while (<$f>) {
 	if( m/SW-version/) {
@@ -4635,11 +4635,11 @@ if ($cnt > 1) {
     }
 } else {
     print "need at least 2 rounds\n";
-    exit;
+    exit(1);
 }
 if (!$secs_per_round) {
     print "zero duration, can not calculate much\n";
-    exit;
+    exit(1);
 }
 no integer;
 print "endurance_plot $version; ";
@@ -4650,7 +4650,7 @@ foreach $d (@dirs) {
     $fn = "$d/usage.csv";
     unless (open($f, $fn)) {
 	print STDERR "can not open $fn:$!\n";
-	exit;
+	exit(1);
     }
     print "$d ";
     %shared_lpid = %shared_cpid = undef;
