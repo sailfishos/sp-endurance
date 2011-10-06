@@ -1,3 +1,11 @@
+sp-endurance (2.2.10), 30 Sep 2011:
+ * endurance_plot:
+   - Switch from ImageMagick to Netpbm for thumbnail generation. Improves
+     performance on ARM.
+   - Networking plots added.
+   - Exit with non-zero return value on error.
+   - Add support for XZ compressed smaps.cap.
+
 sp-endurance (2.2.9), 7 Sep 2011:
  * endurance_report.py: improve report generation speed.
  * endurance_plot:

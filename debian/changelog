@@ -1,3 +1,9 @@
+sp-endurance (2.2.10) unstable; urgency=low
+
+  * Fixes: NB#260658 - endurance_plot: generate networking related plots
+
+ -- Tommi Rantala <ext-tommi.1.rantala@nokia.com>  Thu, 06 Oct 2011 15:15:52 +0300
+
 sp-endurance (2.2.9) unstable; urgency=low
 
   * Fixes: NB#265657 - sp-endurance: collect and visualize cgroup memory usage
