@@ -899,7 +899,7 @@ def output_process_changes(pids1, pids2, titles, do_summary):
         print "<br>(now totaling %d)." % processes
 
         print "<p><table border=1>"
-        print "<tr><th>%s</th><th>%s</th><tr>" % (titles[1], titles[2])
+        print "<tr><th>%s</th><th>%s</th>" % (titles[1], titles[2])
         print "<tr><td>"
         if gone:
             print "<ul>"
