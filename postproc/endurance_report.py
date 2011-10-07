@@ -712,6 +712,68 @@ def get_proc_pid_stat(file):
         stat[pid]['stime'] = stime
     return stat
 
+def parse_cgroups(file):
+    pid2cgroup = {}
+    tid2cgroup = {}
+    cgroups = {}
+    for line in file:
+        if not line:
+            break
+        m = re.search("^==> /syspart(\S*/)memory\.memsw\.usage_in_bytes <==", line)
+        if m:
+            groupname = m.group(1)
+            if not groupname in cgroups:
+                cgroups[groupname] = {}
+            for usageline in file:
+                usage = usageline
+                break
+            cgroups[groupname]['memory.memsw.usage_in_bytes'] = int(usage)
+            continue
+        m = re.search("^==> /syspart(\S*/)memory\.usage_in_bytes <==", line)
+        if m:
+            groupname = m.group(1)
+            if not groupname in cgroups:
+                cgroups[groupname] = {}
+            for usageline in file:
+                usage = usageline
+                break
+            cgroups[groupname]['memory.usage_in_bytes'] = int(usage)
+            continue
+        m = re.search("^==> /syspart(\S*/)memory\.limit_in_bytes <==", line)
+        if m:
+            groupname = m.group(1)
+            if not groupname in cgroups:
+                cgroups[groupname] = {}
+            for usageline in file:
+                usage = usageline
+                break
+            cgroups[groupname]['memory.limit_in_bytes'] = int(usage)
+            continue
+        m = re.search("^==> /syspart(\S*/)cgroup\.procs <==", line)
+        if m:
+            groupname = m.group(1)
+            for proc in file:
+                if not proc:
+                    break
+                m = re.search("(^\d+)", proc)
+                if not m:
+                    break
+                pid = int(m.group(1))
+                pid2cgroup[pid] = groupname
+            continue
+        m = re.search("^==> /syspart(\S*/)tasks <==", line)
+        if m:
+            groupname = m.group(1)
+            for proc in file:
+                if not proc:
+                    break
+                m = re.search("(^\d+)", proc)
+                if not m:
+                    break
+                tid = int(m.group(1))
+                tid2cgroup[tid] = groupname
+            continue
+    return (pid2cgroup, tid2cgroup, cgroups)
 
 def get_meminfo(data, headers, values):
     "adds meminfo values to data"
@@ -2155,6 +2217,10 @@ def parse_syte_stats(dirs):
             items['transfers'] = parse_ifconfig(file)
             if not items['transfers']:
                 syslog.error_exit("ifconfig output parsing failed")
+
+        file, filename = syslog.open_compressed("%s/cgroups" % dirname)
+        if file:
+            items['pid2cgroup'], items['tid2group'], items['cgroups'] = parse_cgroups(file)
 
         data.append(items)
     return data
