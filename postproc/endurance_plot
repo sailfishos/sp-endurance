@@ -1335,14 +1335,16 @@ sub parse_xresource_block($)
 	    $Identifier = $Identifier . "-" . $xresPid;
 	}
 	if ($Identifier) {
+	    my $total_cnt;
 	    if ($val{"total_resource_count"}) {
-		$param_show = $val{"total_resource_count"};
+		$total_cnt = $val{"total_resource_count"};
 	    } else {
-		$param_show = $val{"Windows"} + $val{"Pixmaps"} + $val{"GCs"} + $val{"Fonts"} + 
+		$total_cnt = $val{"Windows"} + $val{"Pixmaps"} + $val{"GCs"} + $val{"Fonts"} +
 		    $val{"Cursors"} + $val{"Colormaps"} + $val{"Map entries"} + $val{"Other clients"} + 
 		    $val{"Grabs"} + $val{"Pictures"} + $val{"Pictformats"} + $val{"Glyphsets"} + 
 		    $val{"CRTCs"} + $val{"Modes"} + $val{"Outputs"} + $val{"Xi clients"} + $val{"Unknown"};
 	    }
+
 	    # there are multiple "unknown" ids, make unique by appending hex value,
 	    # otherwise they will added up in same line
 	    if ($xres_seen{$Identifier}) {
@@ -1351,9 +1353,9 @@ sub parse_xresource_block($)
 	    $xres_seen{$Identifier} = 1;
 	    $xres_samples{$Identifier} += 1;
 
-	    $xresource_latest_cnt{$Identifier} = $param_show;
+	    $xresource_latest_cnt{$Identifier} = $total_cnt;
 	    $fn = "e/xres-cnt-$Identifier";
-	    value_store($fn, $i, $param_show);
+	    value_store($fn, $i, $total_cnt);
 	    my $pixmap_mem = $val{"Pixmap mem"};
 	    $pixmap_mem =~ s/B//g;
 	    $pixmap_mem /= 1024;
