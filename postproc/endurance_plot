@@ -1917,7 +1917,6 @@ sub process_smaps()
     %exe = undef;
     %num_of_smaps_segments = undef;
 #    %name_by_pid = undef;
-    $skyhost_seen = 0;
     while (<$f>) {
 	if( index($_, "#Name: ") != -1) {
 	    $line = $_;
@@ -1946,17 +1945,7 @@ sub process_smaps()
 
 	    ###### now start with new name
 	    (undef, $nm) = split(' ' , $line, 2);
-	    if(index($nm, "skyhost") != -1) { 
-		if ($skyhost_seen) {
-		    $valid = 0;
-		} else {
-		    $valid = 1;
-		}
-		$skyhost_seen = 1;
-		next;
-	    } else {
-		$valid = 1;
-	    }
+
 	    #
 	    # some are really long names (hald-bla-bla 384 chars)
 	    #
@@ -1968,9 +1957,6 @@ sub process_smaps()
 	    $nm =~ s/\)//g;
 	    $nm =~ s/\///g;
 #		print "length=$sz nm=[$nm]\n";
-	    next;
-	}
-	if (!$valid) {
 	    next;
 	}
 	if( index($_, "#Pid: ") != -1) {
