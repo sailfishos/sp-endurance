@@ -1035,6 +1035,46 @@ def output_process_changes(pids1, pids2, titles, pid2cgroup1, pid2cgroup2, do_su
     if do_summary:
         print "<!--\n- %s: %+d\n-->" % (titles[0], change)
 
+def output_cgroup_diffs(cgroups1, cgroups2):
+    all_groups = cgroups2.keys()
+    all_groups.sort()
+    if not all_groups:
+        return
+    print "<p><table border=1 bgcolor=#%s>" % Colors.memory
+    print "<caption><i>Control Groups</i></caption>"
+    print "<tr>" \
+            + "<th>Cgroup:" \
+            + "<th>RAM+swap usage:" \
+            + "<th>RAM usage (% of limit):" \
+            + "<th>RAM usage change:" \
+            + "<th>Swap usage:" \
+            + "<th>Swap usage change:"
+    for cgroup in all_groups:
+        memory_limit_in_bytes = cgroups2[cgroup]['memory.limit_in_bytes']
+        if memory_limit_in_bytes == 9223372036854775807 or memory_limit_in_bytes == 0:
+            ram_pct = "N/A"
+        else:
+            ram_pct = 100 * (float(cgroups2[cgroup]['memory.usage_in_bytes']) / float(memory_limit_in_bytes))
+            ram_pct = str(int(ram_pct)) + "%"
+        swap1_kb = (cgroups1[cgroup]['memory.memsw.usage_in_bytes'] -
+                    cgroups1[cgroup]['memory.usage_in_bytes']) / 1024
+        swap2_kb = (cgroups2[cgroup]['memory.memsw.usage_in_bytes'] -
+                    cgroups2[cgroup]['memory.usage_in_bytes']) / 1024
+        print ("<tr>" \
+                + "<td>%s" \
+                + "<td align=right>%d kB" \
+                + "<td align=right>%d kB (%s)" \
+                + "<td align=right><b>%+d</b> kB" \
+                + "<td align=right>%d kB" \
+                + "<td align=right><b>%+d</b> kB") % \
+                (cgroup,
+                    cgroups2[cgroup]['memory.memsw.usage_in_bytes'] / 1024,
+                    cgroups2[cgroup]['memory.usage_in_bytes'] / 1024, ram_pct,
+                    (cgroups2[cgroup]['memory.usage_in_bytes'] -
+                     cgroups1[cgroup]['memory.usage_in_bytes']) / 1024,
+                    swap2_kb,
+                    swap2_kb - swap1_kb)
+    print "</table>"
 
 def output_diffs(diffs, title, first_column_title, data_units, bgcolor, idx1, do_summary):
     "diffs = { <change>, <change from initial>, <total value>, <name> }"
@@ -1480,6 +1520,8 @@ def output_run_diffs(idx1, idx2, data, do_summary):
                             run2['shm'])
     output_diffs(diffs, "Shared memory segments", "Type", "",
                 Colors.shm, idx1, do_summary)
+
+    output_cgroup_diffs(run1['cgroups'], run2['cgroups'])
 
     # Kernel statistics
     if cpu_total_diff > 0:
