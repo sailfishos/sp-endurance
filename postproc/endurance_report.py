@@ -1391,7 +1391,14 @@ def output_run_diffs(idx1, idx2, data, do_summary):
             # No CPU spent? Most likely user has manually copied the snapshot directories.
             print "<p><i>WARNING: identical snapshots detected, CPU usage omitted.</i>"
             return
-        print "<p>Interval between rounds was %d seconds." % cpu_total_secs
+        if cpu_total_secs >= 3600:
+            print "<p>Interval between rounds was %d seconds (%d hours %d minutes)." % \
+                    (cpu_total_secs, int(cpu_total_secs/3600), int((cpu_total_secs%3600)/60))
+        elif cpu_total_secs >= 60:
+            print "<p>Interval between rounds was %d seconds (%d minutes)." % \
+                    (cpu_total_secs, int(cpu_total_secs/60))
+        else:
+            print "<p>Interval between rounds was %d seconds." % cpu_total_secs
 
         print "<p>"
         diffs = []
