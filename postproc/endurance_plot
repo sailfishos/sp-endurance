@@ -2010,13 +2010,6 @@ sub process_smaps()
 
 	    next;
 	}
-	if( m#/SYSV[0-9a-f]{8,}# ) {
-	    $line = <$f>;
-	    chop $line;
-	    (undef, $sysv_shared, undef) = split(' ' , $line, 3);
-	    $app_sysv_shared{$nm} += $sysv_shared;
-	    next;
-	}
 	if( index($_, "/dev/shm/") != -1) {
 	    $line = <$f>;
 	    chop $line;
@@ -2068,6 +2061,13 @@ sub process_smaps()
 #		$exe{$nm} += $pss/1024;
 #	    }
 #	    $is_exe = 0;
+	    next;
+	}
+	if( m#/SYSV[0-9a-f]{8,}# ) {
+	    $line = <$f>;
+	    chop $line;
+	    (undef, $sysv_shared, undef) = split(' ' , $line, 3);
+	    $app_sysv_shared{$nm} += $sysv_shared;
 	    next;
 	}
     }
