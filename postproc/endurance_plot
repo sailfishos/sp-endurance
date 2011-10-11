@@ -697,6 +697,7 @@ my %filesystem_names;
 
 my %images, %thumbnames;
 my %xres_samples;
+my %xres_atoms_seen;
 my %p_activity;
 my %seen_powertop_c_levels;
 my %seen_powertop_f_levels;
@@ -1342,6 +1343,27 @@ sub parse_xresource_block($)
 	    }
 	    $xres_seen{$Identifier} = 1;
 	    $xres_samples{$Identifier} += 1;
+
+	    # The per-atom plotting is disabled for now, as it can easily
+	    # generate dozen of graphs that are in most cases not very
+	    # interesting.
+	    if (0) {
+	    foreach my $resource_atom (keys %val) {
+		if ($resource_atom eq 'res-base' ||
+			$resource_atom eq 'total_resource_count' ||
+			$resource_atom eq 'Pixmap mem' ||
+			$resource_atom eq 'Misc mem' ||
+			$resource_atom eq 'Total mem' ||
+			$resource_atom eq 'PID' ||
+			$resource_atom eq 'Identifier') {
+		    next;
+		}
+		$resource_atom =~ tr/ /_/;
+		$fn = "e/xres-cnt-$Identifier-${resource_atom}";
+		value_store($fn, $i, $val{$resource_atom});
+		$xres_atoms_seen{$resource_atom} = 1;
+	    }
+	    }
 
 	    my $total_cnt;
 	    if ($val{"total_resource_count"}) {
@@ -3979,6 +4001,35 @@ sub generate_plots()
 	one_plot_set($fn, 3, $plot, \$cnt, 0);
     }
     close_plot($cnt, $plot, $graph_xresource_sz_pxm);
+
+############# X resource atom counts ######################
+
+    foreach my $resource_atom (keys %xres_atoms_seen) {
+	my $omit = 1;
+	foreach my $Identifier (keys %xres_samples) {
+	    if ($xres_samples{$Identifier} < 2) { next; }
+	    $fn = "e/xres-cnt-$Identifier-${resource_atom}";
+	    if (count_nonzero_entries($fn) <= 0) { next; }
+	    if (!changes_found($fn)) { next; }
+	    $omit = 0;
+	    last;
+	}
+	if ($omit) { next; }
+	my $graph_xresource_atom_cnt = "50_xresource_${resource_atom}";
+	$legend{$graph_xresource_atom_cnt} = "X resource count: ${resource_atom}";
+	$thumblegend{$graph_xresource_atom_cnt} = "X-RESOURCES-${resource_atom}";
+	$unit{$graph_xresource_atom_cnt} = "X resource atom count";
+	$cnt = 0;
+	$plot = start_plotfile_linespoints($graph_xresource_atom_cnt);
+	foreach my $Identifier (keys %xres_samples) {
+	    if ($xres_samples{$Identifier} < 2) { next; }
+	    $fn = "e/xres-cnt-$Identifier-${resource_atom}";
+	    if (count_nonzero_entries($fn) <= 0) { next; }
+	    if (!changes_found($fn)) { next; }
+	    one_plot_set($fn, 3, $plot, \$cnt, 1);
+	}
+	close_plot($cnt, $plot, $graph_xresource_atom_cnt);
+    }
 
 ############# X resource sizes, misc ######################
 #$plot = start_plotfile_linespoints($graph_xresource_sz_misc);
