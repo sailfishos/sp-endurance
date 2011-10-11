@@ -663,9 +663,6 @@ my %app_cumul_rwxp;
 my %app_cumul_sysv_shared;
 my %app_cumul_posix_shared;
 
-# XXX
-my %exe;
-
 my %avg_pss;
 my %avg_heap;
 #my %avg_private_dirty;
@@ -1914,7 +1911,6 @@ sub process_smaps()
     %app_posix_shared = undef;
     %app_rwxp = undef;
     %app_dev_pvr = undef;
-    %exe = undef;
     %num_of_smaps_segments = undef;
 #    %name_by_pid = undef;
     while (<$f>) {
@@ -1997,10 +1993,6 @@ sub process_smaps()
 	    $prev_vmsize{$nm} = $vmsz;
 	    next;
 	}
-#	if(m/r(w-|-x)p .*(\/lib|bin\/)/) {
-#	    $is_exe = 1;
-#	    next;
-#	} 
 	if( index($_, "[heap]") != -1) {
 	    $line = <$f>;
 	    chop $line;
@@ -2037,9 +2029,6 @@ sub process_smaps()
 	    (undef, $pss, undef) = split(' ' , $line, 3);
 	    $sum_app_pss += $pss;
 	    $app_pss{$nm} += $pss;
-#	    if ($is_exe) {
-#		$exe{$nm} += $pss/1024;
-#	    }
 	    $num_of_smaps_segments{$nm} += 1;
 	    next;
 	}
@@ -2057,10 +2046,6 @@ sub process_smaps()
 	    (undef, $swapped, undef) = split(' ' , $line, 3);
 	    $sum_app_swapped += $swapped;
 	    $app_swapped{$nm} += $swapped;
-#	    if ($is_exe) {
-#		$exe{$nm} += $pss/1024;
-#	    }
-#	    $is_exe = 0;
 	    next;
 	}
 	if( m#/SYSV[0-9a-f]{8,}# ) {
