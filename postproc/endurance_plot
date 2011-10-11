@@ -1354,14 +1354,14 @@ sub parse_xresource_block($)
 	    $xresource_latest_cnt{$Identifier} = $param_show;
 	    $fn = "e/xres-cnt-$Identifier";
 	    value_store($fn, $i, $param_show);
-	    $param_show = $val{"Pixmap mem"};
-	    $param_show =~ s/B//g;
-	    $param_show /= 1024;
-	    $xresource_latest_sz_pxm{$Identifier} = $param_show;
+	    my $pixmap_mem = $val{"Pixmap mem"};
+	    $pixmap_mem =~ s/B//g;
+	    $pixmap_mem /= 1024;
+	    $xresource_latest_sz_pxm{$Identifier} = $pixmap_mem;
 	    $fn = "e/xres-pxm-$Identifier";
-	    value_store($fn, $i, $param_show);
-	    $sum_all_pixmaps += $param_show;
-	    $xres_pxm_size_total{$Identifier} += $param_show;
+	    value_store($fn, $i, $pixmap_mem);
+	    $sum_all_pixmaps += $pixmap_mem;
+	    $xres_pxm_size_total{$Identifier} += $pixmap_mem;
 	}
     }
 # system level file has MB units, so we divide it once more
