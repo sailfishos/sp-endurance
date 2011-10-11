@@ -940,46 +940,98 @@ def get_pids_from_procs(processes, commands):
         else:
             pids[pid] = name
     return pids
-        
-def output_process_changes(pids1, pids2, titles, do_summary):
+
+def __unique_names(namepid1, namepid2):
+    unused_new_pids = {}
+    for name, pid in namepid2:
+        unused_new_pids[pid] = 1
+    new_namepid1 = []
+    for name, pid in namepid1:
+        name_unique = True
+        for name2, pid2 in namepid2:
+            if name == name2 and pid2 in unused_new_pids:
+                name_unique = False
+                del unused_new_pids[pid2]
+                break
+        new_namepid1.append((name, pid, name_unique))
+    return new_namepid1
+
+def output_process_changes(pids1, pids2, titles, pid2cgroup1, pid2cgroup2, do_summary, show_cgroups=True):
     "outputs which commands are new and which gone in separate columns"
     # ignore re-starts i.e. check only command names
-    gone = []
-    new_coms = []
-    new_pids = []
+    namepid_gone = []
+    namepid_new = []
     for pid in pids2:
         if pid not in pids1:
-            new_coms.append("%s[%s]" % (pids2[pid], pid))
+            namepid_new.append((pids2[pid], int(pid)))
     for pid in pids1:
         if pid not in pids2:
-            gone.append("%s[%s]" % (pids1[pid], pid))
+            namepid_gone.append((pids1[pid], int(pid)))
+    namepid_gone.sort()
+    namepid_new.sort()
+
+    # Check respawned processes so that we can highlight those that did not
+    # respawn:
+    namepid_gone2 = __unique_names(namepid_gone, namepid_new)
+    namepid_new2 = __unique_names(namepid_new, namepid_gone)
+
+    namepid_gone = namepid_gone2
+    namepid_new = namepid_new2
+
     change = 0
-    if gone or new_coms or new_pids:
+    if namepid_gone or namepid_new:
         processes = len(pids2)
         change = processes - len(pids1)
         print "<p>%s: <b>%d</b>" % (titles[0], change)
         print "<br>(now totaling %d)." % processes
 
-        print "<p><table border=1>"
-        print "<tr><th>%s</th><th>%s</th>" % (titles[1], titles[2])
-        print "<tr><td>"
-        if gone:
-            print "<ul>"
-            gone.sort()
-            for name in gone:
-                print "<li>%s" % name
-            print "</ul>"
-        print "</td><td>"
-        if new_coms or new_pids:
-            print "<ul>"
-            new_coms.sort()
-            for name in new_coms:
-                print "<li>%s" % name
-            new_pids.sort()
-            for name in new_pids:
-                print "<li>%s" % name
-            print "</ul>"
-        print "</td></tr></table>"
+        print "<p><table border=0>"
+        print "<tr style='vertical-align: top'>"
+
+        print "<td><table border=1>"
+        print "<tr><th>%s" % titles[1]
+        print "<tr><th>Command[Pid]:"
+        for name, pid, name_unique in namepid_gone:
+            if name_unique:
+                print ("<tr>" \
+                        + "<td><del>%s</del>[%d]") \
+                        % (name, pid)
+            else:
+                print ("<tr>" \
+                        + "<td>%s[%d]") \
+                        % (name, pid)
+        print "</table>"
+
+        print "<td><table border=1>"
+        if show_cgroups:
+            print "<tr><th colspan=2>%s" % titles[2]
+            print "<tr><th>Command[Pid]:<th>Cgroup"
+        else:
+            print "<tr><th>%s" % titles[2]
+            print "<tr><th>Command[Pid]:"
+        for name, pid, name_unique in namepid_new:
+            cgroup = ""
+            if show_cgroups:
+                if pid in pid2cgroup2:
+                    cgroup = pid2cgroup2[pid]
+                if name_unique:
+                    cgroup = "<td><ins>%s</ins>" % cgroup
+                else:
+                    cgroup = "<td>%s" % cgroup
+            if name_unique:
+                print ("<tr>" \
+                        + "<td><ins><b>%s</b>[%d]</ins>" \
+                        + "%s") \
+                        % (name, pid, cgroup)
+            else:
+                print ("<tr>" \
+                        + "<td>%s[%d]" \
+                        + "%s") \
+                        % (name, pid, cgroup)
+        print "</table>"
+
+        print "</table>"
+
     if do_summary:
         print "<!--\n- %s: %+d\n-->" % (titles[0], change)
 
@@ -1489,13 +1541,16 @@ def output_run_diffs(idx1, idx2, data, do_summary):
     output_process_changes(
                 get_pids_from_procs(run1['processes'], run1['commands']),
                 get_pids_from_procs(run2['processes'], run2['commands']),
-                titles, do_summary)
+                titles, run1['pid2cgroup'], run2['pid2cgroup'], do_summary)
 
     # new and collected kthreads/zombies
     titles = ("Change in number of kernel threads and zombie processes",
               "Collected kthreads/zombies",
               "New kthreads/zombies")
-    output_process_changes(run1['kthreads'], run2['kthreads'], titles, do_summary)
+    output_process_changes(run1['kthreads'], run2['kthreads'], titles,
+                run1['pid2cgroup'], run2['pid2cgroup'], do_summary,
+                show_cgroups=False)
+
     return stat
 
 
