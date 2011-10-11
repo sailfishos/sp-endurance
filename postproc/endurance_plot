@@ -1335,6 +1335,14 @@ sub parse_xresource_block($)
 	    $Identifier = $Identifier . "-" . $xresPid;
 	}
 	if ($Identifier) {
+	    # there are multiple "unknown" ids, make unique by appending hex value,
+	    # otherwise they will added up in same line
+	    if ($xres_seen{$Identifier}) {
+		$Identifier = $Identifier . '-' . $val{"res-base"};
+	    }
+	    $xres_seen{$Identifier} = 1;
+	    $xres_samples{$Identifier} += 1;
+
 	    my $total_cnt;
 	    if ($val{"total_resource_count"}) {
 		$total_cnt = $val{"total_resource_count"};
@@ -1344,15 +1352,6 @@ sub parse_xresource_block($)
 		    $val{"Grabs"} + $val{"Pictures"} + $val{"Pictformats"} + $val{"Glyphsets"} + 
 		    $val{"CRTCs"} + $val{"Modes"} + $val{"Outputs"} + $val{"Xi clients"} + $val{"Unknown"};
 	    }
-
-	    # there are multiple "unknown" ids, make unique by appending hex value,
-	    # otherwise they will added up in same line
-	    if ($xres_seen{$Identifier}) {
-		$Identifier = $Identifier . '-' . $val{"res-base"};
-	    }
-	    $xres_seen{$Identifier} = 1;
-	    $xres_samples{$Identifier} += 1;
-
 	    $xresource_latest_cnt{$Identifier} = $total_cnt;
 	    $fn = "e/xres-cnt-$Identifier";
 	    value_store($fn, $i, $total_cnt);
