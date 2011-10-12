@@ -1,13 +1,15 @@
 Name: sp-endurance	
-Version: 2.2
+Version: 2.2.10
 Release: 1%{?dist}
 Summary:  memory usage reporting tools
 Group: Development/Tools
 License: GPLv2	
 URL: http://www.gitorious.org/+maemo-tools-developers/maemo-tools/sp-endurance
-Source: %{name}_%{version}.tar.gz
+Source: maemo-tools-%{name}_%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
-BuildRequires: libX11-devel,libXres-devel
+BuildRequires: xorg-x11-devel xorg-x11-libX11-devel
+
+#,libXres-devel
 
 %description
  Endurance measurement tools save system and process information from /proc
@@ -17,7 +19,7 @@ BuildRequires: libX11-devel,libXres-devel
  long time use-case.
 
 %prep
-%setup -q -n sp-endurance
+%setup -q -n maemo-tools-sp-endurance
 
 %build
 make 
@@ -30,16 +32,16 @@ make install DESTDIR=%{buildroot}
 rm -rf %{buildroot}
 
 %files
-%defattr(-,root,root,-)
+%defattr(755,root,root,-)
 %{_bindir}/proc2csv
 %{_bindir}/endurance-mem-overview
-%attr(755,root,root) %{_bindir}/save-incremental-endurance-stats
+%{_bindir}/save-incremental-endurance-stats
 %{_bindir}/xmeminfo
+%defattr(644,root,root,-)
 %{_mandir}/man1/proc2csv.1.gz
 %{_mandir}/man1/endurance-mem-overview.1.gz
 %{_mandir}/man1/save-incremental-endurance-stats.1.gz
 %{_mandir}/man1/xmeminfo.1.gz
-%doc COPYING README
 
 %package postproc
 Summary: Postprocessing for endurance data
@@ -54,20 +56,21 @@ BuildArch: noarch
  It also provides error parser for the syslog files.
 
 %files postproc
-%defattr(-,root,root,-)
+%defattr(755,root,root,-)
 %{_bindir}/endurance_plot
 %{_bindir}/endurance_report.py
 %{_bindir}/syslog_parse.py
 %{_bindir}/parse-endurance-measurements
 %{_bindir}/split-endurance-measurements
 %{_bindir}/extract-endurance-process-smaps
+%defattr(644,root,root,-)
 %{_mandir}/man1/endurance_plot.1.gz
 %{_mandir}/man1/endurance_report.py.1.gz
 %{_mandir}/man1/syslog_parse.py.1.gz
 %{_mandir}/man1/parse-endurance-measurements.1.gz
 %{_mandir}/man1/split-endurance-measurements.1.gz
 %{_mandir}/man1/extract-endurance-process-smaps.1.gz
-%{_defaultdocdir}/%{name}-postproc/README
+%{_datadir}/doc/%{name}-postproc/README
 
 %package tests
 Summary: CI tests for sp-endurance
