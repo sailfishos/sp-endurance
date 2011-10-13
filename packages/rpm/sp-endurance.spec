@@ -1,3 +1,5 @@
+%define _defaultdocdir %{_datadir}/doc
+
 Name: sp-endurance	
 Version: 2.2.10
 Release: 1%{?dist}
@@ -42,6 +44,7 @@ rm -rf %{buildroot}
 %{_mandir}/man1/endurance-mem-overview.1.gz
 %{_mandir}/man1/save-incremental-endurance-stats.1.gz
 %{_mandir}/man1/xmeminfo.1.gz
+%doc COPYING README
 
 %package postproc
 Summary: Postprocessing for endurance data
@@ -70,7 +73,7 @@ BuildArch: noarch
 %{_mandir}/man1/parse-endurance-measurements.1.gz
 %{_mandir}/man1/split-endurance-measurements.1.gz
 %{_mandir}/man1/extract-endurance-process-smaps.1.gz
-%{_datadir}/doc/%{name}-postproc/README
+%{_defaultdocdir}/%{name}-postproc/README
 
 %package tests
 Summary: CI tests for sp-endurance
