@@ -5,7 +5,7 @@ Summary:  memory usage reporting tools
 Group: Development/Tools
 License: GPLv2	
 URL: http://www.gitorious.org/+maemo-tools-developers/maemo-tools/sp-endurance
-Source: maemo-tools-%{name}_%{version}.tar.gz
+Source: %{name}_%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires: xorg-x11-devel xorg-x11-libX11-devel
 
@@ -19,7 +19,7 @@ BuildRequires: xorg-x11-devel xorg-x11-libX11-devel
  long time use-case.
 
 %prep
-%setup -q -n maemo-tools-sp-endurance
+%setup -q -n sp-endurance
 
 %build
 make 
