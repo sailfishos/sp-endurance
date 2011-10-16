@@ -1,5 +1,3 @@
-%define _defaultdocdir %{_datadir}/doc
-
 Name: sp-endurance	
 Version: 2.2.10
 Release: 1%{?dist}
