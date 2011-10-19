@@ -619,7 +619,7 @@ my %cumul_nonvol_ctx;
 my %cumul_total_ctx;
 my %param_prev_vol_ctx;
 my %param_prev_nonvol_ctx;
-my %param_prev_majflt;
+my %majflt_prev;
 my %majflt_cumul;
 my %param_prev_utime;
 my %param_prev_stime;
@@ -1220,10 +1220,10 @@ sub parse_process_status_block($)
 	$param = $MajFlt;
 #	$param = $val{"MajFlt"};
 #	print "$pname: majflt=$param\n";
-	if(!$param_prev_majflt{$pname}) {
+	if(!$majflt_prev{$pname}) {
 	    $param_show = 0;
 	} else {
-	    $param_show = $param  - $param_prev_majflt{$pname};
+	    $param_show = $param  - $majflt_prev{$pname};
 	}
 	$majflt_cumul{$pname} += $param_show;
 	if ($lapsed_time{$i}) { 
@@ -1231,11 +1231,11 @@ sub parse_process_status_block($)
 	} else {
 	    $param_show = 0;
 	}
-	if (defined $param_prev_majflt{$pname}) {
+	if (defined $majflt_prev{$pname}) {
 	    $fn = "e/majflt-$pname";
 	    value_store($fn, $i, $param_show);
 	}
-	$param_prev_majflt{$pname} = $param;
+	$majflt_prev{$pname} = $param;
 
 ###########################
 	$param = $Utime;
