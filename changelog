@@ -1,3 +1,12 @@
+sp-endurance (2.2.11), 20 Oct 2011:
+ * endurance_report.py:
+   - Report now shows changes in Cgroup memory usage. Additionally, for each
+     new process the Cgroup for the process is shown.
+ * endurance_plot:
+   - Small improvement in smaps data parsing performance.
+   - Heap and #smaps plots are now dynamically divided into several subplots
+     for improved readability.
+
 sp-endurance (2.2.10), 6 Oct 2011:
  * endurance_plot:
    - Switch from ImageMagick to Netpbm for thumbnail generation. Improves

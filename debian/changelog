@@ -1,3 +1,11 @@
+sp-endurance (2.2.11) unstable; urgency=low
+
+  * Fixes: NB#281443 - Include cgroup group names to exited/new process lists
+  * Fixes: NB#257593 - endurance_plot: "#smaps segments" graph only includes
+    processes that are alive in last round
+
+ -- Tommi Rantala <ext-tommi.1.rantala@nokia.com>  Thu, 20 Oct 2011 15:04:54 +0300
+
 sp-endurance (2.2.10) unstable; urgency=low
 
   * Fixes: NB#260658 - endurance_plot: generate networking related plots
