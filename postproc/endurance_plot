@@ -872,6 +872,27 @@ sub changes_found
     return $changed;
 }
 
+sub changes_found_ignore_zeroes
+{
+    my ($ofile) = @_;
+    my $ra = $files{$ofile};
+    if (not $ra) {
+	return 0;
+    }
+    my $changed = 0;
+    my $prev_value;
+    foreach (@$ra) {
+	my (undef, $value) = split(':' , $_, 2);
+	next if not $value;
+	if ($prev_value && $value ne $prev_value) {
+	    $changed = 1;
+	    break;
+	}
+	$prev_value = $value;
+    }
+    return $changed;
+}
+
 sub value_emit_all_entries($$)
 {
     my $ofile = shift;
@@ -3537,6 +3558,9 @@ sub generate_plots()
 #
     foreach $p (reverse sort {$sum_heap{$a} <=> $sum_heap{$b} } keys %sum_heap) {
 	if (!$sumdev_heap{$p}) {
+	    next;
+	}
+	if (!changes_found_ignore_zeroes("e/heap-$p")) {
 	    next;
 	}
 	# if one sample and under 1 MB, do not show
