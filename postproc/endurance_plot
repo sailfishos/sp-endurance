@@ -23,6 +23,7 @@
 # 02110-1301 USA
 
 use Time::Local;
+use POSIX qw/ceil/;
 
 my $version = "0.38";
 
@@ -114,16 +115,6 @@ my $graph_appmem_heap = "36_appmem_heap";
 $legend{$graph_appmem_heap} = "process heap mem size"; 
 $thumblegend{$graph_appmem_heap} = "APPS HEAP";
 $unit{$graph_appmem_heap} = "MB";
-
-my $graph_appmem_heap_lines_1 = "36_appmem_heap_lines_1";
-$legend{$graph_appmem_heap_lines_1} = "process heap mem size"; 
-$thumblegend{$graph_appmem_heap_lines_1} = "APPS HEAP";
-$unit{$graph_appmem_heap_lines_1} = "MB";
-
-my $graph_appmem_heap_lines_2 = "36_appmem_heap_lines_2";
-$legend{$graph_appmem_heap_lines_2} = "process heap mem size"; 
-$thumblegend{$graph_appmem_heap_lines_2} = "APPS HEAP SMALLER";
-$unit{$graph_appmem_heap_lines_2} = "MB";
 
 my $graph_appmem_devpvr = "37_appmem_devpvr";
 $legend{$graph_appmem_devpvr} = "process /dev/pvrsrvkm"; 
@@ -3548,9 +3539,9 @@ sub generate_plots()
     close_plot($cnt, $plot, $graph_appmem_heap);
 
 ############### Lines of process heaps #################
-    $plot_1 = start_plotfile_linespoints($graph_appmem_heap_lines_1);
-    $plot_2 = start_plotfile_linespoints($graph_appmem_heap_lines_2);
-
+    use constant MAX_HEAP_PLOTS => 5;
+    use constant MAX_HEAP_PER_PLOT => 10;
+    use constant MAX_HEAP_SPLIT_CONSTANT => 5;
     %show_this = undef;
     $cnt = 0;
 #
@@ -3567,28 +3558,40 @@ sub generate_plots()
 	if (($num_heap_samples{$p} < 2) && ($avg_heap{$p} < 1024)) {
 	    next;
 	}
-	if ($cnt > 2*($max_per_graph_onecolumn -1) ) {
-	    last;
-	} 
 	$show_this{$p} = 1;
 	$cnt += 1;
     }
-    $cnt_1 = 0;
-    $cnt_2 = 0;
-    foreach $p (reverse sort {$max_heap{$a} <=> $max_heap{$b} } keys %sum_heap) {
-	if ($show_this{$p} != 1) {
-	    next;
-	} 
-	$fn = "e/heap-$p";
-	if (($cnt_1 + $cnt_2) < $cnt/2) {
-	    one_plot_set($fn, 3, $plot_1, \$cnt_1, 0);
-	} else {
-	    one_plot_set($fn, 3, $plot_2, \$cnt_2, 0);
+    my %max_heap_to_plot = %max_heap;
+    foreach my $plot_idx (1 .. MAX_HEAP_PLOTS) {
+	my $graph_appmem_heap_lines = "36_appmem_heap_lines_${plot_idx}";
+	$legend{$graph_appmem_heap_lines} = "process heap mapping virtual size";
+	$unit{$graph_appmem_heap_lines} = "MB";
+	$plot = start_plotfile_linespoints($graph_appmem_heap_lines);
+	my $prev_max;
+	my $cnt_this_round = 0;
+	my @plotted_this_round;
+	foreach $p (reverse sort { $max_heap{$a} <=> $max_heap{$b} } keys %max_heap_to_plot) {
+	    next if ($show_this{$p} != 1);
+	    if (not $prev_max) {
+		$prev_max = $max_heap{$p};
+	    }
+	    if ($plot_idx < MAX_HEAP_PLOTS and $prev_max >= (MAX_HEAP_SPLIT_CONSTANT * $max_heap{$p})) {
+		last;
+	    }
+	    $fn = "e/heap-$p";
+	    one_plot_set($fn, 3, $plot, \$cnt_this_round, 0);
+	    delete_zero_lines($fn);
+	    push(@plotted_this_round, $p);
+	    if ($plot_idx < MAX_HEAP_PLOTS and $cnt_this_round > MAX_HEAP_PER_PLOT) {
+		last;
+	    }
 	}
-	delete_zero_lines($fn);
+	foreach (@plotted_this_round) {
+	    delete $max_heap_to_plot{$_};
+	}
+	$thumblegend{$graph_appmem_heap_lines} = "APPS HEAP &mdash; MAX " . ceil($prev_max / 1024) . "MB";
+	close_plot($cnt_this_round, $plot, $graph_appmem_heap_lines);
     }
-    close_plot($cnt_1, $plot_1, $graph_appmem_heap_lines_1);
-    close_plot($cnt_2, $plot_2, $graph_appmem_heap_lines_2);
 
 ############### Histogram of process sysv shared mem #################
     print "sharedmem ";
