@@ -24,6 +24,7 @@
 
 use Time::Local;
 use POSIX qw/ceil/;
+use List::Util qw/max/;
 
 my $version = "0.38";
 
@@ -100,11 +101,6 @@ my $graph_vmsize = "33_vmsize";
 $legend{$graph_vmsize} = "process virtual mem size"; 
 $thumblegend{$graph_vmsize} = "VMSIZE";
 $unit{$graph_vmsize} = "MB";
-
-my $graph_num_of_smaps_segments = "34_num_smaps_segments";
-$legend{$graph_num_of_smaps_segments} = "number of smaps segments"; 
-$thumblegend{$graph_num_of_smaps_segments} = "#SMAPS SEGMENTS";
-$unit{$graph_num_of_smaps_segments} = "count";
 
 #my $graph_appmem_private_dirty = "35_appmem_private_dirty";
 #$legend{$graph_appmem_private_dirty} = "private dirty mem by processes"; 
@@ -712,7 +708,8 @@ my $have_pagetypeinfo = 0;
 my $swapused_total = 0;
 my $swap_pgout_total = 0;
 
-my %num_of_smaps_segments, %prevnum_of_smaps_segments, %changes_in_num_of_smaps_segments;
+my %num_of_smaps_segments;
+my %max_smaps_segments;
 my $steps_files = 0;
 
 my %cgroups;
@@ -2799,13 +2796,11 @@ sub loop_over_all_apps()
 	}
 	$shared_cpid{$pid} = 0;
 
-	$fn = "e/numsegm-$x";
-	value_store_zeropad($fn, $i, $num_of_smaps_segments{$x});
-	if($prevnum_of_smaps_segments{$x} && ($prevnum_of_smaps_segments{$x} != $num_of_smaps_segments{$x})) {
-	    $changes_in_num_of_smaps_segments{$x} = 1;
+	if (exists $num_of_smaps_segments{$x}) {
+	    $fn = "e/numsegm-$x";
+	    value_store($fn, $i, $num_of_smaps_segments{$x});
+	    $max_smaps_segments{$x} = max $num_of_smaps_segments{$x}, $max_smaps_segments{$x};
 	}
-	$prevnum_of_smaps_segments{$x} = $num_of_smaps_segments{$x};
-#	print "$i: numofsegm[$x] = $num_of_smaps_segments{$x} changed = $changes_in_num_of_smaps_segments{$x}\n";
     }
     #
     # loops over shmem lpid names and insert values
@@ -3496,16 +3491,39 @@ sub generate_plots()
     close_plot($cnt, $plot, $graph_vmsize);
 
 ############### Lines of changed smaps segment count #################
-    $plot = start_plotfile_linespoints($graph_num_of_smaps_segments);
-
-    $cnt = 0;
-    foreach $p (reverse sort {$num_of_smaps_segments{$a} <=> $num_of_smaps_segments{$b} } keys %num_of_smaps_segments) {
-	if ($changes_in_num_of_smaps_segments{$p}) {
+    use constant MAX_SMAPS_PLOTS => 3;
+    use constant MAX_SMAPS_PER_PLOT => 15;
+    use constant MAX_SMAPS_SPLIT_FACTOR => 5;
+    my %max_smaps_segments_to_plot = %max_smaps_segments;
+    foreach my $plot_idx (1 .. MAX_SMAPS_PLOTS) {
+	my $graph_num_of_smaps_segments = "34_num_smaps_segments_${plot_idx}";
+	$legend{$graph_num_of_smaps_segments} = "numer of smaps segments";
+	$unit{$graph_num_of_smaps_segments} = "count";
+	$plot = start_plotfile_linespoints($graph_num_of_smaps_segments);
+	my $prev_max;
+	my $cnt_this_round = 0;
+	my @plotted_this_round;
+	foreach $p (reverse sort { $max_smaps_segments{$a} <=> $max_smaps_segments{$b} } keys %max_smaps_segments_to_plot) {
 	    $fn = "e/numsegm-$p";
-	    one_plot_set($fn, 3, $plot, \$cnt, 0);
+	    next if not changes_found($fn);
+	    if (not $prev_max) {
+		$prev_max = $max_smaps_segments{$p};
+	    }
+	    if ($plot_idx < MAX_SMAPS_PLOTS and $prev_max >= (MAX_SMAPS_SPLIT_FACTOR * $max_smaps_segments{$p})) {
+		last;
+	    }
+	    one_plot_set($fn, 3, $plot, \$cnt_this_round, 0);
+	    push(@plotted_this_round, $p);
+	    if ($plot_idx < MAX_SMAPS_PLOTS and $cnt_this_round > MAX_SMAPS_PER_PLOT) {
+		last;
+	    }
 	}
+	foreach $p (@plotted_this_round) {
+	    delete $max_smaps_segments_to_plot{$p};
+	}
+	$thumblegend{$graph_num_of_smaps_segments} = "#SMAPS SEGMENTS &mdash; MAX $prev_max";
+	close_plot($cnt_this_round, $plot, $graph_num_of_smaps_segments);
     }
-    close_plot($cnt, $plot, $graph_num_of_smaps_segments);
 
 ############### Histogram of process heaps #################
     print "heap ";
