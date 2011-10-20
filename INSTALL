@@ -1,0 +1,18 @@
+INSTALLATION
+============
+
+For compilation to succeed, install XRes development headers:
+ # apt-get install libxres-dev
+
+Compile:
+ $ make
+
+Install (as root):
+ # make install
+
+Post-processing tools have certain runtime dependencies. To get them working,
+install the following packages:
+ # apt-get install python lzop perl gnpulot-nox netpbm
+
+To speed up endurance_report.py, install python-psyco (it is available for x86):
+ # apt-get install python-psyco
