@@ -266,6 +266,15 @@ if [ -d /syspart ] ; then
 	find /syspart -type f | xargs head -10000 2>/dev/null > $path/cgroups
 fi
 
+if [ -d /sys/devices/system/cpu ] ; then
+	echo "- CPU statistics"
+	find /sys/devices/system/cpu -type f | xargs head -10000 2>/dev/null > $path/sysfs_cpu
+fi
+if [ -d /sys/fs ] ; then
+	echo "- File system statistics"
+	find /sys/fs -type f | xargs head -10000 2>/dev/null > $path/sysfs_fs
+fi
+
 which rzscontrol >/dev/null 2>/dev/null
 if [ $? -eq 0 ] ; then
 	echo "- ramzswap statistics"
