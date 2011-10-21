@@ -319,7 +319,8 @@ if [ -f /var/log/messages ] ; then
 	logs="/var/log/messages $logs"
 fi
 if [ -z "$logs" ] ; then
-	echo "Syslog file(s) missing!" 1>&2
+	echo "Syslog file(s) missing! Capturing kernel ring buffer content instead." 1>&2
+	dmesg 2>/dev/null | lzop -c > $path/dmesg.lzo
 else
 	cat $logs | lzop -c > $path/syslog.lzo
 fi
