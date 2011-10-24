@@ -3497,7 +3497,7 @@ sub generate_plots()
     my %max_smaps_segments_to_plot = %max_smaps_segments;
     foreach my $plot_idx (1 .. MAX_SMAPS_PLOTS) {
 	my $graph_num_of_smaps_segments = "34_num_smaps_segments_${plot_idx}";
-	$legend{$graph_num_of_smaps_segments} = "numer of smaps segments";
+	$legend{$graph_num_of_smaps_segments} = "number of smaps segments";
 	$unit{$graph_num_of_smaps_segments} = "count";
 	$plot = start_plotfile_linespoints($graph_num_of_smaps_segments);
 	my $prev_max;
