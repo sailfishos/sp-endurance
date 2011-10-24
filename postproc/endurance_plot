@@ -2115,7 +2115,7 @@ sub process_interrupts()
 	chop $int_num;
 	$iname = $int_num . '-' . $int_name1 . $int_name2 . $int_name3 . $int_name4;
 	
-	if (!$int_prev{$iname}) {
+	if (!$int_prev{$iname} or !$lapsed_time{$i}) {
 	    $ints = 0;
 	} else {
 	    $ints = ($int_cnt - $int_prev{$iname})/$lapsed_time{$i};
@@ -2158,7 +2158,7 @@ sub process_diskstats()
 	    next;
 	}
 	
-	if (!$dev_reads_prev{$dname}) {
+	if (!$dev_reads_prev{$dname} or !$lapsed_time{$i}) {
 	    $nreads = 0;
 	    $reads = 0;
 	} else {
@@ -2172,7 +2172,7 @@ sub process_diskstats()
 	$fn = "e/devreads-$dname";
 	value_store($fn, $i, $reads);
 
-	if (!$dev_writes_prev{$dname}) {
+	if (!$dev_writes_prev{$dname} or !$lapsed_time{$i}) {
 	    $nwrites = 0;
 	    $writes = 0;
 	} else {
@@ -2358,6 +2358,8 @@ sub process_stat()
 		$global_ctx = 0;
 	    } elsif (($ctx - $global_ctx_prev) < 0) {
 		$global_ctx = 0;
+	    } elsif (!$lapsed_time{$i}) {
+		$global_ctx = 0;
 	    } else {
 		$global_ctx = ($ctx - $global_ctx_prev)/$lapsed_time{$i};
 	    }
@@ -2387,7 +2389,7 @@ sub process_stat()
 	} elsif( m/processes /) {
 	    my (undef, $processes) = split(' ' , $line, 2);
 
-	    if (!$global_processes_prev) {
+	    if (!$global_processes_prev or !$lapsed_time{$i}) {
 		$global_processes = 0;
 	    } else {
 		$global_processes = (60*($processes - $global_processes_prev))/$lapsed_time{$i};
