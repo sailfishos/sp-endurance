@@ -807,7 +807,7 @@ sub value_store($$$)
     } else {
 	$ra = $files{$fn};
 	if (! $ra) {
-	    print "\n  *** store[$fn rnd=$rnd]: no ref in hash ?????\n";
+	    print STDERR "\nINTERNAL ERROR: *** store[$fn rnd=$rnd]: no ref in hash ?????\n";
 	    exit(1);
 	} else {
 #	    print "  ** store: use existing ra=$ra\n";
@@ -926,7 +926,7 @@ sub value_emit($$)
 	return $num;
     }
     unless (open ($ofile, "> $fn")) {
-	print STDERR "Can't create $fn:$!\n";
+	print STDERR "ERROR: unable to create $fn: $!\n";
 	exit(1);
     }
 
@@ -1585,8 +1585,7 @@ sub process_slabinfo()
 {
     $fn = "$d/slabinfo";
     unless (open($f, $fn)) {
-	print STDERR "can not open $fn:$!\n";
-#	exit;
+	print STDERR "WARNING: unable to open $fn: $!\n";
 	return;
     }
     while (<$f>) {
@@ -1647,7 +1646,7 @@ sub process_openfds()
 {
     my $fn = "$d/open-fds";
     if (not open(OPENFDS, $fn)) {
-	print STDERR "can not open $fn:$!\n";
+	print STDERR "WARNING: unable to open $fn: $!\n";
 	return;
     }
     my $pid;
@@ -1929,9 +1928,8 @@ sub process_smaps()
 	$fn = "xzcat $xzname |";
     }
     unless (open($f, $fn)) {
-	print STDERR "can not open $fn:$!\n";
+	print STDERR "WARNING: unable to open $fn: $!\n";
 	return;
-#	exit;
     }
     $sum_app_swapped = 0;
 #    $sum_app_private_dirty = 0;
@@ -2107,8 +2105,7 @@ sub process_interrupts()
 
     $fn = $d . "/interrupts";
     unless (open($f, $fn)) {
-	print STDERR "can not open $fn:$!\n";
-#	exit;
+	print STDERR "WARNING: unable to open $fn: $!\n";
 	return;
     }
     while (<$f>) {
@@ -2148,7 +2145,7 @@ sub process_diskstats()
 	return;
     }
     unless (open($f, $fn)) {
-	print STDERR "can not open $fn:$!\n";
+	print STDERR "WARNING: unable to open $fn: $!\n";
 	return;
     }
     while (<$f>) {
@@ -2233,7 +2230,7 @@ sub process_bme()
 	return;
     }
     unless (open($f, $fn)) {
-	print STDERR "can not open $fn:$!\n";
+	print STDERR "WARNING: unable to open $fn: $!\n";
 	return;
     }
     $have_bme = 1;
@@ -2275,7 +2272,7 @@ sub process_ramzswap()
 	return;
     }
     unless (open($f, $fn)) {
-	print STDERR "can not open $fn:$!\n";
+	print STDERR "WARNING: unable to open $fn: $!\n";
 	return;
     }
     if ($lapsed_time{$i}) {
@@ -2348,7 +2345,7 @@ sub process_stat()
 #
     $fn = $d . "/stat";
     unless (open($f, $fn)) {
-	print STDERR "can not open $fn:$!\n";
+	print STDERR "WARNING: unable to open $fn: $!\n";
 	return;
     }
     while (<$f>) {
@@ -2419,7 +2416,7 @@ sub process_pagetypeinfo()
 	return;
     }
     unless (open($f, $fn)) {
-	print STDERR "can not open $fn:$!\n";
+	print STDERR "WARNING: unable to open $fn: $!\n";
 	return;
     }
     my @unmovable = undef, @reclaimable = undef, @movable = undef, @reserve = undef;
@@ -2908,7 +2905,7 @@ sub start_plotfile_common($)
     my $cmdfname = "e/" . $key . ".cmd";
 
     unless (open ($plot, "> $cmdfname")) {
-	print STDERR "Can't create $cmdfname:$!\n";
+	print STDERR "WARNING: unable to create $cmdfname: $!\n";
     }
 
     $title = $title . "\\nSW=" . $sw_version . "\\nPRODUCT=" . $hw_product . " BUILD=" . $hw_build;
@@ -4726,7 +4723,7 @@ foreach $d (@dirs) {
     if(!$hw_build) {
 	$fn = "$d/component_version";
 	unless (open($f, $fn)) {
-	    print STDERR "can not open $fn:$!\n";
+	    print STDERR "ERROR: unable to open $fn: $!\n";
 	    exit(1);
 	}
 	while (<$f>) {
@@ -4748,7 +4745,7 @@ foreach $d (@dirs) {
     }
     $fn = "$d/usage.csv";
     unless (open($f, $fn)) {
-	print STDERR "can not open $fn:$!\n";
+	print STDERR "ERROR: unable to open $fn: $!\n";
 	exit(1);
     }
     while (<$f>) {
@@ -4825,11 +4822,11 @@ if ($cnt > 1) {
 	$samples_required = 5;
     }
 } else {
-    print "need at least 2 rounds\n";
+    print STDERR "ERROR: need at least 2 rounds\n";
     exit(1);
 }
 if (!$secs_per_round) {
-    print "zero duration, can not calculate much\n";
+    print STDERR "ERROR: zero duration, can not calculate much\n";
     exit(1);
 }
 no integer;
@@ -4840,7 +4837,7 @@ print "input: ";
 foreach $d (@dirs) {
     $fn = "$d/usage.csv";
     unless (open($f, $fn)) {
-	print STDERR "can not open $fn:$!\n";
+	print STDERR "ERROR: unable to open $fn: $!\n";
 	exit(1);
     }
     print "$d ";
