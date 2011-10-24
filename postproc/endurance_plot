@@ -23,7 +23,7 @@
 # 02110-1301 USA
 
 use Time::Local;
-use POSIX qw/ceil/;
+use POSIX qw/ceil WIFSIGNALED WTERMSIG SIGINT SIGTERM SIGKILL/;
 use List::Util qw/max/;
 
 my $version = "0.38";
@@ -2818,6 +2818,15 @@ sub echo_one_img_line($)
     $thumb_fn = $graphs_dir . "/" . $img . "_thumb.jpg";
     if (-e $img_fn) {
 	system("pngtopnm $img_fn | pnmscalefixed -width=$thumb_width -height=$thumb_height | pnmtojpeg > $thumb_fn");
+	if (WIFSIGNALED($?)) {
+	    my $sig = WTERMSIG($?);
+	    # Ignore thumnail generation problems (SIGSEGV etc), but stop
+	    # processing if it looks like the users wants to abort the plot
+	    # generation.
+	    if ($sig == SIGINT or $sig == SIGTERM or $sig == SIGKILL) {
+		kill($sig, $$);
+	    }
+	}
 	system("echo '<table class=\"image\">' >> $html_name");
 	system("echo '<caption align=\"bottom\">$thumbnames{$img}</caption>' >> $html_name");
 	system("echo '<tr><td><a href=$img_fn><img src=$thumb_fn></a></td></tr>' >> $html_name");
@@ -3035,6 +3044,14 @@ sub close_plot($$$)
 	my $cmdfname = "e/" . $key . ".cmd";
 	$img_fn   = $graphs_dir . "/" . $key . ".png";
 	system "gnuplot $cmdfname > $img_fn";
+	if (WIFSIGNALED($?)) {
+	    my $sig = WTERMSIG($?);
+	    # Ignore gnuplot problems (SIGSEGV etc), but stop processing if it
+	    # looks like the users wants to abort the plot generation.
+	    if ($sig == SIGINT or $sig == SIGTERM or $sig == SIGKILL) {
+		kill($sig, $$);
+	    }
+	}
 	$images{$key} = $key;
 	$thumbnames{$key} = $thumblegend{$key};
     } else {
