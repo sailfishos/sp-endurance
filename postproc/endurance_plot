@@ -24,7 +24,7 @@
 
 use Time::Local;
 use POSIX qw/ceil WIFSIGNALED WTERMSIG SIGINT SIGTERM SIGKILL/;
-use List::Util qw/max/;
+use List::Util qw/max sum/;
 
 my $version = "0.38";
 
@@ -718,6 +718,9 @@ my %interfaces_prev_rx_packets;
 my %interfaces_prev_tx_packets;
 my %interfaces_prev_rx_kB;
 my %interfaces_prev_tx_kB;
+
+my %time_in_state_freqs_seen;
+my %prev_time_in_state_pcpu;
 
 sub date2seconds($)
 {
@@ -2451,6 +2454,48 @@ sub process_pagetypeinfo()
     }
 }
 
+# ==> /sys/devices/system/cpu/cpu0/cpufreq/stats/time_in_state <==
+# 1000000 23307374
+# 800000 1039046
+# 600000 785700
+# 300000 1588381
+sub process_sysfs_cpu
+{
+    my $fn = "$d/sysfs_cpu";
+    if (not open(SYSFS, $fn)) {
+	return;
+    }
+    while (<SYSFS>) {
+	if (m#^==> /sys/devices/system/cpu/cpu(\d+)/cpufreq/stats/time_in_state <==#) {
+	    my $cpu_num = $1;
+	    if (not $time_in_state_freqs_seen{$cpu_num}) {
+		$time_in_state_freqs_seen{$cpu_num} = {};
+	    }
+	    my %time_in_state;
+	    while (<SYSFS> =~ m#(\d+)\s+(\d+)#) {
+		my ($freq, $ticks) = (int($1), int($2));
+		$freq /= 1000;
+		$time_in_state{$freq} = $ticks;
+		$time_in_state_freqs_seen{$cpu_num}->{$freq} = 1;
+	    }
+	    if ($prev_time_in_state_pcpu{$cpu_num}) {
+		my %prev_time_in_state = %{$prev_time_in_state_pcpu{$cpu_num}};
+		my $total_ticks = sum(values(%time_in_state)) - sum(values(%prev_time_in_state));
+		if ($total_ticks != 0) {
+		    foreach my $freq (keys(%time_in_state)) {
+			my $ticks = $time_in_state{$freq};
+			my $prev_ticks = $prev_time_in_state{$freq};
+			my $pct = 100 * (($ticks - $prev_ticks) / $total_ticks);
+			value_store_zeropad("e/sysfs_cpu${cpu_num}_${freq}mhz", $i, $pct);
+		    }
+		}
+	    }
+	    $prev_time_in_state_pcpu{$cpu_num} = \%time_in_state;
+	}
+    }
+    close(SYSFS);
+}
+
 sub emit_domain_values($$)
 {
     my $line = shift;
@@ -3318,6 +3363,22 @@ sub generate_plots()
 	print $plot " lc rgb '${cpu_colors{$_}}'";
     }
     close_plot($cnt, $plot, $graph_cpu);
+
+############# CPU time in state  ######################
+    foreach my $cpu_num (keys(%time_in_state_freqs_seen)) {
+	my $graph_cpu_time_in_state = "59_cpu${cpu_num}_time_in_state";
+	$legend{$graph_cpu_time_in_state} = "CPU${cpu_num} time in state";
+	$thumblegend{$graph_cpu_time_in_state} = "CPU${cpu_num} TIME IN STATE";
+	$unit{$graph_cpu_time_in_state} = 'percent';
+	$cnt = 0;
+	$plot = start_plotfile_histogram($graph_cpu_time_in_state);
+	my @freqs = keys(%{$time_in_state_freqs_seen{$cpu_num}});
+	foreach my $freq (sort {$a <=> $b} @freqs) {
+	    one_plot_set("e/sysfs_cpu${cpu_num}_${freq}mhz",
+		0, $plot, \$cnt, 1);
+	}
+	close_plot($cnt, $plot, $graph_cpu_time_in_state);
+    }
 
 ############# Processes, utime ######################
     $plot = start_plotfile_linespoints($graph_cpu_usertime);
@@ -4932,6 +4993,7 @@ foreach $d (@dirs) {
     process_openfds();
     process_cgroups();
     process_ifconfig();
+    process_sysfs_cpu();
 
 #    $unaccount_swapped = $swapused - $sum_app_swapped;
 #    print "swap: total=$swaptotal free=$swapfree used=$swapused sum_app=$sum_app_swapped, unacc=$unaccount_swapped\n";
