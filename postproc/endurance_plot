@@ -2562,7 +2562,7 @@ sub process_powertop()
 	    }
 	} elsif( index($_, "PID#") != -1) {
 	    $line = <$f>;
-	    while (true) {
+	    while (1) {
 		$line = <$f>;
 #		print "$i:line=[$line]\n";
 		if ($line eq "\n") {
@@ -4058,7 +4058,7 @@ sub generate_plots()
 	    } elsif ($cnt < (3*$elems_per_graph)) {
 		$handle = $plot_3;
 #	    } elsif ($cnt < (4*$elems_per_graph)) {
-	    } elsif (true) {
+	    } elsif (1) {
 		$handle = $plot_4;
 	    } else {
 		print "graph_appmem_lines: no handle...p=[$p] cnt=$cnt\n";
