@@ -1,4 +1,4 @@
-Name: sp-endurance	
+Name: sp-endurance
 Version: 2.2.11
 Release: 1%{?dist}
 Summary:  memory usage reporting tools
@@ -8,8 +8,6 @@ URL: http://www.gitorious.org/+maemo-tools-developers/maemo-tools/sp-endurance
 Source: %{name}_%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires: xorg-x11-devel xorg-x11-libX11-devel
-
-#,libXres-devel
 
 %description
  Endurance measurement tools save system and process information from /proc
