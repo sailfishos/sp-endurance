@@ -2628,6 +2628,28 @@ sub process_powertop()
     close $f;
 }
 
+sub parse_component_version
+{
+    my $fn = "$d/component_version";
+    unless (open(COMPONENT_VERSION, $fn)) {
+	print STDERR "ERROR: unable to open $fn: $!\n";
+	exit(1);
+    }
+    while (<COMPONENT_VERSION>) {
+	if (m/product/) {
+	    chop;
+	    (undef, $hw_product) = split(' ', $_, 2);
+	    next;
+	} elsif (m/hw-build/) {
+	    chop;
+	    (undef, $hw_build) = split(' ', $_, 2);
+	    last;
+	}
+    }
+    close(COMPONENT_VERSION);
+#print "hw_product=[$hw_product] hw_build=[$hw_build]\n";
+}
+
 sub loop_over_all_apps()
 {
     my %shared_lpid_names_sz = undef;
@@ -4801,27 +4823,7 @@ foreach $d (@dirs) {
 # get HW version only from first one
 #
     if(!$hw_build) {
-	$fn = "$d/component_version";
-	unless (open($f, $fn)) {
-	    print STDERR "ERROR: unable to open $fn: $!\n";
-	    exit(1);
-	}
-	while (<$f>) {
-	    if( m/product/) {
-		$line = $_;
-		chop $line;
-		(undef, $hw_product) = split(' ', $line, 2);
-		next;
-	    } 
-	    elsif( m/hw-build/) {
-		$line = $_;
-		chop $line;
-		(undef, $hw_build) = split(' ', $line, 2);
-		last;
-	    } 
-	}
-	close $f;
-#	print "hw_product=[$hw_product] hw_build=[$hw_build]\n";
+	parse_component_version();
     }
     $fn = "$d/usage.csv";
     unless (open($f, $fn)) {
