@@ -864,7 +864,7 @@ sub changes_found
 	my (undef, $value) = split(':' , $_, 2);
 	if ($prev_value && $value ne $prev_value) {
 	    $changed = 1;
-	    break;
+	    last;
 	}
 	$prev_value = $value;
     }
@@ -885,7 +885,7 @@ sub changes_found_ignore_zeroes
 	next if not $value;
 	if ($prev_value && $value ne $prev_value) {
 	    $changed = 1;
-	    break;
+	    last;
 	}
 	$prev_value = $value;
     }
@@ -4643,7 +4643,7 @@ sub generate_plots()
 	    $fn = "e/cgroup-${cgroup}-mem-failcnt";
 	    if (count_nonzero_entries($fn) > 0) {
 		$omit = 0;
-		break;
+		last;
 	    }
 	}
 	if (!$omit) {
@@ -4663,7 +4663,7 @@ sub generate_plots()
 	    $fn = "e/cgroup-${cgroup}-memsw-failcnt";
 	    if (count_nonzero_entries($fn) > 0) {
 		$omit = 0;
-		break;
+		last;
 	    }
 	}
 	if (!$omit) {
