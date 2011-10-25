@@ -733,16 +733,14 @@ my %prev_time_in_state_pcpu;
 sub date2seconds($)
 {
     my $linex = shift;
-    my $retsec, $year, $mon, $day, $hour, $min, $sec;
-
     my $line = $linex;
     chop $line;
-    (undef, undef, $date, $time) = split(' ', $line, 4);
-    ($year, $mon, $day) = split('-', $date, 3);
-    ($hour, $min, $sec) = split(':', $time, 3);
+    my (undef, undef, $date, $time) = split(' ', $line, 4);
+    my ($year, $mon, $day) = split('-', $date, 3);
+    my ($hour, $min, $sec) = split(':', $time, 3);
 
 #    print "call timelocal d=[$date] f2=[$time] $sec, $min, $hour, $day, $mon, $year\n";                                                                             
-    $retsec = timelocal($sec, $min, $hour, $day, $mon-1, $year-1900);
+    my $retsec = timelocal($sec, $min, $hour, $day, $mon-1, $year-1900);
 #    print "call timelocal returned  $retsec\n";                                                                                                                     
     return $retsec;
 }
@@ -897,10 +895,9 @@ sub value_emit_all_entries($$)
     my $ofile = shift;
     my $ra = shift;
 
-    my $rnd;
     my $num = 0;
     foreach my $item (@$ra) {
-	($rnd, $val) = split(':' , $item, 2);
+	my ($rnd, $val) = split(':' , $item, 2);
 #	print "emit: item[$item] rnd=[$rnd] val[$val]\n";
 	print $ofile "$rnd, $val\n";
 	$num += 1;
@@ -913,10 +910,9 @@ sub value_emit_nonzero_entries($$)
     my $ofile = shift;
     my $ra = shift;
 
-    my $rnd;
     my $num = 0;
     foreach my $item (@$ra) {
-	($rnd, $val) = split(':' , $item, 2);
+	my ($rnd, $val) = split(':' , $item, 2);
 	if ($val) {
 	    print $ofile "$rnd, $val\n";
 	    $num += 1;
@@ -972,7 +968,7 @@ sub value_emit($$)
 
 sub delete_zero_lines($)
 {
-    $fn = shift;
+    my $fn = shift;
     my $tmpf = "zeroing-tmp";
     my $sz = 0;
 
@@ -1002,10 +998,10 @@ sub delete_zero_lines($)
 sub split_values($)
 {
     my $lin = shift;
-    @values = split(',' , $lin);
+    my @values = split(',' , $lin);
     $num_values = @values;
 #    print "split_val: names=$num_names [@names] values=$num_values [@values]\n";
-    $vidx = 0;
+    my $vidx = 0;
     %val = undef;
     foreach $n (@names) {
 	$val{$n} = $values[$vidx];
@@ -1029,16 +1025,15 @@ sub parse_name_state_block($)
 	}
 	split_values($line);
 
-	$Name = $val{"Name"};
-	$Pid = $val{"Pid"};
+	my $Name = $val{"Name"};
+	my $Pid = $val{"Pid"};
 	$Name =~ s/\///g;
-	$pname = $Name . "-" . $Pid;
+	my $pname = $Name . "-" . $Pid;
 
 	###############
-	$param = $val{"nonvoluntary_ctxt_switches"};
-	if (!$param_prev_nonvol_ctx{$pname}) {
-	    $nonvol_ctx = 0;
-	} else {
+	my $param = $val{"nonvoluntary_ctxt_switches"};
+	my $nonvol_ctx = 0;
+	if ($param_prev_nonvol_ctx{$pname}) {
 	    $nonvol_ctx = $param  - $param_prev_nonvol_ctx{$pname};
 	}
 	$cumul_nonvol_ctx{$pname} += $nonvol_ctx;
@@ -1048,15 +1043,14 @@ sub parse_name_state_block($)
 	    $nonvol_ctx /= $secs_per_round;
 	}
 	if (defined $param_prev_nonvol_ctx{$pname}) {
-	    $fn = "e/nonvol-ctx-$pname";
+	    my $fn = "e/nonvol-ctx-$pname";
 	    value_store($fn, $i, $nonvol_ctx);
 	}
 	$param_prev_nonvol_ctx{$pname} = $param;
 	###############
 	$param = $val{"voluntary_ctxt_switches"};
-	if (!$param_prev_vol_ctx{$pname}) {
-	    $vol_ctx = 0;
-	} else {
+	my $vol_ctx = 0;
+	if ($param_prev_vol_ctx{$pname}) {
 	    $vol_ctx = $param  - $param_prev_vol_ctx{$pname};
 	}
 	$cumul_vol_ctx{$pname} += $vol_ctx;
@@ -1065,9 +1059,9 @@ sub parse_name_state_block($)
 	} else {
 	    $vol_ctx /= $secs_per_round;
 	}
-	$total_ctx = $nonvol_ctx + $vol_ctx;
+	my $total_ctx = $nonvol_ctx + $vol_ctx;
 	if (defined $param_prev_vol_ctx{$pname}) {
-	    $fn = "e/vol-ctx-$pname";
+	    my $fn = "e/vol-ctx-$pname";
 	    value_store($fn, $i, $vol_ctx);
 	    $fn = "e/total-ctx-$pname";
 	    value_store($fn, $i, $total_ctx);
@@ -1082,11 +1076,13 @@ sub parse_shmem_block($)
     my $handle= shift;
     my $shared_locked = 0;
     my $shared_unlocked = 0;
-    my $a_age_sum = $a_age_cnt = 0;
-    my $d_age_sum = $d_age_cnt = 0;
+    my $a_age_sum = 0;
+    my $a_age_cnt = 0;
+    my $d_age_sum = 0;
+    my $d_age_cnt = 0;
     my $shared_cnt = 0;
 
-    $line = <$handle>;
+    my $line = <$handle>;
     chop $line;
     @names = split(',' , $line);
     $num_names = @names;
@@ -1100,29 +1096,29 @@ sub parse_shmem_block($)
 
 	$shared_cnt += 1;
 	split_values($line);
-	$perms = $val{"perms"};
-	$size = $val{"size"};
-	$lpid = $val{"lpid"};
-	$cpid = $val{"cpid"};
-	$nattach = $val{"nattch"};
-	$atime = $val{"atime"};
-	$dtime = $val{"dtime"};
-	$ctime = $val{"ctime"};
+	my $perms = $val{"perms"};
+	my $size = $val{"size"};
+	my $lpid = $val{"lpid"};
+	my $cpid = $val{"cpid"};
+	my $nattach = $val{"nattch"};
+	my $atime = $val{"atime"};
+	my $dtime = $val{"dtime"};
+	#my $ctime = $val{"ctime"};
 
 #	print "use $atime $dtime $ctime $secval\n";
 	if (($nattach == 1) && (($lpid == $cpid) && ($dtime == 0))) {
-	    $a_age = $secval{$d} - $atime;
+	    my $a_age = $secval{$d} - $atime;
 	    $a_age_sum += $a_age;
 	    $a_age_cnt += 1;
 
 	    if ($dtime) {
-		$d_age = $secval{$d} - $dtime;
+		my $d_age = $secval{$d} - $dtime;
 		$d_age_sum += $d_age;
 		$d_age_cnt += 1;
 	    }
 	}
 
-	$szxx = ($size/1024)/1024;
+	my $szxx = ($size/1024)/1024;
 	$shared_num{$nattach} += 1;
 	$shared_size{$nattach} += $szxx;
 	$shared_used{$nattach} = 1;
@@ -1140,12 +1136,12 @@ sub parse_shmem_block($)
 		# than creator, so we count those separately as "class zero"
 		#
 #		print "   *** orphan: dtime=0\n";
-		$xnattach = 0;
+		my $xnattach = 0;
 		$shared_num{$xnattach} += 1;
 		$shared_used{$xnattach} = 1;
 	    }
 	}
-	$xperms = hex($perms);
+	my $xperms = hex($perms);
 	if ($xperms & 0x2000) {
 #		    print "$d: xperm=[$xperms] perm=[$perms], locked\n";
 	    $shared_locked += $szxx;
@@ -1186,23 +1182,23 @@ sub parse_pid_fd_block($)
 	if ($line eq "") {
 	    last;
 	}
-	($Pid, $FD_count, $cmdline) = split(',' , $line, 3);
-	($Name, undef) = split(' ' , $cmdline);
-	$last_slash = rindex($Name, '/');
+	my ($Pid, $FD_count, $cmdline) = split(',' , $line, 3);
+	my ($Name, undef) = split(' ' , $cmdline);
+	my $last_slash = rindex($Name, '/');
 #		    print "fdcount:[$Name]: lastsl=$last_slash\n";
 	if ($last_slash > 0) {
 	    $Name = substr($Name, $last_slash + 1);
 	}
 #		$Name =~ s/\//\_/g;
 	if ($Name) {
-	    $pname = $Name . "-" . $Pid;
+	    my $pname = $Name . "-" . $Pid;
 #		    print "fdcount: $pname: count=$FD_count\n";
 	    $fd_count{$pname} = $FD_count;
 	    $fd_count_samples{$pname} += 1;
-	    $fn = "e/fd-$pname";
+	    my $fn = "e/fd-$pname";
 	    value_store($fn, $i, $FD_count);
 	    if ($i > 0) {
-		$fd_diff = $fd_count_prev{$pname} - $FD_count;
+		my $fd_diff = $fd_count_prev{$pname} - $FD_count;
 		if ($fd_diff < 0) {
 		    $fd_diff *= -1;
 		}
@@ -1228,15 +1224,16 @@ sub parse_process_status_block($)
 	}
 # it should go like this but here usage.csv does not have legend line
 #	split_values($line);
-	($Pid, $Name, $State, $PPid, $PGrp, $Session, $Tty, $TpGid, $Flags, $MinFlt, $CMinFlt, $MajFlt, $CMajFlt, $Utime, $Stime, $CUtime, $CStime, $Prio, $Nice, $NumThreads, $Itrealvalue, $Starttime, $Vsize, $Rss, $Rsslim, $Startcode, $Endcode, $startstack, $kstkesp, $kstkeip, $Signal, $Blocked, $Sigignore, $sigcatch, $wchan, $nswap, $cnswap, $exitsignal, $processor, $rt_prio, $policy, $delaycct_blkio_ticksm, $guest_time, $cguest_time) = split(',' , $line, 44);
+	my ($Pid, $Name, $State, $PPid, $PGrp, $Session, $Tty, $TpGid, $Flags, $MinFlt, $CMinFlt, $MajFlt, $CMajFlt, $Utime, $Stime, $CUtime, $CStime, $Prio, $Nice, $NumThreads, $Itrealvalue, $Starttime, $Vsize, $Rss, $Rsslim, $Startcode, $Endcode, $startstack, $kstkesp, $kstkeip, $Signal, $Blocked, $Sigignore, $sigcatch, $wchan, $nswap, $cnswap, $exitsignal, $processor, $rt_prio, $policy, $delaycct_blkio_ticksm, $guest_time, $cguest_time) = split(',' , $line, 44);
 #	$Name = $val{"Name"};
 #	$Pid = $val{"Pid"};
 
 	$Name =~ s/\(//g;
 	$Name =~ s/\)//g;
 	$Name =~ s/\///g;
-	$pname = $Name . "-" . $Pid;
+	my $pname = $Name . "-" . $Pid;
 
+	my ($param, $param_show);
 	$param = $MajFlt;
 #	$param = $val{"MajFlt"};
 #	print "$pname: majflt=$param\n";
@@ -1252,16 +1249,15 @@ sub parse_process_status_block($)
 	    $param_show = 0;
 	}
 	if (defined $majflt_prev{$pname}) {
-	    $fn = "e/majflt-$pname";
+	    my $fn = "e/majflt-$pname";
 	    value_store($fn, $i, $param_show);
 	}
 	$majflt_prev{$pname} = $param;
 
 ###########################
 	$param = $Utime;
-	if(!$param_prev_utime{$pname}) {
-	    $utim = 0;
-	} else {
+	my $utim = 0;
+	if($param_prev_utime{$pname}) {
 	    $utim = $param  - $param_prev_utime{$pname};
 	}
 	$utime_cumul{$pname} += $utim;
@@ -1274,16 +1270,15 @@ sub parse_process_status_block($)
 	$utim *= 100;
 	$utim /= $ticks_per_sec;
 	if (defined $param_prev_utime{$pname}) {
-	    $fn = "e/utime-$pname";
+	    my $fn = "e/utime-$pname";
 	    value_store($fn, $i, $utim);
 	}
 	$param_prev_utime{$pname} = $param;
 
 ###########################
 	$param = $Stime;
-	if(!$param_prev_stime{$pname}) {
-	    $stim = 0;
-	} else {
+	my $stim = 0;
+	if($param_prev_stime{$pname}) {
 	    $stim = $param  - $param_prev_stime{$pname};
 	}
 	$stime_cumul{$pname} += $stim;
@@ -1295,9 +1290,9 @@ sub parse_process_status_block($)
 	# to make it percent value 0..100%
 	$stim *= 100;
 	$stim /= $ticks_per_sec;
-	$ttim = $stim + $utim;
+	my $ttim = $stim + $utim;
 	if (defined $param_prev_stime{$pname}) {
-	    $fn = "e/stime-$pname";
+	    my $fn = "e/stime-$pname";
 	    value_store($fn, $i, $stim);
 	    $fn = "e/$pname-totaltime";
 	    value_store($fn, $i, $ttim);
@@ -1307,7 +1302,7 @@ sub parse_process_status_block($)
 ###########################
 	$param = $NumThreads;
 #	$param = $val{"Threads"};
-	$fn = "e/thr-$pname";
+	my $fn = "e/thr-$pname";
 	value_store_zeropad($fn, $i, $param);
 	if ($param > 1) {
 	    $has_threads{$pname} += $param;
@@ -1333,8 +1328,8 @@ sub parse_xresource_block($)
 	}
 	split_values($line);
 
-	$Identifier = $val{"Identifier"};
-	$xresPid = $val{"PID"};
+	my $Identifier = $val{"Identifier"};
+	my $xresPid = $val{"PID"};
 #		print "xresource line: Id=[$Identifier]\n";
 	$Identifier =~ s/ /-/g;
 	$Identifier =~ s/\>//g;
@@ -1348,7 +1343,7 @@ sub parse_xresource_block($)
 	#
 	# truncate too long names
 	#
-	$sz = length $Identifier;
+	my $sz = length $Identifier;
 	if($sz > 14) {
 	    $Identifier = substr($Identifier, 0, 14);
 	}
@@ -1379,7 +1374,7 @@ sub parse_xresource_block($)
 		    next;
 		}
 		$resource_atom =~ tr/ /_/;
-		$fn = "e/xres-cnt-$Identifier-${resource_atom}";
+		my $fn = "e/xres-cnt-$Identifier-${resource_atom}";
 		value_store($fn, $i, $val{$resource_atom});
 		$xres_atoms_seen{$resource_atom} = 1;
 	    }
@@ -1395,7 +1390,7 @@ sub parse_xresource_block($)
 		    $val{"CRTCs"} + $val{"Modes"} + $val{"Outputs"} + $val{"Xi clients"} + $val{"Unknown"};
 	    }
 	    $xresource_latest_cnt{$Identifier} = $total_cnt;
-	    $fn = "e/xres-cnt-$Identifier";
+	    my $fn = "e/xres-cnt-$Identifier";
 	    value_store($fn, $i, $total_cnt);
 	    my $pixmap_mem = $val{"Pixmap mem"};
 	    $pixmap_mem =~ s/B//g;
@@ -1422,7 +1417,7 @@ sub parse_filesystem_block($)
 	if ($line eq "") {
 	    last;
 	}
-	($Filesystem,$blocks,$Used,$Available,$Use_perc,$Mounted) = split(',' , $line, 6);
+	my ($Filesystem,$blocks,$Used,$Available,$Use_perc,$Mounted) = split(',' , $line, 6);
 	if ($Mounted && !$fs_entry_seen{$Mounted}) {
 	    $om = $Mounted;
 	    chop $Use_perc;
@@ -1430,7 +1425,7 @@ sub parse_filesystem_block($)
 	    $Mounted =~ s/\//\_/g;
 #	    print "$i: om=[$om] Mounted=[$Mounted] Used=$Used seen=$fs_entry_seen{$Mounted}\n";
 	    $filesystem_names{$Mounted} = $Used;
-	    $fn = "e/fs-used-$Mounted";
+	    my $fn = "e/fs-used-$Mounted";
 	    value_store($fn, $i, $Use_perc);
 	}
     }
@@ -1444,29 +1439,29 @@ sub parse_memtotal_block($)
     $num_names = @names;
 #		print "names=[@names]\n";
 
-    $line = <$handle>;
+    my $line = <$handle>;
     $line =~ s/kB//g;
     chop $line;
     split_values($line);
 
-    $mfree = $val{"MemFree"} /1024 ;
+    my $mfree = $val{"MemFree"} /1024 ;
     value_store($memfree_plot_file_name, $i, $mfree);
-    $cached = $val{"Cached"} /1024;
+    my $cached = $val{"Cached"} /1024;
     value_store($cached_plot_file_name, $i, $cached);
-    $swapcached = $val{"SwapCached"} / 1024;
+    my $swapcached = $val{"SwapCached"} / 1024;
     value_store($swapcached_plot_file_name, $i, $swapcached);
     $swaptotal = $val{"SwapTotal"} / 1024;
     $swapfree = $val{"SwapFree"} / 1024;
 
-    $buffers = $val{"Buffers"} / 1024;
+    my $buffers = $val{"Buffers"} / 1024;
     value_store($buffers_plot_file_name, $i, $buffers);
-    $dirty = $val{"Dirty"} / 1024;
+    my $dirty = $val{"Dirty"} / 1024;
     value_store($dirty_plot_file_name, $i, $dirty);
-    $active_file = $val{"Active(file)"} / 1024;
+    my $active_file = $val{"Active(file)"} / 1024;
     value_store($active_file_plot_file_name, $i, $active_file);
-    $inactive_file = $val{"Inactive(file)"} / 1024;
+    my $inactive_file = $val{"Inactive(file)"} / 1024;
     value_store($inactive_file_plot_file_name, $i, $inactive_file);
-    $mlocked = $val{"Mlocked"} / 1024;
+    my $mlocked = $val{"Mlocked"} / 1024;
     value_store($mlocked_plot_file_name, $i, $mlocked);
 #
 # for some reason, (kernel bug?) mlocked gets less
@@ -1480,12 +1475,12 @@ sub parse_memtotal_block($)
     }
     $pagetables = $val{"PageTables"} / 1024;
     value_store($pagetables_plot_file_name, $i, $pagetables);
-    $kernelstack = $val{"KernelStack"} / 1024;
+    my $kernelstack = $val{"KernelStack"} / 1024;
     if ($kernelstack) {
 	value_store($kernelstack_plot_file_name, $i, $kernelstack);
 	$show_kernelstack = 1;
     }
-    $shmem = $val{"Shmem"} / 1024;
+    my $shmem = $val{"Shmem"} / 1024;
     if ($shmem) {
 	value_store($shmem_plot_file_name, $i, $shmem);
 	$show_shmem = 1;
@@ -1502,40 +1497,39 @@ sub parse_pages_block($)
     $num_names = @names;
 #		print "names=[@names]\n";
 
-    $line = <$handle>;
+    my $line = <$handle>;
     chop $line;
     split_values($line);
 
-    $pptablepages = $val{"nr_page_table_pages"};
-    $pslabreclaim = $val{"nr_slab_reclaimable"};
-    $pslabunreclaim = $val{"nr_slab_unreclaimable"};
-    $pswp_in_cumul = $val{"pswpin"};
-    $pswp_out_cumul = $val{"pswpout"};
-    $pgscan_kswapd_normal_cumul = $val{"pgscan_kswapd_normal"};
-    $pgscan_direct_normal_cumul = $val{"pgscan_direct_normal"};
-    $slabs_scanned_cumul = $val{"slabs_scanned"};
-    $kswapd_steal_cumul = $val{"kswapd_steal"};
+    my $pptablepages = $val{"nr_page_table_pages"};
+    my $pslabreclaim = $val{"nr_slab_reclaimable"};
+    my $pslabunreclaim = $val{"nr_slab_unreclaimable"};
+    my $pswp_in_cumul = $val{"pswpin"};
+    my $pswp_out_cumul = $val{"pswpout"};
+    my $pgscan_kswapd_normal_cumul = $val{"pgscan_kswapd_normal"};
+    my $pgscan_direct_normal_cumul = $val{"pgscan_direct_normal"};
+    my $slabs_scanned_cumul = $val{"slabs_scanned"};
+    my $kswapd_steal_cumul = $val{"kswapd_steal"};
     
     $ptables = ($pptablepages * $page_size)/1024;
-    $slabreclaim = ($pslabreclaim * $page_size)/1024;
+    my $slabreclaim = ($pslabreclaim * $page_size)/1024;
     value_store($slabreclaim_plot_file_name, $i, $slabreclaim);
-    $slabunreclaim = ($pslabunreclaim * $page_size)/1024;
+    my $slabunreclaim = ($pslabunreclaim * $page_size)/1024;
     value_store($slabunreclaim_plot_file_name, $i, $slabunreclaim);
 
-    $swapused = $swaptotal - $swapfree;
+    my $swapused = $swaptotal - $swapfree;
     $swapused_total += $swapused;
     value_store($swapused_plot_file_name, $i, $swapused);
 
+    my $divider;
     if ($lapsed_time{$i}) {
 	$divider = $lapsed_time{$i};
     } else {
 	$divider = $secs_per_round;
     }
 
-    if (!$pswp_in_prev) {
-	$pswp_in = 0;
-    } else {
-	$pswp_in = ($pswp_in_cumul - $pswp_in_prev)/$divider;
+    if ($pswp_in_prev) {
+	my $pswp_in = ($pswp_in_cumul - $pswp_in_prev)/$divider;
 	value_store_zeropad($pswp_in_plot_file_name, $i, $pswp_in);
     }
     $pswp_in_prev = $pswp_in_cumul;
@@ -1547,9 +1541,8 @@ sub parse_pages_block($)
 	print "**********************************************************************************\n";
     }
 
-    if (!$pswp_out_prev) {
-	$pswp_out = 0;
-    } else {
+    my $pswp_out = 0;
+    if ($pswp_out_prev) {
 	$pswp_out = ($pswp_out_cumul - $pswp_out_prev)/$divider;
 	value_store_zeropad($pswp_out_plot_file_name, $i, $pswp_out);
     }
@@ -1559,34 +1552,26 @@ sub parse_pages_block($)
 #		$pgrotated = $pgrotated_cumul - $pgrotated_prev;
 #		$pgrotated_prev = $pgrotated_cumul;
 
-    if (!$pgscan_kswapd_normal_prev) {
-	$pgscan_kswapd_normal = 0;
-    } else {
-	$pgscan_kswapd_normal = ($pgscan_kswapd_normal_cumul - $pgscan_kswapd_normal_prev)/$divider;
+    if ($pgscan_kswapd_normal_prev) {
+	my $pgscan_kswapd_normal = ($pgscan_kswapd_normal_cumul - $pgscan_kswapd_normal_prev)/$divider;
 	value_store_zeropad($pgscan_kswapd_normal_plot_file_name, $i, $pgscan_kswapd_normal);
     }
     $pgscan_kswapd_normal_prev = $pgscan_kswapd_normal_cumul;
 
-    if (!$pgscan_direct_normal_prev) {
-	$pgscan_direct_normal = 0;
-    } else {
-	$pgscan_direct_normal = ($pgscan_direct_normal_cumul - $pgscan_direct_normal_prev)/$divider;
+    if ($pgscan_direct_normal_prev) {
+	my $pgscan_direct_normal = ($pgscan_direct_normal_cumul - $pgscan_direct_normal_prev)/$divider;
 	value_store_zeropad($pgscan_direct_normal_plot_file_name, $i, $pgscan_direct_normal);
     }
     $pgscan_direct_normal_prev = $pgscan_direct_normal_cumul;
     
-    if (!$slabs_scanned_prev) {
-	$slabs_scanned = 0;
-    } else {
-	$slabs_scanned = ($slabs_scanned_cumul - $slabs_scanned_prev)/$divider;
+    if ($slabs_scanned_prev) {
+	my $slabs_scanned = ($slabs_scanned_cumul - $slabs_scanned_prev)/$divider;
 	value_store_zeropad($slabs_scanned_plot_file_name, $i, $slabs_scanned);
     }
     $slabs_scanned_prev = $slabs_scanned_cumul;
 
-    if (!$kswapd_steal_prev) {
-	$kswapd_steal = 0;
-    } else {
-	$kswapd_steal = ($kswapd_steal_cumul - $kswapd_steal_prev)/$divider;
+    if ($kswapd_steal_prev) {
+	my $kswapd_steal = ($kswapd_steal_cumul - $kswapd_steal_prev)/$divider;
 	value_store_zeropad($kswapd_steal_plot_file_name, $i, $kswapd_steal);
     }
     $kswapd_steal_prev = $kswapd_steal_cumul;
@@ -1600,14 +1585,14 @@ sub process_slabinfo()
 	return;
     }
     while (<$f>) {
-	$idx_1 = index($_, "slabinfo");
-	$idx_2 = index($_, "# name");
+	my $idx_1 = index($_, "slabinfo");
+	my $idx_2 = index($_, "# name");
 	if (($idx_1 != -1) || ($idx_2 != -1)) {
 	    next;
 	}
 	$line = $_;
 	chop $line;
-	($slabname, $active_objs, $num_objs, $obj_size, 
+	my ($slabname, $active_objs, $num_objs, $obj_size,
 	 undef, undef, undef, undef, undef, 
 	 undef, undef, undef, undef, undef, undef, undef) = split(' ' , $line, 16);
 
@@ -1619,7 +1604,7 @@ sub process_slabinfo()
 	$slabname =~ s/\//-/g;
 	$slabname =~ s/\|/-/g;
 
-	$slab_sz = ($active_objs * $obj_size)/1024;
+	my $slab_sz = ($active_objs * $obj_size)/1024;
 	$fn = "e/slabs-$slabname";
 	value_store($fn, $i, $slab_sz);
 	$all_slabs{$slabname} += $active_objs;
@@ -1926,10 +1911,11 @@ sub process_smaps()
 # smaps
 #
     my $heap = 0;
+    my $nm;
 
-    $fn = "$d/smaps.cap";
-    $lzoname = $d . "/smaps.cap.lzo";
-    $gzname = $d . "/smaps.cap.gz";
+    my $fn = "$d/smaps.cap";
+    my $lzoname = $d . "/smaps.cap.lzo";
+    my $gzname = $d . "/smaps.cap.gz";
     my $xzname = $d . "/smaps.cap.xz";
     if (-e $lzoname) {
 	$fn = "lzop -dc $lzoname |";
@@ -1965,7 +1951,7 @@ sub process_smaps()
 		# This is because heap comes in multiple segments
 		#
 		$avg_heap{$nm} = ($avg_heap{$nm} * $i + $heap)/($i+1);
-		$dev = ($avg_heap{$nm} - $heap);
+		my $dev = ($avg_heap{$nm} - $heap);
 		if ($dev < 0) {
 		    $dev = -1 * $dev;
 		}
@@ -1977,7 +1963,7 @@ sub process_smaps()
 		$fn = "e/heap-$nm";
 		$sum_heap{$nm} += $heap;
 		$num_heap_samples{$nm} += 1;
-		$xxx = $heap / 1024;
+		my $xxx = $heap / 1024;
 		value_store_zeropad($fn, $i, $xxx);
 		$heap = 0;
 
@@ -1987,7 +1973,7 @@ sub process_smaps()
 		#
 		# some are really long names (hald-bla-bla 384 chars)
 		#
-		$sz = length $nm;
+		my $sz = length $nm;
 		if($sz > 64) {
 		    $nm = substr($nm, 0, 64);
 		}
@@ -2000,7 +1986,7 @@ sub process_smaps()
 	    if( index($_, "#Pid: ") != -1) {
 		$line = $_;
 		chop $line;
-		(undef, $s_pid) = split(' ' , $line, 2);
+		my (undef, $s_pid) = split(' ' , $line, 2);
 		$name_by_pid{$s_pid} = $nm;
 		$nm = $nm . "-" . $s_pid;
 		$app_swapped{$nm} = 0;
@@ -2014,20 +2000,20 @@ sub process_smaps()
 	    if( index($_, "#VmLck: ") != -1) {
 		$line = $_;
 		chop $line;
-		(undef, $locked) = split(' ' , $line, 2);
+		my (undef, $locked) = split(' ' , $line, 2);
 		$fn = "e/locked-$nm";
 		$app_sum_locked{$nm} += $locked;
-		$xxx = $locked / 1024;
+		my $xxx = $locked / 1024;
 		value_store_zeropad($fn, $i, $xxx);
 		next;
 	    }
 	    if( index($_, "#VmSize: ") != -1) {
 		$line = $_;
 		chop $line;
-		(undef, $vmsz) = split(' ' , $line, 2);
+		my (undef, $vmsz) = split(' ' , $line, 2);
 		$fn = "e/vmsz-$nm";
 		$app_sum_vmsz{$nm} += $vmsz;
-		$xxx = $vmsz / 1024;
+		my $xxx = $vmsz / 1024;
 		value_store_zeropad($fn, $i, $xxx);
 		if ($prev_vmsize{$nm} && ($prev_vmsize{$nm} != $vmsz)) {
 		    $changed_vmsize{$nm} = 1;
@@ -2039,7 +2025,7 @@ sub process_smaps()
 	    if( index($_, "Pss:") != -1) {
 		$line = $_;
 		chop $line;
-		(undef, $pss, undef) = split(' ' , $line, 3);
+		my (undef, $pss, undef) = split(' ' , $line, 3);
 		$sum_app_pss += $pss;
 		$app_pss{$nm} += $pss;
 		$num_of_smaps_segments{$nm} += 1;
@@ -2056,45 +2042,45 @@ sub process_smaps()
 	    if( index($_, "Swap:") != -1) {
 		$line = $_;
 		chop $line;
-		(undef, $swapped, undef) = split(' ' , $line, 3);
+		my (undef, $swapped, undef) = split(' ' , $line, 3);
 		$sum_app_swapped += $swapped;
 		$app_swapped{$nm} += $swapped;
 		next;
 	    }
 	} else {
 	    if( index($_, "[heap]") != -1) {
-		$line = <$f>;
+		my $line = <$f>;
 		chop $line;
-		(undef, $xheap, undef) = split(' ' , $line, 3);
+		my (undef, $xheap, undef) = split(' ' , $line, 3);
 		$heap += $xheap;
 		# will register this value before new $nm is set
 		next;
 	    }
 	    if( index($_, "/dev/shm/") != -1) {
-		$line = <$f>;
+		my $line = <$f>;
 		chop $line;
-		(undef, $posix_shared, undef) = split(' ' , $line, 3);
+		my (undef, $posix_shared, undef) = split(' ' , $line, 3);
 		$app_posix_shared{$nm} += $posix_shared;
 		next;
 	    }
 	    if( index($_, "/dev/pvrsrvkm") != -1) {
-		$line = <$f>;
+		my $line = <$f>;
 		chop $line;
-		(undef, $pvr, undef) = split(' ' , $line, 3);
+		my (undef, $pvr, undef) = split(' ' , $line, 3);
 		$app_dev_pvr{$nm} += $pvr;
 		next;
 	    }
 	    if( index($_, " rwxp ") != -1) {
-		$line = <$f>;
+		my $line = <$f>;
 		chop $line;
-		(undef, $sz_wx, undef) = split(' ' , $line, 3);
+		my (undef, $sz_wx, undef) = split(' ' , $line, 3);
 		$app_rwxp{$nm} += $sz_wx;
 		next;
 	    }
 	    if( m#/SYSV[0-9a-f]{8,}# ) {
-		$line = <$f>;
+		my $line = <$f>;
 		chop $line;
-		(undef, $sysv_shared, undef) = split(' ' , $line, 3);
+		my (undef, $sysv_shared, undef) = split(' ' , $line, 3);
 		$app_sysv_shared{$nm} += $sysv_shared;
 		next;
 	    }
@@ -2122,10 +2108,11 @@ sub process_interrupts()
     while (<$f>) {
 	$line = $_;
 	chop $line;
-	($int_num, $int_cnt, undef, $int_name1, $int_name2, $int_name3, $int_name4) = split(' ' , $line);
+	my ($int_num, $int_cnt, undef, $int_name1, $int_name2, $int_name3, $int_name4) = split(' ' , $line);
 	chop $int_num;
-	$iname = $int_num . '-' . $int_name1 . $int_name2 . $int_name3 . $int_name4;
+	my $iname = $int_num . '-' . $int_name1 . $int_name2 . $int_name3 . $int_name4;
 	
+	my $ints = 0;
 	if (!$int_prev{$iname} or !$lapsed_time{$i}) {
 	    $ints = 0;
 	} else {
@@ -2147,7 +2134,7 @@ sub process_diskstats()
 #
 # diskstats
 #
-    $fn = $d . "/diskstats";
+    my $fn = $d . "/diskstats";
     if (! -e $fn) {
 	#
         # this is optional as it was added later to snapshots,
@@ -2162,17 +2149,16 @@ sub process_diskstats()
     while (<$f>) {
 	$line = $_;
 	chop $line;
-	($majdev, $mindev, $dname, 
+	my ($majdev, $mindev, $dname,
 	 $xdev_reads, $xdev_reads_merged, $xsector_reads, $xmsec_reading, $xdev_writes, $dxev_writes_merged,
 	 $xsector_writes, $xmsec_writing, $xios_in_progress, $xmsec_in_io, $xmsec_weighted_in_io) = split(' ' , $line, 14);
 	if (($xdev_reads + $xdev_writes) == 0) {
 	    next;
 	}
 	
-	if (!$dev_reads_prev{$dname} or !$lapsed_time{$i}) {
-	    $nreads = 0;
-	    $reads = 0;
-	} else {
+	my $nreads = 0;
+	my $reads = 0;
+	if ($dev_reads_prev{$dname} and $lapsed_time{$i}) {
 #	    $reads = ($xdev_reads - $dev_reads_prev{$dname})/$lapsed_time{$i};
 	    $nreads = $xsector_reads - $dev_reads_prev{$dname};
 	    $reads = ((($nreads * $sector_sz)/($MB_bytes)))/$lapsed_time{$i};
@@ -2183,10 +2169,9 @@ sub process_diskstats()
 	$fn = "e/devreads-$dname";
 	value_store($fn, $i, $reads);
 
-	if (!$dev_writes_prev{$dname} or !$lapsed_time{$i}) {
-	    $nwrites = 0;
-	    $writes = 0;
-	} else {
+	my $nwrites = 0;
+	my $writes = 0;
+	if ($dev_writes_prev{$dname} and $lapsed_time{$i}) {
 #	    $writes = ($xdev_writes - $dev_writes_prev{$dname})/$lapsed_time{$i};
 	    $nwrites = $xsector_writes - $dev_writes_prev{$dname};
 	    $writes = ((($nwrites * $sector_sz)/($MB_bytes)))/$lapsed_time{$i};
@@ -2197,26 +2182,20 @@ sub process_diskstats()
 	$fn = "e/devwrites-$dname";
 	value_store($fn, $i, $writes);
 
-	if (!$dev_time_per_read_prev{$dname}) {
-	    $time_per_read = 0;
-	} else {
+	my $time_per_read = 0;
+	if ($dev_time_per_read_prev{$dname}) {
 	    if ($nreads) {
 		$time_per_read = ($xmsec_reading - $dev_time_per_read_prev{$dname})/$nreads;
-	    } else {
-		$time_per_read = 0;
 	    }
 	}
 	$dev_time_per_read_prev{$dname} = $xmsec_reading;
 	$fn = "e/devreadtime-$dname";
 	value_store($fn, $i, $time_per_read);
 
-	if (!$dev_time_per_write_prev{$dname}) {
-	    $time_per_write = 0;
-	} else {
+	my $time_per_write = 0;
+	if ($dev_time_per_write_prev{$dname}) {
 	    if ($nwrites) {
 		$time_per_write = ($xmsec_writing - $dev_time_per_write_prev{$dname})/$nwrites;
-	    } else {
-		$time_per_write = 0;
 	    }
 	}
 	$dev_time_per_write_prev{$dname} = $xmsec_writing;
@@ -2232,7 +2211,7 @@ sub process_bme()
 #
 # bme values (battery mgmt)
 #
-    $fn = $d . "/bmestat";
+    my $fn = $d . "/bmestat";
     if (! -e $fn) {
 	#
         # as this is new (added in sp-endurance 2.2.1+0m6 in 2011w9), 
@@ -2247,19 +2226,19 @@ sub process_bme()
     $have_bme = 1;
     while (<$f>) {
 	if (m/battery pct. level:/) {
-	    (undef, undef, undef, $batt_lev) = split(' ' , $_, 4);
+	    my (undef, undef, undef, $batt_lev) = split(' ' , $_, 4);
 	    chop $batt_lev;
 #	    print "$i: batt_lev=[$batt_lev]\n";
 	    value_store($batt_charge_left_file_name, $i, $batt_lev);
 	} 
 	elsif (m/battery cur. voltage:/) {
-	    (undef, undef, undef, $volt) = split(' ' , $_, 4);
+	    my (undef, undef, undef, $volt) = split(' ' , $_, 4);
 	    chop $volt;
 #	    print "$i: batt_volt=[$volt]\n";
 	    value_store($batt_voltage_file_name, $i, $volt);
 	}
 	elsif (m/battery temperature:/) {
-	    (undef, undef, $batt_temp) = split(' ' , $_, 3);
+	    my (undef, undef, $batt_temp) = split(' ' , $_, 3);
 	    chop $batt_temp;
 #	    print "$i: batt_temp=[$batt_temp]\n";
 	    value_store($batt_temperature_file_name, $i, $batt_temp);
@@ -2274,7 +2253,7 @@ sub process_ramzswap()
 #
 # Compressed swap values
 #
-    $fn = $d . "/ramzswap";
+    my $fn = $d . "/ramzswap";
     if (! -e $fn) {
 	#
         # as this is optional, may be missing in snapshots,
@@ -2286,6 +2265,7 @@ sub process_ramzswap()
 	print STDERR "WARNING: unable to open $fn: $!\n";
 	return;
     }
+    my $divider;
     if ($lapsed_time{$i}) {
 	$divider = $lapsed_time{$i};
     } else {
@@ -2293,53 +2273,49 @@ sub process_ramzswap()
     }
     while (<$f>) {
 	if (m/BDevNumReads:/) {
-	    (undef, $param) = split(' ' , $_, 2);
-	    if (!$prev_ramzswap_bdreads) {
-		$n_bdreads = 0;
-	    } else {
+	    my (undef, $param) = split(' ' , $_, 2);
+	    my $n_bdreads = 0;
+	    if ($prev_ramzswap_bdreads) {
 		$n_bdreads = ($param  - $prev_ramzswap_bdreads)/$divider;
 	    }
 #	    print "$i: n_bdreads=$n_bdreads\n";
 	    value_store($ramzswap_bdreads_file_name, $i, $n_bdreads);
 	    $prev_ramzswap_bdreads = $param;
 	} elsif (m/NumReads:/) {
-	    (undef, $param) = split(' ' , $_, 2);
-	    if (!$prev_ramzswap_reads) {
-		$n_reads = 0;
-	    } else {
+	    my (undef, $param) = split(' ' , $_, 2);
+	    my $n_reads = 0;
+	    if ($prev_ramzswap_reads) {
 		$n_reads = ($param  - $prev_ramzswap_reads)/$divider;
 	    }
 #	    print "$i: n_reads=$n_reads div=$divider\n";
 	    value_store($ramzswap_reads_file_name, $i, $n_reads);
 	    $prev_ramzswap_reads = $param;
 	} elsif (m/BDevNumWrites:/) {
-	    (undef, $param) = split(' ' , $_, 2);
-	    if (!$prev_ramzswap_bdwrites) {
-		$n_bdwrites = 0;
-	    } else {
+	    my (undef, $param) = split(' ' , $_, 2);
+	    my $n_bdwrites = 0;
+	    if ($prev_ramzswap_bdwrites) {
 		$n_bdwrites = ($param  - $prev_ramzswap_bdwrites)/$divider;
 	    }
 #	    print "$i: n_bdwrites=$n_bdwrites\n";
 	    value_store($ramzswap_bdwrites_file_name, $i, $n_bdwrites);
 	    $prev_ramzswap_bdwrites = $param;
 	} elsif (m/NumWrites:/) {
-	    (undef, $param) = split(' ' , $_, 2);
-	    if (!$prev_ramzswap_writes) {
-		$n_writes = 0;
-	    } else {
+	    my (undef, $param) = split(' ' , $_, 2);
+	    my $n_writes = 0;
+	    if ($prev_ramzswap_writes) {
 		$n_writes = ($param  - $prev_ramzswap_writes)/$divider;
 	    }
 #	    print "$i: n_writes=$n_writes\n";
 	    value_store($ramzswap_writes_file_name, $i, $n_writes);
 	    $prev_ramzswap_writes = $param;
 	} elsif (m/ZeroPages:/) {
-	    (undef, $zerop) = split(' ' , $_, 2);
-	    $zerom = ($zerop * $page_size)/1024;
+	    my (undef, $zerop) = split(' ' , $_, 2);
+	    my $zerom = ($zerop * $page_size)/1024;
 #	    print "$i: n_zerop=$zerom\n";
 	    value_store($ramzswap_zerop_file_name, $i, $zerom);
 	} elsif (m/PagesUsed:/) {
-	    (undef, $n_usedp) = split(' ' , $_, 2);
-	    $used = ($n_usedp * $page_size)/1024;
+	    my (undef, $n_usedp) = split(' ' , $_, 2);
+	    my $used = ($n_usedp * $page_size)/1024;
 #	    print "$i: nused=$n_usedp used=$used\n";
 	    value_store($ramzswap_used_file_name, $i, $used);
 	    $have_ramzswap = 1;
@@ -2354,7 +2330,7 @@ sub process_stat()
 #
 # CPU stat, global ctxts etc
 #
-    $fn = $d . "/stat";
+    my $fn = $d . "/stat";
     unless (open($f, $fn)) {
 	print STDERR "WARNING: unable to open $fn: $!\n";
 	return;
@@ -2363,8 +2339,9 @@ sub process_stat()
 	$line = $_;
 	chop $line;
 	if( m/ctxt /) {
-	    my (undef, $ctx) = split(' ' , $line, 2);
+	    my (undef, $ctx) = split(' ' , $_, 2);
 
+	    my $global_ctx = 0;
 	    if (!$global_ctx_prev) {
 		$global_ctx = 0;
 	    } elsif (($ctx - $global_ctx_prev) < 0) {
@@ -2400,9 +2377,8 @@ sub process_stat()
 	} elsif( m/processes /) {
 	    my (undef, $processes) = split(' ' , $line, 2);
 
-	    if (!$global_processes_prev or !$lapsed_time{$i}) {
-		$global_processes = 0;
-	    } else {
+	    my $global_processes = 0;
+	    if ($global_processes_prev and $lapsed_time{$i}) {
 		$global_processes = (60*($processes - $global_processes_prev))/$lapsed_time{$i};
 	    }
 	    $global_processes_prev = $processes;
@@ -2420,7 +2396,7 @@ sub process_pagetypeinfo()
 #
 # CPU stat, global ctxts etc
 #
-    $fn = $d . "/pagetypeinfo";
+    my $fn = $d . "/pagetypeinfo";
     if (! -e $fn) {
 	#
         # as this is optional, may be missing in snapshots,
@@ -2432,7 +2408,7 @@ sub process_pagetypeinfo()
 	print STDERR "WARNING: unable to open $fn: $!\n";
 	return;
     }
-    my @unmovable = undef, @reclaimable = undef, @movable = undef, @reserve = undef;
+    my (@unmovable, @reclaimable, @movable, @reserve);
     while (<$f>) {
 	$line = $_;
 	chop $line;
@@ -2510,7 +2486,7 @@ sub emit_domain_values($$)
     my $domain = shift;
     chop $line;
 #    print "powerdomain $domain: line=[$line]\n";
-    (undef, $off, $ret, $ina, $on) = split('\|' , $line, 6);
+    my (undef, $off, $ret, $ina, $on) = split('\|' , $line, 6);
     (undef, $off) = split(':' , $off, 2);
     (undef, $ret) = split(':' , $ret, 2);
     (undef, $ina) = split(':' , $ina, 2);
@@ -2527,7 +2503,7 @@ sub process_powertop()
 #
 # powertop output if exists
 #
-    $fn = $d . "/powertop.out";
+    my $fn = $d . "/powertop.out";
     unless (open($f, $fn)) {
 	return;
     }
@@ -2569,7 +2545,7 @@ sub process_powertop()
 #		print "power-c line=[$line]\n";
 		$line =~ s/\|  \|/|/g;
 #		print "xxxpower-c line=[$line]\n";
-		($clev, $ratio_c, $dura, $freq, $ratio_f) = split('\|' , $line, 5);
+		my ($clev, $ratio_c, $dura, $freq, $ratio_f) = split('\|' , $line, 5);
 #		if (index($clev, "C") == -1) {
 #		    last;
 #		}
@@ -2592,9 +2568,9 @@ sub process_powertop()
 		if ($line eq "\n") {
 		    last;
 		}
-		($pid, $activ, $name, $func) = split('\|' , $line, 4);
+		my ($pid, $activ, $name, $func) = split('\|' , $line, 4);
 		($func, undef) = split(' ' , $func, 2);
-		$id = $name . "-" . $pid . "-" . $func; 
+		my $id = $name . "-" . $pid . "-" . $func; 
 		$id =~ s/ //g;
 		$id =~ s/\<//g;
 		$id =~ s/\>//g;
@@ -2622,7 +2598,7 @@ sub process_powertop()
 	    emit_domain_values($_, "mpu");
 	} elsif( index($_, "Total wakeups") != -1) {
 	    $line = $_;
-	    (undef, undef, $wakeups, $wakeups_s, undef, 
+	    my (undef, undef, $wakeups, $wakeups_s, undef,
 	     undef, $irqs, $irqs_s, undef, 
 	     undef, $timers, $timers_s, undef) = split(' ' , $line, 13);
 	    $wakeups_s =~ s/s//g;
@@ -2665,6 +2641,8 @@ sub loop_over_all_apps()
 # use same hash keys set for two things (and sum of them is 3rd)
 #
     foreach my $x (keys %all_apps) {
+	my $fn;
+	my $xxx;
 	if (!$x) {
 	    next;
 	}
@@ -2674,7 +2652,7 @@ sub loop_over_all_apps()
 	if ($app_pss{$x}) {
 	    $app_cumul_pss{$x} += $app_pss{$x};
 	    $avg_pss{$x} = ($avg_pss{$x} * $i + $app_pss{$x})/($i+1);
-	    $dev = ($avg_pss{$x} - $app_pss{$x});
+	    my $dev = ($avg_pss{$x} - $app_pss{$x});
 	    if ($dev < 0) {
 		$dev = -1 * $dev;
 	    }
@@ -2694,7 +2672,7 @@ sub loop_over_all_apps()
 	if ($app_sysv_shared{$x}) {
 	    $app_cumul_sysv_shared{$x} += $app_sysv_shared{$x};
 	    $avg_sysv_shared{$x} = ($avg_sysv_shared{$x} * $i + $app_sysv_shared{$x})/($i+1);
-	    $dev = ($avg_sysv_shared{$x} - $app_sysv_shared{$x});
+	    my $dev = ($avg_sysv_shared{$x} - $app_sysv_shared{$x});
 	    if ($dev < 0) {
 		$dev = -1 * $dev;
 	    }
@@ -2711,7 +2689,7 @@ sub loop_over_all_apps()
 	if ($app_posix_shared{$x}) {
 	    $app_cumul_posix_shared{$x} += $app_posix_shared{$x};
 	    $avg_posix_shared{$x} = ($avg_posix_shared{$x} * $i + $app_posix_shared{$x})/($i+1);
-	    $dev = ($avg_posix_shared{$x} - $app_posix_shared{$x});
+	    my $dev = ($avg_posix_shared{$x} - $app_posix_shared{$x});
 	    if ($dev < 0) {
 		$dev = -1 * $dev;
 	    }
@@ -2728,7 +2706,7 @@ sub loop_over_all_apps()
 	if ($app_dev_pvr{$x}) {
 	    $app_cumul_dev_pvr{$x} += $app_dev_pvr{$x};
 	    $avg_dev_pvr{$x} = ($avg_dev_pvr{$x} * $i + $app_dev_pvr{$x})/($i+1);
-	    $dev = ($avg_dev_pvr{$x} - $app_dev_pvr{$x});
+	    my $dev = ($avg_dev_pvr{$x} - $app_dev_pvr{$x});
 	    if ($dev < 0) {
 		$dev = -1 * $dev;
 	    }
@@ -2745,7 +2723,7 @@ sub loop_over_all_apps()
 	    $app_cumul_swp{$x} += $app_swapped{$x};
 
 	    $avg_swp{$x} = ($avg_swp{$x} * $i + $app_swapped{$x})/($i+1);
-	    $dev = ($avg_swp{$x} - $app_swapped{$x});
+	    my $dev = ($avg_swp{$x} - $app_swapped{$x});
 	    if ($dev < 0) {
 		$dev = -1 * $dev;
 	    }
@@ -2769,7 +2747,7 @@ sub loop_over_all_apps()
 #	    $app_cumul_private_dirty{$x} += $app_private_dirty{$x};
 #
 #	    $avg_private_dirty{$x} = ($avg_private_dirty{$x} * $i + $app_private_dirty{$x})/($i+1);
-#	    $dev = ($avg_private_dirty{$x} - $app_private_dirty{$x});
+#	    my $dev = ($avg_private_dirty{$x} - $app_private_dirty{$x});
 #	    if ($dev < 0) {
 #		$dev = -1 * $dev;
 #	    }
@@ -2792,7 +2770,7 @@ sub loop_over_all_apps()
 
 #		$avg_pss_swp{$x} = ($avg_pss_swp{$x} * $i + $pss_swap)/($i+1);
 	    $avg_pss_swp{$x} = ($avg_pss_swp{$x} * $devcount_pss_swp{$x} + $pss_swap)/($devcount_pss_swp{$x} + 1);
-	    $dev = ($avg_pss_swp{$x} - $pss_swap);
+	    my $dev = ($avg_pss_swp{$x} - $pss_swap);
 	    if ($dev < 0) {
 		$dev = -1 * $dev;
 	    }
@@ -2807,11 +2785,15 @@ sub loop_over_all_apps()
 #	    print "$pss_swap $x\n";
 #	}
 	###############
-	$pid = $pid_by_namepid{$x};
-	$lpid_name = $name_by_pid{$pid} ;
+	my $pid = $pid_by_namepid{$x};
+	my $lpid_name = $name_by_pid{$pid} ;
 #	print "$i: lpid_name by pid=[$pid] is [$lpid_name]\n";
-	$shared_lpid_cnt{$x} += $shared_lpid_cnt_oneround{$pid};
-	$shared_cpid_cnt{$x} += $shared_cpid_cnt_oneround{$pid};
+	if (defined $shared_lpid_cnt_oneround{$pid}) {
+	    $shared_lpid_cnt{$x} += $shared_lpid_cnt_oneround{$pid};
+	}
+	if (defined $shared_cpid_cnt_oneround{$pid}) {
+	    $shared_cpid_cnt{$x} += $shared_cpid_cnt_oneround{$pid};
+	}
 
 	$shared = $shared_lpid{$pid};
 	$fn = "e/shml-$x";
@@ -2819,7 +2801,7 @@ sub loop_over_all_apps()
 #	    print "$i: lpid shared[x=$x pid=$pid] = $shared\n";
 	    value_store_zeropad($fn, $i, $shared);
 	    $avg_shared_lpid{$pid} = ($avg_shared_lpid{$pid} * $i + $shared)/($i+1);
-	    $dev = ($avg_shared_lpid{$pid} - $shared);
+	    my $dev = ($avg_shared_lpid{$pid} - $shared);
 	    if ($dev < 0) {
 		$dev = -1 * $dev;
 	    }
@@ -2858,7 +2840,7 @@ sub loop_over_all_apps()
 #	    print "$i: cpid shared[x=$x pid=$pid] = $shared\n";
 	    value_store_zeropad($fn, $i, $shared);
 	    $avg_shared_cpid{$pid} = ($avg_shared_cpid{$pid} * $i + $shared)/($i+1);
-	    $dev = ($avg_shared_cpid{$pid} - $shared);
+	    my $dev = ($avg_shared_cpid{$pid} - $shared);
 	    if ($dev < 0) {
 		$dev = -1 * $dev;
 	    }
@@ -2871,7 +2853,7 @@ sub loop_over_all_apps()
 	$shared_cpid{$pid} = 0;
 
 	if (exists $num_of_smaps_segments{$x}) {
-	    $fn = "e/numsegm-$x";
+	    my $fn = "e/numsegm-$x";
 	    value_store($fn, $i, $num_of_smaps_segments{$x});
 	    $max_smaps_segments{$x} = max $num_of_smaps_segments{$x}, $max_smaps_segments{$x};
 	}
@@ -2880,7 +2862,7 @@ sub loop_over_all_apps()
     # loops over shmem lpid names and insert values
     #
     foreach my $x (keys %shared_lpid_names_sz) {
-	$fn = "e/shmln-$x";
+	my $fn = "e/shmln-$x";
 	value_store_zeropad($fn, $i, $shared_lpid_names_sz{$x});
     }
 }
@@ -2889,8 +2871,8 @@ sub echo_one_img_line($)
 {
     my $img = shift;
 
-    $img_fn   = $graphs_dir . "/" . $img . ".png";
-    $thumb_fn = $graphs_dir . "/" . $img . "_thumb.jpg";
+    my $img_fn   = $graphs_dir . "/" . $img . ".png";
+    my $thumb_fn = $graphs_dir . "/" . $img . "_thumb.jpg";
     if (-e $img_fn) {
 	system("pngtopnm $img_fn | pnmscalefixed -width=$thumb_width -height=$thumb_height | pnmtojpeg > $thumb_fn");
 	if (WIFSIGNALED($?)) {
@@ -2919,7 +2901,7 @@ sub add_use_case_names()
     foreach my $d (@dirs) {
 	my $dfn = "$d/step.txt";
 	if (-e $dfn) {
-	    $step = `cat $dfn`;
+	    my $step = `cat $dfn`;
 	    chop $step;
 	    $dcnt = $d - 101;
 	    system("echo '$dcnt: [$round_date{$d}] $step<br>' >> $html_name");
@@ -2955,21 +2937,21 @@ sub gen_html_page()
 
 # insert link to endurance_report.html (if exsists)
 
-    $fn = "endurance-report.html";
+    my $fn = "endurance-report.html";
     if (-e $fn ) {
 	system("echo ' <a href='$fn'>$fn</a>' >> $html_name");
     }
     system("echo '</p>' >> $html_name");
 
-    foreach $img (sort keys %images) {
+    foreach my $img (sort keys %images) {
 	echo_one_img_line($img);
     }
 
 # add thumbs of fragmenation.png (if exsists)
 
     for ($swfr = 1; $swfr <= 3; $swfr++) {
-	$img = $graph_fragmentation[$swfr - 1];
-	$fn = $graphs_dir . "/" . $img . ".png";
+	my $img = $graph_fragmentation[$swfr - 1];
+	my $fn = $graphs_dir . "/" . $img . ".png";
 	if (-e $fn ) {
 	    $thumbnames{$img} = "SWAP FRAGMENTATION " . $swfr;
 	    echo_one_img_line($img);
@@ -3019,7 +3001,7 @@ sub start_plotfile_lines_common($$)
     if ($add < 10) {
 	$add = 10;
     }
-    $ii = $i + $add;
+    my $ii = $i + $add;
     print $plot "plot [0:$ii] ";
     return $plot;
 }
@@ -3040,7 +3022,7 @@ sub start_plotfile_lines_common_2axes($$)
     print $plot "set y2tics\n";
     print $plot "set style data $style\n";
     print $plot "set key autotitle\n";
-    $ii = $i+5;
+    my $ii = $i+5;
     print $plot "set xrange [0 : $ii]\n";
     print $plot "set yrange [0 : ]\n";
     print $plot "set x2range [0 : $ii]\n";
@@ -3084,7 +3066,7 @@ sub start_plotfile_histogram($)
     if ($add < 25) {
 	$add = 25;
     }
-    $ii = $i + $add;
+    my $ii = $i + $add;
     print $plot "plot [-1:$ii] ";
 
     return $plot;
@@ -3117,7 +3099,7 @@ sub close_plot($$$)
     close $plot;
     if ($count) {
 	my $cmdfname = "e/" . $key . ".cmd";
-	$img_fn   = $graphs_dir . "/" . $key . ".png";
+	my $img_fn   = $graphs_dir . "/" . $key . ".png";
 	system "gnuplot $cmdfname > $img_fn";
 	if (WIFSIGNALED($?)) {
 	    my $sig = WTERMSIG($?);
@@ -3139,7 +3121,8 @@ sub close_plot($$$)
 sub print_cf_states_plot_cmds($)
 {
     my $plot = shift;
-    my $cnt_1 = 0, $cnt_2 = 0;
+    my $cnt_1 = 0;
+    my $cnt_2 = 0;
     my $ii = $i+18;
 
     print $plot "set size 1.0,0.4\n";
@@ -3149,7 +3132,7 @@ sub print_cf_states_plot_cmds($)
     # need number of entries for 
     # using colors in reverse order so that highest level gets red
     # (which is lowest lt number)
-    $num_entries = 0;
+    my $num_entries = 0;
     foreach my $p (reverse sort keys %seen_powertop_c_levels) {
 	$num_entries += 1;
     }
@@ -3209,6 +3192,9 @@ sub print_domain_plot_cmds($$$$)
 
 sub generate_plots()
 {
+    my ($cnt, $cnt_1, $cnt_2);
+    my $plot;
+    my $fn;
 
 ############# MEM ######################
     print "graphs: mem ";
@@ -4833,7 +4819,8 @@ foreach $d (@dirs) {
     if(!$hw_build) {
 	parse_component_version();
     }
-    $fn = "$d/usage.csv";
+    my $fn = "$d/usage.csv";
+    my $f;
     unless (open($f, $fn)) {
 	print STDERR "ERROR: unable to open $fn: $!\n";
 	exit(1);
@@ -4925,7 +4912,8 @@ print "rounds=$num_of_rounds; duration=$total_duration sec, avg-per-round: sec=$
 
 print "input: ";
 foreach $d (@dirs) {
-    $fn = "$d/usage.csv";
+    my $fn = "$d/usage.csv";
+    my $f;
     unless (open($f, $fn)) {
 	print STDERR "ERROR: unable to open $fn: $!\n";
 	exit(1);
@@ -4938,18 +4926,18 @@ foreach $d (@dirs) {
 	if( (index($_, "Loadavg ") != -1)) {
 	    $line = <$f>;
 	    chop $line;
-	    ($load_1,$load_5,$load_15,$running_all,$lastpid) = split(',' , $line, 5);
+	    my ($load_1,$load_5,$load_15,$running_all,$lastpid) = split(',' , $line, 5);
 	    value_store($load_1_file_name, $i, $load_1);
 	    value_store($load_5_file_name, $i, $load_5);
 	    value_store($load_15_file_name, $i, $load_15);
-	    ($running,$all) = split('/' , $running_all, 2);
+	    my ($running,$all) = split('/' , $running_all, 2);
 	    value_store("e/num-processes", $i, $all);
 	    next;
 	} 
 	if( (index($_, "Allocated FDs,") != -1)) {
 	    $line = <$f>;
 	    chop $line;
-	    ($Allocated_FDs,$Freed_FDs,$Max_FDs) = split(',' , $line, 3);
+	    my ($Allocated_FDs,$Freed_FDs,$Max_FDs) = split(',' , $line, 3);
 	    $perc_fd = (100 * $Allocated_FDs) / $Max_FDs; 
 	    value_store($fd_perc_file_name, $i, $perc_fd);
 	    next;
