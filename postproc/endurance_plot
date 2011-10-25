@@ -45,10 +45,14 @@ my $graphs_dir = "graphs";
 my ($sw_version, $hw_build, $hw_product);
 #stuff keyed by graph name with data for each graph:
 my %legend;
-my %unit;
+my (%unit, %unit_1, %unit_2);
 my %thumblegend;
 
 my $secs_per_round = 0;
+my $mins_per_round = 0;
+my $hours_per_round = 0;
+my ($str_hours, $str_minutes, $str_seconds);
+my $total_duration;
 
 # names for files by classes, results in grouping,
 # as thumbnails are generated using this list sorted
@@ -546,6 +550,7 @@ my (%fd_count, %fd_count_samples, %fd_count_diff, %fd_count_prev);
 my %pss_swap_num_samples;
 my %lapsed_time;
 my $global_ctx_prev = 0;
+my $global_processes_prev;
 my $memfree_plot_file_name = "e/memfree";
 my $buffers_plot_file_name = "e/buffers";
 my $cached_plot_file_name = "e/cached";
@@ -622,6 +627,7 @@ my %fd_samples;
 my %fd_inotify;
 my %fd_pipe;
 my %fd_socket;
+my %fd_tmpfs;
 my %fd_dev;
 my %fd_sys;
 my %fd_syspart;
@@ -681,11 +687,13 @@ my %xresource_latest_sz_pxm;
 my %xresource_latest_sz_misc;
 my %xres_pxm_size_total;
 my %filesystem_names;
+my $max_nattach = 0;
 
 my (%images, %thumbnames);
 my %xres_samples;
 my %xres_atoms_seen;
 my %p_activity;
+my $powertop_data_found = 0;
 my %seen_powertop_c_levels;
 my %seen_powertop_f_levels;
 my %p_activity_max;
