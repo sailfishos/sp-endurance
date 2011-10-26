@@ -26,8 +26,6 @@ use Time::Local;
 use POSIX qw/ceil WIFSIGNALED WTERMSIG SIGINT SIGTERM SIGKILL/;
 use List::Util qw/max sum/;
 
-my $version = "0.38";
-
 # tunables
 my $ticks_per_sec = 100;
 my $sector_sz = 4096;
@@ -2900,7 +2898,7 @@ sub gen_html_page()
     system("echo '<style>' >> $html_name");
     system("echo 'table { float: left; margin: 20px 5px 0px 0; }' >> $html_name");
     system("echo '</style>' >> $html_name");
-    my $verstr = "Endurance graph $version [$hw_product][$sw_version] snapshot avg interval";
+    my $verstr = "Endurance graph [$hw_product][$sw_version] snapshot avg interval";
     if ($str_hours >= 1) {
 	$verstr .= " $str_hours hours";
     } elsif ($str_minutes >= 1) {
@@ -4880,8 +4878,7 @@ if (!$secs_per_round) {
     exit(1);
 }
 no integer;
-print "endurance_plot $version; ";
-print "rounds=$num_of_rounds; duration=$total_duration sec, avg-per-round: sec=$secs_per_round or min=$mins_per_round or hour=$hours_per_round\n";
+print "endurance_plot; rounds=$num_of_rounds; duration=$total_duration sec, avg-per-round: sec=$secs_per_round or min=$mins_per_round or hour=$hours_per_round\n";
 
 print "input: ";
 foreach $d (@dirs) {
