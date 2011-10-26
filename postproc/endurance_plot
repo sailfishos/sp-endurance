@@ -4938,8 +4938,6 @@ foreach $d (@dirs) {
 	} 
     }
     close $f;
-    $swap_events_cumul += $pswp_in + $pswp_out + $pgscan_kswapd_normal + 
-	$pgscan_direct_normal + $slabs_scanned + $kswapd_steal;
 
     process_slabinfo();
     process_smaps();
