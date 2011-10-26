@@ -1497,7 +1497,6 @@ sub parse_pages_block($)
     my $slabs_scanned_cumul = $val{"slabs_scanned"};
     my $kswapd_steal_cumul = $val{"kswapd_steal"};
     
-    $ptables = ($pptablepages * $page_size)/1024;
     my $slabreclaim = ($pslabreclaim * $page_size)/1024;
     value_store($slabreclaim_plot_file_name, $i, $slabreclaim);
     my $slabunreclaim = ($pslabunreclaim * $page_size)/1024;
