@@ -1001,9 +1001,9 @@ sub split_values($)
     my @values = split(',' , $lin);
     my $vidx = 0;
     %val = ();
-    foreach $n (@names) {
-	$val{$n} = $values[$vidx];
-#	print "line: assign val[$n]=$values[$vidx]\n";
+    foreach (@names) {
+	$val{$_} = $values[$vidx];
+#	print "line: assign val[$_]=$values[$vidx]\n";
 	$vidx++;
     }
 }
@@ -1015,12 +1015,11 @@ sub parse_name_state_block($)
     chop;
     @names = split(',' , $_);
     while (<$handle>) {
-	$line = $_;
-	chop $line;
-	if ($line eq "") {
+	chop;
+	if ($_ eq "") {
 	    last;
 	}
-	split_values($line);
+	split_values($_);
 
 	my $Name = $val{"Name"};
 	my $Pid = $val{"Pid"};
@@ -1083,15 +1082,14 @@ sub parse_shmem_block($)
     chop $line;
     @names = split(',' , $line);
     while (<$handle>) {
-	$line = $_;
-	chop $line;
-	if ($line eq "") {
+	chop;
+	if ($_ eq "") {
 	    last;
 	}
-#		    print "use line=[$line]\n";
+#		    print "use line=[$_]\n";
 
 	$shared_cnt += 1;
-	split_values($line);
+	split_values($_);
 	my $perms = $val{"perms"};
 	my $size = $val{"size"};
 	my $lpid = $val{"lpid"};
@@ -1173,12 +1171,11 @@ sub parse_pid_fd_block($)
 {
     my $handle= shift;
     while (<$handle>) {
-	$line = $_;
-	chop $line;
-	if ($line eq "") {
+	chop;
+	if ($_ eq "") {
 	    last;
 	}
-	my ($Pid, $FD_count, $cmdline) = split(',' , $line, 3);
+	my ($Pid, $FD_count, $cmdline) = split(',' , $_, 3);
 	my ($Name, undef) = split(' ' , $cmdline);
 	my $last_slash = rindex($Name, '/');
 #		    print "fdcount:[$Name]: lastsl=$last_slash\n";
@@ -1212,14 +1209,13 @@ sub parse_process_status_block($)
 #    chop;
 #    @names = split(',' , $_);
     while (<$handle>) {
-	$line = $_;
-	chop $line;
-	if ($line eq "") {
+	chop;
+	if ($_ eq "") {
 	    last;
 	}
 # it should go like this but here usage.csv does not have legend line
-#	split_values($line);
-	my ($Pid, $Name, $State, $PPid, $PGrp, $Session, $Tty, $TpGid, $Flags, $MinFlt, $CMinFlt, $MajFlt, $CMajFlt, $Utime, $Stime, $CUtime, $CStime, $Prio, $Nice, $NumThreads, $Itrealvalue, $Starttime, $Vsize, $Rss, $Rsslim, $Startcode, $Endcode, $startstack, $kstkesp, $kstkeip, $Signal, $Blocked, $Sigignore, $sigcatch, $wchan, $nswap, $cnswap, $exitsignal, $processor, $rt_prio, $policy, $delaycct_blkio_ticksm, $guest_time, $cguest_time) = split(',' , $line, 44);
+#	split_values($_);
+	my ($Pid, $Name, $State, $PPid, $PGrp, $Session, $Tty, $TpGid, $Flags, $MinFlt, $CMinFlt, $MajFlt, $CMajFlt, $Utime, $Stime, $CUtime, $CStime, $Prio, $Nice, $NumThreads, $Itrealvalue, $Starttime, $Vsize, $Rss, $Rsslim, $Startcode, $Endcode, $startstack, $kstkesp, $kstkeip, $Signal, $Blocked, $Sigignore, $sigcatch, $wchan, $nswap, $cnswap, $exitsignal, $processor, $rt_prio, $policy, $delaycct_blkio_ticksm, $guest_time, $cguest_time) = split(',' , $_, 44);
 #	$Name = $val{"Name"};
 #	$Pid = $val{"Pid"};
 
@@ -1315,12 +1311,11 @@ sub parse_xresource_block($)
     my %xres_seen = ();
     my $sum_all_pixmaps = 0;
     while (<$handle>) {
-	$line = $_;
-	chop $line;
-	if ($line eq "") {
+	chop;
+	if ($_ eq "") {
 	    last;
 	}
-	split_values($line);
+	split_values($_);
 
 	my $Identifier = $val{"Identifier"};
 	my $xresPid = $val{"PID"};
@@ -1406,12 +1401,11 @@ sub parse_filesystem_block($)
     my $handle= shift;
     my %fs_entry_seen = ();
     while (<$handle>) {
-	$line = $_;
-	chop $line;
-	if ($line eq "") {
+	chop;
+	if ($_ eq "") {
 	    last;
 	}
-	my ($Filesystem,$blocks,$Used,$Available,$Use_perc,$Mounted) = split(',' , $line, 6);
+	my ($Filesystem,$blocks,$Used,$Available,$Use_perc,$Mounted) = split(',' , $_, 6);
 	if ($Mounted && !$fs_entry_seen{$Mounted}) {
 	    $om = $Mounted;
 	    chop $Use_perc;
@@ -1581,11 +1575,10 @@ sub process_slabinfo()
 	if (($idx_1 != -1) || ($idx_2 != -1)) {
 	    next;
 	}
-	$line = $_;
-	chop $line;
+	chop;
 	my ($slabname, $active_objs, $num_objs, $obj_size,
 	 undef, undef, undef, undef, undef, 
-	 undef, undef, undef, undef, undef, undef, undef) = split(' ' , $line, 16);
+	 undef, undef, undef, undef, undef, undef, undef) = split(' ' , $_, 16);
 
 	$slabname =~ s/ //g;
 	$slabname =~ s/\>//g;
@@ -1934,8 +1927,7 @@ sub process_smaps()
     while (<SMAPS_CAP>) {
 	if (m/^#/) {
 	    if( index($_, "#Name: ") != -1) {
-		$line = $_;
-		chop $line;
+		chop;
 		#
 		# before taking new name into $nm, store
 		# heap for previous.
@@ -1959,7 +1951,7 @@ sub process_smaps()
 		$heap = 0;
 
 		###### now start with new name
-		(undef, $nm) = split(' ' , $line, 2);
+		(undef, $nm) = split(' ' , $_, 2);
 
 		#
 		# some are really long names (hald-bla-bla 384 chars)
@@ -1975,9 +1967,8 @@ sub process_smaps()
 		next;
 	    }
 	    if( index($_, "#Pid: ") != -1) {
-		$line = $_;
-		chop $line;
-		my (undef, $s_pid) = split(' ' , $line, 2);
+		chop;
+		my (undef, $s_pid) = split(' ' , $_, 2);
 		$name_by_pid{$s_pid} = $nm;
 		$nm = $nm . "-" . $s_pid;
 		$app_swapped{$nm} = 0;
@@ -1989,9 +1980,8 @@ sub process_smaps()
 		next;
 	    }
 	    if( index($_, "#VmLck: ") != -1) {
-		$line = $_;
-		chop $line;
-		my (undef, $locked) = split(' ' , $line, 2);
+		chop;
+		my (undef, $locked) = split(' ' , $_, 2);
 		$fn = "e/locked-$nm";
 		$app_sum_locked{$nm} += $locked;
 		my $xxx = $locked / 1024;
@@ -1999,9 +1989,8 @@ sub process_smaps()
 		next;
 	    }
 	    if( index($_, "#VmSize: ") != -1) {
-		$line = $_;
-		chop $line;
-		my (undef, $vmsz) = split(' ' , $line, 2);
+		chop;
+		my (undef, $vmsz) = split(' ' , $_, 2);
 		$fn = "e/vmsz-$nm";
 		$app_sum_vmsz{$nm} += $vmsz;
 		my $xxx = $vmsz / 1024;
@@ -2014,26 +2003,23 @@ sub process_smaps()
 	    }
 	} elsif (m#^[A-Z]#) {
 	    if( index($_, "Pss:") != -1) {
-		$line = $_;
-		chop $line;
-		my (undef, $pss, undef) = split(' ' , $line, 3);
+		chop;
+		my (undef, $pss, undef) = split(' ' , $_, 3);
 		$sum_app_pss += $pss;
 		$app_pss{$nm} += $pss;
 		$num_of_smaps_segments{$nm} += 1;
 		next;
 	    }
 #	    if( index($_, "Private_Dirty:") != -1) {
-#		$line = $_;
-#		chop $line;
-#		(undef, $pdirty, undef) = split(' ' , $line, 3);
+#		chop;
+#		(undef, $pdirty, undef) = split(' ' , $_, 3);
 #		$sum_app_private_dirty += $pdirty;
 #		$app_private_dirty{$nm} += $pdirty;
 #		next;
 #	    }
 	    if( index($_, "Swap:") != -1) {
-		$line = $_;
-		chop $line;
-		my (undef, $swapped, undef) = split(' ' , $line, 3);
+		chop;
+		my (undef, $swapped, undef) = split(' ' , $_, 3);
 		$sum_app_swapped += $swapped;
 		$app_swapped{$nm} += $swapped;
 		next;
@@ -2097,9 +2083,8 @@ sub process_interrupts()
 	return;
     }
     while (<INTERRUPTS>) {
-	$line = $_;
-	chop $line;
-	my ($int_num, $int_cnt, undef, $int_name1, $int_name2, $int_name3, $int_name4) = split(' ' , $line);
+	chop;
+	my ($int_num, $int_cnt, undef, $int_name1, $int_name2, $int_name3, $int_name4) = split(' ' , $_);
 	chop $int_num;
 	my $iname = $int_num . '-' . $int_name1 . $int_name2 . $int_name3 . $int_name4;
 	
@@ -2138,11 +2123,10 @@ sub process_diskstats()
 	return;
     }
     while (<DISKSTATS>) {
-	$line = $_;
-	chop $line;
+	chop;
 	my ($majdev, $mindev, $dname,
 	 $xdev_reads, $xdev_reads_merged, $xsector_reads, $xmsec_reading, $xdev_writes, $dxev_writes_merged,
-	 $xsector_writes, $xmsec_writing, $xios_in_progress, $xmsec_in_io, $xmsec_weighted_in_io) = split(' ' , $line, 14);
+	 $xsector_writes, $xmsec_writing, $xios_in_progress, $xmsec_in_io, $xmsec_weighted_in_io) = split(' ' , $_, 14);
 	if (($xdev_reads + $xdev_writes) == 0) {
 	    next;
 	}
@@ -2327,8 +2311,7 @@ sub process_stat()
 	return;
     }
     while (<STAT>) {
-	$line = $_;
-	chop $line;
+	chop;
 	if( m/ctxt /) {
 	    my (undef, $ctx) = split(' ' , $_, 2);
 
@@ -2366,7 +2349,7 @@ sub process_stat()
 	    }
 	    %prev_cpu_ticks = %cpu_ticks;
 	} elsif( m/processes /) {
-	    my (undef, $processes) = split(' ' , $line, 2);
+	    my (undef, $processes) = split(' ' , $_, 2);
 
 	    my $global_processes = 0;
 	    if ($global_processes_prev and $lapsed_time{$i}) {
@@ -2401,18 +2384,17 @@ sub process_pagetypeinfo()
     }
     my (@unmovable, @reclaimable, @movable, @reserve);
     while (<PAGETYPEINFO>) {
-	$line = $_;
-	chop $line;
+	chop;
 	if( m/Node /) {
 	    $have_pagetypeinfo = 1;
 	    if (m/Unmovable/) {
-		(@unmovable) = split(' ' , $line, 17);
+		(@unmovable) = split(' ' , $_, 17);
 	    } elsif (m/Reclaimable/) {
-		(@reclaimable) = split(' ' , $line, 17);
+		(@reclaimable) = split(' ' , $_, 17);
 	    } elsif (m/Movable/) {
-		(@movable) = split(' ' , $line, 17);
+		(@movable) = split(' ' , $_, 17);
 	    } elsif (m/Reserve/) {
-		(@reserve) = split(' ' , $line, 17);
+		(@reserve) = split(' ' , $_, 17);
 	    } 
 	}
     }
@@ -2500,10 +2482,9 @@ sub process_powertop()
     }
     $powertop_data_found = 1;
     while (<POWERTOP>) {
-	$line = $_;
-	chop $line;
+	chop;
 	if( m/Collecting data for /) {
-	    (undef, undef, undef, $secs, undef) = split(' ' , $line, 5);
+	    (undef, undef, undef, $secs, undef) = split(' ' , $_, 5);
 	    next;
 	} elsif( index($_, "C#") != -1) {
 	    $line = <POWERTOP>;
@@ -2588,10 +2569,9 @@ sub process_powertop()
 	} elsif( index($_, "mpu |OFF:") != -1) {
 	    emit_domain_values($_, "mpu");
 	} elsif( index($_, "Total wakeups") != -1) {
-	    $line = $_;
 	    my (undef, undef, $wakeups, $wakeups_s, undef,
 	     undef, $irqs, $irqs_s, undef, 
-	     undef, $timers, $timers_s, undef) = split(' ' , $line, 13);
+	     undef, $timers, $timers_s, undef) = split(' ' , $_, 13);
 	    $wakeups_s =~ s/s//g;
 	    $wakeups_s =~ s/\///g;
 	    value_store("e/p-wakeups", $i, $wakeups_s);
