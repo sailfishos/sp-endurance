@@ -299,6 +299,11 @@ echo "- /sbin/ifconfig"
 /sbin/ifconfig -a > $path/ifconfig
 echo "- DSME statistics"
 cp -a /var/lib/dsme $path/
+
+if [ -f /var/lib/upstart/jobs_respawned ] ; then
+	echo "- Upstart respawned jobs"
+	cp /var/lib/upstart/jobs_respawned $path/upstart_jobs_respawned 2>/dev/null
+fi
  
 # and syslog...
 echo "- Syslog(s)"
