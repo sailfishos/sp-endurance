@@ -1858,6 +1858,7 @@ leaks which cause process eventually to run out of (2GB) address space
         name = order[0]
         pid = order[2]
         cmdline = pidinfo[pid][1].replace('"', "&quot;")
+        print '<a name="memory_%s_%s"></a>' % (name, pid)
         print '<h4><i><acronym title="%s">%s</acronym> [%s]</i></h4>' % (cmdline, name, pid)
         process = data[pid]
         namepid = (name, pid)
