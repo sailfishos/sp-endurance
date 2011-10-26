@@ -4802,8 +4802,8 @@ foreach $d (@dirs) {
 	if( m/SW-version/) {
 	    $line = $_;
 	    chop $line;
-	    my $flds = split(' ', $line);
-	    if ($flds == 3) {
+	    my @flds = split(' ', $line);
+	    if (@flds == 3) {
 # SW-version = DFL61_HARMATTAN_0.2011.03-2_RD_001
 		(undef, undef, $swver) = split(' ', $line, 3);
 		(undef, $swver) = split('_', $swver, 2);
