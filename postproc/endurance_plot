@@ -3578,7 +3578,7 @@ sub generate_plots()
 	$legend{$graph_num_of_smaps_segments} = "number of smaps segments";
 	$unit{$graph_num_of_smaps_segments} = "count";
 	$plot = start_plotfile_linespoints($graph_num_of_smaps_segments);
-	my $prev_max;
+	my $prev_max = 0;
 	my $cnt_this_round = 0;
 	my @plotted_this_round;
 	foreach my $p (reverse sort { $max_smaps_segments{$a} <=> $max_smaps_segments{$b} } keys %max_smaps_segments_to_plot) {
@@ -3661,7 +3661,7 @@ sub generate_plots()
 	$legend{$graph_appmem_heap_lines} = "process heap mapping virtual size";
 	$unit{$graph_appmem_heap_lines} = "MB";
 	$plot = start_plotfile_linespoints($graph_appmem_heap_lines);
-	my $prev_max;
+	my $prev_max = 0;
 	my $cnt_this_round = 0;
 	my @plotted_this_round;
 	foreach my $p (reverse sort { $max_heap{$a} <=> $max_heap{$b} } keys %max_heap_to_plot) {
