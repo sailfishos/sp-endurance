@@ -1579,12 +1579,12 @@ sub parse_pages_block($)
 
 sub process_slabinfo()
 {
-    $fn = "$d/slabinfo";
-    unless (open($f, $fn)) {
+    my $fn = "$d/slabinfo";
+    unless (open(SLABINFO, $fn)) {
 	print STDERR "WARNING: unable to open $fn: $!\n";
 	return;
     }
-    while (<$f>) {
+    while (<SLABINFO>) {
 	my $idx_1 = index($_, "slabinfo");
 	my $idx_2 = index($_, "# name");
 	if (($idx_1 != -1) || ($idx_2 != -1)) {
@@ -1609,7 +1609,7 @@ sub process_slabinfo()
 	value_store($fn, $i, $slab_sz);
 	$all_slabs{$slabname} += $active_objs;
     }
-    close $f;
+    close(SLABINFO);
 #	print "   slabinfo_done ";
 }
 
@@ -1924,7 +1924,7 @@ sub process_smaps()
     } elsif (-e $xzname) {
 	$fn = "xzcat $xzname |";
     }
-    unless (open($f, $fn)) {
+    unless (open(SMAPS_CAP, $fn)) {
 	print STDERR "WARNING: unable to open $fn: $!\n";
 	return;
     }
@@ -1940,7 +1940,7 @@ sub process_smaps()
     %app_dev_pvr = undef;
     %num_of_smaps_segments = undef;
 #    %name_by_pid = undef;
-    while (<$f>) {
+    while (<SMAPS_CAP>) {
 	if (m/^#/) {
 	    if( index($_, "#Name: ") != -1) {
 		$line = $_;
@@ -2049,7 +2049,7 @@ sub process_smaps()
 	    }
 	} else {
 	    if( index($_, "[heap]") != -1) {
-		my $line = <$f>;
+		my $line = <SMAPS_CAP>;
 		chop $line;
 		my (undef, $xheap, undef) = split(' ' , $line, 3);
 		$heap += $xheap;
@@ -2057,28 +2057,28 @@ sub process_smaps()
 		next;
 	    }
 	    if( index($_, "/dev/shm/") != -1) {
-		my $line = <$f>;
+		my $line = <SMAPS_CAP>;
 		chop $line;
 		my (undef, $posix_shared, undef) = split(' ' , $line, 3);
 		$app_posix_shared{$nm} += $posix_shared;
 		next;
 	    }
 	    if( index($_, "/dev/pvrsrvkm") != -1) {
-		my $line = <$f>;
+		my $line = <SMAPS_CAP>;
 		chop $line;
 		my (undef, $pvr, undef) = split(' ' , $line, 3);
 		$app_dev_pvr{$nm} += $pvr;
 		next;
 	    }
 	    if( index($_, " rwxp ") != -1) {
-		my $line = <$f>;
+		my $line = <SMAPS_CAP>;
 		chop $line;
 		my (undef, $sz_wx, undef) = split(' ' , $line, 3);
 		$app_rwxp{$nm} += $sz_wx;
 		next;
 	    }
 	    if( m#/SYSV[0-9a-f]{8,}# ) {
-		my $line = <$f>;
+		my $line = <SMAPS_CAP>;
 		chop $line;
 		my (undef, $sysv_shared, undef) = split(' ' , $line, 3);
 		$app_sysv_shared{$nm} += $sysv_shared;
@@ -2086,7 +2086,7 @@ sub process_smaps()
 	    }
 	}
     }
-    close $f;
+    close(SMAPS_CAP);
 #	print "   smaps_done ";
     $sum_app_swapped /= 1024;
 #    $sum_app_private_dirty /= 1024;
@@ -2100,12 +2100,12 @@ sub process_interrupts()
 #
     my $all_ints = 0;
 
-    $fn = $d . "/interrupts";
-    unless (open($f, $fn)) {
+    my $fn = $d . "/interrupts";
+    unless (open(INTERRUPTS, $fn)) {
 	print STDERR "WARNING: unable to open $fn: $!\n";
 	return;
     }
-    while (<$f>) {
+    while (<INTERRUPTS>) {
 	$line = $_;
 	chop $line;
 	my ($int_num, $int_cnt, undef, $int_name1, $int_name2, $int_name3, $int_name4) = split(' ' , $line);
@@ -2125,7 +2125,7 @@ sub process_interrupts()
 	value_store($fn, $i, $ints);
 #	print "$i: ints-per-sec=$ints int_cnt=$int_cnt num=[$int_num] name=[$iname] nm=[$int_name1] nm2=[$int_name2] nm3=[$int_name3] nm4=[$int_name4]\n";
     }
-    close $f;
+    close(INTERRUPTS);
     value_store("e/count-int", $i, $all_ints);
 }
 
@@ -2142,11 +2142,11 @@ sub process_diskstats()
         #
 	return;
     }
-    unless (open($f, $fn)) {
+    unless (open(DISKSTATS, $fn)) {
 	print STDERR "WARNING: unable to open $fn: $!\n";
 	return;
     }
-    while (<$f>) {
+    while (<DISKSTATS>) {
 	$line = $_;
 	chop $line;
 	my ($majdev, $mindev, $dname,
@@ -2203,7 +2203,7 @@ sub process_diskstats()
 	value_store($fn, $i, $time_per_write);
 	$have_diskstats = 1;
     }
-    close $f;
+    close(DISKSTATS);
 }
 
 sub process_bme()
@@ -2219,12 +2219,12 @@ sub process_bme()
         #
 	return;
     }
-    unless (open($f, $fn)) {
+    unless (open(BMESTAT, $fn)) {
 	print STDERR "WARNING: unable to open $fn: $!\n";
 	return;
     }
     $have_bme = 1;
-    while (<$f>) {
+    while (<BMESTAT>) {
 	if (m/battery pct. level:/) {
 	    my (undef, undef, undef, $batt_lev) = split(' ' , $_, 4);
 	    chop $batt_lev;
@@ -2244,7 +2244,7 @@ sub process_bme()
 	    value_store($batt_temperature_file_name, $i, $batt_temp);
 	}
     }
-    close $f;
+    close(BMESTAT);
 }
 
 
@@ -2261,7 +2261,7 @@ sub process_ramzswap()
         #
 	return;
     }
-    unless (open($f, $fn)) {
+    unless (open(RAMZSWAP, $fn)) {
 	print STDERR "WARNING: unable to open $fn: $!\n";
 	return;
     }
@@ -2271,7 +2271,7 @@ sub process_ramzswap()
     } else {
 	$divider = $secs_per_round;
     }
-    while (<$f>) {
+    while (<RAMZSWAP>) {
 	if (m/BDevNumReads:/) {
 	    my (undef, $param) = split(' ' , $_, 2);
 	    my $n_bdreads = 0;
@@ -2321,7 +2321,7 @@ sub process_ramzswap()
 	    $have_ramzswap = 1;
 	}
     }
-    close $f;
+    close(RAMZSWAP);
 }
 
 
@@ -2331,11 +2331,11 @@ sub process_stat()
 # CPU stat, global ctxts etc
 #
     my $fn = $d . "/stat";
-    unless (open($f, $fn)) {
+    unless (open(STAT, $fn)) {
 	print STDERR "WARNING: unable to open $fn: $!\n";
 	return;
     }
-    while (<$f>) {
+    while (<STAT>) {
 	$line = $_;
 	chop $line;
 	if( m/ctxt /) {
@@ -2388,7 +2388,7 @@ sub process_stat()
 	    last;
 	}
     }
-    close $f;
+    close(STAT);
 }
 
 sub process_pagetypeinfo()
@@ -2404,12 +2404,12 @@ sub process_pagetypeinfo()
         #
 	return;
     }
-    unless (open($f, $fn)) {
+    unless (open(PAGETYPEINFO, $fn)) {
 	print STDERR "WARNING: unable to open $fn: $!\n";
 	return;
     }
     my (@unmovable, @reclaimable, @movable, @reserve);
-    while (<$f>) {
+    while (<PAGETYPEINFO>) {
 	$line = $_;
 	chop $line;
 	if( m/Node /) {
@@ -2425,7 +2425,7 @@ sub process_pagetypeinfo()
 	    } 
 	}
     }
-    close $f;
+    close(PAGETYPEINFO);
     for ($ordernum = 0, $order = 1 ; $ordernum <= 10 ; $order *= 2, $ordernum++) {
 	$fn = "e/pt-unmov-$ordernum";
 	value_store($fn, $i, ($unmovable[$ordernum+6]*$order*$pg_bytes)/$MB_bytes);
@@ -2504,19 +2504,19 @@ sub process_powertop()
 # powertop output if exists
 #
     my $fn = $d . "/powertop.out";
-    unless (open($f, $fn)) {
+    unless (open(POWERTOP, $fn)) {
 	return;
     }
     $powertop_data_found = 1;
-    while (<$f>) {
+    while (<POWERTOP>) {
 	$line = $_;
 	chop $line;
 	if( m/Collecting data for /) {
 	    (undef, undef, undef, $secs, undef) = split(' ' , $line, 5);
 	    next;
 	} elsif( index($_, "C#") != -1) {
-	    $line = <$f>;
-	    while (<$f>) {
+	    $line = <POWERTOP>;
+	    while (<POWERTOP>) {
 		$line = $_;
 		if ($line eq "\n") {
 		    last;
@@ -2561,9 +2561,9 @@ sub process_powertop()
 		}
 	    }
 	} elsif( index($_, "PID#") != -1) {
-	    $line = <$f>;
+	    $line = <POWERTOP>;
 	    while (1) {
-		$line = <$f>;
+		$line = <POWERTOP>;
 #		print "$i:line=[$line]\n";
 		if ($line eq "\n") {
 		    last;
@@ -2609,7 +2609,7 @@ sub process_powertop()
 	    value_store("e/p-timers", $i, $timers_s);
 	}
     }
-    close $f;
+    close(POWERTOP);
 }
 
 sub parse_component_version
@@ -4820,12 +4820,11 @@ foreach $d (@dirs) {
 	parse_component_version();
     }
     my $fn = "$d/usage.csv";
-    my $f;
-    unless (open($f, $fn)) {
+    unless (open(CSV, $fn)) {
 	print STDERR "ERROR: unable to open $fn: $!\n";
 	exit(1);
     }
-    while (<$f>) {
+    while (<CSV>) {
 	if( m/SW-version/) {
 	    $line = $_;
 	    chop $line;
@@ -4853,7 +4852,7 @@ foreach $d (@dirs) {
 	    next;
 	}
  	if( m/Uptime,Idletime /) {
-	    $line = <$f>;
+	    $line = <CSV>;
 	    chop $line;
 	    ($upt, undef) = split(',', $line, 2);
 	    if ($first_upt == 0) {
@@ -4874,7 +4873,7 @@ foreach $d (@dirs) {
 	    last;
 	} 
     }
-    close $f;
+    close(CSV);
     my $dfn = "$d/step.txt";
     if (-e $dfn) {
 	$steps_files += 1;
