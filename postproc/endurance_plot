@@ -4829,7 +4829,7 @@ foreach $d (@dirs) {
 	    $line = <CSV>;
 	    chop $line;
 	    ($upt, undef) = split(',', $line, 2);
-	    if ($first_upt == 0) {
+	    if (!$first_upt) {
 		$first_upt = $upt;
 	    }
 	    if ($upt_prev) {
