@@ -2426,7 +2426,7 @@ sub process_pagetypeinfo()
 	}
     }
     close(PAGETYPEINFO);
-    for ($ordernum = 0, $order = 1 ; $ordernum <= 10 ; $order *= 2, $ordernum++) {
+    for (my $ordernum = 0, $order = 1; $ordernum <= 10 ; $order *= 2, $ordernum++) {
 	$fn = "e/pt-unmov-$ordernum";
 	value_store($fn, $i, ($unmovable[$ordernum+6]*$order*$pg_bytes)/$MB_bytes);
 	$fn = "e/pt-recl-$ordernum";
@@ -2949,7 +2949,7 @@ sub gen_html_page()
 
 # add thumbs of fragmenation.png (if exsists)
 
-    for ($swfr = 1; $swfr <= 3; $swfr++) {
+    for (my $swfr = 1; $swfr <= 3; $swfr++) {
 	my $img = $graph_fragmentation[$swfr - 1];
 	my $fn = $graphs_dir . "/" . $img . ".png";
 	if (-e $fn ) {
@@ -3522,7 +3522,7 @@ sub generate_plots()
     $plot = start_plotfile_lines_2axes($graph_mem_shared_number);
 
     $cnt = 0;
-    for ($z = 0; $z <= $max_nattach ; $z++) {
+    for (my $z = 0; $z <= $max_nattach ; $z++) {
 #	print "$z: used=$shared_used{$z}\n";
 	if (!$shared_used{$z}) {
 	    next;
@@ -3548,7 +3548,7 @@ sub generate_plots()
     $plot = start_plotfile_histogram($graph_mem_shared_size);
 
     $cnt = 0;
-    for ($z = $max_nattach; $z > 0; $z--) {
+    for (my $z = $max_nattach; $z > 0; $z--) {
 	$fn = "e/nattach-$z-shm-sz";
 	one_plot_set($fn, 0, $plot, \$cnt, 1);
     }
@@ -5004,7 +5004,7 @@ foreach $d (@dirs) {
 
     loop_over_all_apps();
 #    $total_shared_num = 0;
-    for ($z = 0; $z <= $max_nattach ; $z++) {
+    for (my $z = 0; $z <= $max_nattach ; $z++) {
 #	print "round $i: z=$z; shared_num=$shared_num{$z}\n";
 #	$total_shared_num += $shared_num{$z};
 	$fn = "e/nattach-$z-shm";
