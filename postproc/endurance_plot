@@ -1013,8 +1013,8 @@ sub split_values($)
 sub parse_name_state_block($)
 {
     my $handle= shift;
-    chop $_;
-    chop $_;
+    chop;
+    chop;
     @names = split(',' , $_);
     $num_names = @names;
     while (<$handle>) {
@@ -1212,8 +1212,8 @@ sub parse_pid_fd_block($)
 sub parse_process_status_block($)
 {
     my $handle= shift;
-#    chop $_;
-#    chop $_;
+#    chop;
+#    chop;
 #    @names = split(',' , $_);
 #    $num_names = @names;
     while (<$handle>) {
@@ -1314,7 +1314,7 @@ sub parse_process_status_block($)
 sub parse_xresource_block($)
 {
     my $handle= shift;
-    chop $_;
+    chop;
     @names = split(',' , $_);
     $num_names = @names;
 
@@ -1434,7 +1434,7 @@ sub parse_filesystem_block($)
 sub parse_memtotal_block($)
 {
     my $handle= shift;
-    chop $_;
+    chop;
     @names = split(',' , $_);
     $num_names = @names;
 #		print "names=[@names]\n";
@@ -1491,8 +1491,8 @@ sub parse_memtotal_block($)
 sub parse_pages_block($)
 {
     my $handle= shift;
-    chop $_;
-    chop $_;
+    chop;
+    chop;
     @names = split(',' , $_);
     $num_names = @names;
 #		print "names=[@names]\n";
