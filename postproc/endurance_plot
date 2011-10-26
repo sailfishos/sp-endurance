@@ -1002,7 +1002,7 @@ sub split_values($)
     $num_values = @values;
 #    print "split_val: names=$num_names [@names] values=$num_values [@values]\n";
     my $vidx = 0;
-    %val = undef;
+    %val = ();
     foreach $n (@names) {
 	$val{$n} = $values[$vidx];
 #	print "line: assign val[$n]=$values[$vidx]\n";
@@ -1318,7 +1318,7 @@ sub parse_xresource_block($)
     @names = split(',' , $_);
     $num_names = @names;
 
-    my %xres_seen = undef;
+    my %xres_seen = ();
     my $sum_all_pixmaps = 0;
     while (<$handle>) {
 	$line = $_;
@@ -1410,7 +1410,7 @@ sub parse_xresource_block($)
 sub parse_filesystem_block($)
 {
     my $handle= shift;
-    my %fs_entry_seen = undef;
+    my %fs_entry_seen = ();
     while (<$handle>) {
 	$line = $_;
 	chop $line;
@@ -1931,15 +1931,15 @@ sub process_smaps()
     $sum_app_swapped = 0;
 #    $sum_app_private_dirty = 0;
     $sum_app_pss = 0;
-    %app_swapped = undef;
-#    %app_private_dirty = undef;
-    %app_pss = undef;
-    %app_sysv_shared = undef;
-    %app_posix_shared = undef;
-    %app_rwxp = undef;
-    %app_dev_pvr = undef;
-    %num_of_smaps_segments = undef;
-#    %name_by_pid = undef;
+    %app_swapped = ();
+#    %app_private_dirty = ();
+    %app_pss = ();
+    %app_sysv_shared = ();
+    %app_posix_shared = ();
+    %app_rwxp = ();
+    %app_dev_pvr = ();
+    %num_of_smaps_segments = ();
+#    %name_by_pid = ();
     while (<SMAPS_CAP>) {
 	if (m/^#/) {
 	    if( index($_, "#Name: ") != -1) {
@@ -2636,7 +2636,7 @@ sub parse_component_version
 
 sub loop_over_all_apps()
 {
-    my %shared_lpid_names_sz = undef;
+    my %shared_lpid_names_sz = ();
 #
 # use same hash keys set for two things (and sum of them is 3rd)
 #
@@ -3623,7 +3623,7 @@ sub generate_plots()
     $plot = start_plotfile_histogram($graph_appmem_heap);
 
     $cnt = 0;
-    %show_this = undef;
+    %show_this = ();
 #
 # on histogram, we show all to get the total size feeling
 #
@@ -3651,7 +3651,7 @@ sub generate_plots()
     use constant MAX_HEAP_PLOTS => 5;
     use constant MAX_HEAP_PER_PLOT => 10;
     use constant MAX_HEAP_SPLIT_CONSTANT => 5;
-    %show_this = undef;
+    %show_this = ();
     $cnt = 0;
 #
 # on lines graphs, we show changing ones to detect leaks
@@ -3707,7 +3707,7 @@ sub generate_plots()
     $plot = start_plotfile_histogram($graph_appmem_sysvshared);
 
     $cnt = 0;
-    %show_this = undef;
+    %show_this = ();
     foreach my $p (reverse sort {$app_cumul_sysv_shared{$a} <=> $app_cumul_sysv_shared{$b} } keys %app_cumul_sysv_shared) {
 	if ($cnt > $max_per_graph_onecolumn -1 ) {
 	    last;
@@ -3734,7 +3734,7 @@ sub generate_plots()
     $plot = start_plotfile_histogram($graph_appmem_posixshared);
 
     $cnt = 0;
-    %show_this = undef;
+    %show_this = ();
     foreach my $p (reverse sort {$app_cumul_posix_shared{$a} <=> $app_cumul_posix_shared{$b} } keys %app_cumul_posix_shared) {
 	if ($cnt > $max_per_graph_onecolumn -1 ) {
 	    last;
@@ -3762,7 +3762,7 @@ sub generate_plots()
     $plot = start_plotfile_histogram($graph_appmem_devpvr);
 
     $cnt = 0;
-    %show_this = undef;
+    %show_this = ();
     foreach my $p (reverse sort {$app_cumul_dev_pvr{$a} <=> $app_cumul_dev_pvr{$b} } keys %app_cumul_dev_pvr) {
 	if ($cnt > $max_per_graph_onecolumn -1 ) {
 	    last;
@@ -3847,7 +3847,7 @@ sub generate_plots()
 	$plot = start_plotfile_histogram($graph_appmem_swapped);
 
 	$cnt = 0;
-	%show_this = undef;
+	%show_this = ();
 
 	foreach my $p (reverse sort {$app_cumul_swp{$a} <=> $app_cumul_swp{$b} } keys %app_cumul_swp) {
 	    if ($cnt > ($max_per_graph_onecolumn - 1)) {
@@ -3880,7 +3880,7 @@ sub generate_plots()
 	$plot = start_plotfile_histogram($graph_appmem_pss_swap);
 
 	$cnt = 0;
-	%show_this = undef;
+	%show_this = ();
 	foreach my $p (reverse sort {$app_cumul_pss_swp{$a} <=> $app_cumul_pss_swp{$b} } keys %app_cumul_pss_swp) {
 	    if ($cnt > $max_per_graph_onecolumn) {
 		last;
@@ -3907,7 +3907,7 @@ sub generate_plots()
 #    $plot = start_plotfile_histogram($graph_appmem_private_dirty);
 #
 #    $cnt = 0;
-#    %show_this = undef;
+#    %show_this = ();
 #
 #    foreach my $p (reverse sort {$app_cumul_private_dirty{$a} <=> $app_cumul_private_dirty{$b} } keys %app_cumul_private_dirty) {
 #	if ($cnt > ($max_per_graph_onecolumn - 1)) {
@@ -3941,7 +3941,7 @@ sub generate_plots()
     $plot = start_plotfile_histogram($graph_appmem_pss);
 
     $cnt = 0;
-    %show_this = undef;
+    %show_this = ();
     foreach my $p (reverse sort {$app_cumul_pss{$a} <=> $app_cumul_pss{$b} } keys %app_cumul_pss) {
 	if ($cnt > $max_per_graph_onecolumn) {
 	    last;
@@ -3967,7 +3967,7 @@ sub generate_plots()
 # find out how many %app_cumul_pss_swp are there and what are dynamic split points
 # to show them on 4 graphs
     $num_of_pss_swp = 0;
-    %show_this = undef;
+    %show_this = ();
     foreach my $p (keys %app_cumul_pss_swp) {
 #	if (($pss_swap_num_samples{$p} < $samples_required) || ($sumdev_pss_swp{$p} < 1)) {
 	if (($pss_swap_num_samples{$p} < 1) || ($sumdev_pss_swp{$p} < 1)) {
@@ -4034,7 +4034,12 @@ sub generate_plots()
     $plot_2 = start_plotfile_linespoints($graph_appmem_pss_swap_lines_small);
     $plot_3 = start_plotfile_linespoints($graph_appmem_pss_swap_lines_smaller);
     $plot_4 = start_plotfile_linespoints($graph_appmem_pss_swap_lines_smallest);
-    $cnt_per_file = undef;
+    %cnt_per_file = (
+	$plot_1 => 0,
+	$plot_2 => 0,
+	$plot_3 => 0,
+	$plot_4 => 0,
+    );
     foreach my $p (reverse sort {$avg_pss_swp{$a} <=> $avg_pss_swp{$b} } keys %avg_pss_swp) {
 	if ($show_this{$p}) {
 	    if ($cnt < (1*$elems_per_graph)) {
@@ -4197,7 +4202,7 @@ sub generate_plots()
 
 ############# fd_count_inotify for processes #####################
     print "fd_inotify ";
-    %show_this = undef;
+    %show_this = ();
     foreach my $p (reverse sort {$fd_inotify{$a} <=> $fd_inotify{$b} } keys %fd_inotify) {
 	if ($fd_samples{$p} < $samples_required) { next; }
 	$fn = "e/fd_inotify-$name_by_pid{$p}-$p";
@@ -4217,7 +4222,7 @@ sub generate_plots()
 
 ############# fd_count_pipe for processes #####################
     print "fd_pipe ";
-    %show_this = undef;
+    %show_this = ();
     foreach my $p (reverse sort {$fd_pipe{$a} <=> $fd_pipe{$b} } keys %fd_pipe) {
 	if ($fd_samples{$p} < $samples_required) { next; }
 	$fn = "e/fd_pipe-$name_by_pid{$p}-$p";
@@ -4237,7 +4242,7 @@ sub generate_plots()
 
 ############# fd_count_socket for processes #####################
     print "fd_socket ";
-    %show_this = undef;
+    %show_this = ();
     foreach my $p (reverse sort {$fd_socket{$a} <=> $fd_socket{$b} } keys %fd_socket) {
 	if ($fd_samples{$p} < $samples_required) { next; }
 	$fn = "e/fd_socket-$name_by_pid{$p}-$p";
@@ -4257,7 +4262,7 @@ sub generate_plots()
 
 ############# fd_count_tmpfs for processes #####################
     print "fd_tmpfs ";
-    %show_this = undef;
+    %show_this = ();
     foreach my $p (reverse sort {$fd_tmpfs{$a} <=> $fd_tmpfs{$b} } keys %fd_tmpfs) {
 	if ($fd_samples{$p} < $samples_required) { next; }
 	$fn = "e/fd_tmpfs-$name_by_pid{$p}-$p";
@@ -4277,7 +4282,7 @@ sub generate_plots()
 
 ############# fd_count_eventfd for processes #####################
     print "fd_eventfd ";
-    %show_this = undef;
+    %show_this = ();
     foreach my $p (reverse sort {$fd_eventfd{$a} <=> $fd_eventfd{$b} } keys %fd_eventfd) {
 	if ($fd_samples{$p} < $samples_required) { next; }
 	$fn = "e/fd_eventfd-$name_by_pid{$p}-$p";
@@ -4297,7 +4302,7 @@ sub generate_plots()
 
 ############# fd_count_epoll for processes #####################
     print "fd_epoll ";
-    %show_this = undef;
+    %show_this = ();
     foreach my $p (reverse sort {$fd_epoll{$a} <=> $fd_epoll{$b} } keys %fd_epoll) {
 	if ($fd_samples{$p} < $samples_required) { next; }
 	$fn = "e/fd_epoll-$name_by_pid{$p}-$p";
@@ -4317,7 +4322,7 @@ sub generate_plots()
 
 ############# fd_count_signalfd for processes #####################
     print "fd_signalfd ";
-    %show_this = undef;
+    %show_this = ();
     foreach my $p (reverse sort {$fd_signalfd{$a} <=> $fd_signalfd{$b} } keys %fd_signalfd) {
 	if ($fd_samples{$p} < $samples_required) { next; }
 	$fn = "e/fd_signalfd-$name_by_pid{$p}-$p";
@@ -4337,7 +4342,7 @@ sub generate_plots()
 
 ############# fd_count_timerfd for processes #####################
     print "fd_timerfd ";
-    %show_this = undef;
+    %show_this = ();
     foreach my $p (reverse sort {$fd_timerfd{$a} <=> $fd_timerfd{$b} } keys %fd_timerfd) {
 	if ($fd_samples{$p} < $samples_required) { next; }
 	$fn = "e/fd_timerfd-$name_by_pid{$p}-$p";
@@ -4357,7 +4362,7 @@ sub generate_plots()
 
 ############# fd_count_disk for processes #####################
     print "fd_disk ";
-    %show_this = undef;
+    %show_this = ();
     foreach my $p (reverse sort {$fd_disk{$a} <=> $fd_disk{$b} } keys %fd_disk) {
 	if ($fd_samples{$p} < $samples_required) { next; }
 	$fn = "e/fd_disk-$name_by_pid{$p}-$p";
@@ -4743,7 +4748,7 @@ sub generate_plots()
 	close_plot($i, $plot, $graph_powertop_wakeups);
 ############# powertop activity #####################
 	$cnt = 0;
-	%show_this = undef;
+	%show_this = ();
 	foreach my $p (keys %p_activity) {
 	    if ($num_activity_samples{$p} <= 1) {
 		next;
@@ -4902,9 +4907,12 @@ foreach $d (@dirs) {
 	exit(1);
     }
     print "$d ";
-    %shared_lpid = %shared_cpid = undef;
-    %shared_lpid_cnt_oneround = %shared_cpid_cnt_oneround = undef;
-    %shared_num = %shared_size = undef;
+    %shared_lpid = ();
+    %shared_cpid = ();
+    %shared_lpid_cnt_oneround = ();
+    %shared_cpid_cnt_oneround = ();
+    %shared_num = ();
+    %shared_size = ();
     while (<$f>) {
 	if( (index($_, "Loadavg ") != -1)) {
 	    $line = <$f>;
