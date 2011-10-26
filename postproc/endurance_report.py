@@ -1012,7 +1012,7 @@ def output_process_changes(pids1, pids2, titles, pid2cgroup1, pid2cgroup2, do_su
         for name, pid, name_unique in namepid_new:
             cgroup = ""
             if show_cgroups:
-                if pid in pid2cgroup2:
+                if pid2cgroup2 and pid in pid2cgroup2:
                     cgroup = pid2cgroup2[pid]
                 if name_unique:
                     cgroup = "<td><ins>%s</ins>" % cgroup
@@ -1317,8 +1317,11 @@ def cpu_tickdiff(round1, round2, pid):
 
 # Total difference in CPU clock ticks between given rounds.
 def total_cpu_tickdiff(round1, round2):
-    return sum(round2['/proc/stat']['cpu'].itervalues()) - \
-           sum(round1['/proc/stat']['cpu'].itervalues())
+    try:
+        return sum(round2['/proc/stat']['cpu'].itervalues()) - \
+               sum(round1['/proc/stat']['cpu'].itervalues())
+    except KeyError:
+        return 0
 
 def resource_overall_changes(data, idx1, idx2, do_summary):
     run1 = data[idx1]
@@ -1528,7 +1531,8 @@ def output_run_diffs(idx1, idx2, data, do_summary):
     output_diffs(diffs, "Shared memory segments", "Type", "",
                 Colors.shm, idx1, do_summary)
 
-    output_cgroup_diffs(run1['cgroups'], run2['cgroups'])
+    if 'cgroups' in run1 and 'cgroups' in run2:
+        output_cgroup_diffs(run1['cgroups'], run2['cgroups'])
 
     # Kernel statistics
     if cpu_total_diff > 0:
@@ -1583,6 +1587,11 @@ def output_run_diffs(idx1, idx2, data, do_summary):
     output_diffs(diffs, "Process thread count", "Command[Pid]", "",
                     Colors.threads, idx1, do_summary)
 
+    pid2cgroup1 = None
+    pid2cgroup2 = None
+    if 'pid2cgroup' in run1: pid2cgroup1 = run1['pid2cgroup']
+    if 'pid2cgroup' in run2: pid2cgroup2 = run2['pid2cgroup']
+
     # new and closed processes
     titles = ("Change in number of processes",
               "Exited processes",
@@ -1590,14 +1599,14 @@ def output_run_diffs(idx1, idx2, data, do_summary):
     output_process_changes(
                 get_pids_from_procs(run1['processes'], run1['commands']),
                 get_pids_from_procs(run2['processes'], run2['commands']),
-                titles, run1['pid2cgroup'], run2['pid2cgroup'], do_summary)
+                titles, pid2cgroup1, pid2cgroup2, do_summary)
 
     # new and collected kthreads/zombies
     titles = ("Change in number of kernel threads and zombie processes",
               "Collected kthreads/zombies",
               "New kthreads/zombies")
     output_process_changes(run1['kthreads'], run2['kthreads'], titles,
-                run1['pid2cgroup'], run2['pid2cgroup'], do_summary,
+                pid2cgroup1, pid2cgroup2, do_summary,
                 show_cgroups=False)
 
     return stat
@@ -1984,9 +1993,11 @@ def output_network_use_graphs(data):
     interfaces = {}
     # collect interfaces
     for testcase in data:
-        for face in testcase['transfers']:
-            if face not in interfaces and testcase['transfers'][face] > 0:
-                interfaces[face] = []
+        try:
+            for face in testcase['transfers']:
+                if face not in interfaces and testcase['transfers'][face] > 0:
+                    interfaces[face] = []
+        except KeyError: pass
     faces = interfaces.keys()
     if not faces:
         print "<p>Only local or no interfaces up when measurements were taken."
@@ -1996,7 +2007,7 @@ def output_network_use_graphs(data):
     faces.sort()
     for testcase in data:
         for face in faces:
-            if face in testcase['transfers']:
+            if 'transfers' in testcase and face in testcase['transfers']:
                 interfaces[face].append(testcase['transfers'][face])
             else:
                 interfaces[face].append(0)
