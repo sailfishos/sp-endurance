@@ -459,6 +459,30 @@ def parse_smaps(file):
     return (smaps, private_code)
 
 
+# --------------------- DSME rich-cores parsing ---------------------------
+
+def get_dsme_rich_cores(dirname):
+    dsme_rich_cores = {}
+    try:
+        for entry in os.listdir(dirname + "/dsme/rich-cores"):
+            f = None
+            try:
+                f = open(dirname + "/dsme/rich-cores/" + entry)
+            except IOError: pass
+            if not f: continue
+            core_count = f.readline().strip()
+            f.close()
+            if not core_count: continue
+            try:
+                core_count = int(core_count)
+                if core_count <= 0: continue
+                dsme_rich_cores[entry] = core_count
+            except ValueError:
+                continue
+    except OSError:
+        pass
+    return dsme_rich_cores
+
 # --------------------- CSV parsing ---------------------------
 
 def get_filesystem_usage(file):
@@ -1035,6 +1059,30 @@ def output_process_changes(pids1, pids2, titles, pid2cgroup1, pid2cgroup2, do_su
     if do_summary:
         print "<!--\n- %s: %+d\n-->" % (titles[0], change)
 
+def output_new_dsme_rich_cores(dsme_rich_cores1, dsme_rich_cores2):
+    crashed_processes = {}
+    for process in dsme_rich_cores2:
+        cnt2 = dsme_rich_cores2[process]
+        if not process in dsme_rich_cores1:
+            crashed_processes[process] = cnt2
+        else:
+            cnt1 = dsme_rich_cores1[process]
+            if cnt2 > cnt1:
+                crashed_processes[process] = cnt2 - cnt1
+    if not crashed_processes:
+        return
+    print "<p><table border=1>"
+    print "<caption><i>Process crashes reported by DSME</i></caption>"
+    print "<tr>" \
+            + "<th>Process:" \
+            + "<th>Crashes:"
+    for process in crashed_processes:
+        print ("<tr>" \
+                + "<td>%s" \
+                + "<td align=right><b>%d</b>") % \
+                (process, crashed_processes[process])
+    print "</table>"
+
 def output_cgroup_diffs(cgroups1, cgroups2):
     all_groups = cgroups2.keys()
     all_groups.sort()
@@ -1608,6 +1656,13 @@ def output_run_diffs(idx1, idx2, data, do_summary):
     output_process_changes(run1['kthreads'], run2['kthreads'], titles,
                 pid2cgroup1, pid2cgroup2, do_summary,
                 show_cgroups=False)
+
+    # DSME reported process crashes
+    if 'dsme_rich_cores' in run2:
+        dsme_rich_cores1 = {}
+        dsme_rich_cores2 = run2['dsme_rich_cores']
+        if 'dsme_rich_cores' in run1: dsme_rich_cores1 = run1['dsme_rich_cores']
+        output_new_dsme_rich_cores(dsme_rich_cores1, dsme_rich_cores2)
 
     return stat
 
@@ -2337,6 +2392,10 @@ def parse_syte_stats(dirs):
         file, filename = syslog.open_compressed("%s/cgroups" % dirname)
         if file:
             items['pid2cgroup'], items['tid2group'], items['cgroups'] = parse_cgroups(file)
+
+        dsme_rich_cores = get_dsme_rich_cores(dirname)
+        if dsme_rich_cores:
+            items['dsme_rich_cores'] = dsme_rich_cores
 
         data.append(items)
     return data
