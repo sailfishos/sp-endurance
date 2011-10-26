@@ -1408,7 +1408,7 @@ sub parse_filesystem_block($)
 	}
 	my ($Filesystem,$blocks,$Used,$Available,$Use_perc,$Mounted) = split(',' , $_, 6);
 	if ($Mounted && !$fs_entry_seen{$Mounted}) {
-	    $om = $Mounted;
+	    #$om = $Mounted;
 	    chop $Use_perc;
 	    $fs_entry_seen{$Mounted} += 1;
 	    $Mounted =~ s/\//\_/g;
