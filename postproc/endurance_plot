@@ -3642,9 +3642,7 @@ sub generate_plots()
     }
     $cnt = 0;
     foreach my $p (sort {$sumdev_heap{$a} <=> $sumdev_heap{$b} } keys %sum_heap) {
-	if ($show_this{$p} != 1) {
-	    next;
-	} 
+	next unless $show_this{$p};
 	one_plot_set("e/heap-$p", 0, $plot, \$cnt, 1);
     }
     close_plot($cnt, $plot, $graph_appmem_heap);
@@ -3682,7 +3680,7 @@ sub generate_plots()
 	my $cnt_this_round = 0;
 	my @plotted_this_round;
 	foreach my $p (reverse sort { $max_heap{$a} <=> $max_heap{$b} } keys %max_heap_to_plot) {
-	    next if ($show_this{$p} != 1);
+	    next unless $show_this{$p};
 	    if (not $prev_max) {
 		$prev_max = $max_heap{$p};
 	    }
@@ -3727,9 +3725,7 @@ sub generate_plots()
     }
     $cnt = 0;
     foreach my $p (sort {$sumdev_sysv_shared{$a} <=> $sumdev_sysv_shared{$b} } keys %app_cumul_sysv_shared) {
-	if ($show_this{$p} != 1) {
-	    next;
-	} 
+	next unless $show_this{$p};
 	one_plot_set("e/sysvshm-$p", 0, $plot, \$cnt, 1);
     }
     close_plot($cnt, $plot, $graph_appmem_sysvshared);
@@ -3756,9 +3752,7 @@ sub generate_plots()
     }
     $cnt = 0;
     foreach my $p (sort {$sumdev_posix_shared{$a} <=> $sumdev_posix_shared{$b} } keys %app_cumul_posix_shared) {
-	if ($show_this{$p} != 1) {
-	    next;
-	} 
+	next unless $show_this{$p};
 	one_plot_set("e/posixshm-$p", 0, $plot, \$cnt, 1);
     }
     close_plot($cnt, $plot, $graph_appmem_posixshared);
@@ -3786,9 +3780,7 @@ sub generate_plots()
     }
     $cnt = 0;
     foreach my $p (sort {$sumdev_dev_pvr{$a} <=> $sumdev_dev_pvr{$b} } keys %app_cumul_dev_pvr) {
-	if ($show_this{$p} != 1) {
-	    next;
-	} 
+	next unless $show_this{$p};
 	one_plot_set("e/devpvr-$p", 0, $plot, \$cnt, 1);
     }
     close_plot($cnt, $plot, $graph_appmem_devpvr);
@@ -3873,9 +3865,7 @@ sub generate_plots()
 	}
 	$cnt = 0;
 	foreach my $p (sort {$sumdev_swp{$a} <=> $sumdev_swp{$b} } keys %app_cumul_swp) {
-	    if ($show_this{$p} != 1) {
-		next;
-	    } 
+	    next unless $show_this{$p};
 	    one_plot_set("e/swp-$p", 0, $plot, \$cnt, 1);
 #    print "2:cnt=$cnt p=$p show_this=$show_this{$p}\n";
 	}
@@ -3906,9 +3896,7 @@ sub generate_plots()
 	}
 	$cnt = 0;
 	foreach my $p (sort {$sumdev_pss_swp_adj{$a} <=> $sumdev_pss_swp_adj{$b} } keys %app_cumul_pss_swp) {
-	    if ($show_this{$p} != 1) {
-		next;
-	    } 
+	    next unless $show_this{$p};
 	    one_plot_set("e/pswp-$p", 0, $plot, \$cnt, 1);
 	}
 	close_plot($cnt, $plot, $graph_appmem_pss_swap);
@@ -3969,9 +3957,7 @@ sub generate_plots()
     }
     $cnt = 0;
     foreach my $p (sort {$sumdev_pss{$a} <=> $sumdev_pss{$b} } keys %app_cumul_pss) {
-	if ($show_this{$p} != 1) {
-	    next;
-	} 
+	next unless $show_this{$p};
 #    print "pss:$p: sumdev=$sumdev_pss{$p} devcount=$devcount_pss{$p}\n";
 	one_plot_set("e/p-$p", 0, $plot, \$cnt, 1);
     }
@@ -4222,7 +4208,7 @@ sub generate_plots()
 	$cnt = 0;
 	$plot = start_plotfile_linespoints($graph_fdcount_inotify);
 	foreach my $p (reverse sort {$fd_inotify{$a} <=> $fd_inotify{$b} } keys %fd_inotify) {
-	    if ($show_this{$p} != 1) { next; }
+	    next unless $show_this{$p};
 	    $fn = "e/fd_inotify-$name_by_pid{$p}-$p";
 	    one_plot_set($fn, 3, $plot, \$cnt, 1);
 	}
@@ -4242,7 +4228,7 @@ sub generate_plots()
 	$cnt = 0;
 	$plot = start_plotfile_linespoints($graph_fdcount_pipe);
 	foreach my $p (reverse sort {$fd_pipe{$a} <=> $fd_pipe{$b} } keys %fd_pipe) {
-	    if ($show_this{$p} != 1) { next; }
+	    next unless $show_this{$p};
 	    $fn = "e/fd_pipe-$name_by_pid{$p}-$p";
 	    one_plot_set($fn, 3, $plot, \$cnt, 1);
 	}
@@ -4262,7 +4248,7 @@ sub generate_plots()
 	$plot = start_plotfile_linespoints($graph_fdcount_socket);
 	$cnt = 0;
 	foreach my $p (reverse sort {$fd_socket{$a} <=> $fd_socket{$b} } keys %fd_socket) {
-	    if ($show_this{$p} != 1) { next; }
+	    next unless $show_this{$p};
 	    $fn = "e/fd_socket-$name_by_pid{$p}-$p";
 	    one_plot_set($fn, 3, $plot, \$cnt, 1);
 	}
@@ -4282,7 +4268,7 @@ sub generate_plots()
 	$plot = start_plotfile_linespoints($graph_fdcount_tmpfs);
 	$cnt = 0;
 	foreach my $p (reverse sort {$fd_tmpfs{$a} <=> $fd_tmpfs{$b} } keys %fd_tmpfs) {
-	    if ($show_this{$p} != 1) { next; }
+	    next unless $show_this{$p};
 	    $fn = "e/fd_tmpfs-$name_by_pid{$p}-$p";
 	    one_plot_set($fn, 3, $plot, \$cnt, 1);
 	}
@@ -4302,7 +4288,7 @@ sub generate_plots()
 	$plot = start_plotfile_linespoints($graph_fdcount_eventfd);
 	$cnt = 0;
 	foreach my $p (reverse sort {$fd_eventfd{$a} <=> $fd_eventfd{$b} } keys %fd_eventfd) {
-	    if ($show_this{$p} != 1) { next; }
+	    next unless $show_this{$p};
 	    $fn = "e/fd_eventfd-$name_by_pid{$p}-$p";
 	    one_plot_set($fn, 3, $plot, \$cnt, 1);
 	}
@@ -4322,7 +4308,7 @@ sub generate_plots()
 	$plot = start_plotfile_linespoints($graph_fdcount_epoll);
 	$cnt = 0;
 	foreach my $p (reverse sort {$fd_epoll{$a} <=> $fd_epoll{$b} } keys %fd_epoll) {
-	    if ($show_this{$p} != 1) { next; }
+	    next unless $show_this{$p};
 	    $fn = "e/fd_epoll-$name_by_pid{$p}-$p";
 	    one_plot_set($fn, 3, $plot, \$cnt, 1);
 	}
@@ -4342,7 +4328,7 @@ sub generate_plots()
 	$plot = start_plotfile_linespoints($graph_fdcount_signalfd);
 	$cnt = 0;
 	foreach my $p (reverse sort {$fd_signalfd{$a} <=> $fd_signalfd{$b} } keys %fd_signalfd) {
-	    if ($show_this{$p} != 1) { next; }
+	    next unless $show_this{$p};
 	    $fn = "e/fd_signalfd-$name_by_pid{$p}-$p";
 	    one_plot_set($fn, 3, $plot, \$cnt, 1);
 	}
@@ -4362,7 +4348,7 @@ sub generate_plots()
 	$plot = start_plotfile_linespoints($graph_fdcount_timerfd);
 	$cnt = 0;
 	foreach my $p (reverse sort {$fd_timerfd{$a} <=> $fd_timerfd{$b} } keys %fd_timerfd) {
-	    if ($show_this{$p} != 1) { next; }
+	    next unless $show_this{$p};
 	    $fn = "e/fd_timerfd-$name_by_pid{$p}-$p";
 	    one_plot_set($fn, 3, $plot, \$cnt, 1);
 	}
@@ -4382,7 +4368,7 @@ sub generate_plots()
 	$plot = start_plotfile_linespoints($graph_fdcount_disk);
 	$cnt = 0;
 	foreach my $p (reverse sort {$fd_disk{$a} <=> $fd_disk{$b} } keys %fd_disk) {
-	    if ($show_this{$p} != 1) { next; }
+	    next unless $show_this{$p};
 	    $fn = "e/fd_disk-$name_by_pid{$p}-$p";
 	    one_plot_set($fn, 3, $plot, \$cnt, 1);
 	}
@@ -4778,9 +4764,7 @@ sub generate_plots()
 	    if (($cnt_1 + $cnt_2 + $cnt_3 + $cnt_4) > 4*$max_per_graph_onecolumn) {
 		last;
 	    } 
-	    if (!$show_this{$p}) {
-		next;
-	    }
+	    next unless $show_this{$p};
 	    if (($cnt_1 + $cnt_2 + $cnt_3 + $cnt_4) <= $split_point) {
 		one_plot_set("e/$p-activity", 2, $plot_1, \$cnt_1, 0);
 	    } elsif (($cnt_1 + $cnt_2 + $cnt_3 + $cnt_4) <= 2 * $split_point) {
