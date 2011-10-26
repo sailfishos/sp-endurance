@@ -1940,8 +1940,10 @@ sub process_smaps()
 		}
 		$sumdev_heap{$nm} += $dev;
 		$devcount_heap{$nm} += 1;
-		if($heap > $max_heap{$nm}) {
+		if (not defined $max_heap{$nm}) {
 		    $max_heap{$nm} = $heap;
+		} else {
+		    $max_heap{$nm} = max $heap, $max_heap{$nm};
 		}
 		$fn = "e/heap-$nm";
 		$sum_heap{$nm} += $heap;
@@ -2629,6 +2631,9 @@ sub loop_over_all_apps()
 	    }
 	    $sumdev_pss{$x} += $dev;
 	    $devcount_pss{$x} += 1;
+	    $xxx = $app_pss{$x} / 1024;
+	} else {
+	    $xxx = 0;
 	}
 #	    print "$i:$x:PSS: pss=$app_pss{$x} dev=$dev dev_cnt=$devcount_pss{$x} avg=$avg_pss{$x}\n";
 #	if ($i == 0) {
@@ -2636,7 +2641,6 @@ sub loop_over_all_apps()
 #	}
 
 	$fn = "e/p-$x";
-	$xxx = $app_pss{$x} / 1024;
 	value_store_zeropad($fn, $i, $xxx);
 
 	###############
@@ -2649,11 +2653,13 @@ sub loop_over_all_apps()
 	    }
 	    $sumdev_sysv_shared{$x} += $dev;
 	    $devcount_sysv_shared{$x} += 1;
+	    $xxx = $app_sysv_shared{$x} / 1024;
+	} else {
+	    $xxx = 0;
 	}
 #	print "$i:$x:SYSV: pss=$app_sysv_shared{$x} dev=$dev dev_cnt=$devcount_sysv_shared{$x} avg=$avg_sysv_shared{$x}\n";
 
 	$fn = "e/sysvshm-$x";
-	$xxx = $app_sysv_shared{$x} / 1024;
 	value_store_zeropad($fn, $i, $xxx);
 
 	###############
@@ -2666,11 +2672,13 @@ sub loop_over_all_apps()
 	    }
 	    $sumdev_posix_shared{$x} += $dev;
 	    $devcount_posix_shared{$x} += 1;
+	    $xxx = $app_posix_shared{$x} / 1024;
+	} else {
+	    $xxx = 0;
 	}
 #	print "$i:$x:POSIX: pss=$app_posix_shared{$x} dev=$dev dev_cnt=$devcount_posix_shared{$x} avg=$avg_posix_shared{$x}\n";
 
 	$fn = "e/posixshm-$x";
-	$xxx = $app_posix_shared{$x} / 1024;
 	value_store_zeropad($fn, $i, $xxx);
 
 	###############
@@ -2683,10 +2691,12 @@ sub loop_over_all_apps()
 	    }
 	    $sumdev_dev_pvr{$x} += $dev;
 	    $devcount_dev_pvr{$x} += 1;
+	    $xxx = $app_dev_pvr{$x} / 1024;
+	} else {
+	    $xxx = 0;
 	}
 
 	$fn = "e/devpvr-$x";
-	$xxx = $app_dev_pvr{$x} / 1024;
 	value_store_zeropad($fn, $i, $xxx);
 
 	###############
@@ -2700,17 +2710,21 @@ sub loop_over_all_apps()
 	    }
 	    $sumdev_swp{$x} += $dev;
 	    $devcount_swp{$x} += 1;
+	    $xxx = $app_swapped{$x} / 1024;
+	} else {
+	    $xxx = 0;
 	}
 	$fn = "e/swp-$x";
-	$xxx = $app_swapped{$x} / 1024;
 	value_store_zeropad($fn, $i, $xxx);
 
 	###############
 	if ($app_rwxp{$x}) {
 	    $app_cumul_rwxp{$x} += $app_rwxp{$x};
+	    $xxx = $app_rwxp{$x} / 1024;
+	} else {
+	    $xxx = 0;
 	}
 	$fn = "e/$x-wx";
-	$xxx = $app_rwxp{$x} / 1024;
 	value_store_zeropad($fn, $i, $xxx);
 
 	###############
