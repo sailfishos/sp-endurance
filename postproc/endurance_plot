@@ -932,6 +932,7 @@ sub value_emit($$)
 	print "*** emit[$fn]: no ref in hash!?\n";
 	return $num;
     }
+    my $ofile;
     unless (open ($ofile, "> $fn")) {
 	print STDERR "ERROR: unable to create $fn: $!\n";
 	exit(1);
