@@ -999,8 +999,6 @@ sub split_values($)
 {
     my $lin = shift;
     my @values = split(',' , $lin);
-    $num_values = @values;
-#    print "split_val: names=$num_names [@names] values=$num_values [@values]\n";
     my $vidx = 0;
     %val = ();
     foreach $n (@names) {
@@ -1016,7 +1014,6 @@ sub parse_name_state_block($)
     chop;
     chop;
     @names = split(',' , $_);
-    $num_names = @names;
     while (<$handle>) {
 	$line = $_;
 	chop $line;
@@ -1085,7 +1082,6 @@ sub parse_shmem_block($)
     my $line = <$handle>;
     chop $line;
     @names = split(',' , $line);
-    $num_names = @names;
     while (<$handle>) {
 	$line = $_;
 	chop $line;
@@ -1215,7 +1211,6 @@ sub parse_process_status_block($)
 #    chop;
 #    chop;
 #    @names = split(',' , $_);
-#    $num_names = @names;
     while (<$handle>) {
 	$line = $_;
 	chop $line;
@@ -1316,7 +1311,6 @@ sub parse_xresource_block($)
     my $handle= shift;
     chop;
     @names = split(',' , $_);
-    $num_names = @names;
 
     my %xres_seen = ();
     my $sum_all_pixmaps = 0;
@@ -1436,7 +1430,6 @@ sub parse_memtotal_block($)
     my $handle= shift;
     chop;
     @names = split(',' , $_);
-    $num_names = @names;
 #		print "names=[@names]\n";
 
     my $line = <$handle>;
@@ -1494,8 +1487,6 @@ sub parse_pages_block($)
     chop;
     chop;
     @names = split(',' , $_);
-    $num_names = @names;
-#		print "names=[@names]\n";
 
     my $line = <$handle>;
     chop $line;
