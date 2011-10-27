@@ -1,0 +1,413 @@
+#!/usr/bin/perl
+#
+# Program for extracting Cgroup process information from endurance data.
+# Generates output in either text or HTML format.
+
+use strict;
+use Getopt::Long;
+use Pod::Usage;
+use List::Util qw/first/;
+use List::MoreUtils qw/uniq any/;
+use CGI;
+
+my %pid2name;
+my %cgroups_seen;
+my %cgroup_procs;
+my %sw_versions;
+my %dates;
+
+my $flag_h;
+my $flag_help;
+my $flag_text;
+my $flag_html;
+my @flag_pids;
+my @flag_names;
+my @flag_cgroups;
+my $flag_verbose;
+
+sub process_csv
+{
+	my ($dirname) = @_;
+	my $fn = $dirname . '/usage.csv';
+	if (not open(CSV, $fn)) {
+		print STDERR "\n" if $flag_verbose;
+		print STDERR "WARNING: unable to open $fn: $!\n";
+		return -1;
+	}
+	while (<CSV>) {
+		if (m#SW-version = (.*)#) {
+			my $sw = $1;
+			$sw_versions{$dirname} = $sw;
+			last;
+		}
+	}
+	while (<CSV>) {
+		if (m#date = (.*)#) {
+			my $date = $1;
+			$dates{$dirname} = $date;
+			last;
+		}
+	}
+	while (<CSV> !~ m#^PID,FD count,Command line:#) { }
+	while (<CSV> =~ m#^(\d+),(\d+),(.*)#) {
+		my ($pid, $fdcount, $cmdline) = ($1, $2, $3);
+		$pid2name{$dirname}{$pid} = $cmdline;
+	}
+	while (<CSV> !~ m#^Name,State,Tgid,Pid,#) { }
+	while (<CSV> =~ m#^([^,]+),[^,]+,\d+,(\d+),#) {
+		my ($name, $pid) = ($1, $2);
+		if (not $pid2name{$dirname}{$pid}) {
+			$pid2name{$dirname}{$pid} = '[' . $name . ']';
+		}
+	}
+	close(CSV);
+	return 0;
+}
+
+sub process_cgroups
+{
+	my ($dirname) = @_;
+	my $fn = $dirname . '/cgroups';
+	if (not open(CGROUPS, $fn)) {
+		print STDERR "WARNING: unable to open $fn: $!\n";
+		return -1;
+	}
+	while (<CGROUPS>) {
+		my $cgroup_name;
+		if (m#^==> /syspart(\S*/)cgroup\.procs <==#) {
+			$cgroup_name = $1;
+			my @procs;
+			while (<CGROUPS> =~ m#(^\d+)$#) {
+				push(@procs, int($1));
+			}
+			$cgroup_procs{$dirname}{$cgroup_name} = \@procs;
+		}
+		if ($cgroup_name) {
+			$cgroups_seen{$cgroup_name} = 1;
+		}
+	}
+	close(CGROUPS);
+	return 0;
+}
+
+sub check_sw_versions
+{
+	my @uniq_sw_versions = uniq(values(%sw_versions));
+	if (@uniq_sw_versions > 1) {
+		my $prev_version;
+		my $prev_dir;
+		for my $dir (@ARGV) {
+			next if not exists $sw_versions{$dir};
+			if (not $prev_version) {
+				$prev_version = $sw_versions{$dir};
+				$prev_dir = $dir;
+			} else {
+				if ($sw_versions{$dir} ne $prev_version) {
+					print STDERR "WARNING: SW-version changed between rounds $prev_dir and $dir!\n";
+				}
+				$prev_version = $sw_versions{$dir};
+				$prev_dir = $dir;
+			}
+		}
+	}
+}
+
+my $cgroup_button_js = q@
+function set_cgroup_visibility(cgroup, set_visible) {
+	var spans = document.getElementsByTagName('span');
+	var re_hidden = new RegExp("^cgroup_hidden_" + cgroup + "$");
+	var re_visible = new RegExp("^cgroup_visible_" + cgroup + "$");
+	for (var i=0; i < spans.length; ++i) {
+		if (set_visible) {
+			if (spans[i].className.match(re_hidden)) {
+				spans[i].className = "cgroup_visible_" + cgroup;
+			}
+		} else {
+			if (spans[i].className.match(re_visible)) {
+				spans[i].className = "cgroup_hidden_" + cgroup;
+			}
+		}
+	}
+}
+function toggle_cgroup_visibility(cgroup) {
+	var spans = document.getElementsByTagName('span');
+	var re_hidden = new RegExp("^cgroup_hidden_" + cgroup + "$");
+	var re_visible = new RegExp("^cgroup_visible_" + cgroup + "$");
+	for (var i=0; i < spans.length; ++i) {
+		if (spans[i].className.match(re_hidden)) {
+			spans[i].className = "cgroup_visible_" + cgroup;
+		} else if (spans[i].className.match(re_visible)) {
+			spans[i].className = "cgroup_hidden_" + cgroup;
+		}
+	}
+}
+@;
+
+# Mangle the Cgroup name to something that can be suitable used in HTML/CSS
+# class names.
+sub cgroup_class_name
+{
+	my ($cgroup) = @_;
+	my $cgroup_class = CGI::escapeHTML($cgroup);
+	$cgroup_class =~ s#/#_#g;
+	return $cgroup_class;
+}
+
+sub generate_css
+{
+	my @cgroups = @_;
+	my $css = '';
+	foreach my $cgroup (@cgroups) {
+		$css .= '.cgroup_hidden_' . cgroup_class_name($cgroup) . " {display:none;}\n";
+	}
+	return $css;
+}
+
+sub report_html
+{
+	if (not open(HTML, '>' . $flag_html)) {
+		print STDERR "ERROR: unable to create ${flag_html}: $!\n";
+		exit(1);
+	}
+	print STDERR "Creating HTML.\n" if $flag_verbose;
+	my @cgroups = sort(keys(%cgroups_seen));
+	my $sw_version = first { defined($_) and $_ ne "" } values(%sw_versions);
+	my $q = CGI->new;
+	print HTML $q->start_html(
+		-title => "Cgroup report [$sw_version]",
+		-style => { -code => generate_css(@cgroups) },
+		-script => { -type => 'text/javascript', -code => $cgroup_button_js });
+	print HTML "<p>SW: $sw_version</p>\n" if $sw_version;
+	print HTML "<form>\n";
+	my $show_all = "<input type='button' value='Show all cgroups' onClick='";
+	my $hide_all = "<input type='button' value='Hide all cgroups' onClick='";
+	foreach my $cgroup (@cgroups) {
+		my $cgroup_class = cgroup_class_name($cgroup);
+		$show_all .= "set_cgroup_visibility(\"$cgroup_class\", true);";
+		$hide_all .= "set_cgroup_visibility(\"$cgroup_class\", false);";
+	}
+	$show_all .= "' />\n";
+	$hide_all .= "' />\n";
+	print HTML $show_all;
+	print HTML $hide_all;
+	print HTML "<br/>\nShow and hide cgroups: ";
+	foreach my $cgroup (@cgroups) {
+		my $cgroup_class = cgroup_class_name($cgroup);
+		print HTML "<input type='button' onClick='toggle_cgroup_visibility(\"$cgroup_class\");' value='$cgroup'/>\n";
+	}
+	print HTML "</form>\n";
+	my $i = 0;
+	for my $dir (@ARGV) {
+		print HTML "<p>\n";
+		print HTML "Directory: <b>$dir</b><br/>\n";
+		print HTML "Date: <b>$dates{$dir}</b><br/>\n";
+		print HTML "</p>\n";
+		foreach my $cgroup (@cgroups) {
+			next if not exists $cgroup_procs{$dir} or
+				not exists $cgroup_procs{$dir}{$cgroup};
+			my @procs = @{$cgroup_procs{$dir}{$cgroup}};
+			next if not @procs;
+			my $cgroup_class = cgroup_class_name($cgroup);
+			$cgroup = CGI::escapeHTML($cgroup);
+			print HTML "<span class='cgroup_visible_${cgroup_class}'><p>Control group: <u>$cgroup</u> [process count: " . scalar(@procs). "]</p>\n";
+			print HTML " <ul>\n";
+			foreach my $pid (@procs) {
+				my $name = $pid2name{$dir}{$pid};
+				$pid = CGI::escapeHTML($pid);
+				$name = CGI::escapeHTML($name);
+				printf HTML "   <li>%d: %s</li>\n", $pid, $name;
+			}
+			print HTML " </ul></span>\n";
+		}
+		print HTML "<hr/>\n" if ($i+1) < @ARGV;
+		$i++;
+	}
+	print HTML $q->end_html();
+	close(HTML);
+	print STDERR "HTML done!\n" if $flag_verbose;
+}
+
+sub report_text
+{
+	my @cgroups = sort(keys(%cgroups_seen));
+	if (@flag_pids or @flag_names or @flag_cgroups) {
+		for my $dir (@ARGV) {
+			foreach my $cgroup (@cgroups) {
+				if (@flag_cgroups) {
+					next if not $cgroup ~~ @flag_cgroups;
+				}
+				next if not exists $cgroup_procs{$dir} or
+					not exists $cgroup_procs{$dir}{$cgroup};
+				my @procs = @{$cgroup_procs{$dir}{$cgroup}};
+				next if not @procs;
+				if (@flag_pids) {
+					my @matched_pids;
+					foreach my $flag_pid (@flag_pids) {
+						if ($flag_pid ~~ @procs) {
+							push(@matched_pids, $flag_pid);
+						}
+					}
+					if (@matched_pids) {
+						printf "[%s] ==> %s <==\n", $dir, $cgroup;
+						foreach my $pid (@matched_pids) {
+							my $name = $pid2name{$dir}{$pid};
+							printf "[%s] %6d: %s\n", $dir, $pid, $name;
+						}
+						print "\n";
+					}
+				} elsif (@flag_names) {
+					my @matching_pids;
+					my $cgroup_name_printed = 0;
+					foreach my $pid (@procs) {
+						my $name = $pid2name{$dir}{$pid};
+						if (any { index($name, $_) != -1 } @flag_names) {
+							push(@matching_pids, $pid);
+						}
+					}
+					if (@matching_pids > 0) {
+						printf "[%s] ==> %s <==\n", $dir, $cgroup;
+						foreach my $pid (@matching_pids) {
+							my $name = $pid2name{$dir}{$pid};
+							printf "[%s] %6d: %s\n", $dir, $pid, $name;
+						}
+						print "\n";
+					}
+				} else {
+					printf "[%s] ==> %s <==\n", $dir, $cgroup;
+					foreach my $pid (@procs) {
+						my $name = $pid2name{$dir}{$pid};
+						printf "[%s] %6d: %s\n", $dir, $pid, $name;
+					}
+					print "\n";
+				}
+			}
+		}
+	} else {
+		for my $dir (@ARGV) {
+			print "##### $dir #####\n\n";
+			foreach my $cgroup (@cgroups) {
+				next if not exists $cgroup_procs{$dir} or
+					not exists $cgroup_procs{$dir}{$cgroup};
+				my @procs = @{$cgroup_procs{$dir}{$cgroup}};
+				next if not @procs;
+				printf "==> %s <==\n", $cgroup;
+				foreach my $pid (@procs) {
+					my $name = $pid2name{$dir}{$pid};
+					printf "%6d: %s\n", $pid, $name;
+				}
+				print "\n";
+			}
+		}
+	}
+}
+
+exit(1) if not GetOptions(
+	'h' => \$flag_h,
+	'help' => \$flag_help,
+	'text' => \$flag_text,
+	'html=s' => \$flag_html,
+	'pid=s' => \@flag_pids,
+	'name=s' => \@flag_names,
+	'cgroup=s' => \@flag_cgroups,
+	'verbose' => \$flag_verbose,
+);
+
+if ($flag_help) { pod2usage(-exitstatus => 1, -verbose => 2); }
+if ($flag_h or @ARGV < 1) { pod2usage(-exitstatus => 1); }
+
+if ($flag_text and $flag_html) {
+	print STDERR "ERROR: please specify either --text or --html.\n";
+	exit(1);
+}
+
+if (not $flag_text and not $flag_html) {
+	$flag_text = 1;
+}
+
+if ($flag_text) {
+	if (((@flag_pids > 0) + (@flag_names > 0) + (@flag_cgroups > 0)) > 1) {
+		print STDERR "ERROR: --pid, --name and --cgroup are exclusive flags.\n";
+		exit(1);
+	}
+	@flag_pids = uniq(@flag_pids);
+	@flag_names = uniq(@flag_names);
+	@flag_cgroups = uniq(@flag_cgroups);
+	foreach my $flag_pid (@flag_pids) {
+		if (not $flag_pid =~ m#\d+#) {
+			print STDERR "ERROR: --pid='%s': please specify PID in numerical form.\n", $flag_pid;
+			exit(1);
+		}
+	}
+} else {
+	if (@flag_pids or @flag_names or @flag_cgroups) {
+		print STDERR "ERROR: --pid, --name and --cgroup are only valid in text mode.\n";
+		exit(1);
+	}
+}
+
+# Print progress on console when generating HTML.
+if ($flag_html) {
+	$flag_verbose = 1;
+}
+
+print STDERR "Reading endurance data:" if $flag_verbose;
+for my $dir (@ARGV) {
+	print STDERR ' ' . $dir if $flag_verbose;
+	process_csv($dir);
+	process_cgroups($dir);
+}
+print STDERR "\nEndurance data read!\n" if $flag_verbose;
+
+check_sw_versions();
+
+if ($flag_html) {
+	report_html();
+} else {
+	report_text();
+}
+
+__END__
+
+=head1 extract-endurance-process-cgroups
+
+extract-endurance-process-cgroups - extract process cgroup information from endurance snapshots
+
+=head1 SYNOPSIS
+
+extract-endurance-process-cgroups [options] [dir ...]
+
+ Options:
+   --text                 Output results in text format. This is the default.
+   --html=FILE            Output results in HTML format, save to FILE.
+   --verbose              Display progress information. Enabled by default in HTML mode.
+   --help                 Display full help.
+
+ Options in text mode:
+   --cgroup=CGROUP    [*] Only show processes in control group CGROUP.
+   --pid=PID          [*] Only show processes with process id PID.
+   --name=NAME        [*] Only show processes whose name contains NAME.
+
+   [*]: these options are exclusive.
+
+=head1 EXAMPLES
+
+Show how processes are assigned to control groups in endurance data directories 101 and 102:
+   $ extract-endurance-process-cgroups 101 102
+
+Show what processes are assigned to control group "/system/" in endurance data directories 101 and 102:
+   $ extract-endurance-process-cgroups --cgroup=/system/ 101 102
+
+Show what processes are assigned to control groups "/system/" and "/system/desktop/" in endurance data directories 101 and 102:
+   $ extract-endurance-process-cgroups --cgroup=/system/ --cgroup=/system/desktop 101 102
+
+Show processes that have "/usr/bin" in the name in endurance data directory 101:
+   $ extract-endurance-process-cgroups 101 --name=/usr/bin
+
+Show process that has process ID 1234 in the name in endurance data directories 101 and 102:
+   $ extract-endurance-process-cgroups 101 102 --pid=1234
+
+Show processes that have process IDs 1234 or 4321 in the name in endurance data directories 101 and 102:
+   $ extract-endurance-process-cgroups 101 102 --pid=1234 --pid=4321
+
+Create HTML report from endurance data directories 101, 102 and 103, and save it to "report.html":
+   $ extract-endurance-process-cgroups --html=report.html 10[1-3]
