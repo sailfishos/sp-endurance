@@ -1,3 +1,20 @@
+sp-endurance (2.3), 27 Oct 2011:
+ * extract-endurance-process-cgroups:
+   - New utility that can be used to extract process Cgroup information from
+     endurance data. Produces results in either text or HTML format.
+ * endurance_report.py:
+   - Parse the DSME rich-core data that we collect and report process crashes.
+   - Fix some endurance report creation failures with invalid/incomplete data.
+ * endurance_plot:
+   - New histogram plot `CPU time in state', that shows the distribution of
+     CPU frequencies.
+ * save-incremental-endurance-stats:
+   - Collect `/sys/devices/system/cpu' recursively.
+   - Collect `/sys/fs' recursively.
+   - Collect `/var/lib/upstart/jobs_respawned'.
+   - Collect `/proc/*/wchan'.
+   - Collect kernel ring buffer content with `dmesg' if no syslogs found.
+
 sp-endurance (2.2.11), 20 Oct 2011:
  * endurance_report.py:
    - Report now shows changes in Cgroup memory usage. Additionally, for each
