@@ -275,6 +275,9 @@ if [ -d /sys/fs ] ; then
 	find /sys/fs -type f | xargs head -10000 2>/dev/null > $path/sysfs_fs
 fi
 
+echo "- /proc/pid/wchan"
+head /proc/[0-9]*/wchan 2>/dev/null > $path/wchan
+
 which rzscontrol >/dev/null 2>/dev/null
 if [ $? -eq 0 ] ; then
 	echo "- ramzswap statistics"
