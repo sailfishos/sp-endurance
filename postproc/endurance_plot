@@ -458,16 +458,6 @@ $legend{$graph_cgroups_memsw_failcnt} = "cgroups memory+swap fail count";
 $thumblegend{$graph_cgroups_memsw_failcnt} = "CGROUPS MEMORY+SWAP FAILCNT";
 $unit{$graph_cgroups_memsw_failcnt} = "number of events";
 
-my $graph_networking_bytes = "95_networking-bytes";
-$legend{$graph_networking_bytes} = "RX and TX bytes per interface in kB";
-$thumblegend{$graph_networking_bytes} = "NET RX/TX BYTES";
-$unit{$graph_networking_bytes} = "kB";
-
-my $graph_networking_packets = "95_networking-packets";
-$legend{$graph_networking_packets} = "RX and TX packets per interface in kB";
-$thumblegend{$graph_networking_packets} = "NET RX/TX PACKETS";
-$unit{$graph_networking_packets} = "packets";
-
 #
 # Note: powertop is optional. it's files are not collected
 # by standard sp-endurance, but it is easy to use 
@@ -4638,34 +4628,42 @@ sub generate_plots()
 	}
     }
 ############# ifconfig #####################
-    if (%interfaces_seen) {
-	print "networking ";
-	$plot = start_plotfile_lines($graph_networking_bytes);
-	$cnt = 0;
-	foreach my $interface (keys %interfaces_seen) {
-	    $fn = "e/iface-$interface-rx-kB";
-	    if (count_nonzero_entries($fn) > 0) {
-		one_plot_set($fn, 3, $plot, \$cnt, 1);
+    print "networking ";
+    foreach my $interface (keys %interfaces_seen) {
+	my $graph_networking_bytes = '95_networking-bytes-' . $interface;
+	$legend{$graph_networking_bytes} = 'RX and TX bytes in kB for ' . $interface;
+	$thumblegend{$graph_networking_bytes} = 'NET RX/TX BYTES &mdash; ' . $interface;
+	$unit{$graph_networking_bytes} = 'kB';
+	my $fn_rx_kb = "e/iface-$interface-rx-kB";
+	my $fn_tx_kb = "e/iface-$interface-tx-kB";
+	if (count_nonzero_entries($fn_rx_kb) > 0 or count_nonzero_entries($fn_tx_kb) > 0) {
+	    $plot = start_plotfile_lines($graph_networking_bytes);
+	    $cnt = 0;
+	    if (count_nonzero_entries($fn_rx_kb) > 0) {
+		one_plot_set($fn_rx_kb, 3, $plot, \$cnt, 1);
 	    }
-	    $fn = "e/iface-$interface-tx-kB";
-	    if (count_nonzero_entries($fn) > 0) {
-		one_plot_set($fn, 3, $plot, \$cnt, 1);
+	    if (count_nonzero_entries($fn_tx_kb) > 0) {
+		one_plot_set($fn_tx_kb, 3, $plot, \$cnt, 1);
 	    }
+	    close_plot($i, $plot, $graph_networking_bytes);
 	}
-	close_plot($i, $plot, $graph_networking_bytes);
-	$plot = start_plotfile_lines($graph_networking_packets);
-	$cnt = 0;
-	foreach my $interface (keys %interfaces_seen) {
-	    $fn = "e/iface-$interface-rx-packets";
-	    if (count_nonzero_entries($fn) > 0) {
-		one_plot_set($fn, 3, $plot, \$cnt, 1);
+	my $graph_networking_packets = '95_networking-packets-' . $interface;
+	$legend{$graph_networking_packets} = 'RX and TX packets for ' . $interface;
+	$thumblegend{$graph_networking_packets} = 'NET RX/TX PACKETS &mdash; ' . $interface;
+	$unit{$graph_networking_packets} = 'packets';
+	my $fn_rx_packets = "e/iface-$interface-rx-packets";
+	my $fn_tx_packets = "e/iface-$interface-tx-packets";
+	if (count_nonzero_entries($fn_rx_packets) > 0 or count_nonzero_entries($fn_tx_packets) > 0) {
+	    $plot = start_plotfile_lines($graph_networking_packets);
+	    $cnt = 0;
+	    if (count_nonzero_entries($fn_rx_packets) > 0) {
+		one_plot_set($fn_rx_packets, 3, $plot, \$cnt, 1);
 	    }
-	    $fn = "e/iface-$interface-tx-packets";
-	    if (count_nonzero_entries($fn) > 0) {
-		one_plot_set($fn, 3, $plot, \$cnt, 1);
+	    if (count_nonzero_entries($fn_tx_packets) > 0) {
+		one_plot_set($fn_tx_packets, 3, $plot, \$cnt, 1);
 	    }
+	    close_plot($i, $plot, $graph_networking_packets);
 	}
-	close_plot($i, $plot, $graph_networking_packets);
     }
 ############# pagetypeinfo #####################
     if ($have_pagetypeinfo) {
