@@ -2295,15 +2295,15 @@ sub process_stat()
 #
 # CPU stat, global ctxts etc
 #
+    my $ctx;
+    my %cpu_ticks;
+    my $processes;
     my $fn = $d . "/stat";
-    unless (open(STAT, $fn)) {
-	print STDERR "WARNING: unable to open $fn: $!\n";
-	return;
-    }
+    open(STAT, $fn);
     while (<STAT>) {
 	chop;
 	if( m/ctxt /) {
-	    my (undef, $ctx) = split(' ' , $_, 2);
+	    (undef, $ctx) = split(' ' , $_, 2);
 
 	    my $global_ctx = 0;
 	    if (!$global_ctx_prev) {
@@ -2315,12 +2315,11 @@ sub process_stat()
 	    } else {
 		$global_ctx = ($ctx - $global_ctx_prev)/$lapsed_time{$i};
 	    }
-	    $global_ctx_prev = $ctx;
 	    if ($i > 0) {
 		value_store("e/all-ctx-switches", $i, $global_ctx);
 	    }
 	} elsif(m/cpu  (\d+) (\d+) (\d+) (\d+) (\d+) (\d+) (\d+)/) {
-	    my %cpu_ticks = (
+	    %cpu_ticks = (
 		sum => $1 + $2 + $3 + $4 + $5 + $6 + $7,
 		user => $1,
 		nice => $2,
@@ -2330,22 +2329,22 @@ sub process_stat()
 		irq => $6,
 		softirq => $7,
 	    );
-	    if (%prev_cpu_ticks) {
-		foreach (qw/user nice sys idle iowait irq softirq/) {
+	    foreach (qw/user nice sys idle iowait irq softirq/) {
+		if (%prev_cpu_ticks) {
 		    value_store_zeropad("e/cpu-$_", $i,
 			100 * (($cpu_ticks{$_} - $prev_cpu_ticks{$_}) /
 			    ($cpu_ticks{sum} - $prev_cpu_ticks{sum})));
+		} else {
+		    value_store_zeropad("e/cpu-$_", $i, 0);
 		}
 	    }
-	    %prev_cpu_ticks = %cpu_ticks;
 	} elsif( m/processes /) {
-	    my (undef, $processes) = split(' ' , $_, 2);
+	    (undef, $processes) = split(' ' , $_, 2);
 
 	    my $global_processes = 0;
 	    if ($global_processes_prev and $lapsed_time{$i}) {
 		$global_processes = (60*($processes - $global_processes_prev))/$lapsed_time{$i};
 	    }
-	    $global_processes_prev = $processes;
 	    if ($i > 0) {
 		value_store("e/global-processes", $i, $global_processes);
 	    }
@@ -2353,6 +2352,9 @@ sub process_stat()
 	}
     }
     close(STAT);
+    $global_ctx_prev = $ctx;
+    %prev_cpu_ticks = %cpu_ticks;
+    $global_processes_prev = $processes;
 }
 
 sub process_pagetypeinfo()
