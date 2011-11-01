@@ -1127,7 +1127,6 @@ def output_new_upstart_jobs_respawned(upstart_jobs_respawned1, upstart_jobs_resp
                 (job, respawned_jobs[job])
     print "</table>"
 
-
 def output_cgroup_diffs(cgroups1, cgroups2):
     all_groups = cgroups2.keys()
     all_groups.sort()
