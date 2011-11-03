@@ -920,17 +920,16 @@ Syslog report
             print "No notifiable syslog items identified."
 
 
-def help(error=''):
+def __help(error=''):
     msg = __doc__.replace("<TOOL_NAME>", sys.argv[0].split('/')[-1])
     sys.stderr.write(msg)
     if error:
         sys.stderr.write("\n\nERROR: %s\n\n" % error)
     sys.exit(1)
 
-
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        help()
+        __help()
     try:
         import psyco
         psyco.full()
@@ -946,6 +945,6 @@ if __name__ == "__main__":
             else:
                 help("debug value should be one of:\n  %s" % string.join(verbose_options))
         else:
-            help("unknown option: %s" % sys.argv[1])
+            __help("unknown option: %s" % sys.argv[1])
     else:
         output_text_report(sys.argv[1:])
