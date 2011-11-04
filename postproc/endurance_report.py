@@ -374,6 +374,10 @@ interface_colors = (Colors.magenta, Colors.blue, Colors.orange, Colors.light_gre
 # whether to show memory graphs for all processes
 show_all_processes = False
 
+def error_exit(msg):
+    sys.stderr.write("ERROR: %s!\n" % msg)
+    sys.exit(1)
+
 def parse_warning(msg):
     print "<p><font color=red>%s</font>" % msg
     print >>sys.stderr, msg
