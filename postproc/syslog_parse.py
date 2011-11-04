@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # This file is part of sp-endurance.
 #
-# Copyright (C) 2006-2009 by Nokia Corporation
+# Copyright (C) 2006-2009,2011 by Nokia Corporation
 #
 # Contact: Eero Tamminen <eero.tamminen@nokia.com>
 #
@@ -133,16 +133,8 @@ When this is imported, following methods are intended for public use:
     explain_signals() -- output (HTML) info on termination signals
 The output is by default in HTML mode (controlled by use_html).
 
-
-OPTIONS
-
-When run as a program, you can use either of these options (not both):
-        --html         Use HTML output (text output is default)
-        --debug=value  Complain about matched, but unknown syslog rows
-        
 EXAMPLES
-        <TOOL_NAME> --html syslog1 syslog2 > syslog-errors.html
-        <TOOL_NAME> --debug=all syslog1 syslog2 > syslog-errors.txt
+        <TOOL_NAME> syslog1 | less
 """
 
 import sys, os, re, string, gzip
@@ -936,14 +928,8 @@ if __name__ == "__main__":
     except ImportError:
         pass
     if sys.argv[1][0] == "-":
-        if sys.argv[1] == "--html":
-            output_html_report(sys.argv[2:])
-        elif sys.argv[1][:8] == "--debug=":
-            verbose = sys.argv[1][8:]
-            if verbose in verbose_options:
-                output_text_report(sys.argv[2:])
-            else:
-                help("debug value should be one of:\n  %s" % string.join(verbose_options))
+        if sys.argv[1] == "-h" or sys.argv[1] == "--help":
+            __help()
         else:
             __help("unknown option: %s" % sys.argv[1])
     else:
