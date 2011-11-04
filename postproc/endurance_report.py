@@ -2489,10 +2489,14 @@ def parse_syte_stats(dirs):
     for dirname in dirs:
 
         # get basic information
-        file, filename = syslog.open_compressed("%s/usage.csv" % dirname, syslog.FATAL)
+        try:
+            file, filename = syslog.open_compressed("%s/usage.csv" % dirname)
+        except RuntimeError, e:
+            error_exit("unable to open %s/usage.csv" % dirname)
+        print >>sys.stderr, "Parsing '%s'..." % filename
         items = parse_csv(file, filename)
         if not items:
-            syslog.error_exit("CSV parsing failed")
+            error_exit("CSV parsing failed")
 
         # filename without the extension
         items['basedir'] = dirname
@@ -2502,43 +2506,60 @@ def parse_syte_stats(dirs):
             # use-case step description
             items['description'] = open(filename).read().strip()
 
-        file, filename = syslog.open_compressed("%s/smaps.cap" % dirname)
+        try:
+            file, filename = syslog.open_compressed("%s/smaps.cap" % dirname)
+        except RuntimeError, e:
+            error_exit("unable to open %s/smaps.cap: %s" % (dirname, e.message))
         if file:
-            # get system SMAPS memory usage data
+            print >>sys.stderr, "Parsing '%s'..." % filename
             items['smaps'], items['private_code'] = parse_smaps(file)
             if not items['smaps']:
-                syslog.error_exit("SMAPS data parsing failed")
+                error_exit("SMAPS data parsing failed")
 
-        file, filename = syslog.open_compressed("%s/syslog" % dirname)
-        if file:
-            # get the crashes and other errors
-            items['logfile'] = filename
-            items['syslog_errors_by_category'] = syslog.get_errors_by_category(
-                    file, logparser_config.regexps)
+        try:
+            file, filename = syslog.open_compressed("%s/syslog" % dirname)
+            if file:
+                print >>sys.stderr, "Parsing '%s'..." % filename
+                items['logfile'] = filename
+                items['syslog_errors_by_category'] = syslog.get_errors_by_category(
+                        file, logparser_config.regexps)
+        except RuntimeError: pass
 
-        file, filename = syslog.open_compressed("%s/stat" % dirname)
-        if file:
-            items['/proc/stat'] = parse_proc_stat(file)
-            if not items['/proc/stat']:
-                syslog.error_exit("/proc/stat parsing failed")
+        try:
+            file, filename = syslog.open_compressed("%s/stat" % dirname)
+            if file:
+                print >>sys.stderr, "Parsing '%s'..." % filename
+                items['/proc/stat'] = parse_proc_stat(file)
+                if not items['/proc/stat']:
+                    error_exit("/proc/stat parsing failed")
+        except RuntimeError: pass
 
-        file, filename = syslog.open_compressed("%s/ifconfig" % dirname)
-        if file:
-            items['transfers'] = parse_ifconfig(file)
-            if not items['transfers']:
-                syslog.error_exit("ifconfig output parsing failed")
+        try:
+            file, filename = syslog.open_compressed("%s/ifconfig" % dirname)
+            if file:
+                print >>sys.stderr, "Parsing '%s'..." % filename
+                items['transfers'] = parse_ifconfig(file)
+                if not items['transfers']:
+                    error_exit("ifconfig output parsing failed")
+        except RuntimeError: pass
 
-        file, filename = syslog.open_compressed("%s/cgroups" % dirname)
-        if file:
-            items['pid2cgroup'], items['tid2group'], items['cgroups'] = parse_cgroups(file)
+        try:
+            file, filename = syslog.open_compressed("%s/cgroups" % dirname)
+            if file:
+                print >>sys.stderr, "Parsing '%s'..." % filename
+                items['pid2cgroup'], items['tid2group'], items['cgroups'] = parse_cgroups(file)
+        except RuntimeError: pass
 
         dsme_rich_cores = get_dsme_rich_cores(dirname)
         if dsme_rich_cores:
             items['dsme_rich_cores'] = dsme_rich_cores
 
-        file, filename = syslog.open_compressed("%s/upstart_jobs_respawned" % dirname)
-        if file:
-            items['upstart_jobs_respawned'] = get_upstart_jobs_respawned(file)
+        try:
+            file, filename = syslog.open_compressed("%s/upstart_jobs_respawned" % dirname)
+            if file:
+                print >>sys.stderr, "Parsing '%s'..." % filename
+                items['upstart_jobs_respawned'] = get_upstart_jobs_respawned(file)
+        except RuntimeError: pass
 
         data.append(items)
     return data
@@ -2556,7 +2577,7 @@ if __name__ == "__main__":
 
     if help or (len(sys.argv) - first_arg < 2):
         msg = __doc__.replace("<TOOL_NAME>", sys.argv[0].split('/')[-1])
-        syslog.error_exit(msg)
+        error_exit(msg)
 
     # Use psyco if available. Gives 2-3x speed up.
     try:
