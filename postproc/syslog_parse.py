@@ -105,33 +105,9 @@ SYNOPSIS
 
 DESCRIPTION
 
-This script parses different kinds of issues from given syslog files:
-    - Device bootups (based on boot reasons and syslog restarts)
-    - SysRq messages indicating faulty device setup
-    - Kernel Oopses and BUGs
-    - DSP errors and warnings
-    - Kernel errors for FAT (I/O) JFFS2 (onenand_wait)
-    - DSME reported system service restarts and reboots
-    - Maemo-launcher reported application crashes
-    - Critical errors and warnings reported by Glib
-    - Maemo DBus warnings about applications listening to signals too widely
-Then it counts and presents them in more readable form.
-    
-It can be used as a standalone program or imported to another python
-script.  As a standalone program it produces a full HTML page, when
-imported, a partial HTML page.
-
-
-PUBLIC METHODS
-
-When this is imported, following methods are intended for public use:
-    parse_syslog()    -- parses given syslog
-    parse_error()     -- outputs parsing error messages
-    output_errors()   -- outputs the parsed errors
-    errors_add()      -- adds together error statistics from output_errors()
-    errors_summary()  -- outputs error statistics
-    explain_signals() -- output (HTML) info on termination signals
-The output is by default in HTML mode (controlled by use_html).
+This script parses different kinds of issues from given syslog files, and gives
+a report in textual format. The detection is based on a separate configuration
+file that contains the patterns to match from the syslogs.
 
 EXAMPLES
         <TOOL_NAME> syslog1 | less
@@ -944,30 +920,39 @@ def output_html_report(files):
     print explain_signals(write)
     print "</body>\n</html>"
 
-
-def output_text_report(files):
-    "outputs lists of errors from given syslog files in ASCII format"
-    global use_html
-    use_html = 0
-    write = sys.stdout.write
-    print """
-Syslog report
-============="""
+def __output_text_report(files, config):
+    print "Syslog report"
+    print "============="
     for path in files:
         print
         print path
         print "-" * len(path)
-        run = parse_syslog(write, open_compressed(path, FATAL)[0])
-        if run:
-            stat = output_errors(write, {}, run)
+        syslog_file = open_compressed(path, FATAL)[0]
+        errors_by_category = get_errors_by_category(syslog_file, config.regexps)
+        if not errors_by_category:
             print
-            print "Summary:"
-            print "- ------"
-            errors_summary(stat)
-        else:
-            print
-            print "No notifiable syslog items identified."
-
+            print "No notifiable log items identified."
+            continue
+        for category in config.categories:
+            if not category in errors_by_category or len(errors_by_category[category]) <= 0:
+                continue
+            if category in config.category_description and config.category_description[category]:
+                print "[%s] %s:" % (category, config.category_description[category])
+            else:
+                print "[%s]:" % category
+            for message in errors_by_category[category]:
+                print message
+            print ""
+        print "Summary:"
+        print "--------"
+        for category in config.categories:
+            count = 0
+            if category in errors_by_category:
+                count = len(errors_by_category[category])
+            desc = ""
+            if category in config.category_description and config.category_description[category]:
+                desc = config.category_description[category]
+            print "- %d [%s] %s" % (count, category, desc)
 
 def __help(error=''):
     msg = __doc__.replace("<TOOL_NAME>", sys.argv[0].split('/')[-1])
@@ -990,4 +975,5 @@ if __name__ == "__main__":
         else:
             __help("unknown option: %s" % sys.argv[1])
     else:
-        output_text_report(sys.argv[1:])
+        config = LogParserConfig()
+        __output_text_report(sys.argv[1:], config)
