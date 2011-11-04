@@ -221,7 +221,12 @@ def __output_text_report(files, config):
         print
         print path
         print "-" * len(path)
-        syslog_file = open_compressed(path, FATAL)[0]
+        try:
+            syslog_file = open_compressed(path)[0]
+        except RuntimeError, e:
+            print >>sys.stderr, "ERROR: unable to open '%s': %s" % \
+                    (path, str(e))
+            sys.exit(1)
         errors_by_category = get_errors_by_category(syslog_file, config.regexps)
         if not errors_by_category:
             print
