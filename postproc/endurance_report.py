@@ -1313,42 +1313,122 @@ def get_thread_count_diffs(commands, processes0, processes1, processes2):
             diffs.append((t2-t1, t0, t2, "%s[%s]" % (name, pid)))
     return diffs
 
+def syslog_error_summary_text(new_errors_by_category):
+    for category in logparser_config.categories:
+        count = 0
+        if category in new_errors_by_category:
+            count = len(new_errors_by_category[category])
+        print "- %d %s" % (count, category)
 
-def output_errors(idx, run1, run2):
-    "write syslog errors to separate HTML file and return statistics"
+def category_to_anchor(category):
+    return category.replace("/", "_")
 
-    title = "Errors for round %d" % idx
+def create_errors_html(idx, run1, run2, new_errors_by_category):
+    title = "Syslog errors for round %d" % idx
     url = "%s/errors.html" % run2['basedir']
-    write = open(url, "w").write
-
-    # write the separate error report...
-    write("<html>\n<title>%s</title>\n<body>\n<h1>%s</h1>\n" % (title, title))
-    if 'errors' in run1:
-        errors1 = run1['errors']
+    f = open(url, "w")
+    print >>f, "<html>\n<title>%s</title>\n<body>\n<h1>%s</h1>\n" % (title, title)
+    if 'basedir' in run1:
         path = run1['basedir']
         if path[0] != '/':
             # assume files are in the same hierachy
             path = "../" + path.split('/')[-1]
         path += "/errors.html"
-        write('<a href="%s">Errors for previous round</a>\n' % path)
-    else:
-        errors1 = {}
-    if 'errors' in run2:
-        errors2 = run2['errors']
-    else:
-        errors2 = {}
-    stat = syslog.output_errors(write, errors1, errors2)
-    write("<hr>\n")
-    syslog.explain_signals(write)
-    write("</body>\n</html>\n")
+        print >>f, '<a href="%s">Errors for previous round</a>' % path
+    if new_errors_by_category:
+        for category in logparser_config.categories:
+            if category not in new_errors_by_category \
+                    or len(new_errors_by_category[category]) <= 0:
+                continue
+            if category in logparser_config.category_description \
+                    and logparser_config.category_description[category]:
+                title = '<abbr title="%s">%s</abbr>' % (category,
+                        logparser_config.category_description[category])
+            else:
+                title = category
+            print >>f, '<a name="%s"></a>' % category_to_anchor(category)
+            print >>f, "<h4>%s</h4>" % title
+            print >>f, "<ul>"
+            for message in new_errors_by_category[category]:
+                print >>f, "<li>%s</li>" % message
+            print >>f, "</ul>"
+    print >>f, "<hr>"
+    print >>f, """
+<a name="signals"></a>
+<h2>Crash signals explained</h2>
+<p>Explanations of some common exit signals on the Maemo platform:
+<table border="1">
+<tr><th>Signal nro:</th><th>Signal name:</th><th>Usual meaning:</th></tr>
+<tr><td>15</td><td>SIGTERM</td><td>Application was unresponsive so system terminated it.
+Other reasons for termination are background killing, locale change and shutdown.</td></tr>
+<tr><td>11</td><td>SIGSEGV</td><td>Process crashed to memory access error</td></tr>
+<tr><td>9</td><td>SIGKILL</td><td>Application was unresponsive and/or didn't react to SIGTERM so system forcibly terminated it</td></tr>
+<tr><td>6</td><td>SIGABORT</td><td>Program (glibc/glib) called abort() when a fatal program error was detected</td></tr>
+<tr><td>7</td><td>SIGBUS</td><td>The process was terminated due to bad memory access.</td></tr>
+<table>
+"""
+    print >>f, "</body>\n</html>"
+    f.close()
 
-    # ...and summary for the main page
-    for value in stat.values():
-        if value:
-            syslog.errors_summary(stat, url, Colors.errors)
-            break
-    return stat
+def syslog_error_summary(run, new_errors_by_category, links=True):
+    if not new_errors_by_category:
+        return
+    error_cnt = sum([len(new_errors_by_category[category]) for category in new_errors_by_category])
+    if error_cnt <= 0:
+        return
+    errors_html = None
+    if links and 'basedir' in run and os.path.exists("%s/errors.html" % run['basedir']):
+        errors_html = "%s/errors.html" % run['basedir']
+    print '\n<p><table border=1 bgcolor="#%s">' % Colors.errors
+    print "<caption><i>Items logged to syslog</i></caption>"
+    print "<tr><th>Error types:<th>Count:</tr>"
+    for category in logparser_config.categories:
+        if category not in new_errors_by_category \
+                or len(new_errors_by_category[category]) <= 0:
+            continue
+        if category in logparser_config.category_description \
+                and logparser_config.category_description[category]:
+            title = '<abbr title="%s">%s</abbr>' % (category,
+                    logparser_config.category_description[category])
+        else:
+            title = category
+        print "<tr>"
+        if errors_html:
+            print ' <td align=left><a href="%s#%s">%s</a></td>' % \
+                (errors_html, category_to_anchor(category), title)
+        else:
+            print " <td align=left>%s</td>" % title
+        print " <td align=right>%d</td>" % len(new_errors_by_category[category])
+        print "</tr>"
+    print "<tr><td align=right><i>Total of items =</i></td><td align=right><b>%d</b></td></tr>" % error_cnt
+    print "</table>"
 
+def get_new_errors_by_category(run1, run2):
+    errors_by_category1, errors_by_category2 = None, None
+    if 'syslog_errors_by_category' in run1:
+        errors_by_category1 = run1['syslog_errors_by_category']
+    if 'syslog_errors_by_category' in run2:
+        errors_by_category2 = run2['syslog_errors_by_category']
+    if not errors_by_category1:
+        return errors_by_category2
+    if not errors_by_category2:
+        return errors_by_category2
+    new_errors_by_category = {}
+    for category in errors_by_category2.keys():
+        if not category in errors_by_category1:
+            new_errors_by_category[category] = errors_by_category2[category]
+            continue
+        for message in errors_by_category2[category]:
+            if message not in errors_by_category1[category]:
+                if not category in new_errors_by_category:
+                    new_errors_by_category[category] = []
+                new_errors_by_category[category].append(message)
+    return new_errors_by_category
+
+def output_errors(idx, run1, run2):
+    new_errors_by_category = get_new_errors_by_category(run1, run2)
+    create_errors_html(idx, run1, run2, new_errors_by_category)
+    syslog_error_summary(run2, new_errors_by_category)
 
 def output_data_links(run):
     "output links to all collected uncompressed data"
@@ -1470,10 +1550,8 @@ def output_run_diffs(idx1, idx2, data, do_summary):
         return None
 
     # syslogged errors
-    if do_summary:
-        stat = None
-    else:
-        stat = output_errors(idx2, run1, run2)
+    if not do_summary:
+        output_errors(idx2, run1, run2)
 
     cpu_total_diff = total_cpu_tickdiff(run1, run2)
     cpu_total_secs = float(cpu_total_diff)/CLK_TCK
@@ -1724,8 +1802,6 @@ def output_run_diffs(idx1, idx2, data, do_summary):
         upstart_jobs_respawned2 = run2['upstart_jobs_respawned']
         if 'upstart_jobs_respawned' in run1: upstart_jobs_respawned1 = run1['upstart_jobs_respawned']
         output_new_upstart_jobs_respawned(upstart_jobs_respawned1, upstart_jobs_respawned2)
-
-    return stat
 
 
 def output_initial_state(run):
@@ -2378,9 +2454,7 @@ see <a href="#%s">resource changes summary section</a>.
         print '<a name="round-%d"></a>' % (idx+1)
         print "<h3>%s</h3>" % title
         print "<p>%s" % data[idx+1]['datetime']
-        stat = output_run_diffs(idx, idx+1, data, 0)
-        if stat:
-            syslog.errors_add(err_stats, stat)
+        output_run_diffs(idx, idx+1, data, 0)
         output_data_links(data[idx+1])
         print "\n<hr>"
     
@@ -2388,10 +2462,10 @@ see <a href="#%s">resource changes summary section</a>.
 <a name="error-summary"></a>
 <h2>Summary of changes between test rounds %d - %d</h2>
 <h3>Error summary</h3>""" % (first, last)
-    syslog.errors_summary(err_stats, "", Colors.errors)
+    new_errors_by_category = get_new_errors_by_category(data[first], data[last])
+    syslog_error_summary(data[last], new_errors_by_category, links=False)
     print "<!-- summary for automatic parsing:"
-    syslog.use_html = 0
-    syslog.errors_summary(err_stats)
+    syslog_error_summary_text(new_errors_by_category)
     print """-->
 
 <hr>
@@ -2439,7 +2513,8 @@ def parse_syte_stats(dirs):
         if file:
             # get the crashes and other errors
             items['logfile'] = filename
-            items['errors'] = syslog.parse_syslog(sys.stdout.write, file)
+            items['syslog_errors_by_category'] = syslog.get_errors_by_category(
+                    file, logparser_config.regexps)
 
         file, filename = syslog.open_compressed("%s/stat" % dirname)
         if file:
