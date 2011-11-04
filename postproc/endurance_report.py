@@ -374,6 +374,9 @@ interface_colors = (Colors.magenta, Colors.blue, Colors.orange, Colors.light_gre
 # whether to show memory graphs for all processes
 show_all_processes = False
 
+def parse_warning(msg):
+    print "<p><font color=red>%s</font>" % msg
+    print >>sys.stderr, msg
 
 # --------------------- SMAPS data parsing --------------------------
 
@@ -1456,7 +1459,8 @@ def output_run_diffs(idx1, idx2, data, do_summary):
     run1 = data[idx1]
     run2 = data[idx2]
     if run1['release'] != run2['release']:
-        syslog.parse_error(sys.stdout.write, "ERROR: release '%s' doesn't match previous round release '%s'!" % (run1['release'], run2['release']))
+        parse_warning("ERROR: release '%s' doesn't match previous round release '%s'!" \
+                % (run1['release'], run2['release']))
         return None
 
     # syslogged errors
@@ -1813,7 +1817,7 @@ def output_apps_memory_graphs(cases):
                 smaps_available = 1
             except KeyError:
                 if 'smaps' in testcase:
-                    syslog.parse_error(sys.stdout.write, "WARNING: SMAPS data missing for %s[%s]" % (name,pid))
+                    parse_warning("WARNING: SMAPS data missing for %s[%s]" % (name,pid))
                 continue
             try: process['SMAPS_SWAP'] = testcase['smaps'][pid]['swap']
             except KeyError: pass
@@ -1990,12 +1994,15 @@ leaks which cause process eventually to run out of (2GB) address space
                     try: size = item['SMAPS_SIZE']
                     except: pass
                     if rss < dirty:
-                        syslog.parse_error(sys.stdout.write, "WARNING: %s[%s] RSS (%s) < SMAPS dirty (%s)" % (namepid + (rss, dirty)))
+                        parse_warning("WARNING: %s[%s] RSS (%s) < SMAPS dirty (%s)" \
+                                % (namepid + (rss, dirty)))
                         rss = dirty
                     if pss < dirty:
-                        syslog.parse_error(sys.stdout.write, "WARNING: %s[%s] SMAPS PSS (%s) < SMAPS dirty (%s)" % (namepid + (pss, dirty)))
+                        parse_warning("WARNING: %s[%s] SMAPS PSS (%s) < SMAPS dirty (%s)" \
+                                % (namepid + (pss, dirty)))
                     if rss < pss:
-                        syslog.parse_error(sys.stdout.write, "WARNING: %s[%s] RSS (%s) < SMAPS PSS (%s)" % (namepid + (rss, pss)))
+                        parse_warning("WARNING: %s[%s] RSS (%s) < SMAPS PSS (%s)" \
+                                % (namepid + (rss, pss)))
                     text = ["%skB" % swap, "%skB" % dirty, "%skB" % pss, "%skB" % rss, "%skB" % size]
                 else:
                     swap = 0
