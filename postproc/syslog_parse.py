@@ -139,6 +139,63 @@ EXAMPLES
 
 import sys, os, re, string, gzip
 
+# Config syntax:
+# [category/sub-category] "Optional human-readable description"
+# regular-expression1-for-matching-these-items
+# regular-expression2-for-matching-these-items
+# ...
+
+class LogParserConfig:
+    categories = []
+    regexps = []
+    category_description = {}
+    def __init__(self, configfile = None):
+        if not configfile:
+            configfile = "/usr/share/sp-endurance-postproc/logparser-config"
+        conf = open(configfile)
+        for line in conf:
+            line = line.strip()
+            if not line:
+                continue
+            if line[0] == '#':
+                continue
+            m = re.search("^\[(\S+)\]\s*\"(.*)\"", line)
+            if m:
+                cat, desc = m.groups()
+                if cat in self.categories:
+                    raise RuntimeError("Category '%s' was already specified: '%s'" % (cat, line))
+                self.categories.append(cat)
+                try:
+                    self.category_description[cat] = desc
+                except IndexError: pass
+                continue
+            m = re.search("^\[(\S+)\]$", line)
+            if m:
+                self.categories.append(m.group(1))
+                continue
+            try:
+                regexp = re.compile(line)
+            except re.error, e:
+                raise RuntimeError("Invalid regular expression: '%s': %s" % (line, e.message))
+            except: pass
+            if not regexp:
+                raise RuntimeError("Invalid regular expression: '%s'" % line)
+            self.regexps.append((regexp, self.categories[-1]))
+        conf.close()
+
+def get_errors_by_category(logfile, regexps, category_max = 1000):
+    errors_by_category = {}
+    for line in logfile:
+        if line[-1] == '\n': line = line.rstrip()
+        for (regexp, category) in regexps:
+            if regexp.search(line):
+                if not category in errors_by_category:
+                    errors_by_category[category] = []
+                errors_by_category[category].append(line)
+                if len(errors_by_category[category]) > category_max:
+                    errors_by_category[category].pop(0)
+                break
+    return errors_by_category
 
 # whether to use HTML output or not
 use_html = 1
