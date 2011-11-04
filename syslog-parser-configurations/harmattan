@@ -1,0 +1,112 @@
+# Syntax:
+# [category/sub-category] "Optional human-readable description"
+# regular-expression1-for-matching-these-items
+# regular-expression2-for-matching-these-items
+
+[reboot/powerkey] "Bootup: user pressed power key to wake up the device"
+Kernel command line:.* bootreason=pwr_key
+Bootup reason: powerkey$
+
+[reboot/rtc_alarm] "Bootup: Alarm woke up the device"
+Kernel command line:.* bootreason=rtc_alarm
+Bootup reason: rtc_alarm$
+
+[reboot/usb] "Bootup: USB (charger) connection woke up the device"
+Kernel command line:.* bootreason=usb
+Bootup reason: charger$
+
+[reboot/sw_rst] "Bootup: software watchdog rebooted the device"
+Kernel command line:.* bootreason=sw_rst
+Bootup reason: sw_rst$
+
+[reboot/32wd_to] "Bootup: hardware watchdog rebooted the device"
+Kernel command line:.* bootreason=32wd_to
+Bootup reason: 32wd_to$
+
+[kernel/oops] "Kernel OOPS"
+ kernel: .* [Oo]ops: 
+
+[kernel/bug] "Kernel BUG"
+ kernel BUG at 
+
+[kernel/warning] "Kernel WARNING"
+ kernel: .* WARNING: at 
+
+[kernel/oom] "Kernel memory shortage issues"
+ kernel: .* [Oo]ut of [Mm]emory: [Kk]ill|lowmem: denying memory
+
+[kernel/pvr] "Kernel SGX PVR issues"
+ kernel: .* pvr: \S*: IOCTL \d+ failed
+
+[kernel/nand_errors] "Kernel NAND issues (for example bad blocks)"
+ kernel: .* onenand[^:]*_wait: 
+
+[kernel/dsp_error] "Kernel DSP problems"
+ kernel: .* \*\*\*\*\* DSPMMU FAULT \*\*\*\*\*
+ kernel: .* mbox: Illegal seq bit
+ kernel: .* omapdsp: poll error
+ kernel: .* mbx: ERR
+
+[kernel/filesystem]
+ kernel: .* EXT[234]-fs warning:
+ kernel: .* EXT[234]-fs \(.*\): recovery complete
+
+[kernel/wireless_errors] "Kernel wireless driver error messages"
+ kernel: .* wl1271: ERROR 
+
+[kernel/wireless_warnings] "Kernel wireless driver warning messages"
+ kernel: .* wl1271: WARNING 
+
+[connectivity_error] "Connectivity errors"
+(cx3110x ERROR.*|TX dropped.*|We haven't got a [A-Z_]+ interrupt from [A-Z_]+.*)$
+
+[syslogd_restart] "syslogger daemon restarted"
+ syslogd .* restart
+
+[sysrq] "Faulty setup -- Serial console enabled without device being attached to dock, device can spuriously reboot at any moment"
+ SysRq 
+
+[glib/error] "GLIB ERROR messages"
+ : GLIB ERROR \*\* 
+
+[glib/critical] "GLIB CRITICAL messages"
+ : GLIB CRITICAL \*\* 
+
+[glib/warning] "GLIB WARNING messages"
+ : GLIB WARNING \*\* 
+
+[dsme/shutdown] "DSME reboots and shutdowns"
+ DSME: reboot request received
+ DSME: [Bb]attery empty shutdown
+
+[dsme/process_respawn]
+ DSME:[^']* '[^']+' spawning too fast -> reset
+
+[dsme/process_reset]
+ DSME:[^']* '[^']+' exited (with RESET|and restarted)
+
+[dsme/process_signal]
+ DSME:[^']* '[^']+' with pid \d+ exited with signal: \d+
+
+[dsme/process_exit]
+ DSME:[^']* '[^']+' with pid \d+ exited with return value: 
+
+[dsme/process_watchdog]
+ DSME: process \(pid: \d+\) not responding to processwd pings, aborting it
+ DSME: killing process \(pid: 
+
+[upstart/nonzero_exit] "Terminated system services (Upstart)"
+ init: .* process \(\d+\) terminated with status \d+
+
+[upstart/killed] "Killed system services (Upstart)"
+ init: .* process \(\d+\) killed by .* signal
+ init: .* process \(\d+\) killed by signal \d+
+
+[upstart/respawn] "Restarted system services (Upstart)"
+ init: .* process ended, respawning
+
+[upstart/respawn_too_fast] "Too fast respawning system services (Upstart)"
+ init: .* respawning too fast, stopped
+
+[dbus/signal_matching_issues] "DBus signal matching warnings (using too wide match pattern)"
+dbus\[\d+\]: WARNING: match .* added by .* who owns services:
