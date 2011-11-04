@@ -332,6 +332,8 @@ EXAMPLES
 import sys, os, re
 import syslog_parse as syslog
 
+logparser_config = None
+
 # how many CPU clock ticks kernel reports / second
 CLK_TCK=100.0
 
@@ -2487,6 +2489,13 @@ if __name__ == "__main__":
         psyco.full()
     except ImportError:
         pass
+
+    try:
+        logparser_config = syslog.LogParserConfig()
+    except RuntimeError, e:
+        error_exit(str(e))
+    if not logparser_config:
+        error_exit("failed to initialize syslog parser configuration")
 
     stats = parse_syte_stats(sys.argv[first_arg:])
     output_html_report(stats)
