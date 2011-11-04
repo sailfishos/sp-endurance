@@ -1,4 +1,6 @@
 #!/usr/bin/python
+# vim: et:ts=4:sw=4:
+#
 # This file is part of sp-endurance.
 #
 # Copyright (C) 2006-2009,2011 by Nokia Corporation
