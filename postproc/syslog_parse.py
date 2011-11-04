@@ -174,19 +174,11 @@ def get_errors_by_category(logfile, regexps, category_max = 1000):
     return errors_by_category
 
 
-def error_exit(msg):
-    "outputs given message as error to stderr and exit"
-    sys.stderr.write("ERROR: %s!\n" % msg)
-    sys.exit(1)
-
-
-FATAL = True
-
-def open_compressed(filename, fatal = False):
+def open_compressed(filename):
     """Open potentially compressed file and return its name and handle.
-       First checks whether there's a gzipped or lzopped version
+       First checks whether there is a compressed version
        of the file and if not, assumes file to be non-compressed.
-       If the file doesn't exist, return None.
+       May throw e.g. RuntimeError in case of problems.
     """
     for suffix in ("", ".gz", ".lzo", ".xz"):
         tmp = filename + suffix
@@ -195,11 +187,7 @@ def open_compressed(filename, fatal = False):
             break
 
     if not os.path.exists(filename):
-        if fatal == FATAL:
-            error_exit("%s missing" % filename)
-        return (None, None)
-
-    sys.stderr.write("Parsing '%s'...\n" % filename)
+        raise RuntimeError("%s missing" % filename)
 
     if filename.endswith(".gz"):
         # Unfortunately the python gzip module is slow. Using /bin/zcat and
@@ -213,13 +201,13 @@ def open_compressed(filename, fatal = False):
         if os.system("which lzop >/dev/null") == 0:
             file = os.popen("lzop -dc %s" % filename)
         else:
-            error_exit("file '%s' was compressed with lzop, but decompression program not available" % filename)
+            raise RuntimeError("file '%s' was compressed with lzop, but decompression program not available" % filename)
 
     elif filename.endswith(".xz"):
         if os.system("which xzcat >/dev/null") == 0:
             file = os.popen("xzcat %s" % filename)
         else:
-            error_exit("file '%s' was compressed with XZ, but decompression program not available" % filename)
+            raise RuntimeError("file '%s' was compressed with XZ, but decompression program not available" % filename)
 
     else:
         file = open(filename, "r")
