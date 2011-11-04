@@ -35,3 +35,5 @@ install:
 	 cp README $(DESTDIR)/usr/share/doc/sp-endurance-postproc/
 	 install -d $(DESTDIR)/usr/share/sp-endurance-tests/
 	 cp -a tests/* $(DESTDIR)/usr/share/sp-endurance-tests/
+	 install -d $(DESTDIR)/usr/share/sp-endurance-postproc/
+	 cp -a syslog-parser-configurations/* $(DESTDIR)/usr/share/sp-endurance-postproc/
