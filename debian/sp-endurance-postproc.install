@@ -12,3 +12,4 @@
 /usr/share/man/man1/split-endurance-measurements.1
 /usr/share/man/man1/extract-endurance-process-smaps.1
 /usr/share/doc/sp-endurance-postproc/README
+/usr/share/sp-endurance-postproc/*
