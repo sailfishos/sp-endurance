@@ -297,11 +297,13 @@ if [ $? -eq 0 ] ; then
 	bmestat 2>/dev/null > $path/bmestat
 fi
 
-# save network and DSME stats
 echo "- /sbin/ifconfig"
 /sbin/ifconfig -a > $path/ifconfig
-echo "- DSME statistics"
-cp -a /var/lib/dsme $path/
+
+if [ -d /var/lib/dsme ] ; then
+	echo "- DSME statistics"
+	cp -a /var/lib/dsme $path/
+fi
 
 if [ -f /var/lib/upstart/jobs_respawned ] ; then
 	echo "- Upstart respawned jobs"
