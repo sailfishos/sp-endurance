@@ -9,7 +9,7 @@ Package: sp-endurance
 Architecture: any
 Depends: ${misc:Depends}, ${shlibs:Depends}, lzop, sysinfoclient, sp-smaps-measure
 Recommends: x11-utils
-Description: Endurance measument tools
+Description: Endurance measurement tools
  Endurance measurement tools save system and process information from /proc
  and other places; the memory, file descriptors, X resources, flash space,
  errors in syslog etc.  The data can be later used to see logged application
