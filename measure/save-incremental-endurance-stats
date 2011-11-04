@@ -87,6 +87,8 @@
 # - Collect /syspart recursively for Cgroup information.
 # 2011-06-23:
 # - Collect ramzswap statistics (optional).
+# 2011-11-02:
+# - Endurance data format changed, new version is v3.
 
 script="${0##*/}"
 # incorrect number of arguments or first argument starts with "-"
@@ -207,7 +209,7 @@ fi
 # save most of /proc
 usage=$path/usage.csv
 echo "- /proc/ data in CSV format"
-echo "generator = syte-endurance-stats v2.0" > $usage
+echo "generator = syte-endurance-stats v3.0" > $usage
 echo >> $usage
 # software release identification
 if [ \! -z $(which sysinfoclient 2>/dev/null) ]; then
