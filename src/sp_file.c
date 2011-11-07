@@ -57,9 +57,9 @@ static void sigint_handler(int sig __attribute((unused)))
 }
 
 /**
- * Dispays the usage information.
+ * Display the usage information.
  */
-static void display_usage()
+static void display_usage(void)
 {
 	printf(
 			"The sp-file utility writes the data from standard input\n"
@@ -182,7 +182,7 @@ int main(int argc, char* argv[])
 #endif /* ENANBLE_LZO */
 
 		case '?':
-			msg_error("unknown sp-resolve option: %c\n", optopt);
+			msg_error("unknown sp-file option: %c\n", optopt);
 			display_usage();
 			exit (-1);
 		}
