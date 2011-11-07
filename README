@@ -15,8 +15,9 @@ Collecting the endurance measurements
      echo "" > /var/log/syslog.old
      echo "" > /var/log/syslog
 2. Reboot the device
-3. If DISPLAY is not set, set it (needed for xmeminfo run by the script):
-     export DISPLAY=:0
+3. If you have X, DISPLAY is not set and needs to be something else
+   than ":0", set it (its needed for xmeminfo run by the script):
+     export DISPLAY=:1
 4. Then run the following before first test round:
      save-incremental-endurance-stats usecase
   -> This will save data files under "usecase/XXX/" directory.
@@ -41,16 +42,23 @@ Post-processing / visualizing the endurance data
   - the contents of the "usecase" directory (collected endurance data)
 
 1. Run:
-     parse-endurance-measurements --report use-case-name usecase/[0-9]*
+     parse-endurance-measurements usecase/[0-9]*
+2. Run:
+     endurance_plot usecase/[0-9]*
 
 This will produce:
-- the "use-case-name.html" file
-- reports about errors extracted from the syslog
+- reports with errors extracted from the syslog files
+- single "endurance-report.html" report which can be easily
+  attached to bug reports, mails etc.  It has mostly mostly
+  numeric data with some barcharts
+- "index.html" containing link to above HTML report and
+  thumbnails of resource usage trends graphs in the endurance
+  snapshot data
 
 If you want also details memory usage information from the
-applications, give additional --parse-smaps argument to the script.
-This will require sp-smaps-visualize package. Or just read the
-smaps.cap.gz files directly (extract-endurance-process-smaps
+applications, give additional --parse-smaps argument to the first
+script. This will require sp-smaps-visualize package. Or just read
+the smaps.cap.gz files directly (extract-endurance-process-smaps
 extracts just the given process information from all rounds).
 
 
@@ -65,7 +73,7 @@ Files for the endurance data collection:
   - binary required by save-incremental-endurance-stats script
   - outputs contents of /proc/ files as CSV data
 - measure/xmeminfo
-  - binary required by save-incremental-endurance-stats script
+  - binary optionally used by save-incremental-endurance-stats script
   - outputs X clients resource usage from the X server as CSV data
 - endurance-mem-overview
   - show ASCII chart of system memory usage from the already
@@ -90,6 +98,9 @@ Files for the data post-processing:
 - postproc/extract-endurance-process-smaps
   - script for extracting just the given process SMAPS information
     from all the endurance rounds for comparising (diff -u ...)
+- postproc/extract-endurance-process-cgroup
+  - script for extracting Cgroup process information from endurance data.
+  - generates output in either text or HTML format.
 
 Other files:
 - README

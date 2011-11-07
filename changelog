@@ -1,3 +1,9 @@
+sp-endurance (3.0):
+ * X support/dependency is optional in build, measuring and post-processing.
+ * Endurance snapshot data is changed to store "xmeminfo" (X resource usage)
+   and "df" (disk usage) output into separate files so that usage.csv
+   contains just proc2csv output + data version/date info.
+
 sp-endurance (2.3), 27 Oct 2011:
  * extract-endurance-process-cgroups:
    - New utility that can be used to extract process Cgroup information from
