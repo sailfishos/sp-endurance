@@ -257,10 +257,12 @@ sysinfoclient -p /component/boot-reason 2> /dev/null > $path/bootreason
 
 # Get HW identification from sysinfo daemon. /proc/component_version is deprecated.
 echo "- HW identification"
-echo "product     `sysinfoclient -p /component/product   2>/dev/null`"  > $path/component_version
-echo "hw-build    `sysinfoclient -p /component/hw-build  2>/dev/null`" >> $path/component_version
-echo "nolo        `sysinfoclient -p /component/nolo      2>/dev/null`" >> $path/component_version
-echo "boot-mode   `sysinfoclient -p /component/boot-mode 2>/dev/null`" >> $path/component_version
+{
+	echo "product     `sysinfoclient -p /component/product   2>/dev/null`"
+	echo "hw-build    `sysinfoclient -p /component/hw-build  2>/dev/null`"
+	echo "nolo        `sysinfoclient -p /component/nolo      2>/dev/null`"
+	echo "boot-mode   `sysinfoclient -p /component/boot-mode 2>/dev/null`"
+} > $path/component_version
 
 if [ -d /syspart ] ; then
 	echo "- Control Group data"
