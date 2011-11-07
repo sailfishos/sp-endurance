@@ -7,19 +7,23 @@ CFLAGS += -Wmissing-prototypes -Wstrict-prototypes -Wsign-compare\
  -Wbad-function-cast -Wcast-qual -Wpointer-arith -Wshadow\
  -Wwrite-strings -Wcast-align -W
 
-BINS = measure/proc2csv measure/xmeminfo 
-SRC_FILES = Makefile src/proc2csv.c src/xmeminfo.c
-DOCS = README
+BIN = measure/proc2csv
+SRC = Makefile src/proc2csv.c
+ifeq ($(NO_X),)
+BIN += measure/xmeminfo
+SRC += src/xmeminfo.c
+endif
+DOC = README
 
-ALL = $(SRC_FILES) $(BINS) $(DOCS) 
+ALL = $(SRC) $(BIN) $(DOC) 
 
 all: $(ALL)
 
 measure/proc2csv: src/proc2csv.c
-	gcc $(CFLAGS) -o $@ $<
+	$(CC) $(CFLAGS) -o $@ $<
 
 measure/xmeminfo: src/xmeminfo.c
-	gcc -I/usr/X11R6/include $(CFLAGS) -o $@ $< -lXRes
+	$(CC) -I/usr/X11R6/include $(CFLAGS) -o $@ $< -lXRes
 
 clean: 
 	$(RM) measure/proc2csv
