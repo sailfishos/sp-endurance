@@ -207,31 +207,32 @@ else
 fi
 
 # save most of /proc
-usage=$path/usage.csv
 echo "- /proc/ data in CSV format"
-echo "generator = syte-endurance-stats v3.0" > $usage
-echo >> $usage
+{
+echo "generator = syte-endurance-stats v3.0"
+echo
 # software release identification
 if [ \! -z $(which sysinfoclient 2>/dev/null) ]; then
 	# Harmattan
-	echo "SW-version = $(sysinfoclient -p /device/sw-release-ver)" >> $usage
+	echo "SW-version = $(sysinfoclient -p /device/sw-release-ver)"
 elif [ \! -z "$OSSO_VERSION" ]; then
 	# earlier Maemo releases
-	echo "SW-version = $OSSO_VERSION" >> $usage
+	echo "SW-version = $OSSO_VERSION"
 elif [ \! -z $(which osso-product-info 2>/dev/null) ]; then
 	# Diablo/Fremantle
-	echo "SW-version = $(osso-product-info -q OSSO_VERSION)" >> $usage
+	echo "SW-version = $(osso-product-info -q OSSO_VERSION)"
 else
 	# not Maemo
-	echo "SW-version = $(uname -mrs)" >> $usage
+	echo "SW-version = $(uname -mrs)"
 fi
-echo "date = $(date +'%F %T')" >> $usage
+echo "date = $(date +'%F %T')"
 # all relevant info from the /proc that is easy to parse
-proc2csv -p >> $usage
+proc2csv -p
 RET=$?
 if [ $RET -ne 0 ]; then
 	echo "$script: WARNING, proc2csv failed with exit code $RET." 1>&2
 fi
+} > $path/usage.csv
 
 which xmeminfo >/dev/null 2>/dev/null
 if [ $? -eq 0 ] ; then
