@@ -7,8 +7,8 @@ CFLAGS += -Wmissing-prototypes -Wstrict-prototypes -Wsign-compare\
  -Wbad-function-cast -Wcast-qual -Wpointer-arith -Wshadow\
  -Wwrite-strings -Wcast-align -W
 
-BIN = measure/proc2csv
-SRC = Makefile src/proc2csv.c
+BIN = measure/proc2csv measure/sp-file
+SRC = Makefile src/proc2csv.c src/sp_file.c
 MAN = endurance-mem-overview.1 \
     endurance_plot.1 \
     endurance_report.py.1 \
@@ -18,6 +18,7 @@ MAN = endurance-mem-overview.1 \
     save-incremental-endurance-stats.1 \
     split-endurance-measurements.1 \
     syslog_parse.py.1 \
+    sp-file.1
     
 ifeq ($(NO_X),)
 BIN += measure/xmeminfo
@@ -36,19 +37,21 @@ measure/proc2csv: src/proc2csv.c
 measure/xmeminfo: src/xmeminfo.c
 	$(CC) -I/usr/X11R6/include $(CFLAGS) -o $@ $< -lXRes
 
+measure/sp-file: src/sp_file.c
+	$(CC) $(CFLAGS) -o $@ $<
+
 clean: 
 	$(RM) measure/proc2csv
 	$(RM) measure/xmeminfo
+	$(RM) measure/sp-file
 
 mandir:
 	install -d $(DESTDIR)/usr/share/man/man1/
 	
-%.1: man/$@
+%.1: man/$@ mandir
 	install man/$@ $(DESTDIR)/usr/share/man/man1/
 
-manuals: mandir $(MAN)
-
-install: manuals
+install: $(MAN)
 	 install -d $(DESTDIR)/usr/bin/
 	 cp measure/* $(DESTDIR)/usr/bin/
 	 cp postproc/* $(DESTDIR)/usr/bin/

@@ -1,0 +1,24 @@
+.TH SP-FILE 1 "2011-11-07" "sp-endurance"
+.SH NAME
+sp-file - write the data from standard input into the specified file.
+.SH SYNOPSIS
+sp-file [-n] <filename>
+.SH DESCRIPTION
+\fIsp-file\fP reads data from standard input and writes it into
+the specified file. Existing files are overwritten.
+This utility was craeted to avoid "poisoning" the kernel page cache
+when writing collected system endurance data into a file.
+.SH OPTIONS
+.TP
+\fB-n\fP
+Disables file writing cache. 
+.TP
+\fB-h\fP
+Inline help page.
+.SH SEE ALSO
+.SH COPYRIGHT
+Copyright (C) 2011 Nokia Corporation.
+.PP
+This is free software.  You may redistribute copies of it under the
+terms of the GNU General Public License v2 included with the software.
+There is NO WARRANTY, to the extent permitted by law.
