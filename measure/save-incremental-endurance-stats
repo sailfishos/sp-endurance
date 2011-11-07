@@ -285,9 +285,9 @@ which rzscontrol >/dev/null 2>/dev/null
 if [ $? -eq 0 ] ; then
 	echo "- ramzswap statistics"
 	for D in /dev/ramzswap[0-9]* ; do
-		echo "==> $D <==" >> $path/ramzswap
-		rzscontrol "$D" --stats >> $path/ramzswap
-	done
+		echo "==> $D <=="
+		rzscontrol "$D" --stats
+	done > $path/ramzswap
 fi
 
 echo "- Other proc files"
