@@ -245,6 +245,12 @@ if [ $? -eq 0 ] ; then
 	fi
 fi
 
+which xlsclients >/dev/null 2>/dev/null
+if [ $? -eq 0 ] ; then
+	echo "- X clients"
+	xlsclients -a -l > $path/xlsclients 2>/dev/null
+fi
+
 echo "- Disk usage"
 LC_ALL=C df -k -P > $path/df
 
