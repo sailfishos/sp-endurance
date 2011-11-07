@@ -9,9 +9,20 @@ CFLAGS += -Wmissing-prototypes -Wstrict-prototypes -Wsign-compare\
 
 BIN = measure/proc2csv
 SRC = Makefile src/proc2csv.c
+MAN = endurance-mem-overview.1 \
+    endurance_plot.1 \
+    endurance_report.py.1 \
+    extract-endurance-process-smaps.1 \
+    parse-endurance-measurements.1 \
+    proc2csv.1 \
+    save-incremental-endurance-stats.1 \
+    split-endurance-measurements.1 \
+    syslog_parse.py.1 \
+    
 ifeq ($(NO_X),)
 BIN += measure/xmeminfo
 SRC += src/xmeminfo.c
+MAN += xmeminfo.1
 endif
 DOC = README
 
@@ -29,12 +40,18 @@ clean:
 	$(RM) measure/proc2csv
 	$(RM) measure/xmeminfo
 
-install:
+mandir:
+	install -d $(DESTDIR)/usr/share/man/man1/
+	
+%.1: man/$@
+	install man/$@ $(DESTDIR)/usr/share/man/man1/
+
+manuals: mandir $(MAN)
+
+install: manuals
 	 install -d $(DESTDIR)/usr/bin/
 	 cp measure/* $(DESTDIR)/usr/bin/
 	 cp postproc/* $(DESTDIR)/usr/bin/
-	 install -d $(DESTDIR)/usr/share/man/man1/
-	 cp man/* $(DESTDIR)/usr/share/man/man1/
 	 install -d $(DESTDIR)/usr/share/doc/sp-endurance-postproc/
 	 cp README $(DESTDIR)/usr/share/doc/sp-endurance-postproc/
 	 install -d $(DESTDIR)/usr/share/sp-endurance-tests/

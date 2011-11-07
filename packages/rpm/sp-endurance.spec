@@ -7,7 +7,7 @@ License: GPLv2
 URL: http://www.gitorious.org/+maemo-tools-developers/maemo-tools/sp-endurance
 Source: %{name}_%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
-BuildRequires: xorg-x11-devel xorg-x11-libX11-devel
+#BuildRequires: xorg-x11-devel xorg-x11-libX11-devel
 
 %description
  Endurance measurement tools save system and process information from /proc
@@ -15,16 +15,18 @@ BuildRequires: xorg-x11-devel xorg-x11-libX11-devel
  errors in syslog etc.  The data can be later used to see logged application
  errors, memory usage and resource leakages and leakage trends under
  long time use-case.
+      
+%define is_x11 %{?_with_x11:1}%{!?_with_x11:0}
 
 %prep
 %setup -q -n sp-endurance
 
 %build
-make 
+make %{!?_with_x11: NO_X=1}
 
 %install
 rm -rf %{buildroot}
-make install DESTDIR=%{buildroot}
+make install DESTDIR=%{buildroot} %{!?_with_x11: NO_X=1}
 
 %clean
 rm -rf %{buildroot}
@@ -34,12 +36,16 @@ rm -rf %{buildroot}
 %{_bindir}/proc2csv
 %{_bindir}/endurance-mem-overview
 %{_bindir}/save-incremental-endurance-stats
-%{_bindir}/xmeminfo
 %defattr(644,root,root,-)
 %{_mandir}/man1/proc2csv.1.gz
 %{_mandir}/man1/endurance-mem-overview.1.gz
 %{_mandir}/man1/save-incremental-endurance-stats.1.gz
-%{_mandir}/man1/xmeminfo.1.gz
+%if %is_x11
+    %defattr(755,root,root,-)
+    %{_bindir}/xmeminfo
+    %defattr(644,root,root,-)
+    %{_mandir}/man1/xmeminfo.1.gz
+%endif
 %doc COPYING README
 
 %package postproc
@@ -62,6 +68,7 @@ BuildArch: noarch
 %{_bindir}/parse-endurance-measurements
 %{_bindir}/split-endurance-measurements
 %{_bindir}/extract-endurance-process-smaps
+%{_bindir}/extract-endurance-process-cgroups
 %defattr(644,root,root,-)
 %{_mandir}/man1/endurance_plot.1.gz
 %{_mandir}/man1/endurance_report.py.1.gz
@@ -69,6 +76,8 @@ BuildArch: noarch
 %{_mandir}/man1/parse-endurance-measurements.1.gz
 %{_mandir}/man1/split-endurance-measurements.1.gz
 %{_mandir}/man1/extract-endurance-process-smaps.1.gz
+%{_datadir}/%{name}-postproc/logparser-config
+%{_datadir}/%{name}-postproc/harmattan
 %{_defaultdocdir}/%{name}-postproc/README
 
 %package tests
