@@ -1388,23 +1388,12 @@ sub parse_xresource_block
 sub parse_filesystem_block($)
 {
     my $handle= shift;
-    my %fs_entry_seen = ();
     while (<$handle>) {
 	chop;
 	if ($_ eq "") {
 	    last;
 	}
-	my ($Filesystem,$blocks,$Used,$Available,$Use_perc,$Mounted) = split(',' , $_, 6);
-	if ($Mounted && !$fs_entry_seen{$Mounted}) {
-	    #$om = $Mounted;
-	    chop $Use_perc;
-	    $fs_entry_seen{$Mounted} += 1;
-	    $Mounted =~ s/\//\_/g;
-#	    print "$i: om=[$om] Mounted=[$Mounted] Used=$Used seen=$fs_entry_seen{$Mounted}\n";
-	    $filesystem_names{$Mounted} = $Used;
-	    my $fn = "e/fs-used-$Mounted";
-	    value_store($fn, $i, $Use_perc);
-	}
+	process_df_entry(split(',' , $_, 6));
     }
 }
 
@@ -1564,6 +1553,36 @@ sub process_xmeminfo
 	print STDERR "WARNING: unable to parse '$fn': invalid header '$header'.\n";
     }
     close($xmeminfo);
+}
+
+sub process_df_entry
+{
+    my ($filesystem, $blocks_kb, $used_kb, $available, $capacity, $mounted_on) = @_;
+    #print STDERR "Mounted on: $mounted_on, capacity: $capacity\n";
+    return if not $mounted_on;
+    $mounted_on =~ s/\//\_/g;
+    $filesystem_names{$mounted_on} = $used_kb;
+    my $fn = "e/fs-used-${mounted_on}";
+    chop $capacity;
+    value_store($fn, $i, $capacity);
+}
+
+sub process_df
+{
+    my $fn = "$d/df";
+    if (not open(DF, $fn)) {
+	return;
+    }
+    my $header = <DF>;
+    if ($header =~ m/^Filesystem/) {
+	while (<DF>) {
+	    chomp;
+	    process_df_entry(split(' ', $_, 6));
+	}
+    } else {
+	print STDERR "WARNING: unable to parse '$fn': invalid header '$header'.\n";
+    }
+    close(DF);
 }
 
 sub process_slabinfo()
@@ -4967,6 +4986,7 @@ foreach $d (@dirs) {
     close $f;
 
     process_xmeminfo();
+    process_df();
     process_slabinfo();
     process_smaps();
     process_interrupts();
