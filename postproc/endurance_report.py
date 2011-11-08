@@ -514,7 +514,7 @@ def get_upstart_jobs_respawned(file):
 
 # --------------------- CSV parsing ---------------------------
 
-def get_filesystem_usage(file):
+def get_filesystem_usage(file, split_pattern):
     """reads Filesystem,1k-blocks,Used,Available,Use%,Mountpoint fields
     until empty line, returns hash of free space on interesting mountpoints
     """
@@ -526,7 +526,7 @@ def get_filesystem_usage(file):
         line = file.readline().strip()
         if not line:
             break
-        cols = line.split(',')
+        cols = re.split(split_pattern, line)
         # handle lines that 'df' has split
         if len(cols) < 6:
             if prev:
@@ -546,6 +546,14 @@ def get_filesystem_usage(file):
             continue
         mounts[mount] = int(used)
     return mounts
+
+def get_filesystem_usage_csv(file):
+    return get_filesystem_usage(file, ",")
+
+def get_filesystem_usage_df(file):
+    if not file.readline().startswith("Filesystem"):
+        raise RuntimeError
+    return get_filesystem_usage(file, "\s+")
 
 # Input from sp-endurance < v2.1.5 (column order is fixed):
 #    res-base,Windows,Pixmaps,GCs,Fonts,Cursors,Colormaps,Map entries,Other clients,\
@@ -959,7 +967,7 @@ def parse_csv(file, filename):
 
     # get the file system usage
     skip_to(file, "Filesystem")
-    data['mounts'] = get_filesystem_usage(file)
+    data['mounts'] = get_filesystem_usage_csv(file)
     
     return data
 
@@ -2578,6 +2586,13 @@ def parse_syte_stats(dirs):
             if file:
                 print >>sys.stderr, "Parsing '%s'..." % filename
                 items['xmeminfo'] = get_xres_usage(file)
+        except RuntimeError: pass
+
+        try:
+            file, filename = syslog.open_compressed("%s/df" % dirname)
+            if file:
+                print >>sys.stderr, "Parsing '%s'..." % filename
+                items['mounts'] = get_filesystem_usage_df(file)
         except RuntimeError: pass
 
         data.append(items)
