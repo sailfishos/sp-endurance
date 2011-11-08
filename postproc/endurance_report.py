@@ -1671,11 +1671,12 @@ def output_run_diffs(idx1, idx2, data, do_summary):
     resource_overall_changes(data, idx1, idx2, do_summary)
 
     # filesystem usage changes
-    diffs = get_usage_diffs(initial_values(data, 'mounts'),
+    if 'mounts' in run1 and 'mounts' in run2:
+        diffs = get_usage_diffs(initial_values(data, 'mounts'),
                             run1['mounts'],
                             run2['mounts'])
-    output_diffs(diffs, "Filesystem usage", "Mount", " kB",
-                Colors.disk, idx1, do_summary)
+        output_diffs(diffs, "Filesystem usage", "Mount", " kB",
+                    Colors.disk, idx1, do_summary)
 
     # Combine Private dirty + swap into one table. The idea is to reduce the
     # amount of data included in the report (=less tables & smaller HTML file
