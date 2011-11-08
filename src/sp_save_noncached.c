@@ -33,13 +33,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#ifdef ENABLE_LZO
-#include <lzo/lzo1x.h>
-#endif /* ENANBLE_LZO */
-
 static volatile sig_atomic_t file_abort = 0;
-
-static bool file_nocache = false;
 
 static ssize_t(*write_buffer)(int, const char*, size_t) = (ssize_t (*)(int, const char*, size_t))write;
 
@@ -62,34 +56,16 @@ static void sigint_handler(int sig __attribute((unused)))
 static void display_usage(void)
 {
 	printf(
-			"The sp-file utility writes the data from standard input\n"
-			"into the specified file. Optionally the file caching can\n"
-			"be disabled.\n"
-			"Usage:\n"
-			"  <app> | sp_file [<options>] <filename>\n"
-			"  sp_file [<options>] <filename> < <app>\n"
+			"The sp-save-noncached utility writes the data from standard input\n"
+			"into the specified file, instructing kernel to not keep the data\n"
+			"cached.\n"
+			"  <app> | sp-save-noncached <filename>\n"
+			"  sp-save-noncached <filename> < <app>\n"
 			"Where:\n"
 			"  <app> - an application writing into standard output\n"
 			"  <filename> - the filename to write the <app> output\n"
-			"  <options>:"
-			"     -n      - the file is written without caching\n"
-			"     -h      - this help file\n"
 			);
 }
-
-#ifdef ENABLE_LZO
-static ssize_t lzo_write(int fd, const char* buffer, size_t size)
-{
-	static char* wrkmem[LZO1X_1_MEM_COMPRESS];
-	char out_buffer[4096 << 1];
-	lzo_uint out_size = sizeof(out_buffer);
-	if (lzo1x_1_compress(buffer, size, out_buffer, &out_size, wrkmem) != LZO_E_OK) {
-		msg_error("LZO compression failed\n");
-		return -1;
-	}
-	return write(fd, out_buffer, out_size);
-}
-#endif /* ENANBLE_LZO */
 
 
 /**
@@ -99,13 +75,12 @@ static ssize_t lzo_write(int fd, const char* buffer, size_t size)
  */
 static void save_file(const char* filename)
 {
-	int flags = O_WRONLY | O_CREAT | O_TRUNC;
-	if (file_nocache) flags |= O_DIRECT;
-	int fd = open(filename, flags, 0666);
+	int fd = open(filename, O_WRONLY | O_CREAT | O_TRUNC, 0666);
 	if (fd == -1) {
 		msg_error("failed to open file %s (%s)\n", filename, strerror(errno));
 		exit (-1);
 	}
+	posix_fadvise(fd, 0, 0, POSIX_FADV_DONTNEED);
 
 	char buffer[4096];
 	int n = -1;
@@ -144,18 +119,10 @@ int main(int argc, char* argv[])
 	}
 	/* command line options */
 	struct option long_options[] = {
-#ifdef ENABLE_LZO
-			 {"lzo", 0, 0, 'z'},
-#endif /* ENANBLE_LZO */
-			 {"no-cached", 0, 0, 'n'},
 			 {"help", 0, 0, 'h'},
 			 {0, 0, 0, 0},
 	};
-#ifdef ENABLE_LZO
-	char* short_options = "hnz";
-#else
-	char* short_options = "hn";
-#endif /* ENANBLE_LZO */
+	char* short_options = "h";
 
 	/* parse command line options */
 	int opt;
@@ -166,20 +133,6 @@ int main(int argc, char* argv[])
 		case 'h':
 			display_usage();
 			exit (0);
-
-		case 'n':
-			file_nocache = true;
-			break;
-#ifdef ENABLE_LZO
-		case 'z':
-			if (lzo_init() != LZO_E_OK) {
-				msg_warning("failed to initialize LZO library. Using non-compressed mode");
-			}
-			else {
-				write_buffer = lzo_write;
-			}
-			break;
-#endif /* ENANBLE_LZO */
 
 		case '?':
 			msg_error("unknown sp-file option: %c\n", optopt);

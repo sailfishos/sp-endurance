@@ -34,12 +34,12 @@ rm -rf %{buildroot}
 %files
 %defattr(755,root,root,-)
 %{_bindir}/proc2csv
-%{_bindir}/sp-file
+%{_bindir}/sp-save-noncached
 %{_bindir}/endurance-mem-overview
 %{_bindir}/save-incremental-endurance-stats
 %defattr(644,root,root,-)
 %{_mandir}/man1/proc2csv.1.gz
-%{_mandir}/man1/sp-file.1.gz
+%{_mandir}/man1/sp-save-noncached.1.gz
 %{_mandir}/man1/endurance-mem-overview.1.gz
 %{_mandir}/man1/save-incremental-endurance-stats.1.gz
 %if %is_x11

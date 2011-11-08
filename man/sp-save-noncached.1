@@ -1,17 +1,16 @@
-.TH SP-FILE 1 "2011-11-07" "sp-endurance"
+.TH SP-SAVE-NONCACHED 1 "2011-11-07" "sp-endurance"
 .SH NAME
-sp-file - write the data from standard input into the specified file.
+sp-save-noncached - write the data from standard input into the specified file.
 .SH SYNOPSIS
 sp-file [-n] <filename>
 .SH DESCRIPTION
-\fIsp-file\fP reads data from standard input and writes it into
-the specified file. Existing files are overwritten.
+\fIsp-save-noncached\fP reads data from standard input and writes it into
+the specified file, intructing kernel to not keep the cached data. 
+Existing files are overwritten. 
+
 This utility was craeted to avoid "poisoning" the kernel page cache
 when writing collected system endurance data into a file.
 .SH OPTIONS
-.TP
-\fB-n\fP
-Disables file writing cache. 
 .TP
 \fB-h\fP
 Inline help page.
