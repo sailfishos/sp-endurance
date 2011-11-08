@@ -1291,11 +1291,11 @@ sub parse_process_status_block($)
     }
 }
 
-sub parse_xresource_block($)
+sub parse_xresource_block
 {
-    my $handle= shift;
-    chop;
-    @names = split(',' , $_);
+    my ($handle, $header) = @_;
+    chomp $header;
+    @names = split(',', $header);
 
     my %xres_seen = ();
     my $sum_all_pixmaps = 0;
@@ -4932,7 +4932,7 @@ foreach $d (@dirs) {
 	    next;
 	}
 	if( index($_, "res-base,") != -1) {
-	    parse_xresource_block($f);
+	    parse_xresource_block($f, $_);
 	    next;
 	}
 	if( index($_, "Filesystem,") != -1) {
