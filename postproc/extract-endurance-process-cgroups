@@ -7,7 +7,7 @@ use strict;
 use Getopt::Long;
 use Pod::Usage;
 use List::Util qw/first/;
-use List::MoreUtils qw/uniq any/;
+use List::MoreUtils qw/uniq any none/;
 use CGI;
 
 my %pid2name;
@@ -234,7 +234,7 @@ sub report_text
 		for my $dir (@ARGV) {
 			foreach my $cgroup (@cgroups) {
 				if (@flag_cgroups) {
-					next if not $cgroup ~~ @flag_cgroups;
+					next if none { $_ eq $cgroup } @flag_cgroups;
 				}
 				next if not exists $cgroup_procs{$dir} or
 					not exists $cgroup_procs{$dir}{$cgroup};
@@ -243,7 +243,7 @@ sub report_text
 				if (@flag_pids) {
 					my @matched_pids;
 					foreach my $flag_pid (@flag_pids) {
-						if ($flag_pid ~~ @procs) {
+						if (any { $_ eq $flag_pid } @procs) {
 							push(@matched_pids, $flag_pid);
 						}
 					}
