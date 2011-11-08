@@ -1493,6 +1493,8 @@ def combine_dirty_and_swap(smaps):
 def initial_values(data, key):
     result = {}
     for round in range(0, len(data)):
+        if not key in data[round]:
+            continue
         for x in data[round][key]:
             if x not in result:
                 try: result[x] = data[round][key][x]
