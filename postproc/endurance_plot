@@ -1550,6 +1550,22 @@ sub parse_pages_block($)
     $kswapd_steal_prev = $kswapd_steal_cumul;
 }
 
+sub process_xmeminfo
+{
+    my $fn = "$d/xmeminfo";
+    my $xmeminfo;
+    if (not open($xmeminfo, $fn)) {
+	return;
+    }
+    my $header = <$xmeminfo>;
+    if ($header =~ m#^res-base,#) {
+	parse_xresource_block($xmeminfo, $header);
+    } else {
+	print STDERR "WARNING: unable to parse '$fn': invalid header '$header'.\n";
+    }
+    close($xmeminfo);
+}
+
 sub process_slabinfo()
 {
     my $fn = "$d/slabinfo";
@@ -4950,6 +4966,7 @@ foreach $d (@dirs) {
     }
     close $f;
 
+    process_xmeminfo();
     process_slabinfo();
     process_smaps();
     process_interrupts();
