@@ -589,8 +589,10 @@ def get_filesystem_usage(file):
 #    'Total mem' = {...},
 #    'PID' = {...},
 #  }
-def get_xres_usage(file, header):
+def get_xres_usage(file, header = None):
     xmeminfo = {}
+    if not header:
+        header = file.readline()
     columns = header.strip().split(',')
     while 1:
         line = file.readline().strip()
@@ -2569,6 +2571,13 @@ def parse_syte_stats(dirs):
             if file:
                 print >>sys.stderr, "Parsing '%s'..." % filename
                 items['upstart_jobs_respawned'] = get_upstart_jobs_respawned(file)
+        except RuntimeError: pass
+
+        try:
+            file, filename = syslog.open_compressed("%s/xmeminfo" % dirname)
+            if file:
+                print >>sys.stderr, "Parsing '%s'..." % filename
+                items['xmeminfo'] = get_xres_usage(file)
         except RuntimeError: pass
 
         data.append(items)
