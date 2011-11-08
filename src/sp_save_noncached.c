@@ -118,11 +118,11 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 	/* command line options */
-	struct option long_options[] = {
+	static const struct option long_options[] = {
 			 {"help", 0, 0, 'h'},
 			 {0, 0, 0, 0},
 	};
-	char* short_options = "h";
+	static const char short_options[] = "h";
 
 	/* parse command line options */
 	int opt;
