@@ -101,6 +101,8 @@ binary-common:
 	dh_gencontrol
 	dh_md5sums
 	dh_builddeb
+	aegis-deb-add -control debian/sp-endurance/DEBIAN/control .. debian/sp-endurance.aegis=_aegis
+
 # Build architecture independant packages using the common target.
 binary-indep: build-indep
 

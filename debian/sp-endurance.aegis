@@ -1,0 +1,6 @@
+<aegis>
+   <request>
+     <credential name="CAP::dac_read_search" />
+     <for path="/usr/bin/proc2csv" />
+   </request>
+</aegis>
