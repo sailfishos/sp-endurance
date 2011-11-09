@@ -1,15 +1,19 @@
-.TH SP-SAVE-NONCACHED 1 "2011-11-07" "sp-endurance"
+.TH SP-COPY-NONCACHED 1 "2011-11-07" "sp-endurance"
 .SH NAME
-sp-save-noncached - write the data from standard input into the specified file.
+sp-copy-noncached - copies a file with minimal effect to kernel
+page cache.
 .SH SYNOPSIS
-sp-file [-n] <filename>
+sp-save-noncached [<options>] <filein> <fileout>
 .SH DESCRIPTION
-\fIsp-save-noncached\fP reads data from standard input and writes it into
-the specified file, intructing kernel to not keep the cached data. 
-Existing files are overwritten. 
+\fIsp-save-noncached\fP utility copies files <filein> to <fileout>
+without keeping data cached. Standard input/output
+streams are used if '-' is specified as an input/output file names.
 
 This utility was craeted to avoid "poisoning" the kernel page cache
 when writing collected system endurance data into a file.
+.TP
+\fB-z\fP
+Invoke lzop packer to compress the input file.
 .SH OPTIONS
 .TP
 \fB-h\fP
