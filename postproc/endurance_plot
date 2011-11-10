@@ -2877,37 +2877,40 @@ sub loop_over_all_apps()
     }
 }
 
-sub echo_one_img_line($)
+sub img_to_filename
 {
-    my $img = shift;
-
-    my $img_fn   = $graphs_dir . "/" . $img . ".png";
-    my $thumb_fn = $graphs_dir . "/" . $img . "_thumb.jpg";
-    if (-e $img_fn) {
-	system("pngtopnm $img_fn | pnmscalefixed -width=$thumb_width -height=$thumb_height | pnmtojpeg > $thumb_fn");
-	if (WIFSIGNALED($?)) {
-	    my $sig = WTERMSIG($?);
-	    # Ignore thumnail generation problems (SIGSEGV etc), but stop
-	    # processing if it looks like the users wants to abort the plot
-	    # generation.
-	    if ($sig == SIGINT or $sig == SIGTERM or $sig == SIGKILL) {
-		kill($sig, $$);
-	    }
-	}
-	system("echo '<table class=\"image\">' >> $html_name");
-	system("echo '<caption align=\"bottom\">$thumbnames{$img}</caption>' >> $html_name");
-	system("echo '<tr><td><a href=$img_fn><img src=$thumb_fn></a></td></tr>' >> $html_name");
-	system("echo '</table>' >> $html_name");
-    }
+    my ($img) = @_;
+    return $graphs_dir . '/' . $img . '.png';
 }
 
-sub add_use_case_names()
+sub img_to_thumb
 {
-    my $dcnt;
+    my ($img) = @_;
+    return $graphs_dir . '/' . $img . '_thumb.jpg';
+}
+
+sub echo_one_img_line
+{
+    my ($html, $img) = @_;
+    my $img_fn = img_to_filename($img);
+    my $thumb_fn = img_to_thumb($img);
+    if (-e $img_fn and -s $img_fn > 0) {
+	print $html "<table class=\"image\">\n";
+	print $html "<caption align=\"bottom\">$thumbnames{$img}</caption>\n";
+	print $html "<tr><td><a href=$img_fn><img src=$thumb_fn></a></td></tr>\n";
+	print $html "</table>\n";
+	return 1;
+    }
+    return 0;
+}
+
+sub add_use_case_names
+{
+    my ($html) = @_;
     if (!$steps_files) {
 	return;
     }
-    system("echo '<p style='float:left'>Steps:<br>' >> $html_name");
+    print $html "<p style='float:left'>Steps:<br/>\n";
     foreach my $d (@dirs) {
 	my $dfn = "$d/step.txt";
 	if (-e $dfn) {
@@ -2922,12 +2925,8 @@ sub add_use_case_names()
     }
 }
 
-sub gen_html_page()
+sub html_title
 {
-    system("echo '<head>' > $html_name");
-    system("echo '<style>' >> $html_name");
-    system("echo 'table { float: left; margin: 20px 5px 0px 0; }' >> $html_name");
-    system("echo '</style>' >> $html_name");
     my $verstr = "Endurance graph [$hw_product][$sw_version] snapshot avg interval";
     if ($str_hours >= 1) {
 	$verstr .= " $str_hours hours";
@@ -2943,36 +2942,81 @@ sub gen_html_page()
     } else {
 	$verstr .= ", total duration ${minutes}min.";
     }
-    system("echo '<title>$verstr</title>' >> $html_name");
-    system("echo '</head>' >> $html_name");
-    system("echo '<body>' >> $html_name");
-    system("echo '<p><b>$verstr</b>' >> $html_name");
+    return $verstr;
+}
 
-# insert link to endurance_report.html (if exsists)
-
+sub link_endurance_report
+{
+    my ($html) = @_;
     my $fn = "endurance-report.html";
-    if (-e $fn ) {
-	system("echo ' <a href='$fn'>$fn</a>' >> $html_name");
+    if (-e $fn) {
+	print $html " <a href='$fn'>$fn</a>\n";
     }
-    system("echo '</p>' >> $html_name");
+}
 
+sub gen_html_page
+{
+    my $html;
+    if (not open($html, '>', $html_name)) {
+	print STDERR "ERROR: unable to open $html_name for writing: $!\n";
+	exit(1);
+    }
+    my $title = html_title();
+    print $html "<html>\n";
+    print $html "<head>\n";
+    print $html " <style>\n";
+    print $html "  table { float: left; margin: 20px 5px 0px 0; }\n";
+    print $html " </style>\n";
+    print $html " <title>$title</title>\n";
+    print $html "</head>\n";
+    print $html "<body>\n";
+    print $html "<p><b>$title</b>\n";
+    link_endurance_report($html);
+    print $html "</p>\n";
+
+    my @html_images;
     foreach my $img (sort keys %images) {
-	echo_one_img_line($img);
+	my $ret = echo_one_img_line($html, $img);
+	push(@html_images, $img) if $ret;
     }
-
-# add thumbs of fragmenation.png (if exsists)
 
     for (my $swfr = 1; $swfr <= 3; $swfr++) {
 	my $img = $graph_fragmentation[$swfr - 1];
 	my $fn = $graphs_dir . "/" . $img . ".png";
-	if (-e $fn ) {
+	if (-e $fn) {
 	    $thumbnames{$img} = "SWAP FRAGMENTATION " . $swfr;
-	    echo_one_img_line($img);
+	    my $ret = echo_one_img_line($html, $img);
+	    push(@html_images, $img) if $ret;
 	}
     }
 
-# add names of use cases
-    add_use_case_names();
+    add_use_case_names($html);
+
+    print $html "</body>\n";
+    print $html "</html>\n";
+
+    close($html);
+
+    return @html_images;
+}
+
+sub gen_thumbnails
+{
+    my @html_images = @_;
+    foreach my $img (@html_images) {
+	my $img_fn = img_to_filename($img);
+	my $thumb_fn = img_to_thumb($img);
+	system("pngtopnm $img_fn | pnmscalefixed -width=$thumb_width -height=$thumb_height | pnmtojpeg > $thumb_fn");
+	if (WIFSIGNALED($?)) {
+	    my $sig = WTERMSIG($?);
+	    # Ignore thumnail generation problems (SIGSEGV etc), but stop
+	    # processing if it looks like the users wants to abort the plot
+	    # generation.
+	    if ($sig == SIGINT or $sig == SIGTERM or $sig == SIGKILL) {
+		kill($sig, $$);
+	    }
+	}
+    }
 }
 
 sub start_plotfile_common($)
@@ -5049,6 +5093,11 @@ if ($plot_width > 1920) {
 #print "plot_width $plot_width\n";
 
 generate_plots();
+
 print "$html_name ";
-gen_html_page();
-print "\ndone.\n";
+my @html_images = gen_html_page();
+
+print "thumbnails ";
+gen_thumbnails(@html_images);
+
+print "\nendurance_plot done.\n";
