@@ -200,10 +200,10 @@ if [ -z $(which sp_smaps_snapshot 2>/dev/null) ]; then
 	for pid in /proc/[0-9]*; do
 		echo "==> $pid/smaps <=="
 		awk '{print "#"$1,$2}' < $pid/status
-		sp-copy-noncached $pid/smaps -
-	done | sp-copy-noncached --lzo - $path/smaps.cap.lzo
+		cat $pid/smaps
+	done | lzop -c | sp-noncached --write $path/smaps.cap.lzo
 else
-	sp_smaps_snapshot | sp-copy-noncached --lzo - $path/smaps.cap.lzo
+	sp_smaps_snapshot | lzop -c | sp-noncached --write $path/smaps.cap.lzo
 fi
 
 # save most of /proc
@@ -232,7 +232,7 @@ RET=$?
 if [ $RET -ne 0 ]; then
 	echo "$script: WARNING, proc2csv failed with exit code $RET." 1>&2
 fi
-} | sp-copy-noncached - $path/usage.csv
+} | sp-noncached --write $path/usage.csv
 
 which xmeminfo >/dev/null 2>/dev/null
 if [ $? -eq 0 ] ; then
@@ -256,7 +256,7 @@ LC_ALL=C df -k -P > $path/df
 
 # save some less easily parsed /proc/ statistics, ignore errors
 echo "- Open file descriptors"
-ls -l /proc/[0-9]*/fd/ | sp-copy-noncached - $path/open-fds 2> /dev/null
+ls -l /proc/[0-9]*/fd/ | sp-noncached --write $path/open-fds 2> /dev/null
 
 # Get bootreason from sysinfo daemon. /proc/bootreason is deprecated.
 echo "- Bootreason"
@@ -340,9 +340,7 @@ if [ -f /var/log/messages ] ; then
 fi
 if [ -z "$logs" ] ; then
 	echo "Syslog file(s) missing! Capturing kernel ring buffer content instead." 1>&2
-	dmesg 2>/dev/null | sp-copy-noncached --lzo - $path/dmesg.lzo
+	dmesg 2>/dev/null | lzop -c | sp-noncached --write $path/dmesg.lzo
 else
-	for log in $logs; do
-	    sp-copy-noncached $log -
-	done | sp-copy-noncached --lzo - $path/syslog.lzo
+	sp-noncached --read $logs | lzop -c | sp-noncached --write $path/syslog.lzo
 fi

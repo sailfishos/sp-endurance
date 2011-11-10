@@ -1,20 +1,22 @@
-.TH SP-COPY-NONCACHED 1 "2011-11-07" "sp-endurance"
+.TH SP-NONCACHED 1 "2011-11-07" "sp-endurance"
 .SH NAME
-sp-copy-noncached - copies a file with minimal effect to kernel
+sp-noncached - reads/writes files with a minimal effect to kernel
 page cache.
 .SH SYNOPSIS
-sp-save-noncached [<options>] <filein> <fileout>
+sp-noncached -(w|r) <file1> [<file2>...]
 .SH DESCRIPTION
-\fIsp-save-noncached\fP utility copies files <filein> to <fileout>
-without keeping data cached. Standard input/output
-streams are used if '-' is specified as an input/output file names.
+\fIsp-noncached\fP utility reads/writes files into/from standard 
+output/input without keeping data cached. 
 
 This utility was craeted to avoid "poisoning" the kernel page cache
 when writing collected system endurance data into a file.
-.TP
-\fB-z\fP
-Invoke lzop packer to compress the input file.
 .SH OPTIONS
+.TP
+\fB-r\fP
+Reads from files <file1>, <file2> into standard output.
+.TP
+\fB-r\fP
+Writes standard input into <file1>.
 .TP
 \fB-h\fP
 Inline help page.
