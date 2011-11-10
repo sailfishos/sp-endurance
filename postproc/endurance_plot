@@ -2913,8 +2913,11 @@ sub add_use_case_names()
 	if (-e $dfn) {
 	    my $step = `cat $dfn`;
 	    chop $step;
-	    $dcnt = $d - 101;
-	    system("echo '$dcnt: [$round_date{$d}] $step<br>' >> $html_name");
+	    my $desc = $d;
+	    if (int($d) >= 101) {
+		$desc = $d - 101;
+	    }
+	    print $html "$desc: [$round_date{$d}] $step<br/>\n";
 	}
     }
 }
