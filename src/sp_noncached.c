@@ -65,9 +65,9 @@ static void display_usage(void)
 			"  sp-save-noncached -(r|w) <file1> [<file2>...]\n"
 			"Where:\n"
 			"  <options>:"
-			"    -w    writes standard input into file <file1>.\n"
-			"    -r    reads files <file1>, <file2>... into standard output.\n"
-			"    -h    this help page.\n"
+			"    -w (--write)  writes standard input into file <file1>.\n"
+			"    -r (--read)   reads files <file1>, <file2>... into standard output.\n"
+			"    -h (--help)   this help page.\n"
 			);
 }
 
