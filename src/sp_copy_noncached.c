@@ -90,11 +90,12 @@ static void display_usage(void)
 static int copy_data(int fd_in, int fd_out, int fd_filter_in, int fd_filter_out)
 {
 	char buffer[4096];
-	int size, n;
+	int size;
 	fd_set fds_read;
 	fd_set fds_write;
 	bool wait_for_write = false;
 	int stream_out = fd_filter_in == -1 ? fd_out : fd_filter_in;
+	int offset = 0;
 
 	/* prepare read/write descriptor set */
 	int fdmax = fd_in;
@@ -155,14 +156,14 @@ static int copy_data(int fd_in, int fd_out, int fd_filter_in, int fd_filter_out)
 			}
 
 			/* write the data to output stream */
-			n = 0;
-			while (size) {
-				n = write(stream_out, buffer, size);
+			offset = 0;
+			while (offset < size) {
+				int n = write(stream_out, buffer + offset, size - offset);
 				if (n == -1) {
 					msg_error("failed to write data (%s)\n", strerror(errno));
 					return -1;
 				}
-				size -= n;
+				offset += n;
 			}
 		}
 		/* if data is piped through an external tool - check it's output pipe */
@@ -179,14 +180,14 @@ static int copy_data(int fd_in, int fd_out, int fd_filter_in, int fd_filter_out)
 			}
 
 			/* write the data to output */
-			n = 0;
-			while (size) {
-				n = write(fd_out, buffer, size);
+			offset = 0;
+			while (offset < size) {
+				int n = write(fd_out, buffer + offset, size - offset);
 				if (n == -1) {
 					msg_error("failed to write data (%s)\n", strerror(errno));
 					return -1;
 				}
-				size -= n;
+				offset += n;
 			}
 		}
 	}
