@@ -4809,10 +4809,6 @@ sub generate_plots()
 @dirs = @ARGV;
 $num_of_rounds = @dirs;
 
-system("rm -f e/* $graphs_dir/??_* $html_name");
-mkdir "e";
-mkdir "$graphs_dir";
-
 #
 # note: this is global rounds counter! (name not well chosen..)
 #
@@ -4914,6 +4910,9 @@ if (!$secs_per_round) {
 }
 no integer;
 print "endurance_plot; rounds=$num_of_rounds; duration=$total_duration sec, avg-per-round: sec=$secs_per_round or min=$mins_per_round or hour=$hours_per_round\n";
+system("rm -f e/* $graphs_dir/??_* $html_name");
+mkdir "e";
+mkdir "$graphs_dir";
 
 print "input: ";
 foreach $d (@dirs) {
