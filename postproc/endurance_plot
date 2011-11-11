@@ -2906,7 +2906,9 @@ sub add_use_case_names
     if (!$steps_files) {
 	return;
     }
-    print $html "<p style='float:left'>Steps:<br/>\n";
+    print $html "\n<br clear='all'/>\n";
+    print $html "<a name='steps'/>\n";
+    print $html "<h2>SNAPSHOT DATES AND DESCRIPTIONS</h2>\n";
     foreach my $d (@dirs) {
 	my $dfn = "$d/step.txt";
 	if (-e $dfn) {
@@ -2921,33 +2923,33 @@ sub add_use_case_names
     }
 }
 
-sub html_title
+sub html_avg_interval
 {
-    my $verstr = "Endurance graph [$hw_product][$sw_version] snapshot avg interval";
     if ($str_hours >= 1) {
-	$verstr .= " $str_hours hours";
+	return "$str_hours hours";
     } elsif ($str_minutes >= 1) {
-	$verstr .= " $str_minutes minutes";
+	return "$str_minutes minutes";
     } else {
-	$verstr .= " $str_seconds seconds";
+	return "$str_seconds seconds";
     }
+}
+
+sub html_total_duration
+{
     my $hours = int($total_duration / 3600);
     my $minutes = int(($total_duration % 3600) / 60);
     if ($hours > 0) {
-	$verstr .= ", total duration ${hours}h ${minutes}min.";
+	return "${hours}h ${minutes}min";
     } else {
-	$verstr .= ", total duration ${minutes}min.";
+	return "${minutes}min";
     }
-    return $verstr;
 }
 
-sub link_endurance_report
+sub html_title
 {
-    my ($html) = @_;
-    my $fn = "endurance-report.html";
-    if (-e $fn) {
-	print $html " <a href='$fn'>$fn</a>\n";
-    }
+    return "Endurance graph [$hw_product][$sw_version] " .
+	"snapshot avg interval " . html_avg_interval() .
+	", total duration " . html_total_duration() . ".";
 }
 
 sub gen_html_page
@@ -2957,21 +2959,46 @@ sub gen_html_page
 	print STDERR "ERROR: unable to open $html_name for writing: $!\n";
 	exit(1);
     }
-    my $title = html_title();
     print $html "<html>\n";
     print $html "<head>\n";
     print $html " <style>\n";
     print $html "  table { float: left; margin: 20px 5px 0px 0; }\n";
     print $html " </style>\n";
-    print $html " <title>$title</title>\n";
+    print $html " <title>" . html_title() . "</title>\n";
     print $html "</head>\n";
     print $html "<body>\n";
-    print $html "<p><b>$title</b>\n";
-    link_endurance_report($html);
-    print $html "</p>\n";
+
+    print $html "<h1>ENDURANCE GRAPHS</h1>\n";
+    print $html "<ul>\n";
+    print $html " <li>Total duration: <b>" . html_total_duration() . "</b>. " .
+		"Average snapshot interval: <b>" . html_avg_interval() . "</b>.\n";
+    print $html " <li>OS version: <b>$sw_version</b>. " .
+		($hw_product ? "Hardware: <b>$hw_product:$hw_build</b>." : "") . "\n";
+    print $html " <li>Content: " .
+		"<a href='#process_graphs'>Process Resource Usage Graphs</a> | " .
+		"<a href='#system_graphs'>System Resource Usage Graphs</a> | " .
+		"<a href='#steps'>Snapshot Dates and Descriptions</a>. " .
+		"See also: <a href='endurance-report.html'>endurance-report.html</a>.\n";
+    print $html "</ul>\n";
 
     my @html_images;
-    foreach my $img (sort keys %images) {
+    my (@process_images, @system_images);
+    foreach (keys %images) {
+	if (/^1/) { push(@process_images, $_); }
+	else { push(@system_images, $_); }
+    }
+
+    print $html "<a name='process_graphs'/>\n";
+    print $html "\n<h2>PROCESS RESOURCE USAGE GRAPHS</h2>\n";
+    foreach my $img (sort @process_images) {
+	my $ret = echo_one_img_line($html, $img);
+	push(@html_images, $img) if $ret;
+    }
+
+    print $html "\n<br clear='all'/>\n";
+    print $html "<a name='system_graphs'>\n";
+    print $html "<h2>SYSTEM RESOURCE USAGE GRAPHS</h2>\n";
+    foreach my $img (sort @system_images) {
 	my $ret = echo_one_img_line($html, $img);
 	push(@html_images, $img) if $ret;
     }
