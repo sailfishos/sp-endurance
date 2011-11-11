@@ -2573,7 +2573,7 @@ sub process_powertop()
 		}
 		my ($pid, $activ, $name, $func) = split('\|' , $line, 4);
 		($func, undef) = split(' ' , $func, 2);
-		my $id = $name . "-" . $pid . "-" . $func; 
+		my $id = $name . "-" . $pid . "-" . $func;
 		$id =~ s/ //g;
 		$id =~ s/\<//g;
 		$id =~ s/\>//g;
@@ -4110,22 +4110,22 @@ sub generate_plot_pss_swap
 		$div = $avg_pss_swp{$p};
 		$sdiv = sprintf("%2.1f", $div);
 #	print "div(1)=$div, sdiv(1)=$sdiv\n";
-		$legend{$graph_appmem_pss_swap_lines_big} = "apps $pss_txt > $sdiv MB"; 
+		$legend{$graph_appmem_pss_swap_lines_big} = "apps $pss_txt > $sdiv MB";
 		$thumblegend{$graph_appmem_pss_swap_lines_big} = "$pss_txt &gt; $sdiv MB";
 
-		$legend{$graph_appmem_pss_swap_lines_small} = "apps $pss_txt < $sdiv MB"; 
+		$legend{$graph_appmem_pss_swap_lines_small} = "apps $pss_txt < $sdiv MB";
 		$thumblegend{$graph_appmem_pss_swap_lines_small} = "$pss_txt &lt; $sdiv MB";
 	    } elsif ($cnt == $divpoint_2) {
 		$div = $avg_pss_swp{$p};
 		$sdiv = sprintf("%2.1f", $div);
 #	print "div(2)=$div, sdiv(2)=$sdiv\n";
-		$legend{$graph_appmem_pss_swap_lines_smaller} = "apps $pss_txt < $sdiv MB"; 
+		$legend{$graph_appmem_pss_swap_lines_smaller} = "apps $pss_txt < $sdiv MB";
 		$thumblegend{$graph_appmem_pss_swap_lines_smaller} = "$pss_txt &lt; $sdiv MB";
 	    } elsif ($cnt == $divpoint_3) {
 		$div = $avg_pss_swp{$p};
 		$sdiv = sprintf("%2.1f", $div);
 #	print "div(3)=$div, sdiv(3)=$sdiv\n";
-		$legend{$graph_appmem_pss_swap_lines_smallest} = "apps $pss_txt < $sdiv MB"; 
+		$legend{$graph_appmem_pss_swap_lines_smallest} = "apps $pss_txt < $sdiv MB";
 		$thumblegend{$graph_appmem_pss_swap_lines_smallest} = "$pss_txt &lt; $sdiv MB";
 	    }
 	} 
@@ -5051,7 +5051,7 @@ foreach $d (@dirs) {
 	    } else {
 		$passed = 0;
 	    }
-	    $lapsed_time{$cnt} = $passed; 
+	    $lapsed_time{$cnt} = $passed;
 #	    print "$i:passed: $passed\n";
 	    if ($upt < $upt_prev) {
 		print "** NOTE: at $d uptime steps back. Reboot in sequence? Duration calc will have no sense..\n"
@@ -5130,7 +5130,7 @@ foreach $d (@dirs) {
 	    $line = <$f>;
 	    chop $line;
 	    my ($Allocated_FDs,$Freed_FDs,$Max_FDs) = split(',' , $line, 3);
-	    $perc_fd = (100 * $Allocated_FDs) / $Max_FDs; 
+	    $perc_fd = (100 * $Allocated_FDs) / $Max_FDs;
 	    value_store($fd_perc_file_name, $i, $perc_fd);
 	    next;
 	} 
