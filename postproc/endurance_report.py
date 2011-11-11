@@ -1467,8 +1467,9 @@ def output_data_links(run):
     print '<a href="%s/usage.csv">collected CSV data</a> and' % basedir
     print '<a href="%s/ifconfig">ifconfig output</a>' % basedir
     print "<li>rest of /proc/ information; see "
-    if os.path.exists("%s/open-fds" % basedir):
-        print '<a href="%s/open-fds">open file descriptors</a>, ' % basedir
+    for suffix in ("", ".gz", ".xz", ".lzo"):
+        if os.path.exists("%s/open-fds%s" % (basedir, suffix)):
+            print '<a href="%s/open-fds%s">open file descriptors</a>, ' % (basedir, suffix)
     print '<a href="%s/interrupts">interrupts</a>, ' % basedir
     print '<a href="%s/slabinfo">slabinfo</a> and' % basedir
     print '<a href="%s/stat">stat</a> files' % basedir
