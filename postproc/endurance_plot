@@ -5258,3 +5258,8 @@ print "thumbnails ";
 gen_thumbnails(@html_images);
 
 print "\nendurance_plot done.\n";
+
+if (not -e 'endurance-report.html') {
+    print STDERR "NOTE: generate also the endurance report (with endurance_report.py),"
+	. " and save it in current directory as 'endurance-report.html'.\n";
+}
