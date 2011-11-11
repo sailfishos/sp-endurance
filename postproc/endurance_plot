@@ -52,408 +52,400 @@ my $hours_per_round = 0;
 my ($str_hours, $str_minutes, $str_seconds);
 my $total_duration;
 
-# names for files by classes, results in grouping,
-# as thumbnails are generated using this list sorted
-my $graph_memory   = "10_memory"; 
-$legend{$graph_memory} = "system-level memory"; 
-$thumblegend{$graph_memory} = "SYSTEM MEMORY";
-$unit{$graph_memory} = "MB";
+######## PROCESS GRAPHS ###########
 
-my $graph_memory_s = "10_memory_s";
-$legend{$graph_memory_s} = "system-level memory smaller values"; 
-$thumblegend{$graph_memory_s} = "MEMORY SMALLER";
-$unit{$graph_memory_s} = "MB";
-
-my $graph_appmem_swapped = "20_appmem_swapped";
-$legend{$graph_appmem_swapped} = "swap used by processes"; 
-$thumblegend{$graph_appmem_swapped} = "APPS SWAP USE";
-$unit{$graph_appmem_swapped} = "MB";
-
-my $graph_appmem_pss =  "30_appmem_pss";
-$legend{$graph_appmem_pss} = "apps PSS"; 
-$thumblegend{$graph_appmem_pss} = "APPS PSS";
-$unit{$graph_appmem_pss} = "MB";
-
-my $graph_appmem_pss_swap =  "30_appmem_pss_swap";
-$legend{$graph_appmem_pss_swap} = "apps PSS+SWAP"; 
-$thumblegend{$graph_appmem_pss_swap} = "APPS PSS+SWAP";
-$unit{$graph_appmem_pss_swap} = "MB";
-
-#
-# legends for pss_swap graphs generated dynamically
-#
-my $graph_appmem_pss_swap_lines_big =      "30_appmem_pss_swap_lines_big";
-$unit{$graph_appmem_pss_swap_lines_big} = "MB";
-
-my $graph_appmem_pss_swap_lines_small =    "30_appmem_pss_swap_lines_small";
-$unit{$graph_appmem_pss_swap_lines_small} = "MB";
-
-my $graph_appmem_pss_swap_lines_smaller =  "30_appmem_pss_swap_lines_smaller";
-$unit{$graph_appmem_pss_swap_lines_smaller} = "MB";
-
-my $graph_appmem_pss_swap_lines_smallest = "30_appmem_pss_swap_lines_smallest";
-$unit{$graph_appmem_pss_swap_lines_smallest} = "MB";
-
-my $graph_appmem_locked = "32_appmem_locked";
-$legend{$graph_appmem_locked} = "process locked mem size"; 
-$thumblegend{$graph_appmem_locked} = "APPS LOCKED";
-$unit{$graph_appmem_locked} = "MB";
-
-my $graph_vmsize = "33_vmsize";
-$legend{$graph_vmsize} = "process virtual mem size"; 
-$thumblegend{$graph_vmsize} = "VMSIZE";
-$unit{$graph_vmsize} = "MB";
-
-#my $graph_appmem_private_dirty = "35_appmem_private_dirty";
-#$legend{$graph_appmem_private_dirty} = "private dirty mem by processes"; 
-#$thumblegend{$graph_appmem_private_dirty} = "PRIVATE DIRTY";
-#$unit{$graph_appmem_private_dirty} = "MB";
-
-my $graph_appmem_heap = "36_appmem_heap";
-$legend{$graph_appmem_heap} = "process heap mem size"; 
+my $graph_appmem_heap = "1001_appmem_heap";
+$legend{$graph_appmem_heap} = "process heap mem size";
 $thumblegend{$graph_appmem_heap} = "APPS HEAP";
 $unit{$graph_appmem_heap} = "MB";
 
-my $graph_appmem_devpvr = "37_appmem_devpvr";
-$legend{$graph_appmem_devpvr} = "process /dev/pvrsrvkm"; 
-$thumblegend{$graph_appmem_devpvr} = "PVRSRVKM";
-$unit{$graph_appmem_devpvr} = "MB";
+#my $graph_appmem_private_dirty = "1002_appmem_private_dirty";
+#$legend{$graph_appmem_private_dirty} = "private dirty mem by processes";
+#$thumblegend{$graph_appmem_private_dirty} = "PRIVATE DIRTY";
+#$unit{$graph_appmem_private_dirty} = "MB";
 
-my $graph_appmem_sysvshared = "38_appmem_sysvshared";
-$legend{$graph_appmem_sysvshared} = "process SYSV-shared mem size"; 
-$thumblegend{$graph_appmem_sysvshared} = "SYSV-SHAREDMEM";
-$unit{$graph_appmem_sysvshared} = "MB";
+my $graph_appmem_pss_swap = "1003_appmem_pss_swap";
+$legend{$graph_appmem_pss_swap} = "apps PSS+SWAP";
+$thumblegend{$graph_appmem_pss_swap} = "APPS PSS+SWAP";
+$unit{$graph_appmem_pss_swap} = "MB";
 
-my $graph_appmem_posixshared = "39_appmem_posixshared";
-$legend{$graph_appmem_posixshared} = "process POSIX-shared mem size"; 
-$thumblegend{$graph_appmem_posixshared} = "POSIX-SHAREDMEM";
-$unit{$graph_appmem_posixshared} = "MB";
+my $graph_appmem_pss_swap_lines_big = "1004_appmem_pss_swap_lines_big";
+$unit{$graph_appmem_pss_swap_lines_big} = "MB";
 
-my $graph_mem_shared = "40_mem_shared";
-$legend{$graph_mem_shared} = "shared memory"; 
-$thumblegend{$graph_mem_shared} = "SHMEM";
-$unit{$graph_mem_shared} = "MB";
+my $graph_appmem_pss_swap_lines_small = "1004_appmem_pss_swap_lines_small";
+$unit{$graph_appmem_pss_swap_lines_small} = "MB";
 
-my $graph_mem_shared_cpid = "40_mem_shared_cpid";
-$legend{$graph_mem_shared_cpid} = "shared by creator (cpid)"; 
-$thumblegend{$graph_mem_shared_cpid} = "SHMEM CREATOR";
-$unit{$graph_mem_shared_cpid} = "MB";
+my $graph_appmem_pss_swap_lines_smaller = "1004_appmem_pss_swap_lines_smaller";
+$unit{$graph_appmem_pss_swap_lines_smaller} = "MB";
 
-my $graph_mem_shared_lpid = "40_mem_shared_lpid";
-$legend{$graph_mem_shared_lpid} = "shared by last user (lpid)"; 
-$thumblegend{$graph_mem_shared_lpid} = "SHMEM LAST USER";
-$unit{$graph_mem_shared_lpid} = "MB";
+my $graph_appmem_pss_swap_lines_smallest = "1004_appmem_pss_swap_lines_smallest";
+$unit{$graph_appmem_pss_swap_lines_smallest} = "MB";
 
-my $graph_mem_shared_lpid_name = "40_mem_shared_lpid_name";
-$legend{$graph_mem_shared_lpid_name} = "shared by last user-pname (lpid)"; 
-$thumblegend{$graph_mem_shared_lpid_name} = "SHMEM LAST PNAME";
-$unit{$graph_mem_shared_lpid_name} = "MB";
+my $graph_appmem_pss = "1005_appmem_pss";
+$legend{$graph_appmem_pss} = "apps PSS";
+$thumblegend{$graph_appmem_pss} = "APPS PSS";
+$unit{$graph_appmem_pss} = "MB";
 
-my $graph_mem_shared_number = "40_mem_shared_number";
-#$legend{$graph_mem_shared_number} = "shared mem number of segments; nattach-0: real orphans"; 
-#$legend{$graph_mem_shared_number} = "shared mem number of segments and attach-avg-age (sec)"; 
-$legend{$graph_mem_shared_number} = "left: num of shmem segments by attached proc; right: num of all shmem segments"; 
-$thumblegend{$graph_mem_shared_number} = "SHMEM NUMBER";
-$unit_1{$graph_mem_shared_number} = "count by attached processes";
-$unit_2{$graph_mem_shared_number} = "count of all";
+my $graph_appmem_swapped = "1006_appmem_swapped";
+$legend{$graph_appmem_swapped} = "swap used by processes";
+$thumblegend{$graph_appmem_swapped} = "APPS SWAP USE";
+$unit{$graph_appmem_swapped} = "MB";
 
-my $graph_mem_shared_size = "40_mem_shared_size";
-$legend{$graph_mem_shared_size} = "shared by nattach, size"; 
-$thumblegend{$graph_mem_shared_size} = "SHMEM SIZES";
-$unit{$graph_mem_shared_size} = "MB";
-
-my $graph_xresource_sz_pxm =    "50_xresource_pixmaps";
-$legend{$graph_xresource_sz_pxm} = "X resource pixmaps size"; 
-$thumblegend{$graph_xresource_sz_pxm} = "X-RESOURCES-PIXMAPS";
-$unit{$graph_xresource_sz_pxm} = "Size of Xres pixmaps, kB";
-
-my $graph_xresource_cnt =    "51_xresource_count";
-$legend{$graph_xresource_cnt} = "X resource counts"; 
-$thumblegend{$graph_xresource_cnt} = "X-RESOURCES-COUNT";
-$unit{$graph_xresource_cnt} = "number of Xres objects";
-
-#my $graph_xresource_sz_misc =    "52_xresource_misc";
-#$legend{$graph_xresource_sz_misc} = "X resource misc size"; 
-#$thumblegend{$graph_xresource_sz_misc} = "X-RESOURCES-MISC";
-#$unit{$graph_xresource_sz_misc} = "Size of Xres misc, kB";
-
-my $graph_mem_slabs =     "55_mem_slabs";
-$legend{$graph_mem_slabs} = "kernel slab memory"; 
-$thumblegend{$graph_mem_slabs} = "KERNEL SLABS";
-$unit{$graph_mem_slabs} = "kB";
-
-my $graph_cpu =  "59_cpu";
-$legend{$graph_cpu} = "CPU utilization";
-$thumblegend{$graph_cpu} = "CPU UTILIZATION";
-$unit{$graph_cpu} = "percent";
-
-my $graph_cpu_totaltime =  "60_cpu_totaltime";
-$legend{$graph_cpu_totaltime} = "CPU total time"; 
-$thumblegend{$graph_cpu_totaltime} = "TOTAL CPU TIME";
-$unit{$graph_cpu_totaltime} = "percent";
-
-my $graph_cpu_usertime = "61_cpu_usertime";
-$legend{$graph_cpu_usertime} = "CPU user time"; 
-$thumblegend{$graph_cpu_usertime} = "USER CPU TIME";
-$unit{$graph_cpu_usertime} = "percent";
-
-my $graph_cpu_systime =  "61_cpu_systime";
-$legend{$graph_cpu_systime} = "CPU system time"; 
-$thumblegend{$graph_cpu_systime} = "SYSTEM CPU TIME";
-$unit{$graph_cpu_systime} = "percent";
-
-my $graph_loadavg =  "62_loadavg";
-$legend{$graph_loadavg} = "Load average"; 
-$thumblegend{$graph_loadavg} = "LOAD AVG 1m/5m/15m";
-$unit{$graph_loadavg} = "loadavg units";
-
-my $graph_events_swap =             "70_events_swap";
-$legend{$graph_events_swap} = "swap-related events"; 
-$thumblegend{$graph_events_swap} = "SWAP EVENTS";
-$unit{$graph_events_swap} = "count per second";
-
-my $graph_ramzswap =             "72_ramzswap";
-$legend{$graph_ramzswap} = "compressed swap counters; left:reads/writes right:used amount, bold"; 
-$thumblegend{$graph_ramzswap} = "COMPR-SWAP";
-$unit_1{$graph_ramzswap} = "MB per second";
-$unit_2{$graph_ramzswap} = "MB used";
-
-my $graph_pagetypeinfo_unmovable = "74_pagetypeinfo_unmovable";
-$legend{$graph_pagetypeinfo_unmovable} = "pagetype unmovable from /proc/pagetypeinfo"; 
-$thumblegend{$graph_pagetypeinfo_unmovable} = "PAGETYPE-UNMOVABLE";
-$unit{$graph_pagetypeinfo_unmovable} = "MB";
-
-my $graph_pagetypeinfo_reclaimable = "74_pagetypeinfo_reclaimable";
-$legend{$graph_pagetypeinfo_reclaimable} = "pagetype reclaimable from /proc/pagetypeinfo"; 
-$thumblegend{$graph_pagetypeinfo_reclaimable} = "PAGETYPE-RECLAIMABLE";
-$unit{$graph_pagetypeinfo_reclaimable} = "MB";
-
-my $graph_pagetypeinfo_movable = "74_pagetypeinfo_movable";
-$legend{$graph_pagetypeinfo_movable} = "pagetype movable from /proc/pagetypeinfo"; 
-$thumblegend{$graph_pagetypeinfo_movable} = "PAGETYPE-MOVABLE";
-$unit{$graph_pagetypeinfo_movable} = "MB";
-
-my $graph_pagetypeinfo_reserve = "74_pagetypeinfo_reserve";
-$legend{$graph_pagetypeinfo_reserve} = "pagetype reserve from /proc/pagetypeinfo"; 
-$thumblegend{$graph_pagetypeinfo_reserve} = "PAGETYPE-RESERVE";
-$unit{$graph_pagetypeinfo_reserve} = "MB";
-
-my $graph_events_ctx_total =    "65_ctx_total";
-$legend{$graph_events_ctx_total} = "process total context switches"; 
-$thumblegend{$graph_events_ctx_total} = "CTX TOTAL";
-$unit{$graph_events_ctx_total} = "count per second";
-
-my $graph_events_ctx_nonvolunt =    "66_ctx_nonvolunt";
-$legend{$graph_events_ctx_nonvolunt} = "process non-voluntary context switches"; 
-$thumblegend{$graph_events_ctx_nonvolunt} = "CTX NONVOLUNTARY";
-$unit{$graph_events_ctx_nonvolunt} = "count per second";
-
-my $graph_events_ctx_volunt =       "66_ctx_volunt";
-$legend{$graph_events_ctx_volunt} = "process voluntary context switches"; 
-$thumblegend{$graph_events_ctx_volunt} = "CTX VOLUNTARY";
-$unit{$graph_events_ctx_volunt} = "count per second";
-
-my $graph_diskstats_reads =              "68_diskstats_reads";
-$legend{$graph_diskstats_reads} = "diskstats_reads"; 
-$thumblegend{$graph_diskstats_reads} = "DISK_READS";
-$unit{$graph_diskstats_reads} = "MB per second";
-
-my $graph_diskstats_read_time =              "68_diskstats_read_time";
-$legend{$graph_diskstats_read_time} = "diskstats_read_time"; 
-$thumblegend{$graph_diskstats_read_time} = "DISKREAD TIME";
-$unit{$graph_diskstats_read_time} = "ms per sector";
-
-my $graph_diskstats_writes =              "69_diskstats_writes";
-$legend{$graph_diskstats_writes} = "diskstats_writes"; 
-$thumblegend{$graph_diskstats_writes} = "DISK_WRITES";
-$unit{$graph_diskstats_writes} = "MB per second";
-
-my $graph_diskstats_write_time =              "69_diskstats_write_time";
-$legend{$graph_diskstats_write_time} = "diskstats_write_time"; 
-$thumblegend{$graph_diskstats_write_time} = "DISKWRITE TIME";
-$unit{$graph_diskstats_write_time} = "ms per sector";
-
-my $graph_events_major_pagefaults = "70_events_major_pagefaults";
-$legend{$graph_events_major_pagefaults} = "major page faults"; 
+my $graph_events_major_pagefaults = "1010_events_major_pagefaults";
+$legend{$graph_events_major_pagefaults} = "major page faults";
 $thumblegend{$graph_events_major_pagefaults} = "PAGE FAULTS";
 $unit{$graph_events_major_pagefaults} = "count per second";
 
-my $graph_interrupts =              "70_interrupts";
-$legend{$graph_interrupts} = "left:specific interrupts; right: sum of all interrupts"; 
-$thumblegend{$graph_interrupts} = "INTERRUPTS";
-$unit{$graph_interrupts} = "count per second";
+my $graph_appmem_locked = "1020_appmem_locked";
+$legend{$graph_appmem_locked} = "process locked mem size";
+$thumblegend{$graph_appmem_locked} = "APPS LOCKED";
+$unit{$graph_appmem_locked} = "MB";
 
-my $graph_ctx_global =              "70_ctx_global";
-$legend{$graph_ctx_global} = "left: CTX switches; right: num of processes"; 
-$thumblegend{$graph_ctx_global} = "CTX-SW,PROC-NUM";
-$unit_1{$graph_ctx_global} = "context switches: per second";
-$unit_2{$graph_ctx_global} = "num-of-processes: count";
+my $graph_appmem_wx = "1030_appmem_wx";
+$legend{$graph_appmem_wx} = "executable mem which is writable, security issue";
+$thumblegend{$graph_appmem_wx} = "WRITABLE-EXEC";
+$unit{$graph_appmem_wx} = "MB";
 
-my $graph_processes_global =              "71_processes_created";
-$legend{$graph_processes_global} = "Processes/threads created"; 
-$thumblegend{$graph_processes_global} = "PROC/THREADS CREATED";
-$unit{$graph_processes_global} = "count per minute";
+my $graph_vmsize = "1040_vmsize";
+$legend{$graph_vmsize} = "process virtual mem size";
+$thumblegend{$graph_vmsize} = "VMSIZE";
+$unit{$graph_vmsize} = "MB";
 
-#
-# this is part of 70_ctx graph now
-#
-#my $graph_processes_running =              "72_num_processes";
-#$legend{$graph_processes_running} = "Processes running"; 
-#$thumblegend{$graph_processes_running} = "PROCESSES RUNNING";
-#$unit{$graph_processes_running} = "count";
+my $graph_appmem_sysvshared = "1050_appmem_sysvshared";
+$legend{$graph_appmem_sysvshared} = "process SYSV-shared mem size";
+$thumblegend{$graph_appmem_sysvshared} = "SYSV-SHAREDMEM";
+$unit{$graph_appmem_sysvshared} = "MB";
 
-my $graph_threads_count = "73_threads_count";
-$legend{$graph_threads_count} = "number of threads"; 
-$thumblegend{$graph_threads_count} = "APPS THREADS";
-$unit{$graph_threads_count} = "number";
+my $graph_appmem_posixshared = "1051_appmem_posixshared";
+$legend{$graph_appmem_posixshared} = "process POSIX-shared mem size";
+$thumblegend{$graph_appmem_posixshared} = "POSIX-SHAREDMEM";
+$unit{$graph_appmem_posixshared} = "MB";
 
-my $graph_diskspace = "80_diskspace";
-$legend{$graph_diskspace} = "file systems and global FD set";
-$thumblegend{$graph_diskspace} = "DISK USED, GLOBAL FD %";
-$unit{$graph_diskspace} = "percentage used";
+my $graph_mem_shared_cpid = "1052_mem_shared_cpid";
+$legend{$graph_mem_shared_cpid} = "shared by creator (cpid)";
+$thumblegend{$graph_mem_shared_cpid} = "SHMEM CREATOR";
+$unit{$graph_mem_shared_cpid} = "MB";
 
-my $graph_fdcount = "80_fdcount";
+my $graph_mem_shared_lpid = "1053_mem_shared_lpid";
+$legend{$graph_mem_shared_lpid} = "shared by last user (lpid)";
+$thumblegend{$graph_mem_shared_lpid} = "SHMEM LAST USER";
+$unit{$graph_mem_shared_lpid} = "MB";
+
+my $graph_mem_shared_lpid_name = "1054_mem_shared_lpid_name";
+$legend{$graph_mem_shared_lpid_name} = "shared by last user-pname (lpid)";
+$thumblegend{$graph_mem_shared_lpid_name} = "SHMEM LAST PNAME";
+$unit{$graph_mem_shared_lpid_name} = "MB";
+
+my $graph_appmem_devpvr = "1060_appmem_devpvr";
+$legend{$graph_appmem_devpvr} = "process /dev/pvrsrvkm";
+$thumblegend{$graph_appmem_devpvr} = "PVRSRVKM";
+$unit{$graph_appmem_devpvr} = "MB";
+
+my $graph_xresource_sz_pxm = "1070_xresource_pixmaps";
+$legend{$graph_xresource_sz_pxm} = "X resource pixmaps size";
+$thumblegend{$graph_xresource_sz_pxm} = "X-RESOURCES-PIXMAPS";
+$unit{$graph_xresource_sz_pxm} = "Size of Xres pixmaps, kB";
+
+my $graph_xresource_cnt = "1071_xresource_count";
+$legend{$graph_xresource_cnt} = "X resource counts";
+$thumblegend{$graph_xresource_cnt} = "X-RESOURCES-COUNT";
+$unit{$graph_xresource_cnt} = "number of Xres objects";
+
+#my $graph_xresource_sz_misc = "1072_xresource_misc";
+#$legend{$graph_xresource_sz_misc} = "X resource misc size";
+#$thumblegend{$graph_xresource_sz_misc} = "X-RESOURCES-MISC";
+#$unit{$graph_xresource_sz_misc} = "Size of Xres misc, kB";
+
+my $graph_fdcount = "1080_fdcount";
 $legend{$graph_fdcount} = "FD use by processes";
 $thumblegend{$graph_fdcount} = "FILE DESCR";
 $unit{$graph_fdcount} = "number of FD";
 
-my $graph_fdcount_inotify = "80_fdcount_inotify";
+my $graph_fdcount_inotify = "1080_fdcount_inotify";
 $legend{$graph_fdcount_inotify} = "inotify FD use by processes";
 $thumblegend{$graph_fdcount_inotify} = "INOTIFY FILE DESCR";
 $unit{$graph_fdcount_inotify} = "number of FD";
 
-my $graph_fdcount_pipe = "80_fdcount_pipe";
+my $graph_fdcount_pipe = "1080_fdcount_pipe";
 $legend{$graph_fdcount_pipe} = "pipe FD use by processes";
 $thumblegend{$graph_fdcount_pipe} = "PIPE FILE DESCR";
 $unit{$graph_fdcount_pipe} = "number of FD";
 
-my $graph_fdcount_socket = "80_fdcount_socket";
+my $graph_fdcount_socket = "1080_fdcount_socket";
 $legend{$graph_fdcount_socket} = "socket FD use by processes";
 $thumblegend{$graph_fdcount_socket} = "SOCKET FILE DESCR";
 $unit{$graph_fdcount_socket} = "number of FD";
 
-my $graph_fdcount_tmpfs = "80_fdcount_tmpfs";
+my $graph_fdcount_tmpfs = "1080_fdcount_tmpfs";
 $legend{$graph_fdcount_tmpfs} = "/dev, /sys, /syspart, /proc, /tmp, /var/run FD use by processes";
 $thumblegend{$graph_fdcount_tmpfs} = "TMPFS FILE DESCR";
 $unit{$graph_fdcount_tmpfs} = "number of FD";
 
-my $graph_fdcount_eventfd = "80_fdcount_eventfd";
+my $graph_fdcount_eventfd = "1080_fdcount_eventfd";
 $legend{$graph_fdcount_eventfd} = "eventfd FD use by processes";
 $thumblegend{$graph_fdcount_eventfd} = "EVENTFD FILE DESCR";
 $unit{$graph_fdcount_eventfd} = "number of FD";
 
-my $graph_fdcount_epoll = "80_fdcount_epoll";
+my $graph_fdcount_epoll = "1080_fdcount_epoll";
 $legend{$graph_fdcount_epoll} = "epoll FD use by processes";
 $thumblegend{$graph_fdcount_epoll} = "EPOLL FILE DESCR";
 $unit{$graph_fdcount_epoll} = "number of FD";
 
-my $graph_fdcount_signalfd = "80_fdcount_signalfd";
+my $graph_fdcount_signalfd = "1080_fdcount_signalfd";
 $legend{$graph_fdcount_signalfd} = "signalfd FD use by processes";
 $thumblegend{$graph_fdcount_signalfd} = "SIGNALFD FILE DESCR";
 $unit{$graph_fdcount_signalfd} = "number of FD";
 
-my $graph_fdcount_timerfd = "80_fdcount_timerfd";
+my $graph_fdcount_timerfd = "1080_fdcount_timerfd";
 $legend{$graph_fdcount_timerfd} = "timerfd FD use by processes";
 $thumblegend{$graph_fdcount_timerfd} = "TIMERFD FILE DESCR";
 $unit{$graph_fdcount_timerfd} = "number of FD";
 
-my $graph_fdcount_disk = "80_fdcount_disk";
+my $graph_fdcount_disk = "1080_fdcount_disk";
 $legend{$graph_fdcount_disk} = "disk FD use by processes";
 $thumblegend{$graph_fdcount_disk} = "DISK FILE DESCR";
 $unit{$graph_fdcount_disk} = "number of FD";
 
-my $graph_appmem_wx = "85_appmem_wx";
-$legend{$graph_appmem_wx} = "executable mem which is writable, security issue"; 
-$thumblegend{$graph_appmem_wx} = "WRITABLE-EXEC";
-$unit{$graph_appmem_wx} = "MB";
+my $graph_cpu_totaltime = "1150_cpu_totaltime";
+$legend{$graph_cpu_totaltime} = "CPU total time";
+$thumblegend{$graph_cpu_totaltime} = "TOTAL CPU TIME";
+$unit{$graph_cpu_totaltime} = "percent";
 
-my $graph_battery = "88_battery";
-$legend{$graph_battery} = "battery: left:charge left; right: voltage"; 
+my $graph_cpu_usertime = "1160_cpu_usertime";
+$legend{$graph_cpu_usertime} = "CPU user time";
+$thumblegend{$graph_cpu_usertime} = "USER CPU TIME";
+$unit{$graph_cpu_usertime} = "percent";
+
+my $graph_cpu_systime = "1162_cpu_systime";
+$legend{$graph_cpu_systime} = "CPU system time";
+$thumblegend{$graph_cpu_systime} = "SYSTEM CPU TIME";
+$unit{$graph_cpu_systime} = "percent";
+
+my $graph_events_ctx_total = "1165_ctx_total";
+$legend{$graph_events_ctx_total} = "process total context switches";
+$thumblegend{$graph_events_ctx_total} = "CTX TOTAL";
+$unit{$graph_events_ctx_total} = "count per second";
+
+my $graph_events_ctx_nonvolunt = "1166_ctx_nonvolunt";
+$legend{$graph_events_ctx_nonvolunt} = "process non-voluntary context switches";
+$thumblegend{$graph_events_ctx_nonvolunt} = "CTX NONVOLUNTARY";
+$unit{$graph_events_ctx_nonvolunt} = "count per second";
+
+my $graph_events_ctx_volunt = "1166_ctx_volunt";
+$legend{$graph_events_ctx_volunt} = "process voluntary context switches";
+$thumblegend{$graph_events_ctx_volunt} = "CTX VOLUNTARY";
+$unit{$graph_events_ctx_volunt} = "count per second";
+
+my $graph_threads_count = "1200_threads_count";
+$legend{$graph_threads_count} = "number of threads";
+$thumblegend{$graph_threads_count} = "APPS THREADS";
+$unit{$graph_threads_count} = "number";
+
+
+######## SYSTEM GRAPHS ###########
+
+my $graph_battery = "2000_battery";
+$legend{$graph_battery} = "battery: left:charge left; right: voltage";
 $thumblegend{$graph_battery} = "BATTERY";
 $unit_1{$graph_battery} = "charge-percent, temp-C";
 $unit_2{$graph_battery} = "mV";
 
-my $graph_cgroups_mem = "89_cgroups-mem";
+my $graph_diskspace = "2001_diskspace";
+$legend{$graph_diskspace} = "file systems and global FD set";
+$thumblegend{$graph_diskspace} = "DISK USED, GLOBAL FD %";
+$unit{$graph_diskspace} = "percentage used";
+
+my $graph_loadavg = "2005_loadavg";
+$legend{$graph_loadavg} = "Load average";
+$thumblegend{$graph_loadavg} = "LOAD AVG 1m/5m/15m";
+$unit{$graph_loadavg} = "loadavg units";
+
+my $graph_cpu = "2015_cpu";
+$legend{$graph_cpu} = "CPU utilization";
+$thumblegend{$graph_cpu} = "CPU UTILIZATION";
+$unit{$graph_cpu} = "percent";
+
+my $graph_processes_global = "2050_processes_created";
+$legend{$graph_processes_global} = "Processes/threads created";
+$thumblegend{$graph_processes_global} = "PROC/THREADS CREATED";
+$unit{$graph_processes_global} = "count per minute";
+
+my $graph_ctx_global = "2060_ctx_global";
+$legend{$graph_ctx_global} = "left: CTX switches; right: num of processes";
+$thumblegend{$graph_ctx_global} = "CTX-SW,PROC-NUM";
+$unit_1{$graph_ctx_global} = "context switches: per second";
+$unit_2{$graph_ctx_global} = "num-of-processes: count";
+
+my $graph_interrupts = "2070_interrupts";
+$legend{$graph_interrupts} = "left:specific interrupts; right: sum of all interrupts";
+$thumblegend{$graph_interrupts} = "INTERRUPTS";
+$unit{$graph_interrupts} = "count per second";
+
+my $graph_diskstats_reads = "2100_diskstats_reads";
+$legend{$graph_diskstats_reads} = "diskstats_reads";
+$thumblegend{$graph_diskstats_reads} = "DISK_READS";
+$unit{$graph_diskstats_reads} = "MB per second";
+
+my $graph_diskstats_read_time = "2100_diskstats_read_time";
+$legend{$graph_diskstats_read_time} = "diskstats_read_time";
+$thumblegend{$graph_diskstats_read_time} = "DISKREAD TIME";
+$unit{$graph_diskstats_read_time} = "ms per sector";
+
+my $graph_diskstats_writes = "2101_diskstats_writes";
+$legend{$graph_diskstats_writes} = "diskstats_writes";
+$thumblegend{$graph_diskstats_writes} = "DISK_WRITES";
+$unit{$graph_diskstats_writes} = "MB per second";
+
+my $graph_diskstats_write_time = "2101_diskstats_write_time";
+$legend{$graph_diskstats_write_time} = "diskstats_write_time";
+$thumblegend{$graph_diskstats_write_time} = "DISKWRITE TIME";
+$unit{$graph_diskstats_write_time} = "ms per sector";
+
+my $graph_events_swap = "2110_events_swap";
+$legend{$graph_events_swap} = "swap-related events";
+$thumblegend{$graph_events_swap} = "SWAP EVENTS";
+$unit{$graph_events_swap} = "count per second";
+
+my $graph_ramzswap = "2111_ramzswap";
+$legend{$graph_ramzswap} = "compressed swap counters; left:reads/writes right:used amount, bold";
+$thumblegend{$graph_ramzswap} = "COMPR-SWAP";
+$unit_1{$graph_ramzswap} = "MB per second";
+$unit_2{$graph_ramzswap} = "MB used";
+
+my $graph_system_memory_1   = "2200_system_memory_1";
+$legend{$graph_system_memory_1} = "system-level memory";
+$thumblegend{$graph_system_memory_1} = "SYSTEM MEMORY 1";
+$unit{$graph_system_memory_1} = "MB";
+
+my $graph_system_memory_2 = "2200_system_memory_2";
+$legend{$graph_system_memory_2} = "system-level memory 2";
+$thumblegend{$graph_system_memory_2} = "SYSTEM MEMORY 2";
+$unit{$graph_system_memory_2} = "MB";
+
+my $graph_mem_shared = "2240_mem_shared";
+$legend{$graph_mem_shared} = "shared memory";
+$thumblegend{$graph_mem_shared} = "SHMEM";
+$unit{$graph_mem_shared} = "MB";
+
+my $graph_mem_shared_number = "2240_mem_shared_number";
+#$legend{$graph_mem_shared_number} = "shared mem number of segments; nattach-0: real orphans";
+#$legend{$graph_mem_shared_number} = "shared mem number of segments and attach-avg-age (sec)";
+$legend{$graph_mem_shared_number} = "left: num of shmem segments by attached proc; right: num of all shmem segments";
+$thumblegend{$graph_mem_shared_number} = "SHMEM NUMBER";
+$unit_1{$graph_mem_shared_number} = "count by attached processes";
+$unit_2{$graph_mem_shared_number} = "count of all";
+
+my $graph_mem_shared_size = "2240_mem_shared_size";
+$legend{$graph_mem_shared_size} = "shared by nattach, size";
+$thumblegend{$graph_mem_shared_size} = "SHMEM SIZES";
+$unit{$graph_mem_shared_size} = "MB";
+
+my $graph_mem_slabs = "2255_mem_slabs";
+$legend{$graph_mem_slabs} = "kernel slab memory";
+$thumblegend{$graph_mem_slabs} = "KERNEL SLABS";
+$unit{$graph_mem_slabs} = "kB";
+
+my $graph_pagetypeinfo_unmovable = "2274_pagetypeinfo_unmovable";
+$legend{$graph_pagetypeinfo_unmovable} = "pagetype unmovable from /proc/pagetypeinfo";
+$thumblegend{$graph_pagetypeinfo_unmovable} = "PAGETYPE-UNMOVABLE";
+$unit{$graph_pagetypeinfo_unmovable} = "MB";
+
+my $graph_pagetypeinfo_reclaimable = "2274_pagetypeinfo_reclaimable";
+$legend{$graph_pagetypeinfo_reclaimable} = "pagetype reclaimable from /proc/pagetypeinfo";
+$thumblegend{$graph_pagetypeinfo_reclaimable} = "PAGETYPE-RECLAIMABLE";
+$unit{$graph_pagetypeinfo_reclaimable} = "MB";
+
+my $graph_pagetypeinfo_movable = "2274_pagetypeinfo_movable";
+$legend{$graph_pagetypeinfo_movable} = "pagetype movable from /proc/pagetypeinfo";
+$thumblegend{$graph_pagetypeinfo_movable} = "PAGETYPE-MOVABLE";
+$unit{$graph_pagetypeinfo_movable} = "MB";
+
+my $graph_pagetypeinfo_reserve = "2274_pagetypeinfo_reserve";
+$legend{$graph_pagetypeinfo_reserve} = "pagetype reserve from /proc/pagetypeinfo";
+$thumblegend{$graph_pagetypeinfo_reserve} = "PAGETYPE-RESERVE";
+$unit{$graph_pagetypeinfo_reserve} = "MB";
+
+my $graph_cgroups_mem = "2300_cgroups-mem";
 $legend{$graph_cgroups_mem} = "memory usage per cgroup";
 $thumblegend{$graph_cgroups_mem} = "CGROUPS MEMORY";
 $unit{$graph_cgroups_mem} = "MB";
 
-my $graph_cgroups_swap = "89_cgroups-swap";
+my $graph_cgroups_swap = "2300_cgroups-swap";
 $legend{$graph_cgroups_swap} = "swap usage per cgroup";
 $thumblegend{$graph_cgroups_swap} = "CGROUPS SWAP";
 $unit{$graph_cgroups_swap} = "MB";
 
-my $graph_cgroups_memsw = "89_cgroups-memsw";
+my $graph_cgroups_memsw = "2301_cgroups-memsw";
 $legend{$graph_cgroups_memsw} = "memory+swap usage per cgroup";
 $thumblegend{$graph_cgroups_memsw} = "CGROUPS MEMORY+SWAP";
 $unit{$graph_cgroups_memsw} = "MB";
 
-my $graph_cgroups_cache = "90_cgroups-cache";
+my $graph_cgroups_cache = "2302_cgroups-cache";
 $legend{$graph_cgroups_cache} = "page cache per cgroup";
 $thumblegend{$graph_cgroups_cache} = "CGROUPS PAGE CACHE";
 $unit{$graph_cgroups_cache} = "MB";
 
-my $graph_cgroups_rss = "90_cgroups-rss";
+my $graph_cgroups_rss = "2302_cgroups-rss";
 $legend{$graph_cgroups_rss} = "rss (anonymous + swap cache) per cgroup";
 $thumblegend{$graph_cgroups_rss} = "CGROUPS RSS";
 $unit{$graph_cgroups_rss} = "MB";
 
-my $graph_cgroups_mapped_file = "90_cgroups-mapped_file";
+my $graph_cgroups_mapped_file = "2302_cgroups-mapped_file";
 $legend{$graph_cgroups_mapped_file} = "mapped file per cgroup";
 $thumblegend{$graph_cgroups_mapped_file} = "CGROUPS MAPPED FILE";
 $unit{$graph_cgroups_mapped_file} = "MB";
 
-my $graph_cgroups_unevictable = "90_cgroups-unevictable";
+my $graph_cgroups_unevictable = "2302_cgroups-unevictable";
 $legend{$graph_cgroups_unevictable} = "unevictable memory per cgroup";
 $thumblegend{$graph_cgroups_unevictable} = "CGROUPS UNEVICTABLE";
 $unit{$graph_cgroups_unevictable} = "MB";
 
-my $graph_cgroups_inactive_anon = "91_cgroups-inactive_anon";
+my $graph_cgroups_inactive_anon = "2303_cgroups-inactive_anon";
 $legend{$graph_cgroups_inactive_anon} = "anon + swap cache on inactive LRU list per cgroup";
 $thumblegend{$graph_cgroups_inactive_anon} = "CGROUPS INACTIVE ANON";
 $unit{$graph_cgroups_inactive_anon} = "MB";
 
-my $graph_cgroups_active_anon = "91_cgroups-active_anon";
+my $graph_cgroups_active_anon = "2303_cgroups-active_anon";
 $legend{$graph_cgroups_active_anon} = "anon + swap cache on active LRU list per cgroup";
 $thumblegend{$graph_cgroups_active_anon} = "CGROUPS ACTIVE ANON";
 $unit{$graph_cgroups_active_anon} = "MB";
 
-my $graph_cgroups_inactive_file = "92_cgroups-inactive_file";
+my $graph_cgroups_inactive_file = "2304_cgroups-inactive_file";
 $legend{$graph_cgroups_inactive_file} = "file-backed memory on inactive LRU list per cgroup";
 $thumblegend{$graph_cgroups_inactive_file} = "CGROUPS INACTIVE FILE";
 $unit{$graph_cgroups_inactive_file} = "MB";
 
-my $graph_cgroups_active_file = "92_cgroups-active_file";
+my $graph_cgroups_active_file = "2304_cgroups-active_file";
 $legend{$graph_cgroups_active_file} = "file-backed memory on active LRU list per cgroup";
 $thumblegend{$graph_cgroups_active_file} = "CGROUPS ACTIVE FILE";
 $unit{$graph_cgroups_active_file} = "MB";
 
-my $graph_cgroups_pgpgin = "93_cgroups-pgpgin";
+my $graph_cgroups_pgpgin = "2305_cgroups-pgpgin";
 $legend{$graph_cgroups_pgpgin} = "cgroups pages paged in";
 $thumblegend{$graph_cgroups_pgpgin} = "CGROUPS PGPGIN";
 $unit{$graph_cgroups_pgpgin} = "number of events";
 
-my $graph_cgroups_pgpgout = "93_cgroups-pgpgout";
+my $graph_cgroups_pgpgout = "2305_cgroups-pgpgout";
 $legend{$graph_cgroups_pgpgout} = "cgroups pages paged out";
 $thumblegend{$graph_cgroups_pgpgout} = "CGROUPS PGPGOUT";
 $unit{$graph_cgroups_pgpgout} = "number of events";
 
-my $graph_cgroups_process_cnt = "93_cgroups-process-cnt";
+my $graph_cgroups_process_cnt = "2305_cgroups-process-cnt";
 $legend{$graph_cgroups_process_cnt} = "cgroups process count";
 $thumblegend{$graph_cgroups_process_cnt} = "CGROUPS PROCESS CNT";
 $unit{$graph_cgroups_process_cnt} = "processes";
 
-my $graph_cgroups_task_cnt = "93_cgroups-task_cnt";
+my $graph_cgroups_task_cnt = "2305_cgroups-task_cnt";
 $legend{$graph_cgroups_task_cnt} = "cgroups thread (task) count";
 $thumblegend{$graph_cgroups_task_cnt} = "CGROUPS THREAD CNT";
 $unit{$graph_cgroups_task_cnt} = "tasks";
 
-my $graph_cgroups_mem_failcnt = "94_cgroups-mem_failcnt";
+my $graph_cgroups_mem_failcnt = "2306_cgroups-mem_failcnt";
 $legend{$graph_cgroups_mem_failcnt} = "cgroups memory fail count";
 $thumblegend{$graph_cgroups_mem_failcnt} = "CGROUPS MEMORY FAILCNT";
 $unit{$graph_cgroups_mem_failcnt} = "number of events";
 
-my $graph_cgroups_memsw_failcnt = "94_cgroups-memsw_failcnt";
+my $graph_cgroups_memsw_failcnt = "2306_cgroups-memsw_failcnt";
 $legend{$graph_cgroups_memsw_failcnt} = "cgroups memory+swap fail count";
 $thumblegend{$graph_cgroups_memsw_failcnt} = "CGROUPS MEMORY+SWAP FAILCNT";
 $unit{$graph_cgroups_memsw_failcnt} = "number of events";
@@ -464,47 +456,47 @@ $unit{$graph_cgroups_memsw_failcnt} = "number of events";
 # "powertop as sleep" in measurement cycle and save 1xx/powertop.out
 # If such was made, we graph something from powertop output
 #
-my $graph_powertop_wakeups =   "900_powertop_wakeups";
+my $graph_powertop_wakeups = "2900_powertop_wakeups";
 $legend{$graph_powertop_wakeups} = "Powertop-wakeups";
 $thumblegend{$graph_powertop_wakeups} = "WAKEUPS";
 $unit{$graph_powertop_wakeups} = "count per second";
 
-my $graph_powertop_timers =   "905_powertop_timers";
+my $graph_powertop_timers = "2905_powertop_timers";
 $legend{$graph_powertop_timers} = "Powertop-timers";
 $thumblegend{$graph_powertop_timers} = "TIMERS";
 $unit{$graph_powertop_timers} = "count per second";
 
-my $graph_powertop_activity_1 =   "901_powertop_activity";
+my $graph_powertop_activity_1 = "2901_powertop_activity";
 $legend{$graph_powertop_activity_1} = "Powertop-activity";
 $thumblegend{$graph_powertop_activity_1} = "P-ACTIVITY";
 $unit{$graph_powertop_activity_1} = "events per second";
 
-my $graph_powertop_activity_2 =   "902_powertop_activity";
+my $graph_powertop_activity_2 = "2902_powertop_activity";
 $legend{$graph_powertop_activity_2} = "Powertop-activity-2";
 $thumblegend{$graph_powertop_activity_2} = "P-ACTIVITY 2";
 $unit{$graph_powertop_activity_2} = "events per second";
 
-my $graph_powertop_activity_3 =   "903_powertop_activity";
+my $graph_powertop_activity_3 = "2903_powertop_activity";
 $legend{$graph_powertop_activity_3} = "Powertop-activity-3";
 $thumblegend{$graph_powertop_activity_3} = "P-ACTIVITY 3";
 $unit{$graph_powertop_activity_3} = "events per second";
 
-my $graph_powertop_activity_4 =   "904_powertop_activity";
+my $graph_powertop_activity_4 = "2904_powertop_activity";
 $legend{$graph_powertop_activity_4} = "Powertop-activity-4";
 $thumblegend{$graph_powertop_activity_4} = "P-ACTIVITY 4";
 $unit{$graph_powertop_activity_4} = "events per second";
 
-my $graph_powertop_cf_states =   "910_powertop_cf";
+my $graph_powertop_cf_states = "2910_powertop_cf";
 $legend{$graph_powertop_cf_states} = "Powertop CF-states";
 $thumblegend{$graph_powertop_cf_states} = "CF-STATES";
 $unit{$graph_powertop_cf_states} = "percentage";
 
-my $graph_powertop_domain_states_1 =   "920_powertop_domain";
+my $graph_powertop_domain_states_1 = "2920_powertop_domain";
 $legend{$graph_powertop_domain_states_1} = "Powertop Domain states";
 $thumblegend{$graph_powertop_domain_states_1} = "POWERDOMAIN-STATES 1";
 $unit{$graph_powertop_domain_states_1} = "percentage";
 
-my $graph_powertop_domain_states_2 =   "921_powertop_domain";
+my $graph_powertop_domain_states_2 = "2921_powertop_domain";
 $legend{$graph_powertop_domain_states_2} = "Powertop Domain states";
 $thumblegend{$graph_powertop_domain_states_2} = "POWERDOMAIN-STATES 2";
 $unit{$graph_powertop_domain_states_2} = "percentage";
@@ -513,11 +505,11 @@ $unit{$graph_powertop_domain_states_2} = "percentage";
 # gen_swapfrag-for-apps.pl which is not part of standard sp-endurance;
 # but we put it's thumbnail on same page, if present
 # note different numbering, it survives the removal of previous
-# other graphs when this script deletes graphs/??_* before run
+# other graphs when this script deletes graphs/[12]???_* before run
 my @graph_fragmentation = (
-"951_fragmentation",
-"952_fragmentation",
-"953_fragmentation");
+"3951_fragmentation",
+"3952_fragmentation",
+"3953_fragmentation");
 
 my $num_of_rounds;
 my @dirs;
@@ -3256,7 +3248,7 @@ sub generate_plot_mem
     my $plot;
 
     print "mem ";
-    $plot = start_plotfile_lines($graph_memory);
+    $plot = start_plotfile_lines($graph_system_memory_1);
 
     if ($swapused_total) {
 	value_emit($swapused_plot_file_name, 0);
@@ -3282,10 +3274,10 @@ sub generate_plot_mem
     value_emit($app_pss_plot_file_name, 0);
     print $plot "'$app_pss_plot_file_name' lw 3";
 
-    close_plot($i, $plot, $graph_memory);
+    close_plot($i, $plot, $graph_system_memory_1);
 
 ############# MEM SMALLER VALUES ######################
-    $plot = start_plotfile_lines($graph_memory_s);
+    $plot = start_plotfile_lines($graph_system_memory_2);
 
     value_emit($dirty_plot_file_name, 0);
     print $plot "'$dirty_plot_file_name' lw 3,";
@@ -3308,7 +3300,7 @@ sub generate_plot_mem
     value_emit($slabunreclaim_plot_file_name, 0);
     print $plot "'$slabunreclaim_plot_file_name' lw 3";
 
-    close_plot($i, $plot, $graph_memory_s);
+    close_plot($i, $plot, $graph_system_memory_2);
 }
 
 sub generate_plot_slab
@@ -3458,7 +3450,7 @@ sub generate_plot_cpu
 sub generate_plot_cpu_freq
 {
     foreach my $cpu_num (keys(%time_in_state_freqs_seen)) {
-	my $graph_cpu_time_in_state = "59_cpu${cpu_num}_time_in_state";
+	my $graph_cpu_time_in_state = "2010_cpu${cpu_num}_time_in_state";
 	$legend{$graph_cpu_time_in_state} = "CPU${cpu_num} time in state";
 	$thumblegend{$graph_cpu_time_in_state} = "CPU${cpu_num} TIME IN STATE";
 	$unit{$graph_cpu_time_in_state} = 'percent';
@@ -3682,7 +3674,7 @@ sub generate_plot_smaps_segments
     use constant MAX_SMAPS_SPLIT_FACTOR => 5;
     my %max_smaps_segments_to_plot = %max_smaps_segments;
     foreach my $plot_idx (1 .. MAX_SMAPS_PLOTS) {
-	my $graph_num_of_smaps_segments = "34_num_smaps_segments_${plot_idx}";
+	my $graph_num_of_smaps_segments = "1045_num_smaps_segments_${plot_idx}";
 	$legend{$graph_num_of_smaps_segments} = "number of smaps segments";
 	$unit{$graph_num_of_smaps_segments} = "count";
 	$plot = start_plotfile_linespoints($graph_num_of_smaps_segments);
@@ -3762,7 +3754,7 @@ sub generate_plot_heap
     }
     my %max_heap_to_plot = %max_heap;
     foreach my $plot_idx (1 .. MAX_HEAP_PLOTS) {
-	my $graph_appmem_heap_lines = "36_appmem_heap_lines_${plot_idx}";
+	my $graph_appmem_heap_lines = "1001_appmem_heap_lines_${plot_idx}";
 	$legend{$graph_appmem_heap_lines} = "process heap mapping virtual size";
 	$unit{$graph_appmem_heap_lines} = "MB";
 	$plot = start_plotfile_linespoints($graph_appmem_heap_lines);
@@ -4257,7 +4249,7 @@ sub generate_plot_xres
 	    last;
 	}
 	if ($omit) { next; }
-	my $graph_xresource_atom_cnt = "50_xresource_${resource_atom}";
+	my $graph_xresource_atom_cnt = "1075_xresource_${resource_atom}";
 	$legend{$graph_xresource_atom_cnt} = "X resource count: ${resource_atom}";
 	$thumblegend{$graph_xresource_atom_cnt} = "X-RESOURCES-${resource_atom}";
 	$unit{$graph_xresource_atom_cnt} = "X resource atom count";
@@ -4804,7 +4796,7 @@ sub generate_plot_networking
 {
     print "networking ";
     foreach my $interface (keys %interfaces_seen) {
-	my $graph_networking_bytes = '95_networking-bytes-' . $interface;
+	my $graph_networking_bytes = '2090_networking-bytes-' . $interface;
 	$legend{$graph_networking_bytes} = 'RX and TX bytes in kB for ' . $interface;
 	$thumblegend{$graph_networking_bytes} = 'NET RX/TX BYTES &mdash; ' . $interface;
 	$unit{$graph_networking_bytes} = 'kB';
@@ -4821,7 +4813,7 @@ sub generate_plot_networking
 	    }
 	    close_plot($i, $plot, $graph_networking_bytes);
 	}
-	my $graph_networking_packets = '95_networking-packets-' . $interface;
+	my $graph_networking_packets = '2090_networking-packets-' . $interface;
 	$legend{$graph_networking_packets} = 'RX and TX packets for ' . $interface;
 	$thumblegend{$graph_networking_packets} = 'NET RX/TX PACKETS &mdash; ' . $interface;
 	$unit{$graph_networking_packets} = 'packets';
@@ -5095,7 +5087,7 @@ if (!$secs_per_round) {
 }
 no integer;
 print "endurance_plot; rounds=$num_of_rounds; duration=$total_duration sec, avg-per-round: sec=$secs_per_round or min=$mins_per_round or hour=$hours_per_round\n";
-system("rm -f e/* $graphs_dir/??_* $html_name");
+system("rm -f e/* $graphs_dir/1???_* $graphs_dir/2???_* $html_name");
 mkdir "e";
 mkdir "$graphs_dir";
 
