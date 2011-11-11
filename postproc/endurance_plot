@@ -717,6 +717,22 @@ my %interfaces_prev_tx_kB;
 my %time_in_state_freqs_seen;
 my %prev_time_in_state_pcpu;
 
+sub compression_check
+{
+    my ($file) = @_;
+    my $lzoname = $file . '.lzo';
+    my $gzname = $file . '.gz';
+    my $xzname = $file . '.xz';
+    if (-e $lzoname) {
+	return "lzop -dc $lzoname |";
+    } elsif (-e $gzname) {
+	return "zcat $gzname |";
+    } elsif (-e $xzname) {
+	return "xzcat $xzname |";
+    }
+    return $file;
+}
+
 sub date2seconds($)
 {
     my $linex = shift;
@@ -1646,7 +1662,7 @@ sub process_slabinfo()
 #lrwx------    1 user     users           64 Feb  4 01:57 2 -> /dev/console
 sub process_openfds()
 {
-    my $fn = "$d/open-fds";
+    my $fn = compression_check("$d/open-fds");
     if (not open(OPENFDS, $fn)) {
 	print STDERR "WARNING: unable to open $fn: $!\n";
 	return;
@@ -1918,18 +1934,7 @@ sub process_smaps()
 #
     my $heap = 0;
     my $nm;
-
-    my $fn = "$d/smaps.cap";
-    my $lzoname = $d . "/smaps.cap.lzo";
-    my $gzname = $d . "/smaps.cap.gz";
-    my $xzname = $d . "/smaps.cap.xz";
-    if (-e $lzoname) {
-	$fn = "lzop -dc $lzoname |";
-    } elsif (-e $gzname) {
-	$fn = "zcat $gzname |";
-    } elsif (-e $xzname) {
-	$fn = "xzcat $xzname |";
-    }
+    my $fn = compression_check("$d/smaps.cap");
     unless (open(SMAPS_CAP, $fn)) {
 	print STDERR "WARNING: unable to open $fn: $!\n";
 	return;
