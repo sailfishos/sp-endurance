@@ -42,10 +42,6 @@ usage ()
 	exit 1
 }
 
-if [ -z "$(which lzop)" ]; then
-	usage "'lzop' utility to extract SMAPS .lzo content is missing"
-fi
-
 prog=$1
 if [ -z "$prog" ]; then
 	usage "Give a name for program which info should be extracted"
@@ -57,6 +53,26 @@ shift
 
 echo "Searching/extracting SMAPS information for '$prog' from snapshots..."
 
+CHECK_LZOP=""
+check_lzop()
+{
+	if [ ! -z $CHECK_LZOP ] ; then
+		return 0
+	fi
+	CHECK_LZOP=1
+	which lzop >/dev/null 2>/dev/null || usage "'lzop' utility to extract SMAPS .lzo content is missing"
+}
+
+CHECK_XZ=""
+check_xz()
+{
+	if [ ! -z $CHECK_XZ ] ; then
+		return 0
+	fi
+	CHECK_XZ=1
+	which xzcat >/dev/null 2>/dev/null || usage "'xzcat' utility to extract SMAPS .xz content is missing"
+}
+
 extract_info ()
 {
 	# get snapshot/directory name/number
@@ -65,32 +81,45 @@ extract_info ()
 	name=$prog-$num.cap
 	echo "- $num"
 	# uncompress, take only program info and store that
-	lzop -c -d $1 | awk "
+	if [ -f "$1" ] ; then
+		READER="cat $1"
+	elif [ -f "$1.lzo" ] ; then
+		READER="lzop -c -d $1.lzo"
+		check_lzop
+	elif [ -f "$1.xz" ] ; then
+		READER="xzcat $1.xz"
+		check_xz
+	else
+		echo "ERROR: unrecognized capture compression format for file: $1" >&2
+		exit 1
+	fi
+	$READER | awk "
 /^==/ {	show=0; next }
 /Name: $prog/ {	show=1 }
 { if(show) print }" > $name
 }
 
-capfile=smaps.cap.lzo
+capfile=smaps.cap
+
+check_cap()
+{
+	test -f "$1/$capfile" -o -f "$1/$capfile.lzo" -o -f "$1/$capfile.xz"
+}
 
 if [ $# -gt 0 ]; then
 	for dir in $*; do
 		if [ \! -d "$dir" ]; then
 			usage "Given snapshot directory '$dir' doesn't exist"
 		fi
-		if [ \! -f "$dir/$capfile" ]; then
-			usage "Given snapshot directory '$dir' doesn't have '$capfile' SMAPS capture file"
-		fi
+		check_cap $dir || usage "Given snapshot directory '$dir' doesn't have '$capfile' SMAPS capture file"
 	done
 	for dir in $*; do
-		extract_info $dir/$capfile
+		extract_info "$dir/$capfile"
 	done
 else
-	if [ \! -f 101/$capfile ]; then
-		usage "Endurance SMAPS files like '101/smaps.cap.lzo' are missing"
-	fi
-	for file in */$capfile; do
-		extract_info $file
+	check_cap 101 || usage "Endurance SMAPS files like '101/smaps.cap.lzo' are missing"
+	for dir in * ; do
+		check_cap $dir && extract_info "$dir/$capfile"
 	done
 fi
 
