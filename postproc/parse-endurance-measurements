@@ -182,6 +182,8 @@ parse_smaps()
 					gunzip  "$dir/$smaps_file.gz"
 				elif [ -e "$dir/$smaps_file.lzo" ]; then
 					lzop -d "$dir/$smaps_file.lzo"
+				elif [ -e "$dir/$smaps_file.xz" ]; then
+					unxz "$dir/$smaps_file.xz"
 				fi
 			fi
 			sp_smaps_analyze "$dir/$smaps_file"
@@ -295,7 +297,7 @@ for i in $*; do
 			echo "ERROR: resource usage CSV file '$csv_file' missing"
 			exit 1
 		fi
-		if [ $use_smaps ] && [ \! -f "$dir/$smaps_file" ] &&  [ \! -f "$dir/$smaps_file.gz" ] && [ \! -f "$dir/$smaps_file.lzo" ]; then
+		if [ $use_smaps ] && [ \! -f "$dir/$smaps_file" ] &&  [ \! -f "$dir/$smaps_file.gz" ] && [ \! -f "$dir/$smaps_file.lzo" ] && [ \! -f "$dir/$smaps_file.xz" ]; then
 			echo "ERROR: SMAPS data file '$smaps_file' missing"
 			exit 1
 		fi
