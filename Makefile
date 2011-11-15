@@ -15,6 +15,7 @@ MAN = endurance-mem-overview.1 \
     extract-endurance-process-smaps.1 \
     parse-endurance-measurements.1 \
     proc2csv.1 \
+    recompress-endurance-measurements.1 \
     save-incremental-endurance-stats.1 \
     split-endurance-measurements.1 \
     syslog_parse.py.1 \
@@ -48,6 +49,10 @@ clean:
 mandir:
 	install -d $(DESTDIR)/usr/share/man/man1/
 	
+recompress-endurance-measurements.1: postproc/recompress-endurance-measurements mandir
+	pod2man postproc/recompress-endurance-measurements > man/$@
+	install man/$@ $(DESTDIR)/usr/share/man/man1/
+
 %.1: man/$@ mandir
 	install man/$@ $(DESTDIR)/usr/share/man/man1/
 
