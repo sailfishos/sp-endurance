@@ -1,0 +1,182 @@
+#!/usr/bin/perl
+#
+# This file is part of sp-endurance.
+#
+# Copyright (C) 2011 by Nokia Corporation
+#
+# Contact: Eero Tamminen <eero.tamminen@nokia.com>
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+use strict;
+use Getopt::Long;
+use Pod::Usage;
+use POSIX qw/WIFSIGNALED WTERMSIG/;
+
+# Re-compress in parallel if the module is available.
+my $forkmanager;
+eval 'require Parallel::ForkManager';
+eval '$forkmanager = new Parallel::ForkManager(4)';
+
+my @outfiles;
+my @recompress;
+my $insize = 0;
+my $outsize = 0;
+
+my $flag_h;
+my $flag_help;
+
+sub recompress_cmd
+{
+	my ($in) = @_;
+	my $out = $in;
+	my $cmd;
+	if ($in =~ m#\.lzo$#) {
+		$out =~ s/\.lzo$/.xz/;
+		$cmd = "lzop -cd $in | xz > $out";
+	} elsif ($in =~ m#\.gz$#) {
+		$out =~ s/\.gz$/.xz/;
+		$cmd = "zcat $in | xz > $out";
+	} else {
+		$out .= '.xz';
+		$cmd = "xz < $in > $out";
+	}
+	return ($cmd, $out);
+}
+
+exit(1) if not GetOptions(
+	'h' => \$flag_h,
+	'help' => \$flag_help,
+);
+
+if ($flag_help) {
+	pod2usage(-exitstatus => 1, -verbose => 2);
+}
+if ($flag_h or @ARGV < 1) {
+	pod2usage(-exitstatus => 1);
+}
+
+`which xz >/dev/null 2>/dev/null`;
+if ($? != 0) {
+	print STDERR "ERROR: `xz' not found, please install it and try again.\n";
+	exit(1);
+}
+
+print "Finding files for recompression.\n";
+for my $dir (@ARGV) {
+	foreach (qw/smaps.cap syslog dmesg open-fds/) {
+		my $file = $dir . '/' . $_;
+		next if -e $file . '.xz';
+		foreach ($file . '.lzo', $file . 'gz', $file) {
+			if (-e $_ and -f $_ and -r $_ and -s $_) {
+				push(@recompress, $_);
+				last;
+			}
+		}
+	}
+}
+
+if (@recompress == 0) {
+	print "No suitable files found.\n";
+	exit(0);
+}
+
+print "Recompressing " . scalar(@recompress) . " files...\n";
+print "Compressing files in parallel.\n" if $forkmanager;
+
+foreach my $in (@recompress) {
+	$insize += (-s $in);
+	my ($cmd, $out) = recompress_cmd($in);
+	push(@outfiles, $out);
+	if ($forkmanager) {
+		$forkmanager->start() and next;
+	}
+	print "Compressing '$in' to '$out'...\n";
+	system($cmd);
+	if (WIFSIGNALED($?)) {
+		unlink $out;
+		my $sig = WTERMSIG($?);
+		kill($sig, $$);
+	}
+	`xz --test $out`;
+	if (WIFSIGNALED($?)) {
+		unlink $out;
+		my $sig = WTERMSIG($?);
+		kill($sig, $$);
+	}
+	if ($?) {
+		print STDERR "WARNING: `xz --test' failed for '$out'. Input file '$in' retained.\n";
+		unlink $out;
+	} elsif (-z $out) {
+		print STDERR "WARNING: compressing '$in' resulted to empty file '$out'. Input file retained.\n";
+		unlink $out;
+	} else {
+		# OK!
+		unlink $in;
+	}
+	if ($forkmanager) {
+		$forkmanager->finish();
+	}
+}
+if ($forkmanager) {
+	$forkmanager->wait_all_children();
+}
+
+foreach (@outfiles) {
+	$outsize += (-s $_);
+}
+
+print "Compressed " .  scalar(@recompress) . " files from " . int($insize / 1024) . "kB to " . int($outsize / 1024) . "kB.\n";
+
+__END__
+
+=head1 recompress-endurance-measurements
+
+recompress-endurance-measurements - re-compress endurance data with XZ for space savings
+
+=head1 SYNOPSIS
+
+recompress-endurance-measurements [options] [dir ...]
+
+ Options:
+   --help                 Display full help, including examples.
+
+ Arguments:
+   dir                    Endurance data directory as saved by `save-incremental-
+                          endurance-stats' from the sp-endurance package, for
+                          example "101". Multiple directories may be specified.
+
+=head1 DESCRIPTION
+
+Endurance data collected with `save-incremental-endurance-stats' from the
+sp-endurance package compresses certain large files with `lzop'. The
+compression is intended to be very fast while still providing space reduction.
+
+Once the endurance data has been collected, recompress-endurance-measurements
+may be used for re-compressing the files with `xz' for further space savings.
+
+After re-compression, the endurance data is ready for post-processing with
+tools from the sp-endurance-postproc package.
+
+=head1 EXAMPLES
+
+`save-incremental-endurance-stats' by default stores endurance data in
+directories named 101, 102, ...
+
+Re-compress files in endurance data directories 101 and 102:
+   $ recompress-endurance-measurements 101 102
+
+Re-compress files in all endurance data directories:
+   $ recompress-endurance-measurements ???
