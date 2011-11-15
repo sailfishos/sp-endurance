@@ -6,7 +6,7 @@ Group: Development/Tools
 License: GPLv2	
 URL: http://www.gitorious.org/+maemo-tools-developers/maemo-tools/sp-endurance
 Source: %{name}_%{version}.tar.gz
-BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
+BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-build
 #BuildRequires: xorg-x11-devel xorg-x11-libX11-devel
 
 %description
@@ -34,12 +34,12 @@ rm -rf %{buildroot}
 %files
 %defattr(755,root,root,-)
 %{_bindir}/proc2csv
-%{_bindir}/sp-copy-noncached
+%{_bindir}/sp-noncached
 %{_bindir}/endurance-mem-overview
 %{_bindir}/save-incremental-endurance-stats
 %defattr(644,root,root,-)
 %{_mandir}/man1/proc2csv.1.gz
-%{_mandir}/man1/sp-copy-noncached.1.gz
+%{_mandir}/man1/sp-noncached.1.gz
 %{_mandir}/man1/endurance-mem-overview.1.gz
 %{_mandir}/man1/save-incremental-endurance-stats.1.gz
 %if %is_x11
