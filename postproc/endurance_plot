@@ -3055,8 +3055,7 @@ sub start_plotfile_common($)
     print $plot "set xlabel \"rounds\"\n";
     print $plot "set ylabel \"$ylabel\"\n";
     print $plot "set grid xtics ytics\n";
-    print $plot "set term png small truecolor size $plot_width, 1100\n";
-#    print $plot "set term png truecolor size $plot_width, 1100\n";
+    print $plot "set term pngcairo size $plot_width, 1100 font \"serif,8\"\n";
     return $plot;
 }
 
