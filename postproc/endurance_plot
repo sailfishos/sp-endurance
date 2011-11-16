@@ -3056,7 +3056,7 @@ sub start_plotfile_common($)
 	print STDERR "WARNING: unable to create $cmdfname: $!\n";
     }
 
-    $title = $title . "\\nSW=" . $sw_version . "\\nPRODUCT=" . $hw_product . " BUILD=" . $hw_build;
+    $title = $title . "\\nSW=" . $sw_version . "\\nHW=" . $hw_product . ":" . $hw_build;
 
     print $plot "set label \"$title\" at graph 0.02,0.98\n";
     print $plot "set xlabel \"rounds\"\n";
