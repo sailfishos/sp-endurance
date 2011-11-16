@@ -30,7 +30,7 @@ use List::Util qw/max sum/;
 my $ticks_per_sec = 100;
 my $sector_sz = 4096;
 my $max_per_graph_twocolumn = 2*75;
-my $max_per_graph_onecolumn = 78;
+my $max_per_graph_onecolumn = 74;
 my $page_size = 4;
 my $pg_bytes = 4096;
 my $MB_bytes = 1024*1024;
