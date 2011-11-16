@@ -331,13 +331,13 @@ my $graph_mem_shared_number = "2240_mem_shared_number";
 #$legend{$graph_mem_shared_number} = "shared mem number of segments; nattach-0: real orphans";
 #$legend{$graph_mem_shared_number} = "shared mem number of segments and attach-avg-age (sec)";
 $legend{$graph_mem_shared_number} = "left: num of shmem segments by attached proc; right: num of all shmem segments";
-$thumblegend{$graph_mem_shared_number} = "SHMEM NUMBER";
+$thumblegend{$graph_mem_shared_number} = "SHMEM ATTACH COUNT";
 $unit_1{$graph_mem_shared_number} = "count by attached processes";
 $unit_2{$graph_mem_shared_number} = "count of all";
 
 my $graph_mem_shared_size = "2240_mem_shared_size";
 $legend{$graph_mem_shared_size} = "shared by nattach, size";
-$thumblegend{$graph_mem_shared_size} = "SHMEM SIZES";
+$thumblegend{$graph_mem_shared_size} = "SHMEM ATTACH SIZES";
 $unit{$graph_mem_shared_size} = "MB";
 
 my $graph_mem_slabs = "2255_mem_slabs";
