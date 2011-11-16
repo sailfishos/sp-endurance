@@ -69,22 +69,22 @@ $legend{$graph_appmem_pss_swap} = "apps PSS+SWAP";
 $thumblegend{$graph_appmem_pss_swap} = "PSS+SWAP";
 $unit{$graph_appmem_pss_swap} = "MB";
 
-my $graph_appmem_pss_swap_lines_big = "1004_appmem_pss_swap_lines_big";
-$unit{$graph_appmem_pss_swap_lines_big} = "MB";
-
-my $graph_appmem_pss_swap_lines_small = "1004_appmem_pss_swap_lines_small";
-$unit{$graph_appmem_pss_swap_lines_small} = "MB";
-
-my $graph_appmem_pss_swap_lines_smaller = "1004_appmem_pss_swap_lines_smaller";
-$unit{$graph_appmem_pss_swap_lines_smaller} = "MB";
-
-my $graph_appmem_pss_swap_lines_smallest = "1004_appmem_pss_swap_lines_smallest";
-$unit{$graph_appmem_pss_swap_lines_smallest} = "MB";
-
-my $graph_appmem_pss = "1005_appmem_pss";
+my $graph_appmem_pss = "1004_appmem_pss";
 $legend{$graph_appmem_pss} = "apps PSS";
 $thumblegend{$graph_appmem_pss} = "PSS";
 $unit{$graph_appmem_pss} = "MB";
+
+my $graph_appmem_pss_swap_lines_big = "1005_appmem_pss_swap_lines_big";
+$unit{$graph_appmem_pss_swap_lines_big} = "MB";
+
+my $graph_appmem_pss_swap_lines_small = "1005_appmem_pss_swap_lines_small";
+$unit{$graph_appmem_pss_swap_lines_small} = "MB";
+
+my $graph_appmem_pss_swap_lines_smaller = "1005_appmem_pss_swap_lines_smaller";
+$unit{$graph_appmem_pss_swap_lines_smaller} = "MB";
+
+my $graph_appmem_pss_swap_lines_smallest = "1005_appmem_pss_swap_lines_smallest";
+$unit{$graph_appmem_pss_swap_lines_smallest} = "MB";
 
 my $graph_appmem_swapped = "1006_appmem_swapped";
 $legend{$graph_appmem_swapped} = "swap used by processes";
