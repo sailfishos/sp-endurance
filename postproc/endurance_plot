@@ -3738,9 +3738,10 @@ sub generate_plot_heap_histogram
     my $cnt = 0;
     my %show_this = ();
     foreach my $p (reverse sort {$sum_heap{$a} <=> $sum_heap{$b} } keys %sum_heap) {
-	if ($cnt > $max_per_graph_onecolumn -1 ) {
+	if (count_nonzero_entries("e/heap-$p") <= 0) { next; }
+	if ($cnt > $max_per_graph_onecolumn - 1) {
 	    last;
-	} 
+	}
 	$show_this{$p} = 1;
 	$cnt += 1;
     }
@@ -3750,11 +3751,27 @@ sub generate_plot_heap_histogram
 	    $sumdev_heap{$p} += (10000*($i - $devcount_heap{$p}));
 	}
     }
+    my @heap_sum_others;
+    foreach my $p (keys %sum_heap) {
+	next if $show_this{$p};
+	my $ra = $files{"e/heap-$p"};
+	next if not $ra;
+	foreach (@$ra) {
+	    my ($round, $value) = split(':' , $_, 2);
+	    $heap_sum_others[$round] += $value;
+	}
+    }
+    for (my $ii = 0; $ii < @dirs; $ii++) {
+	if ($heap_sum_others[$ii]) {
+	    value_store_zeropad("e/heap-sum-others", $ii, $heap_sum_others[$ii]);
+	}
+    }
     $cnt = 0;
     foreach my $p (sort {$sumdev_heap{$a} <=> $sumdev_heap{$b} } keys %sum_heap) {
 	next unless $show_this{$p};
 	one_plot_set("e/heap-$p", 0, $plot, \$cnt, 1);
     }
+    one_plot_set("e/heap-sum-others", 0, $plot, \$cnt, 1);
     close_plot($cnt, $plot, $graph_appmem_heap);
 }
 
