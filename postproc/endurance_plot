@@ -56,7 +56,7 @@ my $total_duration;
 
 my $graph_appmem_heap = "1001_appmem_heap";
 $legend{$graph_appmem_heap} = "process heap mem size";
-$thumblegend{$graph_appmem_heap} = "APPS HEAP";
+$thumblegend{$graph_appmem_heap} = "HEAP";
 $unit{$graph_appmem_heap} = "MB";
 
 #my $graph_appmem_private_dirty = "1002_appmem_private_dirty";
@@ -66,7 +66,7 @@ $unit{$graph_appmem_heap} = "MB";
 
 my $graph_appmem_pss_swap = "1003_appmem_pss_swap";
 $legend{$graph_appmem_pss_swap} = "apps PSS+SWAP";
-$thumblegend{$graph_appmem_pss_swap} = "APPS PSS+SWAP";
+$thumblegend{$graph_appmem_pss_swap} = "PSS+SWAP";
 $unit{$graph_appmem_pss_swap} = "MB";
 
 my $graph_appmem_pss_swap_lines_big = "1004_appmem_pss_swap_lines_big";
@@ -83,12 +83,12 @@ $unit{$graph_appmem_pss_swap_lines_smallest} = "MB";
 
 my $graph_appmem_pss = "1005_appmem_pss";
 $legend{$graph_appmem_pss} = "apps PSS";
-$thumblegend{$graph_appmem_pss} = "APPS PSS";
+$thumblegend{$graph_appmem_pss} = "PSS";
 $unit{$graph_appmem_pss} = "MB";
 
 my $graph_appmem_swapped = "1006_appmem_swapped";
 $legend{$graph_appmem_swapped} = "swap used by processes";
-$thumblegend{$graph_appmem_swapped} = "APPS SWAP USE";
+$thumblegend{$graph_appmem_swapped} = "SWAP USE";
 $unit{$graph_appmem_swapped} = "MB";
 
 my $graph_events_major_pagefaults = "1010_events_major_pagefaults";
@@ -98,7 +98,7 @@ $unit{$graph_events_major_pagefaults} = "count per second";
 
 my $graph_appmem_locked = "1020_appmem_locked";
 $legend{$graph_appmem_locked} = "process locked mem size";
-$thumblegend{$graph_appmem_locked} = "APPS LOCKED";
+$thumblegend{$graph_appmem_locked} = "LOCKED";
 $unit{$graph_appmem_locked} = "MB";
 
 my $graph_appmem_wx = "1030_appmem_wx";
@@ -238,7 +238,7 @@ $unit{$graph_events_ctx_volunt} = "count per second";
 
 my $graph_threads_count = "1200_threads_count";
 $legend{$graph_threads_count} = "number of threads";
-$thumblegend{$graph_threads_count} = "APPS THREADS";
+$thumblegend{$graph_threads_count} = "THREADS";
 $unit{$graph_threads_count} = "number";
 
 
@@ -3807,7 +3807,7 @@ sub generate_plot_heap
 	foreach (@plotted_this_round) {
 	    delete $max_heap_to_plot{$_};
 	}
-	$thumblegend{$graph_appmem_heap_lines} = "APPS HEAP &mdash; MAX " . ceil($prev_max / 1024) . "MB";
+	$thumblegend{$graph_appmem_heap_lines} = "HEAP &mdash; MAX " . ceil($prev_max / 1024) . "MB";
 	close_plot($cnt_this_round, $plot, $graph_appmem_heap_lines);
     }
 }
