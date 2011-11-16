@@ -2390,15 +2390,8 @@ sub process_stat()
 
 sub process_pagetypeinfo()
 {
-#
-# CPU stat, global ctxts etc
-#
     my $fn = $d . "/pagetypeinfo";
     if (! -e $fn) {
-	#
-        # as this is optional, may be missing in snapshots,
-        # just return silently if not there
-        #
 	return;
     }
     unless (open(PAGETYPEINFO, $fn)) {
