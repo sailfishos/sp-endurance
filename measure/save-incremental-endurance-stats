@@ -256,7 +256,7 @@ LC_ALL=C df -k -P > $path/df
 
 # save some less easily parsed /proc/ statistics, ignore errors
 echo "- Open file descriptors"
-ls -l /proc/[0-9]*/fd/ 2>/dev/null | sp-noncached --write $path/open-fds
+ls -l /proc/[0-9]*/fd/ 2>/dev/null | lzop -c | sp-noncached --write $path/open-fds.lzo
 
 # Get bootreason from sysinfo daemon. /proc/bootreason is deprecated.
 echo "- Bootreason"
