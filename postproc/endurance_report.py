@@ -520,8 +520,6 @@ def get_filesystem_usage(file, split_pattern):
     """
     prev = None
     mounts = {}
-    # device root and tmpfs with fixed size
-    keep = {'/':1, '/tmp':1}
     while 1:
         line = file.readline().strip()
         if not line:
@@ -542,8 +540,6 @@ def get_filesystem_usage(file, split_pattern):
             cols = prev+cols[1:]
             prev = None
         fs,blocks,used,available,inuse,mount = cols
-        if mount not in keep:
-            continue
         mounts[mount] = int(used)
     return mounts
 
