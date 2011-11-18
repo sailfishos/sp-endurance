@@ -47,7 +47,7 @@ Bootup reason: 32wd_to$
  kernel: .* omapdsp: poll error
  kernel: .* mbx: ERR
 
-[kernel/filesystem]
+[kernel/filesystem] "Kernel filesystem issues"
  kernel: .* EXT[234]-fs warning:
  kernel: .* EXT[234]-fs \(.*\): recovery complete
 
@@ -91,7 +91,7 @@ Bootup reason: 32wd_to$
 [dsme/process_exit]
  DSME:[^']* '[^']+' with pid \d+ exited with return value: 
 
-[dsme/process_watchdog]
+[dsme/process_watchdog] "DSME process watchdog restarted services"
  DSME: process \(pid: \d+\) not responding to processwd pings, aborting it
  DSME: killing process \(pid: 
 
