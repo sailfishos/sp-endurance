@@ -332,7 +332,7 @@ EXAMPLES
 import sys, os, re
 import syslog_parse as syslog
 
-logparser_config = None
+logparser_config_syslog = None
 
 # how many CPU clock ticks kernel reports / second
 CLK_TCK=100.0
@@ -1330,7 +1330,7 @@ def get_thread_count_diffs(commands, processes0, processes1, processes2):
     return diffs
 
 def syslog_error_summary_text(new_errors_by_category):
-    for category in logparser_config.categories:
+    for category in logparser_config_syslog.categories:
         count = 0
         if category in new_errors_by_category:
             count = len(new_errors_by_category[category])
@@ -1352,14 +1352,14 @@ def create_errors_html(idx, run1, run2, new_errors_by_category):
         path += "/errors.html"
         print >>f, '<a href="%s">Errors for previous round</a>' % path
     if new_errors_by_category:
-        for category in logparser_config.categories:
+        for category in logparser_config_syslog.categories:
             if category not in new_errors_by_category \
                     or len(new_errors_by_category[category]) <= 0:
                 continue
-            if category in logparser_config.category_description \
-                    and logparser_config.category_description[category]:
+            if category in logparser_config_syslog.category_description \
+                    and logparser_config_syslog.category_description[category]:
                 title = '<abbr title="%s">%s</abbr>' % (category,
-                        logparser_config.category_description[category])
+                        logparser_config_syslog.category_description[category])
             else:
                 title = category
             print >>f, '<a name="%s"></a>' % category_to_anchor(category)
@@ -1398,14 +1398,14 @@ def syslog_error_summary(run, new_errors_by_category, links=True):
     print '\n<p><table border=1 bgcolor="#%s">' % Colors.errors
     print "<caption><i>Items logged to syslog</i></caption>"
     print "<tr><th>Error types:<th>Count:</tr>"
-    for category in logparser_config.categories:
+    for category in logparser_config_syslog.categories:
         if category not in new_errors_by_category \
                 or len(new_errors_by_category[category]) <= 0:
             continue
-        if category in logparser_config.category_description \
-                and logparser_config.category_description[category]:
+        if category in logparser_config_syslog.category_description \
+                and logparser_config_syslog.category_description[category]:
             title = '<abbr title="%s">%s</abbr>' % (category,
-                    logparser_config.category_description[category])
+                    logparser_config_syslog.category_description[category])
         else:
             title = category
         print "<tr>"
@@ -2542,7 +2542,7 @@ def parse_syte_stats(dirs):
                 print >>sys.stderr, "Parsing '%s'..." % filename
                 items['logfile'] = filename
                 items['syslog_errors_by_category'] = syslog.get_errors_by_category(
-                        file, logparser_config.regexps)
+                        file, logparser_config_syslog.regexps)
         except RuntimeError: pass
 
         try:
@@ -2621,10 +2621,11 @@ if __name__ == "__main__":
         pass
 
     try:
-        logparser_config = syslog.LogParserConfig()
+        logparser_config_syslog = syslog.LogParserConfig(configfile =
+                syslog.LogParserConfig.DEFAULT_CONFIG_SYSLOG)
     except RuntimeError, e:
         error_exit(str(e))
-    if not logparser_config:
+    if not logparser_config_syslog:
         error_exit("failed to initialize syslog parser configuration")
 
     stats = parse_syte_stats(sys.argv[first_arg:])

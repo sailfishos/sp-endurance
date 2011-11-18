@@ -127,9 +127,8 @@ class LogParserConfig:
     categories = []
     regexps = []
     category_description = {}
-    def __init__(self, configfile = None):
-        if not configfile:
-            configfile = "/usr/share/sp-endurance-postproc/logparser-config"
+    DEFAULT_CONFIG_SYSLOG = "/usr/share/sp-endurance-postproc/logparser-syslog"
+    def __init__(self, configfile):
         conf = open(configfile)
         for line in conf:
             line = line.strip()
@@ -276,5 +275,5 @@ if __name__ == "__main__":
         else:
             __help("unknown option: %s" % sys.argv[1])
     else:
-        config = LogParserConfig()
+        config = LogParserConfig(configfile = LogParserConfig.DEFAULT_CONFIG_SYSLOG)
         __output_text_report(sys.argv[1:], config)
