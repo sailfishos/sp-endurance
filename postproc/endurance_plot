@@ -276,6 +276,11 @@ $thumblegend{$graph_ctx_global} = "CTX-SW,PROC-NUM";
 $unit_1{$graph_ctx_global} = "context switches: per second";
 $unit_2{$graph_ctx_global} = "num-of-processes: count";
 
+my $graph_nonsleeping_process_count = "2065_nonsleeping_process_count";
+$legend{$graph_nonsleeping_process_count} = "number of processes in non-sleep states";
+$thumblegend{$graph_nonsleeping_process_count} = "NON-SLEEP PROCESS COUNT";
+$unit{$graph_nonsleeping_process_count} = "number";
+
 my $graph_interrupts = "2070_interrupts";
 $legend{$graph_interrupts} = "left:specific interrupts; right: sum of all interrupts";
 $thumblegend{$graph_interrupts} = "INTERRUPTS";
@@ -602,6 +607,7 @@ my %prev_cpu_ticks;
 my %prev_cgroups_stats;
 my %prev_cgroups_mem_failcnt;
 my %prev_cgroups_memsw_failcnt;
+my %process_states_seen;
 
 my %fd_samples;
 my %fd_inotify;
@@ -1204,6 +1210,7 @@ sub parse_process_status_block($)
 #    chop;
 #    chop;
 #    @names = split(',' , $_);
+    my %state_cnt;
     while (<$handle>) {
 	chop;
 	if ($_ eq "") {
@@ -1295,6 +1302,12 @@ sub parse_process_status_block($)
 	    $has_threads{$pname} += $param;
 	    $has_threads_samples{$pname} += 1;
 	}
+###########################
+	$state_cnt{$State}++;
+	$process_states_seen{$State} = 1;
+    }
+    foreach (keys %state_cnt) {
+	value_store_zeropad("e/process-state-count-$_", $i, $state_cnt{$_});
     }
 }
 
@@ -5005,6 +5018,17 @@ sub generate_plot_powertop
     close_plot($cnt_4, $plot_2, $graph_powertop_activity_4);
 }
 
+sub generate_plot_process_state_count
+{
+    my $cnt = 0;
+    my $plot = start_plotfile_histogram($graph_nonsleeping_process_count);
+    foreach my $state (reverse sort keys %process_states_seen) {
+	next if $state =~ /S/;
+	one_plot_set("e/process-state-count-$state", 0, $plot, \$cnt, 1);
+    }
+    close_plot($cnt, $plot, $graph_nonsleeping_process_count);
+}
+
 sub generate_plots()
 {
     print "graphs: ";
@@ -5043,6 +5067,7 @@ sub generate_plots()
     generate_plot_networking();
     generate_plot_pagetypeinfo();
     generate_plot_powertop();
+    generate_plot_process_state_count();
 }
 ################ Start ######################################################
 
