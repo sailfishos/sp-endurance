@@ -4247,22 +4247,10 @@ sub generate_plot_pss_swap
 		print "graph_appmem_lines: no handle...p=[$p] cnt=$cnt\n";
 		next;
 	    }
-	    if ($cnt_per_file{$handle} > 0) {
-		print $handle ", ";
-	    }
-#    print "cnt=[$cnt]; p=[$p] cumul=$app_cumul_pss_swp{$p} avg=$avg_pss_swp{$p} samples=$pss_swap_num_samples{$p}\n";
 	    $fn = "e/pswp-$p";
-#
-# re-use existing file from histogram pass (above),
-# but data sets may differ so if no file, emit the data set
-#
-	    if (! -e $fn) {
-		value_emit($fn, 0);
-	    }
+	    one_plot_set($fn, 3, $handle, \$cnt_per_file{$handle}, 0, $p);
 	    delete_zero_lines($fn);
-	    print $handle "'e/pswp-$p' lw 3";
 	    $cnt += 1;
-	    $cnt_per_file{$handle} += 1;
 	}
     }
     close_plot($cnt_per_file{$plot_1}, $plot_1, $graph_appmem_pss_swap_lines_big);
