@@ -4897,10 +4897,10 @@ sub generate_plot_networking
 	    $plot = start_plotfile_lines($graph_networking_bytes);
 	    $cnt = 0;
 	    if (count_nonzero_entries($fn_rx_kb) > 0) {
-		one_plot_set($fn_rx_kb, 3, $plot, \$cnt, 1);
+		one_plot_set($fn_rx_kb, 3, $plot, \$cnt, 1, "RX kB: $interface");
 	    }
 	    if (count_nonzero_entries($fn_tx_kb) > 0) {
-		one_plot_set($fn_tx_kb, 3, $plot, \$cnt, 1);
+		one_plot_set($fn_tx_kb, 3, $plot, \$cnt, 1, "TX kB: $interface");
 	    }
 	    close_plot($i, $plot, $graph_networking_bytes);
 	}
@@ -4914,10 +4914,10 @@ sub generate_plot_networking
 	    $plot = start_plotfile_lines($graph_networking_packets);
 	    $cnt = 0;
 	    if (count_nonzero_entries($fn_rx_packets) > 0) {
-		one_plot_set($fn_rx_packets, 3, $plot, \$cnt, 1);
+		one_plot_set($fn_rx_packets, 3, $plot, \$cnt, 1, "RX packets/s: $interface");
 	    }
 	    if (count_nonzero_entries($fn_tx_packets) > 0) {
-		one_plot_set($fn_tx_packets, 3, $plot, \$cnt, 1);
+		one_plot_set($fn_tx_packets, 3, $plot, \$cnt, 1, "TX packets/s: $interface");
 	    }
 	    close_plot($i, $plot, $graph_networking_packets);
 	}
