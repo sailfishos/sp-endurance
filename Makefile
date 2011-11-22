@@ -54,7 +54,7 @@ recompress-endurance-measurements.1: postproc/recompress-endurance-measurements 
 	install man/$@ $(DESTDIR)/usr/share/man/man1/
 
 %.1: man/$@ mandir
-	install man/$@ $(DESTDIR)/usr/share/man/man1/
+	install -m 644 man/$@ $(DESTDIR)/usr/share/man/man1/
 
 install: $(MAN)
 	 install -d $(DESTDIR)/usr/bin/
