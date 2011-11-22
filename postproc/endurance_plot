@@ -3507,15 +3507,15 @@ sub generate_plot_cpu
     my $plot = start_plotfile_histogram($graph_cpu);
     my $cnt = 0;
     my %cpu_colors = (
-	    "cpu-user" => "#3149BD",
-	    "cpu-nice" => "#4265FF",
-	    "cpu-sys" => "#DE2821",
-	    "cpu-irq" => "#FF0000",
-	    "cpu-softirq" => "#EF0000",
-	    "cpu-iowait" => "#EE00FF",
-	    "cpu-idle" => "#ADE739");
-    foreach (qw/cpu-sys cpu-irq cpu-softirq cpu-user cpu-nice cpu-iowait cpu-idle/) {
-	one_plot_set("e/$_", 0, $plot, \$cnt, 1);
+	    "user" => "#3149BD",
+	    "nice" => "#4265FF",
+	    "sys" => "#DE2821",
+	    "irq" => "#FF0000",
+	    "softirq" => "#EF0000",
+	    "iowait" => "#EE00FF",
+	    "idle" => "#ADE739");
+    foreach (qw/sys irq softirq user nice iowait idle/) {
+	one_plot_set("e/cpu-$_", 0, $plot, \$cnt, 1, $_);
 	print $plot " lc rgb '${cpu_colors{$_}}'";
     }
     close_plot($cnt, $plot, $graph_cpu);
