@@ -706,6 +706,7 @@ my %max_smaps_segments;
 my $steps_files = 0;
 
 my %cgroups;
+my %cgroups_demangle;
 my %interfaces_seen;
 my %interfaces_prev_rx_packets;
 my %interfaces_prev_tx_packets;
@@ -1755,23 +1756,27 @@ sub process_cgroups()
 	return;
     }
     while (<CGROUPS>) {
-	my $cgroup_name;
-	if (m#^==> /syspart/(\S*)memory\.memsw\.usage_in_bytes <==#) {
-	    $cgroup_name = sanitize_cgroup_name($1);
+	my $cgroup_name_orig;
+	my $cgroup_name_mangled;
+	if (m#^==> /syspart(\S*/)memory\.memsw\.usage_in_bytes <==#) {
+	    $cgroup_name_orig = $1;
+	    $cgroup_name_mangled = sanitize_cgroup_name($cgroup_name_orig);
 	    my $memsw_usage = int(<CGROUPS>) / (1024*1024);
-	    value_store_zeropad("e/cgroup-${cgroup_name}-memsw", $i, $memsw_usage);
-	} elsif (m#^==> /syspart/(\S*)memory\.usage_in_bytes <==#) {
-	    $cgroup_name = sanitize_cgroup_name($1);
+	    value_store_zeropad("e/cgroup-${cgroup_name_mangled}-memsw", $i, $memsw_usage);
+	} elsif (m#^==> /syspart(\S*/)memory\.usage_in_bytes <==#) {
+	    $cgroup_name_orig = $1;
+	    $cgroup_name_mangled = sanitize_cgroup_name($cgroup_name_orig);
 	    my $mem_usage = int(<CGROUPS>) / (1024*1024);
-	    value_store_zeropad("e/cgroup-${cgroup_name}-mem", $i, $mem_usage);
-	} elsif (m#^==> /syspart/(\S*)memory\.limit_in_bytes <==#) {
-	    $cgroup_name = sanitize_cgroup_name($1);
+	    value_store_zeropad("e/cgroup-${cgroup_name_mangled}-mem", $i, $mem_usage);
+	} elsif (m#^==> /syspart(\S*/)memory\.limit_in_bytes <==#) {
+	    $cgroup_name_orig = $1;
+	    $cgroup_name_mangled = sanitize_cgroup_name($cgroup_name_orig);
 	    my $mem_limit = int(<CGROUPS>);
 	    if ($mem_limit != 9223372036854775807) {
 		$mem_limit /= (1024*1024);
-		value_store_zeropad("e/cgroup-${cgroup_name}-memlimit", $i, $mem_limit);
+		value_store_zeropad("e/cgroup-${cgroup_name_mangled}-memlimit", $i, $mem_limit);
 	    }
-	} elsif (m#^==> /syspart/(\S*)memory\.stat <==#) {
+	} elsif (m#^==> /syspart(\S*/)memory\.stat <==#) {
 	    # ==> /syspart/system/desktop/memory.stat <==
 	    # cache 49410048
 	    # rss 68714496
@@ -1799,7 +1804,8 @@ sub process_cgroups()
 	    # total_unevictable 4096
 	    #
 	    # ==> ...
-	    $cgroup_name = sanitize_cgroup_name($1);
+	    $cgroup_name_orig = $1;
+	    $cgroup_name_mangled = sanitize_cgroup_name($cgroup_name_orig);
 	    my %stat;
 	    while (<CGROUPS> =~ m#^([a-z_]+) (\d+)$#) {
 		my ($key, $val) = ($1, $2);
@@ -1807,59 +1813,64 @@ sub process_cgroups()
 	    }
 	    # pgpgin and pgpgout are event counts, so collect differences
 	    # between rounds:
-	    if (exists $prev_cgroups_stats{$cgroup_name}) {
-		my %prev_stat = %{$prev_cgroups_stats{$cgroup_name}};
+	    if (exists $prev_cgroups_stats{$cgroup_name_mangled}) {
+		my %prev_stat = %{$prev_cgroups_stats{$cgroup_name_mangled}};
 		foreach (qw/pgpgin pgpgout/) {
 		    my $val_now = $stat{$_};
 		    my $val_prev = $prev_stat{$_};
 		    my $val = $val_now - $val_prev;
 		    $val = 0 if ($val < 0);
-		    value_store("e/cgroup-${cgroup_name}-$_", $i, $val);
+		    value_store("e/cgroup-${cgroup_name_mangled}-$_", $i, $val);
 		}
 	    }
-	    $prev_cgroups_stats{$cgroup_name} = \%stat;
+	    $prev_cgroups_stats{$cgroup_name_mangled} = \%stat;
 	    foreach (qw/cache rss mapped_file swap inactive_anon
 			active_anon inactive_file active_file unevictable/) {
-		value_store_zeropad("e/cgroup-${cgroup_name}-$_", $i,
+		value_store_zeropad("e/cgroup-${cgroup_name_mangled}-$_", $i,
 		    $stat{$_} / (1024*1024));
 	    }
-	} elsif (m#^==> /syspart/(\S*)cgroup\.procs <==#) {
-	    $cgroup_name = sanitize_cgroup_name($1);
+	} elsif (m#^==> /syspart(\S*/)cgroup\.procs <==#) {
+	    $cgroup_name_orig = $1;
+	    $cgroup_name_mangled = sanitize_cgroup_name($cgroup_name_orig);
 	    my $procs_count = 0;
 	    while (<CGROUPS> =~ m#^\d+$#) {
 		$procs_count++;
 	    }
-	    value_store_zeropad("e/cgroup-${cgroup_name}-process-cnt", $i, $procs_count);
-	} elsif (m#^==> /syspart/(\S*)tasks <==#) {
-	    $cgroup_name = sanitize_cgroup_name($1);
+	    value_store_zeropad("e/cgroup-${cgroup_name_mangled}-process-cnt", $i, $procs_count);
+	} elsif (m#^==> /syspart(\S*/)tasks <==#) {
+	    $cgroup_name_orig = $1;
+	    $cgroup_name_mangled = sanitize_cgroup_name($cgroup_name_orig);
 	    my $task_count = 0;
 	    while (<CGROUPS> =~ m#^\d+$#) {
 		$task_count++;
 	    }
-	    value_store_zeropad("e/cgroup-${cgroup_name}-task-cnt", $i, $task_count);
-	} elsif (m#^==> /syspart/(\S*)memory\.failcnt <==#) {
-	    $cgroup_name = sanitize_cgroup_name($1);
+	    value_store_zeropad("e/cgroup-${cgroup_name_mangled}-task-cnt", $i, $task_count);
+	} elsif (m#^==> /syspart(\S*/)memory\.failcnt <==#) {
+	    $cgroup_name_orig = $1;
+	    $cgroup_name_mangled = sanitize_cgroup_name($cgroup_name_orig);
 	    my $failcnt = int(<CGROUPS>);
-	    if (exists $prev_cgroups_mem_failcnt{$cgroup_name}) {
-		my $failcnt_prev = $prev_cgroups_mem_failcnt{$cgroup_name};
+	    if (exists $prev_cgroups_mem_failcnt{$cgroup_name_mangled}) {
+		my $failcnt_prev = $prev_cgroups_mem_failcnt{$cgroup_name_mangled};
 		my $val = $failcnt - $failcnt_prev;
 		$val = 0 if ($val < 0);
-		value_store("e/cgroup-${cgroup_name}-mem-failcnt", $i, $val);
+		value_store("e/cgroup-${cgroup_name_mangled}-mem-failcnt", $i, $val);
 	    }
-	    $prev_cgroups_mem_failcnt{$cgroup_name} = $failcnt;
-	} elsif (m#^==> /syspart/(\S*)memory\.memsw\.failcnt <==#) {
-	    $cgroup_name = sanitize_cgroup_name($1);
+	    $prev_cgroups_mem_failcnt{$cgroup_name_mangled} = $failcnt;
+	} elsif (m#^==> /syspart(\S*/)memory\.memsw\.failcnt <==#) {
+	    $cgroup_name_orig = $1;
+	    $cgroup_name_mangled = sanitize_cgroup_name($cgroup_name_orig);
 	    my $failcnt = int(<CGROUPS>);
-	    if (exists $prev_cgroups_memsw_failcnt{$cgroup_name}) {
-		my $failcnt_prev = $prev_cgroups_memsw_failcnt{$cgroup_name};
+	    if (exists $prev_cgroups_memsw_failcnt{$cgroup_name_mangled}) {
+		my $failcnt_prev = $prev_cgroups_memsw_failcnt{$cgroup_name_mangled};
 		my $val = $failcnt - $failcnt_prev;
 		$val = 0 if ($val < 0);
-		value_store("e/cgroup-${cgroup_name}-memsw-failcnt", $i, $val);
+		value_store("e/cgroup-${cgroup_name_mangled}-memsw-failcnt", $i, $val);
 	    }
-	    $prev_cgroups_memsw_failcnt{$cgroup_name} = $failcnt;
+	    $prev_cgroups_memsw_failcnt{$cgroup_name_mangled} = $failcnt;
 	}
-	if ($cgroup_name) {
-	    $cgroups{$cgroup_name} = 1;
+	if ($cgroup_name_mangled) {
+	    $cgroups{$cgroup_name_mangled} = 1;
+	    $cgroups_demangle{$cgroup_name_mangled} = $cgroup_name_orig;
 	}
     }
     close(CGROUPS);
@@ -4703,7 +4714,7 @@ sub generate_plot_cgroups
     $plot = start_plotfile_lines($graph_cgroups_mem);
     foreach my $cgroup (@grouplist) {
 	$fn = "e/cgroup-${cgroup}-mem";
-	one_plot_set($fn, 3, $plot, \$cnt, 1);
+	one_plot_set($fn, 3, $plot, \$cnt, 1, $cgroups_demangle{$cgroup});
     }
     # Plot the limits to the same graph. We want the colors (=linetype) to
     # match the groups, hence manually amend the plotting command.
@@ -4711,7 +4722,7 @@ sub generate_plot_cgroups
     foreach my $cgroup (@grouplist) {
 	$fn = "e/cgroup-${cgroup}-memlimit";
 	if (count_nonzero_entries($fn) > 0) {
-	    one_plot_set($fn, 5, $plot, \$cnt, 1);
+	    one_plot_set($fn, 5, $plot, \$cnt, 1, $cgroups_demangle{$cgroup});
 	    print $plot ' lt ' . ($cnt-1);
 	} else {
 	    $cnt++;
@@ -4723,7 +4734,7 @@ sub generate_plot_cgroups
     $plot = start_plotfile_lines($graph_cgroups_swap);
     foreach my $cgroup (@grouplist) {
 	$fn = "e/cgroup-${cgroup}-swap";
-	one_plot_set($fn, 3, $plot, \$cnt, 1);
+	one_plot_set($fn, 3, $plot, \$cnt, 1, $cgroups_demangle{$cgroup});
     }
     close_plot($i, $plot, $graph_cgroups_swap);
     # mem + swap:
@@ -4731,7 +4742,7 @@ sub generate_plot_cgroups
     $plot = start_plotfile_lines($graph_cgroups_memsw);
     foreach my $cgroup (@grouplist) {
 	$fn = "e/cgroup-${cgroup}-memsw";
-	one_plot_set($fn, 3, $plot, \$cnt, 1);
+	one_plot_set($fn, 3, $plot, \$cnt, 1, $cgroups_demangle{$cgroup});
     }
     close_plot($i, $plot, $graph_cgroups_memsw);
     # cache:
@@ -4739,7 +4750,7 @@ sub generate_plot_cgroups
     $plot = start_plotfile_lines($graph_cgroups_cache);
     foreach my $cgroup (@grouplist) {
 	$fn = "e/cgroup-${cgroup}-cache";
-	one_plot_set($fn, 3, $plot, \$cnt, 1);
+	one_plot_set($fn, 3, $plot, \$cnt, 1, $cgroups_demangle{$cgroup});
     }
     close_plot($i, $plot, $graph_cgroups_cache);
     # rss:
@@ -4747,7 +4758,7 @@ sub generate_plot_cgroups
     $plot = start_plotfile_lines($graph_cgroups_rss);
     foreach my $cgroup (@grouplist) {
 	$fn = "e/cgroup-${cgroup}-rss";
-	one_plot_set($fn, 3, $plot, \$cnt, 1);
+	one_plot_set($fn, 3, $plot, \$cnt, 1, $cgroups_demangle{$cgroup});
     }
     close_plot($i, $plot, $graph_cgroups_rss);
     # mapped_file:
@@ -4755,7 +4766,7 @@ sub generate_plot_cgroups
     $plot = start_plotfile_lines($graph_cgroups_mapped_file);
     foreach my $cgroup (@grouplist) {
 	$fn = "e/cgroup-${cgroup}-mapped_file";
-	one_plot_set($fn, 3, $plot, \$cnt, 1);
+	one_plot_set($fn, 3, $plot, \$cnt, 1, $cgroups_demangle{$cgroup});
     }
     close_plot($i, $plot, $graph_cgroups_mapped_file);
     # unevictable:
@@ -4763,7 +4774,7 @@ sub generate_plot_cgroups
     $plot = start_plotfile_lines($graph_cgroups_unevictable);
     foreach my $cgroup (@grouplist) {
 	$fn = "e/cgroup-${cgroup}-unevictable";
-	one_plot_set($fn, 3, $plot, \$cnt, 1);
+	one_plot_set($fn, 3, $plot, \$cnt, 1, $cgroups_demangle{$cgroup});
     }
     close_plot($i, $plot, $graph_cgroups_unevictable);
     # inactive_anon:
@@ -4771,7 +4782,7 @@ sub generate_plot_cgroups
     $plot = start_plotfile_lines($graph_cgroups_inactive_anon);
     foreach my $cgroup (@grouplist) {
 	$fn = "e/cgroup-${cgroup}-inactive_anon";
-	one_plot_set($fn, 3, $plot, \$cnt, 1);
+	one_plot_set($fn, 3, $plot, \$cnt, 1, $cgroups_demangle{$cgroup});
     }
     close_plot($i, $plot, $graph_cgroups_inactive_anon);
     # active_anon:
@@ -4779,7 +4790,7 @@ sub generate_plot_cgroups
     $plot = start_plotfile_lines($graph_cgroups_active_anon);
     foreach my $cgroup (@grouplist) {
 	$fn = "e/cgroup-${cgroup}-active_anon";
-	one_plot_set($fn, 3, $plot, \$cnt, 1);
+	one_plot_set($fn, 3, $plot, \$cnt, 1, $cgroups_demangle{$cgroup});
     }
     close_plot($i, $plot, $graph_cgroups_active_anon);
     # inactive_file:
@@ -4787,7 +4798,7 @@ sub generate_plot_cgroups
     $plot = start_plotfile_lines($graph_cgroups_inactive_file);
     foreach my $cgroup (@grouplist) {
 	$fn = "e/cgroup-${cgroup}-inactive_file";
-	one_plot_set($fn, 3, $plot, \$cnt, 1);
+	one_plot_set($fn, 3, $plot, \$cnt, 1, $cgroups_demangle{$cgroup});
     }
     close_plot($i, $plot, $graph_cgroups_inactive_file);
     # active_file:
@@ -4795,7 +4806,7 @@ sub generate_plot_cgroups
     $plot = start_plotfile_lines($graph_cgroups_active_file);
     foreach my $cgroup (@grouplist) {
 	$fn = "e/cgroup-${cgroup}-active_file";
-	one_plot_set($fn, 3, $plot, \$cnt, 1);
+	one_plot_set($fn, 3, $plot, \$cnt, 1, $cgroups_demangle{$cgroup});
     }
     close_plot($i, $plot, $graph_cgroups_active_file);
     # pgpgin:
@@ -4803,7 +4814,7 @@ sub generate_plot_cgroups
     $plot = start_plotfile_lines($graph_cgroups_pgpgin);
     foreach my $cgroup (@grouplist) {
 	$fn = "e/cgroup-${cgroup}-pgpgin";
-	one_plot_set($fn, 3, $plot, \$cnt, 1);
+	one_plot_set($fn, 3, $plot, \$cnt, 1, $cgroups_demangle{$cgroup});
     }
     close_plot($i, $plot, $graph_cgroups_pgpgin);
     # pgpgout:
@@ -4811,7 +4822,7 @@ sub generate_plot_cgroups
     $plot = start_plotfile_lines($graph_cgroups_pgpgout);
     foreach my $cgroup (@grouplist) {
 	$fn = "e/cgroup-${cgroup}-pgpgout";
-	one_plot_set($fn, 3, $plot, \$cnt, 1);
+	one_plot_set($fn, 3, $plot, \$cnt, 1, $cgroups_demangle{$cgroup});
     }
     close_plot($i, $plot, $graph_cgroups_pgpgout);
     # process-cnt:
@@ -4819,7 +4830,7 @@ sub generate_plot_cgroups
     $plot = start_plotfile_lines($graph_cgroups_process_cnt);
     foreach my $cgroup (@grouplist) {
 	$fn = "e/cgroup-${cgroup}-process-cnt";
-	one_plot_set($fn, 3, $plot, \$cnt, 1);
+	one_plot_set($fn, 3, $plot, \$cnt, 1, $cgroups_demangle{$cgroup});
     }
     close_plot($i, $plot, $graph_cgroups_process_cnt);
     # task-cnt:
@@ -4827,7 +4838,7 @@ sub generate_plot_cgroups
     $plot = start_plotfile_lines($graph_cgroups_task_cnt);
     foreach my $cgroup (@grouplist) {
 	$fn = "e/cgroup-${cgroup}-task-cnt";
-	one_plot_set($fn, 3, $plot, \$cnt, 1);
+	one_plot_set($fn, 3, $plot, \$cnt, 1, $cgroups_demangle{$cgroup});
     }
     close_plot($i, $plot, $graph_cgroups_task_cnt);
     # mem-failcnt:
@@ -4845,7 +4856,7 @@ sub generate_plot_cgroups
 	foreach my $cgroup (@grouplist) {
 	    $fn = "e/cgroup-${cgroup}-mem-failcnt";
 	    if (count_nonzero_entries($fn) > 0) {
-		one_plot_set($fn, 3, $plot, \$cnt, 1);
+		one_plot_set($fn, 3, $plot, \$cnt, 1, $cgroups_demangle{$cgroup});
 	    }
 	}
 	close_plot($i, $plot, $graph_cgroups_mem_failcnt);
@@ -4865,7 +4876,7 @@ sub generate_plot_cgroups
 	foreach my $cgroup (@grouplist) {
 	    $fn = "e/cgroup-${cgroup}-memsw-failcnt";
 	    if (count_nonzero_entries($fn) > 0) {
-		one_plot_set($fn, 3, $plot, \$cnt, 1);
+		one_plot_set($fn, 3, $plot, \$cnt, 1, $cgroups_demangle{$cgroup});
 	    }
 	}
 	close_plot($i, $plot, $graph_cgroups_memsw_failcnt);
