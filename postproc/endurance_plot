@@ -746,13 +746,14 @@ sub date2seconds($)
     return $retsec;
 }
 
-sub one_plot_set($$$$$)
+sub one_plot_set
 {
     my $fn = shift;
     my $lw = shift;
     my $plot = shift;
     my $r_cnt = shift;
     my $emit_zeroes = shift;
+    my $title = shift;
 
     my $num = value_emit($fn, $emit_zeroes);
 
@@ -770,6 +771,9 @@ sub one_plot_set($$$$$)
 	    print $plot "'$fn' using 2";
 	}
 	$$r_cnt += 1;
+	if ($title) {
+	    print $plot " title \"$title\"";
+	}
     }
 }
 
