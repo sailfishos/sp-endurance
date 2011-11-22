@@ -673,6 +673,7 @@ my %xresource_latest_sz_pxm;
 my %xresource_latest_sz_misc;
 my %xres_pxm_size_total;
 my %filesystem_names;
+my %filesystem_demangle;
 my $max_nattach = 0;
 
 my (%images, %thumbnames);
@@ -1585,9 +1586,11 @@ sub process_df_entry
     my ($filesystem, $blocks_kb, $used_kb, $available, $capacity, $mounted_on) = @_;
     #print STDERR "Mounted on: $mounted_on, capacity: $capacity\n";
     return if not $mounted_on;
-    $mounted_on =~ s/\//\_/g;
-    $filesystem_names{$mounted_on} = $used_kb;
-    my $fn = "e/fs-used-${mounted_on}";
+    my $mangled = $mounted_on;
+    $mangled =~ s/\//\_/g;
+    $filesystem_names{$mangled} = $used_kb;
+    $filesystem_demangle{$mangled} = $mounted_on;
+    my $fn = "e/fs-used-${mangled}";
     chop $capacity;
     value_store($fn, $i, $capacity);
 }
@@ -4376,7 +4379,8 @@ sub generate_plot_df
     my $plot = start_plotfile_lines($graph_diskspace);
     my $cnt = 0;
     foreach my $p ( reverse sort {$filesystem_names{$a} <=> $filesystem_names{$b} } keys %filesystem_names) {
-	one_plot_set("e/fs-used-$p", 3, $plot, \$cnt, 1);
+	one_plot_set("e/fs-used-$p", 3, $plot, \$cnt, 1,
+	    $filesystem_demangle{$p});
     }
     one_plot_set($fd_perc_file_name, 5, $plot, \$cnt, 0);
     close_plot($cnt, $plot, $graph_diskspace);
