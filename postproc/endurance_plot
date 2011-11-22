@@ -5035,11 +5035,19 @@ sub generate_plot_powertop
 
 sub generate_plot_process_state_count
 {
+    my %state_desc = (
+	D => " (Uninterruptible disk sleep)",
+	R => " (Running)",
+	T => " (Traced or stopped)",
+	W => " (Paging)",
+	Z => " (Zombie)",
+    );
     my $cnt = 0;
     my $plot = start_plotfile_histogram($graph_nonsleeping_process_count);
     foreach my $state (reverse sort keys %process_states_seen) {
 	next if $state =~ /S/;
-	one_plot_set("e/process-state-count-$state", 0, $plot, \$cnt, 1);
+	one_plot_set("e/process-state-count-$state", 0, $plot, \$cnt, 1,
+	    $state . $state_desc{$state});
     }
     close_plot($cnt, $plot, $graph_nonsleeping_process_count);
 }
