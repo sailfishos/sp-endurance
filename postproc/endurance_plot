@@ -4658,13 +4658,13 @@ sub generate_plot_battery
     print "battery ";
     my $plot = start_plotfile_lines_2axes($graph_battery);
 
-    print $plot "'$batt_charge_left_file_name' lw 4 axes x1y1";
+    print $plot "'$batt_charge_left_file_name' lw 4 axes x1y1 title \"Charge % left\"";
     value_emit($batt_charge_left_file_name, 1);
 
-    print $plot ", '$batt_temperature_file_name' lw 2 axes x1y1";
+    print $plot ", '$batt_temperature_file_name' lw 2 axes x1y1 title \"Temperature\"";
     value_emit($batt_temperature_file_name, 1);
 
-    print $plot ", '$batt_voltage_file_name' lw 2 axes x2y2";
+    print $plot ", '$batt_voltage_file_name' lw 2 axes x2y2 title \"Voltage\"";
     value_emit($batt_voltage_file_name, 1);
 
     close_plot($i, $plot, $graph_battery);
