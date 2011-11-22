@@ -3533,7 +3533,7 @@ sub generate_plot_cpu_freq
 	my @freqs = keys(%{$time_in_state_freqs_seen{$cpu_num}});
 	foreach my $freq (sort {$a <=> $b} @freqs) {
 	    one_plot_set("e/sysfs_cpu${cpu_num}_${freq}mhz",
-		0, $plot, \$cnt, 1);
+		0, $plot, \$cnt, 1, "${freq}MHz");
 	}
 	close_plot($cnt, $plot, $graph_cpu_time_in_state);
     }
