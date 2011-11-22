@@ -81,7 +81,8 @@ static void display_usage(void)
  */
 static int copy_data(int fd_in, int fd_out)
 {
-	char buffer[4096];
+	char buffer[64 * 1024];
+	size_t offset = 0;
 	while (!copy_abort) {
 		int size = read(fd_in, buffer, sizeof(buffer));
 		if (size == -1) {
@@ -89,16 +90,21 @@ static int copy_data(int fd_in, int fd_out)
 			return -1;
 		}
 		if (size == 0) break;
-		int offset = 0;
-		while (offset < size) {
-			int n = write(fd_out, buffer + offset, size - offset);
+		posix_fadvise(fd_in, offset, size, POSIX_FADV_DONTNEED);
+		int buffer_offset = 0;
+		while (buffer_offset < size) {
+			int n = write(fd_out, buffer + buffer_offset, size - buffer_offset);
 			if (n == -1) {
 				msg_error("failed to write data (%s)\n", strerror(errno));
 				return -1;
 			}
-			offset += n;
+			buffer_offset += n;
 		}
+		offset += size;
+		posix_fadvise(fd_out, 0, 0, POSIX_FADV_DONTNEED);
 	}
+	fsync(fd_out);
+	posix_fadvise(fd_out, 0, 0, POSIX_FADV_DONTNEED);
 	return 0;
 }
 
@@ -116,7 +122,6 @@ static int write_file(const char* filename)
 		msg_error("failed to create output file %s (%s)\n", filename, strerror(errno));
 		return -1;
 	}
-	posix_fadvise(fd, 0, 0, POSIX_FADV_DONTNEED);
 	int rc = copy_data(STDIN_FILENO, fd);
 	close(fd);
 	return rc;
@@ -136,7 +141,6 @@ static int read_file(const char* filename)
 		msg_error("failed to open input file %s (%s)\n", filename, strerror(errno));
 		return -1;
 	}
-	posix_fadvise(fd, 0, 0, POSIX_FADV_DONTNEED);
 	int rc = copy_data(fd, STDOUT_FILENO);
 	close(fd);
 	return rc;
