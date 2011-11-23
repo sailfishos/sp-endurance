@@ -52,6 +52,18 @@ my $hours_per_round = 0;
 my ($str_hours, $str_minutes, $str_seconds);
 my $total_duration;
 
+# The gnuplot pngcairo color palette seems to be limited, so use our own
+# colors. Based on the X11 color set.
+my @line_colors = qw/FF0000 66CDAA DEB887 00FF00 87CEEB B22222 D8BFD8 2F4F4F
+C71585 E9967A 90EE90 8FBC8F 9370DB 48D1CC 008080 0000CD 483D8B 9932CC E0FFFF
+808000 98FB98 B8860B A52A2A 20B2AA 556B2F DC143C 808080 800080 6A5ACD 000080
+A0522D 00FFFF BA55D3 00FF00 7CFC00 800000 008B8B 708090 4682B4 8B4513 2E8B57
+87CEFA DA70D6 3CB371 4169E1 6B8E23 AFEEEE B0C4DE 5F9EA0 7FFFD4 BC8F8F D2691E
+32CD32 9ACD32 000000 C0C0C0 00CED1 696969 EE82EE 228B22 8A2BE2 6495ED 006400
+ADD8E6 CD5C5C 8B008B D3D3D3 D2B48C 40E0D0 BDB76B 1E90FF 191970 DDA0DD 7B68EE
+00BFFF 4B0082 A9A9A9 7FFF00 0000FF 778899 B0E0E6 9400D3 00FF7F 008000 CD853F
+00008B 8B0000 DB7093/;
+
 ######## PROCESS GRAPHS ###########
 
 my $graph_appmem_heap = "1001_appmem_heap";
@@ -758,6 +770,7 @@ sub one_plot_set
     my $r_cnt = $args{cnt};
     my $emit_zeroes = $args{emit_zeroes};
     my $title = $args{title};
+    my $lc = $args{lc};
 
     my $num = value_emit($fn, $emit_zeroes);
 
@@ -765,14 +778,18 @@ sub one_plot_set
 	if ($$r_cnt > 0) {
 	    print $plot ", ";
 	}
-#
-# linewidth also used as flag. If not zero, it is line width
-# If zero, generate histogram plot cmd instead, "using 2"
-#
+	if (not $lc) {
+	    $lc = $line_colors[$$r_cnt % @line_colors];
+	}
 	if ($lw) {
-	    print $plot "'$fn' lw $lw";
+	    # line plot
+	    print $plot "'$fn' lt ";
+	    print $plot "rgb '#$lc' " if $lc;
+	    print $plot "lw $lw";
 	} else {
-	    print $plot "'$fn' using 2";
+	    # histogram
+	    print $plot "'$fn' using 2 ";
+	    print $plot "lc rgb '#$lc' " if $lc;
 	}
 	$$r_cnt += 1;
 	if ($title) {
