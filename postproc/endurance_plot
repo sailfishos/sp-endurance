@@ -26,6 +26,8 @@ use Time::Local;
 use POSIX qw/ceil WIFSIGNALED WTERMSIG SIGINT SIGTERM SIGKILL/;
 use List::Util qw/max sum/;
 
+my $gnuplot_terminal = 'pngcairo';
+
 # tunables
 my $ticks_per_sec = 100;
 my $sector_sz = 4096;
@@ -3133,8 +3135,12 @@ sub start_plotfile_common($)
     print $plot "set xlabel \"rounds\"\n";
     print $plot "set ylabel \"$ylabel\"\n";
     print $plot "set grid xtics ytics\n";
-    print $plot "set term pngcairo size $plot_width, 1100 font \"serif,8\"\n";
-    print $plot "set xtics (" . xtics() . ") rotate by -25\n";
+    if ($gnuplot_terminal eq 'pngcairo') {
+	print $plot "set term pngcairo size $plot_width, 1100 font \"serif,8\"\n";
+	print $plot "set xtics (" . xtics() . ") rotate by -25\n";
+    } else {
+	print $plot "set term png small truecolor size $plot_width, 1100\n";
+    }
     return $plot;
 }
 
