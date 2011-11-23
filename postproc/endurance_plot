@@ -5218,6 +5218,12 @@ if ($flag_terminal) {
 	print STDERR "ERROR: terminal type '$flag_terminal' not supported. Try png or pngcairo.\n";
 	exit(1);
     }
+} else {
+    # pngcairo segfaults in Harmattan ARMv7 scratchbox target due to
+    # /proc/pid/auxv emulation limitation. Switch to png terminal to avoid it.
+    if (-e "/targets/links/scratchbox.config") {
+	$gnuplot_terminal = 'png';
+    }
 }
 
 @dirs = @ARGV;
