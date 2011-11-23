@@ -1312,8 +1312,10 @@ sub parse_process_status_block($)
 	$state_cnt{$State}++;
 	$process_states_seen{$State} = 1;
     }
-    foreach (keys %state_cnt) {
-	value_store_zeropad("e/process-state-count-$_", $i, $state_cnt{$_});
+    foreach (keys %process_states_seen) {
+	my $cnt = 0;
+	$cnt = $state_cnt{$_} if $state_cnt{$_};
+	value_store_zeropad("e/process-state-count-$_", $i, $cnt);
     }
 }
 
