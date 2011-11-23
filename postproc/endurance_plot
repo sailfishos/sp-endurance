@@ -25,6 +25,7 @@
 use Time::Local;
 use POSIX qw/ceil WIFSIGNALED WTERMSIG SIGINT SIGTERM SIGKILL/;
 use List::Util qw/max sum/;
+use Getopt::Long;
 
 my $gnuplot_terminal = 'pngcairo';
 
@@ -5174,8 +5175,58 @@ sub generate_plots()
 }
 ################ Start ######################################################
 
+sub usage
+{
+    print STDERR "Usage: endurance_plot [OPTS] <DIR> <DIR> [<DIR>...]\n";
+    print STDERR "\n";
+    print STDERR "endurance_plot generates variety of process and system level graphs\n";
+    print STDERR "based on the endurance data. The graphs may be used for discovering\n";
+    print STDERR "issues in applications and in the system.\n";
+    print STDERR "\n";
+    print STDERR "endurance_plot creates index.html suitable for viewing in a web browser.\n";
+    print STDERR "\n";
+    print STDERR "Options:\n";
+    print STDERR "   --gnuplot-terminal=pngcairo      Use gnuplot terminal 'pngcairo'.\n";
+    print STDERR "                                    This is the default.\n";
+    print STDERR "   --gnuplot-terminal=png           Use gnuplot terminal 'png'.\n";
+    print STDERR "\n";
+    print STDERR "Examples:\n";
+    print STDERR "   endurance_plot 101 102 103\n";
+    print STDERR "   endurance_plot ???\n";
+}
+
+my $flag_h;
+my $flag_terminal;
+
+exit(1) if not GetOptions(
+	'h' => \$flag_h,
+	'help' => \$flag_h,
+	'gnuplot-terminal=s' => \$flag_terminal,
+);
+
+if ($flag_h) {
+    usage();
+    exit(1);
+}
+
+if ($flag_terminal) {
+    if ($flag_terminal eq 'pngcairo') {
+	$gnuplot_terminal = 'pngcairo';
+    } elsif ($flag_terminal eq 'png') {
+	$gnuplot_terminal = 'png';
+    } else {
+	print STDERR "ERROR: terminal type '$flag_terminal' not supported. Try png or pngcairo.\n";
+	exit(1);
+    }
+}
+
 @dirs = @ARGV;
 $num_of_rounds = @dirs;
+
+if (@dirs < 2) {
+    usage();
+    exit(1);
+}
 
 #
 # note: this is global rounds counter! (name not well chosen..)
