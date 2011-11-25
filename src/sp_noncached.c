@@ -202,6 +202,11 @@ int main(int argc, char* argv[])
 		display_usage();
 		exit (1);
 	}
+	if ((copy_read && copy_write) || (!copy_read && !copy_write)) {
+		msg_error("Either copy or write option must be given.\n");
+		display_usage();
+		exit (1);
+	}
 	if (copy_write) {
 		write_file(argv[optind]);
 	}
@@ -209,11 +214,6 @@ int main(int argc, char* argv[])
 		while (optind < argc) {
 			read_file(argv[optind++]);
 		}
-	}
-	else {
-		msg_error("Either copy or write option must be given.\n");
-		display_usage();
-		exit (1);
 	}
 	return 0;
 }
