@@ -1764,11 +1764,10 @@ sub process_openfds()
 }
 
 # Sanitize the Control Group name so that we can use it as a file name:
-# "system/applications/standby/" -> "system_applications_standby"
+# "/system/applications/standby/" -> "_system_applications_standby_"
 sub sanitize_cgroup_name
 {
     my ($name) = @_;
-    $name =~ s#/$##;
     $name =~ tr#/#_#;
     if ($name eq "") {
 	$name = 'root';
