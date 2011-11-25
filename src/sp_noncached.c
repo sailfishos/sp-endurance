@@ -215,5 +215,12 @@ int main(int argc, char* argv[])
 			read_file(argv[optind++]);
 		}
 	}
+	if (copy_abort) {
+		if (signal(SIGINT, SIG_DFL) == SIG_ERR) {
+			exit (1);
+		}
+		raise(SIGINT);
+		exit (1);
+	}
 	return 0;
 }
