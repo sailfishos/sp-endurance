@@ -24,7 +24,7 @@
 
 use Time::Local;
 use POSIX qw/ceil WIFSIGNALED WTERMSIG SIGINT SIGTERM SIGKILL/;
-use List::Util qw/max sum/;
+use List::Util qw/min max sum/;
 use Getopt::Long;
 
 my $gnuplot_terminal = 'pngcairo';
@@ -2995,10 +2995,18 @@ sub duration_to_str
     }
 }
 
+# (Average, longest, shortest) intervals.
+sub round_duration_stats
+{
+    return (duration_to_str($secs_per_round),
+            duration_to_str(max(values(%lapsed_time))),
+            duration_to_str(min(values(%lapsed_time))));
+}
+
 sub html_title
 {
     return "Endurance graph [$hw_product][$sw_version] " .
-	"snapshot avg interval " . html_avg_interval() .
+	"snapshot avg interval " . (round_duration_stats())[0] .
 	", total duration " . duration_to_str($total_duration) . ".";
 }
 
@@ -3020,8 +3028,9 @@ sub gen_html_page
 
     print $html "<h1>ENDURANCE GRAPHS</h1>\n";
     print $html "<ul>\n";
-    print $html " <li>Total duration: <b>" . duration_to_str($total_duration) . "</b>. " .
-		"Average snapshot interval: <b>" . html_avg_interval() . "</b>.\n";
+    print $html " <li>Total duration: <b>" . duration_to_str($total_duration) . "</b>. ";
+    printf $html "Snapshot interval average: <b>%s</b> | longest: <b>%s</b> | shortest: <b>%s</b>.\n",
+		round_duration_stats();
     print $html " <li>OS version: <b>$sw_version</b>. " .
 		($hw_product ? "Hardware: <b>$hw_product:$hw_build</b>." : "") . "\n";
     print $html " <li>Content: " .
