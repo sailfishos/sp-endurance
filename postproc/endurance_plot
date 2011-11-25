@@ -50,9 +50,6 @@ my (%unit, %unit_1, %unit_2);
 my %thumblegend;
 
 my $secs_per_round = 0;
-my $mins_per_round = 0;
-my $hours_per_round = 0;
-my ($str_hours, $str_minutes, $str_seconds);
 my $total_duration;
 
 # The gnuplot pngcairo color palette seems to be limited, so use our own
@@ -531,7 +528,6 @@ my @graph_fragmentation = (
 "3952_fragmentation",
 "3953_fragmentation");
 
-my $num_of_rounds;
 my @dirs;
 my $show_kernelstack = 0;
 my $show_shmem = 0;
@@ -549,6 +545,7 @@ my (%shared_num, %shared_size, %shared_used);
 my (%fd_count, %fd_count_samples, %fd_count_diff, %fd_count_prev);
 my %pss_swap_num_samples;
 my %lapsed_time;
+my @uptimes;
 my $global_ctx_prev = 0;
 my $global_processes_prev;
 my $memfree_plot_file_name = "e/memfree";
@@ -5238,7 +5235,6 @@ if ($flag_terminal) {
 }
 
 @dirs = @ARGV;
-$num_of_rounds = @dirs;
 
 if (@dirs < 2) {
     usage();
@@ -5293,21 +5289,12 @@ foreach $d (@dirs) {
  	if( m/Uptime,Idletime /) {
 	    $line = <CSV>;
 	    chop $line;
-	    ($upt, undef) = split(',', $line, 2);
-	    if (!$first_upt) {
-		$first_upt = $upt;
-	    }
-	    if ($upt_prev) {
-		$passed = $upt - $upt_prev;
-	    } else {
-		$passed = 0;
-	    }
-	    $lapsed_time{$cnt} = $passed;
-#	    print "$i:passed: $passed\n";
-	    if ($upt < $upt_prev) {
+	    my ($uptime, undef) = split(',', $line, 2);
+	    $lapsed_time{$cnt} = int($uptime) - int($uptimes[-1]);
+	    if ($uptime < $uptimes[-1]) {
 		print "** NOTE: at $d uptime steps back. Reboot in sequence? Duration calc will have no sense..\n"
 	    }
-	    $upt_prev = $upt;
+	    $uptimes[$cnt] = int($uptime);
 	    $cnt += 1;
 	    last;
 	} 
@@ -5319,33 +5306,37 @@ foreach $d (@dirs) {
     }
 }
 
-use integer;
-$total_duration = $upt - $first_upt;
-if ($cnt > 1) {
-    $secs_per_round = $total_duration/($cnt - 1);
-    $mins_per_round = $secs_per_round/60;
-    $hours_per_round = $secs_per_round/3600;
-    $str_hours = sprintf("%2d", $hours_per_round);
-    $str_minutes = sprintf("%2d", $mins_per_round);
-    $str_seconds = sprintf("%2d", $secs_per_round);
-    if ($cnt > 25) {
-	$samples_required = $cnt / 5;
-    } elsif ($cnt < 5) {
-#	$samples_required = $cnt;
-	$samples_required = 2;
-    } else {
-	$samples_required = 5;
-    }
-} else {
+if ($cnt < 2) {
     print STDERR "ERROR: need at least 2 rounds\n";
     exit(1);
 }
+
+if ($cnt > 25) {
+    $samples_required = int($cnt / 5);
+} elsif ($cnt < 5) {
+    $samples_required = 2;
+} else {
+    $samples_required = 5;
+}
+
+$total_duration = $uptimes[-1] - $uptimes[0];
+$secs_per_round = int($total_duration/($cnt - 1));
+
 if (!$secs_per_round) {
     print STDERR "ERROR: zero duration, can not calculate much\n";
     exit(1);
 }
-no integer;
-print "endurance_plot; rounds=$num_of_rounds; duration=$total_duration sec, avg-per-round: sec=$secs_per_round or min=$mins_per_round or hour=$hours_per_round\n";
+
+print  "endurance_plot\n";
+print  " - rounds: " . scalar @dirs . "\n";;
+print  "   - first round date: $round_date{$dirs[0]}\n" if ($round_date{$dirs[0]});
+print  "   - last round date:  $round_date{$dirs[-1]}\n" if ($round_date{$dirs[-1]});
+print  " - total duration: " . duration_to_str($total_duration) . "\n";
+printf "   - average  snapshot interval: %s\n" .
+       "   - longest  snapshot interval: %s\n" .
+       "   - shortest snapshot interval: %s\n",
+       round_duration_stats();
+
 system("rm -f e/* $graphs_dir/1???_* $graphs_dir/2???_* $html_name");
 mkdir "e";
 mkdir "$graphs_dir";
