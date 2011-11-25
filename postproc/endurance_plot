@@ -4209,7 +4209,6 @@ sub generate_plot_pss_swap
     my $num_of_pss_swp = 0;
     my %show_this = ();
     foreach my $p (keys %app_cumul_pss_swp) {
-#	if (($pss_swap_num_samples{$p} < $samples_required) || ($sumdev_pss_swp{$p} < 1)) {
 	if (($pss_swap_num_samples{$p} < 1) || ($sumdev_pss_swp{$p} < 1)) {
 	    next;
 	} 
@@ -4454,7 +4453,6 @@ sub generate_plot_fd
     print "fd_inotify ";
     %show_this = ();
     foreach my $p (reverse sort {$fd_inotify{$a} <=> $fd_inotify{$b} } keys %fd_inotify) {
-	if ($fd_samples{$p} < $samples_required) { next; }
 	$fn = "e/fd_inotify-$name_by_pid{$p}-$p";
 	if (count_nonzero_entries($fn) <= 0) { next; }
 	$show_this{$p} = changes_found($fn);
@@ -4475,7 +4473,6 @@ sub generate_plot_fd
     print "fd_pipe ";
     %show_this = ();
     foreach my $p (reverse sort {$fd_pipe{$a} <=> $fd_pipe{$b} } keys %fd_pipe) {
-	if ($fd_samples{$p} < $samples_required) { next; }
 	$fn = "e/fd_pipe-$name_by_pid{$p}-$p";
 	if (count_nonzero_entries($fn) <= 0) { next; }
 	$show_this{$p} = changes_found($fn);
@@ -4496,7 +4493,6 @@ sub generate_plot_fd
     print "fd_socket ";
     %show_this = ();
     foreach my $p (reverse sort {$fd_socket{$a} <=> $fd_socket{$b} } keys %fd_socket) {
-	if ($fd_samples{$p} < $samples_required) { next; }
 	$fn = "e/fd_socket-$name_by_pid{$p}-$p";
 	if (count_nonzero_entries($fn) <= 0) { next; }
 	$show_this{$p} = changes_found($fn);
@@ -4517,7 +4513,6 @@ sub generate_plot_fd
     print "fd_tmpfs ";
     %show_this = ();
     foreach my $p (reverse sort {$fd_tmpfs{$a} <=> $fd_tmpfs{$b} } keys %fd_tmpfs) {
-	if ($fd_samples{$p} < $samples_required) { next; }
 	$fn = "e/fd_tmpfs-$name_by_pid{$p}-$p";
 	if (count_nonzero_entries($fn) <= 0) { next; }
 	$show_this{$p} = changes_found($fn);
@@ -4538,7 +4533,6 @@ sub generate_plot_fd
     print "fd_eventfd ";
     %show_this = ();
     foreach my $p (reverse sort {$fd_eventfd{$a} <=> $fd_eventfd{$b} } keys %fd_eventfd) {
-	if ($fd_samples{$p} < $samples_required) { next; }
 	$fn = "e/fd_eventfd-$name_by_pid{$p}-$p";
 	if (count_nonzero_entries($fn) <= 0) { next; }
 	$show_this{$p} = changes_found($fn);
@@ -4559,7 +4553,6 @@ sub generate_plot_fd
     print "fd_epoll ";
     %show_this = ();
     foreach my $p (reverse sort {$fd_epoll{$a} <=> $fd_epoll{$b} } keys %fd_epoll) {
-	if ($fd_samples{$p} < $samples_required) { next; }
 	$fn = "e/fd_epoll-$name_by_pid{$p}-$p";
 	if (count_nonzero_entries($fn) <= 0) { next; }
 	$show_this{$p} = changes_found($fn);
@@ -4580,7 +4573,6 @@ sub generate_plot_fd
     print "fd_signalfd ";
     %show_this = ();
     foreach my $p (reverse sort {$fd_signalfd{$a} <=> $fd_signalfd{$b} } keys %fd_signalfd) {
-	if ($fd_samples{$p} < $samples_required) { next; }
 	$fn = "e/fd_signalfd-$name_by_pid{$p}-$p";
 	if (count_nonzero_entries($fn) <= 0) { next; }
 	$show_this{$p} = changes_found($fn);
@@ -4601,7 +4593,6 @@ sub generate_plot_fd
     print "fd_timerfd ";
     %show_this = ();
     foreach my $p (reverse sort {$fd_timerfd{$a} <=> $fd_timerfd{$b} } keys %fd_timerfd) {
-	if ($fd_samples{$p} < $samples_required) { next; }
 	$fn = "e/fd_timerfd-$name_by_pid{$p}-$p";
 	if (count_nonzero_entries($fn) <= 0) { next; }
 	$show_this{$p} = changes_found($fn);
@@ -4622,7 +4613,6 @@ sub generate_plot_fd
     print "fd_disk ";
     %show_this = ();
     foreach my $p (reverse sort {$fd_disk{$a} <=> $fd_disk{$b} } keys %fd_disk) {
-	if ($fd_samples{$p} < $samples_required) { next; }
 	$fn = "e/fd_disk-$name_by_pid{$p}-$p";
 	if (count_nonzero_entries($fn) <= 0) { next; }
 	$show_this{$p} = changes_found($fn);
