@@ -2967,17 +2967,6 @@ sub add_use_case_names
     }
 }
 
-sub html_avg_interval
-{
-    if ($str_hours >= 1) {
-	return "$str_hours hours";
-    } elsif ($str_minutes >= 1) {
-	return "$str_minutes minutes";
-    } else {
-	return "$str_seconds seconds";
-    }
-}
-
 sub duration_to_str
 {
     my ($duration_secs) = @_;
