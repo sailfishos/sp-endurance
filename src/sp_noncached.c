@@ -64,7 +64,7 @@ static void display_usage(void)
 			"cached to avoid 'poisoning' kernel page cache.\n"
 			"  sp-save-noncached -(r|w) <file1> [<file2>...]\n"
 			"Where:\n"
-			"  <options>:"
+			"  <options>:\n"
 			"    -w (--write)  writes standard input into file <file1>.\n"
 			"    -r (--read)   reads files <file1>, <file2>... into standard output.\n"
 			"    -h (--help)   this help page.\n"
