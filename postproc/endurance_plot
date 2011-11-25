@@ -3162,7 +3162,7 @@ sub start_plotfile_lines_common($$)
     $plot = start_plotfile_common($key);
 
     print $plot "set style data $style\n";
-    print $plot "set key autotitle\n";
+    print $plot "set key autotitle reverse Left\n";
     my $add = $i/4;
     if ($add < 10) {
 	$add = 10;
@@ -3187,7 +3187,7 @@ sub start_plotfile_lines_common_2axes($$)
     print $plot "set ytics nomirror\n";
     print $plot "set y2tics\n";
     print $plot "set style data $style\n";
-    print $plot "set key autotitle\n";
+    print $plot "set key autotitle reverse Left\n";
     my $ii = $i+5;
     print $plot "set xrange [0 : $ii]\n";
     print $plot "set yrange [0 : ]\n";
@@ -3223,7 +3223,7 @@ sub start_plotfile_histogram($)
     $plot = start_plotfile_common($key);
 
     print $plot "set style data histograms\n";
-    print $plot "set key invert autotitle\n";
+    print $plot "set key invert autotitle reverse Left\n";
     print $plot "set style histogram rowstacked\n";
     print $plot "set style fill solid 1.00 border -1\n";
     print $plot "set yrange [0 : ]\n";
@@ -3246,7 +3246,7 @@ sub start_plotfile_histogram_multi($)
     $plot = start_plotfile_common($key);
 
     print $plot "set style data histograms\n";
-    print $plot "set key invert autotitle\n";
+    print $plot "set key invert autotitle reverse Left\n";
     print $plot "set style histogram rowstacked\n";
     print $plot "set style fill solid 1.00 border -1\n";
     print $plot "set multiplot\n";
