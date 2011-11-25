@@ -60,9 +60,9 @@ static void sigint_handler(int sig __attribute((unused)))
 static void display_usage(void)
 {
 	printf(
-			"The sp-file-noncached utility reads/writes files without keeping data\n"
+			"sp-noncached reads and writes files without keeping data\n"
 			"cached to avoid 'poisoning' kernel page cache.\n"
-			"  sp-save-noncached -(r|w) <file1> [<file2>...]\n"
+			"  sp-noncached -(r|w) <file1> [<file2>...]\n"
 			"Where:\n"
 			"  <options>:\n"
 			"    -w (--write)  writes standard input into file <file1>.\n"
@@ -192,7 +192,7 @@ int main(int argc, char* argv[])
 			break;
 
 		case '?':
-			msg_error("unknown sp-file option: %c\n", optopt);
+			msg_error("unknown sp-noncached option: %c\n", optopt);
 			display_usage();
 			exit (-1);
 		}
