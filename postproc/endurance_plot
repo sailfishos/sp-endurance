@@ -5269,9 +5269,13 @@ foreach $d (@dirs) {
 	    $line = <CSV>;
 	    chop $line;
 	    my ($uptime, undef) = split(',', $line, 2);
-	    $lapsed_time{$cnt} = int($uptime) - int($uptimes[-1]);
-	    if ($uptime < $uptimes[-1]) {
-		print "** NOTE: at $d uptime steps back. Reboot in sequence? Duration calc will have no sense..\n"
+	    if (@uptimes) {
+		$lapsed_time{$cnt} = int($uptime) - int($uptimes[-1]);
+		if ($uptime < $uptimes[-1]) {
+		    print "** NOTE: at $d uptime steps back. Reboot in sequence? Duration calc will have no sense..\n"
+		}
+	    } else {
+		$lapsed_time{$cnt} = 0;
 	    }
 	    $uptimes[$cnt] = int($uptime);
 	    $cnt += 1;
