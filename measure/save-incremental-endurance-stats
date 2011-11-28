@@ -166,7 +166,7 @@ fi
 } | sp-noncached --write $path/usage.csv
 
 echo "- Other proc files"
-cp /proc/slabinfo /proc/interrupts /proc/stat /proc/diskstats /proc/zoneinfo /proc/pagetypeinfo $path/ 2> /dev/null
+cp /proc/slabinfo /proc/interrupts /proc/stat /proc/diskstats /proc/zoneinfo /proc/pagetypeinfo $path/
 
 which xmeminfo >/dev/null 2>/dev/null
 if [ $? -eq 0 ] ; then
