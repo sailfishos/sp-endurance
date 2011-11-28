@@ -318,6 +318,33 @@ static void show_proc_pid_stat(int num, status_t *statuslist)
 	}
 }
 
+static void show_proc_pid_wchan(int num, const status_t *statuslist)
+{
+	char buffer[256];
+	FILE *fp;
+	int i;
+	for (i=0; i < num; ++i) {
+		const status_t *s = &statuslist[i];
+		if (s->skip)
+			continue;
+		snprintf(buffer, sizeof(buffer), "%s/wchan", s->pid);
+		buffer[sizeof(buffer)-1] = 0;
+		fp = fopen(buffer, "r");
+		if (!fp) {
+			error_exit("show_proc_pid_wchan()", "file open failed",
+					buffer);
+			continue;
+		}
+		if (fgets(buffer, sizeof(buffer), fp)) {
+			buffer[sizeof(buffer)-1] = 0;
+			if (strlen(buffer) > 0) {
+				fprintf(stdout, "%s%s%s\n",
+					s->pid, CSV_SEPARATOR, buffer);
+			}
+		}
+		fclose(fp);
+	}
+}
 
 /* read fd counts for each process in statuslist */
 static void show_fd_counts(int num, status_t *statuslist)
@@ -575,6 +602,9 @@ int main(int argc, char *argv[])
 	fputs("\nProcess status:\n", stdout);
 	show_proc_pid_stat(lines, statuslist);
 	
+	fputs("\nPID,wchan:\n", stdout);
+	show_proc_pid_wchan(lines, statuslist);
+
 	free(statuslist);
 	return 0;
 }
