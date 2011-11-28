@@ -7,7 +7,11 @@ License: GPLv2
 URL: http://www.gitorious.org/+maemo-tools-developers/maemo-tools/sp-endurance
 Source: %{name}_%{version}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-build
+BuildRequires: python
+# optional build dependencies required for X resource usage tracking
 #BuildRequires: xorg-x11-devel xorg-x11-libX11-devel
+
+Requires: lzop, sp-smaps-measure
 
 %description
  Endurance measurement tools save system and process information from /proc
@@ -51,7 +55,10 @@ rm -rf %{buildroot}
 Summary: Postprocessing for endurance data
 Group: Development/Tools
 BuildArch: noarch
-Requires: perl-List-MoreUtils
+# HTML report generation dependencies
+Requires: python, lzop
+# graph report generation dependencies
+#Requires: perl, perl-List-MoreUtils, gnuplot, netpbm
 
 %description postproc
  Postprocessing scripts to parse and generate a report from the endurance
@@ -80,10 +87,13 @@ Requires: perl-List-MoreUtils
 %{_datadir}/%{name}-postproc/logparser-syslog
 %{_datadir}/%{name}-postproc/harmattan-syslog
 %{_defaultdocdir}/%{name}-postproc/README
+%{_defaultdocdir}/%{name}-postproc/endurance.pdf
 
 %package tests
 Summary: CI tests for sp-endurance
 Group: Development/Tools
+BuildArch: noarch
+Requires: ci-testing, sp-endurance, sp-endurance-postproc
 
 %description tests
  CI tests for sp-endurance
