@@ -153,6 +153,11 @@ $legend{$graph_appmem_devpvr} = "Total virtual size of process /dev/pvrsrvkm map
 $thumblegend{$graph_appmem_devpvr} = "/dev/pvrsrvkm &mdash; MAPPING SIZE";
 $unit{$graph_appmem_devpvr} = "MB";
 
+my $graph_devpvr_count = "1061_devpvr_count";
+$legend{$graph_devpvr_count} = "Process /dev/pvrsrvkm mapping count (processes with changes)";
+$thumblegend{$graph_devpvr_count} = "/dev/pvrsrvkm &mdash; MAPPING COUNT";
+$unit{$graph_devpvr_count} = "count";
+
 my $graph_xresource_sz_pxm = "1070_xresource_pixmaps";
 $legend{$graph_xresource_sz_pxm} = "X resource pixmaps size";
 $thumblegend{$graph_xresource_sz_pxm} = "X-RESOURCES-PIXMAPS";
@@ -1982,6 +1987,7 @@ sub process_smaps()
 	print STDERR "WARNING: unable to open $fn: $!\n";
 	return;
     }
+    my %process_devpvr_count;
     $sum_app_swapped = 0;
 #    $sum_app_private_dirty = 0;
     $sum_app_pss = 0;
@@ -2117,6 +2123,7 @@ sub process_smaps()
 		chop $line;
 		my (undef, $pvr, undef) = split(' ' , $line, 3);
 		$app_dev_pvr{$nm} += $pvr;
+		$process_devpvr_count{$nm}++;
 		next;
 	    }
 	    if( index($_, " rwxp ") != -1) {
@@ -2140,6 +2147,9 @@ sub process_smaps()
     $sum_app_swapped /= 1024;
 #    $sum_app_private_dirty /= 1024;
     $sum_app_pss /= 1024;
+    foreach (keys %process_devpvr_count) {
+	value_store("e/devpvr-count-$_", $i, $process_devpvr_count{$_});
+    }
 }
 
 sub process_interrupts()
@@ -4015,6 +4025,19 @@ sub generate_plot_dev_pvr
     close_plot($cnt, $plot, $graph_appmem_devpvr);
 }
 
+sub generate_plot_dev_pvr_count
+{
+    my $plot = start_plotfile_linespoints($graph_devpvr_count);
+    my $cnt = 0;
+    foreach my $process (keys %app_dev_pvr) {
+	my $fn = "e/devpvr-count-$process";
+	next unless changes_found($fn);
+	next unless count_nonzero_entries($fn);
+	one_plot_set(fn => $fn, lw => 3, plot => $plot, cnt => \$cnt, title => $process);
+    }
+    close_plot($cnt, $plot, $graph_devpvr_count);
+}
+
 sub generate_plot_write_exec
 {
     print "write-exec ";
@@ -5147,6 +5170,7 @@ sub generate_plots()
     generate_plot_sysvshared();
     generate_plot_posixshared();
     generate_plot_dev_pvr();
+    generate_plot_dev_pvr_count();
     generate_plot_write_exec();
     generate_plot_swap_event();
     generate_plot_private_dirty();
