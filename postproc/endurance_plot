@@ -2984,9 +2984,15 @@ sub duration_to_str
 # (Average, longest, shortest) intervals.
 sub round_duration_stats
 {
+    # Pick durations starting from round 1 (ignore the initial zero-valued
+    # round zero).
+    my @intervals;
+    foreach (grep { $_ } keys %lapsed_time) {
+	push(@intervals, $lapsed_time{$_});
+    }
     return (duration_to_str($secs_per_round),
-            duration_to_str(max(values(%lapsed_time))),
-            duration_to_str(min(values(%lapsed_time))));
+	    duration_to_str(max(@intervals)),
+	    duration_to_str(min(@intervals)));
 }
 
 sub html_title
