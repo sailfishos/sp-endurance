@@ -149,8 +149,8 @@ $thumblegend{$graph_mem_shared_lpid_name} = "SHMEM LAST PNAME";
 $unit{$graph_mem_shared_lpid_name} = "MB";
 
 my $graph_appmem_devpvr = "1060_appmem_devpvr";
-$legend{$graph_appmem_devpvr} = "process /dev/pvrsrvkm";
-$thumblegend{$graph_appmem_devpvr} = "PVRSRVKM";
+$legend{$graph_appmem_devpvr} = "Total virtual size of process /dev/pvrsrvkm mappings";
+$thumblegend{$graph_appmem_devpvr} = "/dev/pvrsrvkm &mdash; MAPPING SIZE";
 $unit{$graph_appmem_devpvr} = "MB";
 
 my $graph_xresource_sz_pxm = "1070_xresource_pixmaps";
