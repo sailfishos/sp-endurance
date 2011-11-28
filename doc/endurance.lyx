@@ -4,7 +4,7 @@
 \begin_header
 \textclass article
 \begin_preamble
-\lhead{Company confidential}
+\lhead{Public}
 \chead{}
 \rhead{Draft}
 \lfoot{Section \thesection}

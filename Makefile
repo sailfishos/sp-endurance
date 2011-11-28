@@ -51,7 +51,7 @@ mandir:
 	
 recompress-endurance-measurements.1: postproc/recompress-endurance-measurements mandir
 	pod2man postproc/recompress-endurance-measurements > man/$@
-	install man/$@ $(DESTDIR)/usr/share/man/man1/
+	install -m 644 man/$@ $(DESTDIR)/usr/share/man/man1/
 
 %.1: man/$@ mandir
 	install -m 644 man/$@ $(DESTDIR)/usr/share/man/man1/
@@ -62,6 +62,7 @@ install: $(MAN)
 	 cp postproc/* $(DESTDIR)/usr/bin/
 	 install -d $(DESTDIR)/usr/share/doc/sp-endurance-postproc/
 	 cp README $(DESTDIR)/usr/share/doc/sp-endurance-postproc/
+	 cp doc/endurance.pdf $(DESTDIR)/usr/share/doc/sp-endurance-postproc/
 	 install -d $(DESTDIR)/usr/share/sp-endurance-tests/
 	 cp -a tests/* $(DESTDIR)/usr/share/sp-endurance-tests/
 	 install -d $(DESTDIR)/usr/share/sp-endurance-postproc/
