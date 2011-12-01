@@ -323,6 +323,11 @@ $legend{$graph_diskstats_writes_mb_per_second} = "Bytes written to device";
 $thumblegend{$graph_diskstats_writes_mb_per_second} = "DISK WRITES &mdash; MB/s";
 $unit{$graph_diskstats_writes_mb_per_second} = "MB per second";
 
+my $graph_ext4_written = '2102_ext4_written';
+$legend{$graph_ext4_written} = 'Bytes written to the ext4 partitions';
+$thumblegend{$graph_ext4_written} = 'EXT4 WRITES';
+$unit{$graph_ext4_written} = 'MB';
+
 my $graph_diskstats_read_time = "2105_diskstats_read_time";
 $legend{$graph_diskstats_read_time} = "diskstats_read_time";
 $thumblegend{$graph_diskstats_read_time} = "DISKREAD TIME";
@@ -744,6 +749,9 @@ my %interfaces_prev_tx_kB;
 
 my %time_in_state_freqs_seen;
 my %prev_time_in_state_pcpu;
+
+my %sysfs_fs_prev;
+my %sysfs_fs_devices_seen;
 
 sub compression_check
 {
@@ -2546,6 +2554,25 @@ sub process_sysfs_cpu
     close(SYSFS);
 }
 
+sub process_sysfs_fs
+{
+    return unless open(SYSFS_FS, $d . '/sysfs_fs');
+    while (<SYSFS_FS>) {
+	if (m#==> /sys/fs/ext4/(\S+)/lifetime_write_kbytes <==#) {
+	    my $device = $1;
+	    my $value = int(<SYSFS_FS>);
+	    if ($sysfs_fs_prev{$device}) {
+		my $prev_value = int($sysfs_fs_prev{$device});
+		value_store("e/fs-ext4-lifetime-write-MB-$device", $i,
+		    ($value - $prev_value) / 1024);
+	    }
+	    $sysfs_fs_prev{$device} = $value;
+	    $sysfs_fs_devices_seen{$device} = 1;
+	}
+    }
+    close(SYSFS_FS);
+}
+
 sub emit_domain_values($$)
 {
     my $line = shift;
@@ -3616,6 +3643,20 @@ sub device_to_filesystem
     } else {
 	return;
     }
+}
+
+sub generate_plot_fs_written
+{
+    my $cnt = 0;
+    my $plot = start_plotfile_linespoints($graph_ext4_written);
+    foreach my $device (keys(%sysfs_fs_devices_seen)) {
+	my $title = $device;
+	my $fs = device_to_filesystem($device);
+	$title = $device . ': ' . $fs if $fs;
+	one_plot_set(fn => "e/fs-ext4-lifetime-write-MB-$device", lw => 3,
+	    plot => $plot, cnt => \$cnt, emit_zeroes => 1, title => $title);
+    }
+    close_plot($cnt, $plot, $graph_ext4_written);
 }
 
 sub generate_plot_cputime
@@ -5241,6 +5282,7 @@ sub generate_plots()
     generate_plot_pagetypeinfo();
     generate_plot_powertop();
     generate_plot_process_state_count();
+    generate_plot_fs_written();
 }
 ################ Start ######################################################
 
@@ -5491,6 +5533,7 @@ foreach $d (@dirs) {
     process_cgroups();
     process_ifconfig();
     process_sysfs_cpu();
+    process_sysfs_fs();
 
 #    $unaccount_swapped = $swapused - $sum_app_swapped;
 #    print "swap: total=$swaptotal free=$swapfree used=$swapused sum_app=$sum_app_swapped, unacc=$unaccount_swapped\n";
