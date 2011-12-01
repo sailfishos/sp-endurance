@@ -81,8 +81,7 @@ enum {
 
 static int ignore_user_errors = 0;
 
-
-static inline void newline(void)  { fputs("\n", stdout); }
+static inline void newline(void)  { fputc('\n', stdout); }
 
 /* show the related error messages and exit unless
  * ignore_user_errors is set
