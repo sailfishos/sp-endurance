@@ -1389,13 +1389,9 @@ sub parse_xresource_block
 	$Identifier =~ s/\|/-/g;
 	$Identifier =~ s/\&/-/g;
 
-	#
-	# truncate too long names
-	#
-	my $sz = length $Identifier;
-	if($sz > 14) {
-	    $Identifier = substr($Identifier, 0, 14);
-	}
+	# Truncate too long names:
+	$Identifier = substr($Identifier, 0, 30);
+
 	if($xresPid != -1) {
 	    $Identifier = $Identifier . "-" . $xresPid;
 	}
