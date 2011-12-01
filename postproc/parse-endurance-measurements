@@ -21,39 +21,8 @@
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA
 #
-# Changelog
-# 2006-11-09:
-# - measurement data files are now in separate directories
-# - if converted files exist, do not re-generate them, do not remove CSV files
-# 2007-02-05:
-# - for performance reasons endurance-report.py does now SMAPS private/dirty
-#   diffing itself (if smaps.cap exists).  Script usage tells now how to get
-#   the full SMAPS report
-# 2007-02-06:
-# - added options for:
-#   - giving report name
-#   - giving from which measurement to start parsing
-#   - giving how many measurements to skip between parsing
-#   - whether to stop parsing at first reboot
-#   - whether to post-process SMAPS data details (which is slow)
-#   and usage for the options
-# 2007-02-16:
-# - added options for splitting reports at reboots and stopping
-#   at specific report
-# 2007-03-01:
-# - rename to make Lintian happy
-# 2007-03-13:
-# - kludge around files which have been copied in FTP ASCII mode
-#   using Windows and shells (Bash) which cannot handle carriage returns
-# 2007-08-30:
-# - smaps analysis doesn't need the intermediate CSV file anymore,
-#   it can handle the .cap files directly
-# 2007-11-29:
-# - Handle compressed smaps files
-# 2008-02-21:
-# - Fix case when DSME stat files are empty
-# 2009-04-21:
-# - Add support for lzo compressed smaps.cap files
+# CHANGES:
+# - See git and project changelog file.
 #
 # TODO:
 # - add slabinfo diffing?

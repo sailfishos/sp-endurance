@@ -20,12 +20,6 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA
-#
-# Changes:
-# - 2009-10-26: rewrite; split work into several steps, take also swap
-#   into account, let user select whether total, swap or ram usage change
-#   is show and what is the range of memory usage shown
-# - 2010-08-24: take SwapCached into account
 
 min=0
 max=0
