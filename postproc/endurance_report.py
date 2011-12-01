@@ -1123,8 +1123,6 @@ Other reasons for termination are background killing, locale change and shutdown
     f.close()
 
 def syslog_error_summary(run, new_errors_by_category, links=True):
-    if not new_errors_by_category:
-        return
     error_cnt = sum([len(new_errors_by_category[category]) for category in new_errors_by_category])
     if error_cnt <= 0:
         return
@@ -1179,8 +1177,9 @@ def get_new_errors_by_category(run1, run2):
 
 def output_errors(idx, run1, run2):
     new_errors_by_category = get_new_errors_by_category(run1, run2)
-    create_errors_html(idx, run1, run2, new_errors_by_category)
-    syslog_error_summary(run2, new_errors_by_category)
+    if new_errors_by_category:
+        create_errors_html(idx, run1, run2, new_errors_by_category)
+        syslog_error_summary(run2, new_errors_by_category)
 
 def output_data_links(run):
     "output links to all collected uncompressed data"
@@ -2219,12 +2218,15 @@ see <a href="#%s">resource changes summary section</a>.
 <h2>Summary of changes between test rounds %d - %d</h2>
 <h3>Error summary</h3>""" % (first, last)
     new_errors_by_category = get_new_errors_by_category(data[first], data[last])
-    syslog_error_summary(data[last], new_errors_by_category, links=False)
-    print "<!-- summary for automatic parsing:"
-    syslog_error_summary_text(new_errors_by_category)
-    print """-->
+    if new_errors_by_category:
+        syslog_error_summary(data[last], new_errors_by_category, links=False)
+        print "<!-- summary for automatic parsing:"
+        syslog_error_summary_text(new_errors_by_category)
+        print "-->"
+    else:
+        print "<p>No identified errors logged."
 
-<hr>
+    print """<hr>
 <a name="resource-summary"></a>
 <h3>Resource usage summary</h3>
 <p><font color="red">NOTE</font>: Process specific resource usage
