@@ -303,22 +303,32 @@ $legend{$graph_interrupts} = "left:specific interrupts; right: sum of all interr
 $thumblegend{$graph_interrupts} = "INTERRUPTS";
 $unit{$graph_interrupts} = "count per second";
 
-my $graph_diskstats_reads = "2100_diskstats_reads";
-$legend{$graph_diskstats_reads} = "diskstats_reads";
-$thumblegend{$graph_diskstats_reads} = "DISK_READS";
-$unit{$graph_diskstats_reads} = "MB per second";
+my $graph_diskstats_reads_mb = "2100_diskstats_reads_mb";
+$legend{$graph_diskstats_reads_mb} = "Bytes read from device";
+$thumblegend{$graph_diskstats_reads_mb} = "DISK READS &mdash; MB";
+$unit{$graph_diskstats_reads_mb} = 'MB';
 
-my $graph_diskstats_read_time = "2100_diskstats_read_time";
+my $graph_diskstats_reads_mb_per_second = "2100_diskstats_reads_mb_per_second";
+$legend{$graph_diskstats_reads_mb_per_second} = "Bytes read from device";
+$thumblegend{$graph_diskstats_reads_mb_per_second} = "DISK READS &mdash; MB/s";
+$unit{$graph_diskstats_reads_mb_per_second} = "MB per second";
+
+my $graph_diskstats_writes_mb = '2101_diskstats_writes_mb';
+$legend{$graph_diskstats_writes_mb} = "Bytes written to device";
+$thumblegend{$graph_diskstats_writes_mb} = "DISK WRITES &mdash; MB";
+$unit{$graph_diskstats_writes_mb} = 'MB';
+
+my $graph_diskstats_writes_mb_per_second = "2101_diskstats_writes_mb_per_second";
+$legend{$graph_diskstats_writes_mb_per_second} = "Bytes written to device";
+$thumblegend{$graph_diskstats_writes_mb_per_second} = "DISK WRITES &mdash; MB/s";
+$unit{$graph_diskstats_writes_mb_per_second} = "MB per second";
+
+my $graph_diskstats_read_time = "2105_diskstats_read_time";
 $legend{$graph_diskstats_read_time} = "diskstats_read_time";
 $thumblegend{$graph_diskstats_read_time} = "DISKREAD TIME";
 $unit{$graph_diskstats_read_time} = "ms per sector";
 
-my $graph_diskstats_writes = "2101_diskstats_writes";
-$legend{$graph_diskstats_writes} = "diskstats_writes";
-$thumblegend{$graph_diskstats_writes} = "DISK_WRITES";
-$unit{$graph_diskstats_writes} = "MB per second";
-
-my $graph_diskstats_write_time = "2101_diskstats_write_time";
+my $graph_diskstats_write_time = "2105_diskstats_write_time";
 $legend{$graph_diskstats_write_time} = "diskstats_write_time";
 $thumblegend{$graph_diskstats_write_time} = "DISKWRITE TIME";
 $unit{$graph_diskstats_write_time} = "ms per sector";
@@ -691,6 +701,7 @@ my %xresource_latest_sz_misc;
 my %xres_pxm_size_total;
 my %filesystem_names;
 my %filesystem_demangle;
+my %filesystem_to_mountpoint;
 my $max_nattach = 0;
 
 my (%images, %thumbnames);
@@ -1614,6 +1625,7 @@ sub process_df_entry
     return if not $mounted_on;
     my $mangled = $mounted_on;
     $mangled =~ s/\//\_/g;
+    $filesystem_to_mountpoint{$filesystem} = $mounted_on;
     $filesystem_names{$mangled} = $used_kb;
     $filesystem_demangle{$mangled} = $mounted_on;
     my $fn = "e/fs-used-${mangled}";
@@ -2219,6 +2231,8 @@ sub process_diskstats()
 #	    $reads = ($xdev_reads - $dev_reads_prev{$dname})/$lapsed_time{$i};
 	    $nreads = $xsector_reads - $dev_reads_prev{$dname};
 	    $reads = ((($nreads * $sector_sz)/($MB_bytes)))/$lapsed_time{$i};
+	    value_store("e/devreads-mb-$dname", $i,
+		($nreads * $sector_sz) / $MB_bytes);
 	}
 #	$dev_reads_prev{$dname} = $xdev_reads;
 	$dev_reads_prev{$dname} = $xsector_reads;
@@ -2232,6 +2246,8 @@ sub process_diskstats()
 #	    $writes = ($xdev_writes - $dev_writes_prev{$dname})/$lapsed_time{$i};
 	    $nwrites = $xsector_writes - $dev_writes_prev{$dname};
 	    $writes = ((($nwrites * $sector_sz)/($MB_bytes)))/$lapsed_time{$i};
+	    value_store("e/devwrites-mb-$dname", $i,
+		($nwrites * $sector_sz) / $MB_bytes);
 	}
 #	$dev_writes_prev{$dname} = $xdev_writes;
 	$dev_writes_prev{$dname} = $xsector_writes;
@@ -3589,6 +3605,19 @@ sub generate_plot_cpu_freq
     }
 }
 
+sub device_to_filesystem
+{
+    my ($device) = @_;
+    my @matched_filesystems = grep { /\b$device\b/ } keys %filesystem_to_mountpoint;
+    if (@matched_filesystems) {
+	return $filesystem_to_mountpoint{$matched_filesystems[0]};
+    } elsif ($device eq 'mmcblk0p2' and $sw_version =~ /HARMATTAN/) {
+	return '/';
+    } else {
+	return;
+    }
+}
+
 sub generate_plot_cputime
 {
     my $plot;
@@ -4695,31 +4724,54 @@ sub generate_plot_diskstats
     my $plot_2;
     my $cnt_1;
     my $cnt_2;
+    my $cnt_3;
 
 ############# diskstats, reads #####################
     print "diskstat ";
-    $plot_1 = start_plotfile_lines($graph_diskstats_reads);
+    $plot_1 = start_plotfile_lines($graph_diskstats_reads_mb_per_second);
     $plot_2 = start_plotfile_lines($graph_diskstats_read_time);
+    $plot_3 = start_plotfile_lines($graph_diskstats_reads_mb);
 
-    $cnt_1 = $cnt_2 = 0;
-    foreach my $p ( reverse sort {$dev_reads_total{$a} <=> $dev_reads_total{$b} } keys %dev_reads_total) {
-	one_plot_set(fn => "e/devreads-$p", lw => 2, plot => $plot_1, cnt => \$cnt_1, emit_zeroes => 1, title => $p);
-	one_plot_set(fn => "e/devreadtime-$p", lw => 2, plot => $plot_2, cnt => \$cnt_2, emit_zeroes => 1, title => $p);
+    $cnt_1 = 0;
+    $cnt_2 = 0;
+    $cnt_3 = 0;
+    foreach my $device (reverse sort { $dev_reads_total{$a} <=> $dev_reads_total{$b} } keys %dev_reads_total) {
+	my $title = $device;
+	my $fs = device_to_filesystem($device);
+	$title = $device . ': ' . $fs if $fs;
+	one_plot_set(fn => "e/devreads-$device", lw => 3, plot => $plot_1,
+	    cnt => \$cnt_1, emit_zeroes => 1, title => $title);
+	one_plot_set(fn => "e/devreadtime-$device", lw => 3, plot => $plot_2,
+	    cnt => \$cnt_2, emit_zeroes => 1, title => $title);
+	one_plot_set(fn => "e/devreads-mb-$device", lw => 3, plot => $plot_3,
+	    cnt => \$cnt_3, emit_zeroes => 1, title => $title);
     }
-    close_plot($cnt_1, $plot_1, $graph_diskstats_reads);
+    close_plot($cnt_1, $plot_1, $graph_diskstats_reads_mb_per_second);
     close_plot($cnt_2, $plot_2, $graph_diskstats_read_time);
+    close_plot($cnt_3, $plot_3, $graph_diskstats_reads_mb);
 
 ############# diskstats, writes #####################
-    $plot_1 = start_plotfile_lines($graph_diskstats_writes);
+    $plot_1 = start_plotfile_lines($graph_diskstats_writes_mb_per_second);
     $plot_2 = start_plotfile_lines($graph_diskstats_write_time);
+    $plot_3 = start_plotfile_lines($graph_diskstats_writes_mb);
 
-    $cnt_1 = $cnt_2 = 0;
-    foreach my $p ( reverse sort {$dev_writes_total{$a} <=> $dev_writes_total{$b} } keys %dev_writes_total) {
-	one_plot_set(fn => "e/devwrites-$p", lw => 2, plot => $plot_1, cnt => \$cnt_1, emit_zeroes => 1, title => $p);
-	one_plot_set(fn => "e/devwritetime-$p", lw => 2, plot => $plot_2, cnt => \$cnt_2, emit_zeroes => 1, title => $p);
+    $cnt_1 = 0;
+    $cnt_2 = 0;
+    $cnt_3 = 0;
+    foreach my $device (reverse sort { $dev_writes_total{$a} <=> $dev_writes_total{$b} } keys %dev_writes_total) {
+	my $title = $device;
+	my $fs = device_to_filesystem($device);
+	$title = $device . ': ' . $fs if $fs;
+	one_plot_set(fn => "e/devwrites-$device", lw => 3, plot => $plot_1,
+	    cnt => \$cnt_1, emit_zeroes => 1, title => $title);
+	one_plot_set(fn => "e/devwritetime-$device", lw => 3, plot => $plot_2,
+	    cnt => \$cnt_2, emit_zeroes => 1, title => $title);
+	one_plot_set(fn => "e/devwrites-mb-$device", lw => 3, plot => $plot_3,
+	    cnt => \$cnt_3, emit_zeroes => 1, title => $title);
     }
-    close_plot($cnt_1, $plot_1, $graph_diskstats_writes);
+    close_plot($cnt_1, $plot_1, $graph_diskstats_writes_mb_per_second);
     close_plot($cnt_2, $plot_2, $graph_diskstats_write_time);
+    close_plot($cnt_3, $plot_3, $graph_diskstats_writes_mb);
 }
 
 sub generate_plot_battery
