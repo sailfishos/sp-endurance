@@ -31,7 +31,7 @@ my $gnuplot_terminal = 'pngcairo';
 
 # tunables
 my $ticks_per_sec = 100;
-my $sector_sz = 4096;
+my $sector_sz = 512;
 my $max_per_graph_twocolumn = 2*75;
 my $max_per_graph_onecolumn = 74;
 my $page_size = 4;
