@@ -165,8 +165,11 @@ if [ $RET -ne 0 ]; then
 fi
 } | sp-noncached --write $path/usage.csv
 
+# Copy files from /proc with cat to avoid GNU coreutils 6.x cp bug:
 echo "- Other proc files"
-cp /proc/slabinfo /proc/interrupts /proc/stat /proc/diskstats /proc/zoneinfo /proc/pagetypeinfo $path/
+for F in slabinfo interrupts stat diskstats zoneinfo pagetypeinfo; do
+	cat /proc/$F > $path/$F
+done
 
 which xmeminfo >/dev/null 2>/dev/null
 if [ $? -eq 0 ] ; then
