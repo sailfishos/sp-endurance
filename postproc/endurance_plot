@@ -5518,7 +5518,6 @@ foreach $d (@dirs) {
     }
     close $f;
 
-    process_xmeminfo();
     process_df();
     process_slabinfo();
     process_smaps();
@@ -5534,6 +5533,7 @@ foreach $d (@dirs) {
     process_ifconfig();
     process_sysfs_cpu();
     process_sysfs_fs();
+    process_xmeminfo();
 
 #    $unaccount_swapped = $swapused - $sum_app_swapped;
 #    print "swap: total=$swaptotal free=$swapfree used=$swapused sum_app=$sum_app_swapped, unacc=$unaccount_swapped\n";
