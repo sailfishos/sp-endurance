@@ -816,7 +816,7 @@ sub one_plot_set
 	    print $plot "lc rgb '#$lc' " if $lc;
 	}
 	$$r_cnt += 1;
-	if ($title) {
+	if (length $title) {
 	    print $plot " title \"$title\"";
 	}
     }
