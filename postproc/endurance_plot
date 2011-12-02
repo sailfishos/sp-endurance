@@ -254,10 +254,14 @@ $thumblegend{$graph_events_ctx_volunt} = "CTX VOLUNTARY";
 $unit{$graph_events_ctx_volunt} = "count per second";
 
 my $graph_threads_count = "1200_threads_count";
-$legend{$graph_threads_count} = "number of threads";
-$thumblegend{$graph_threads_count} = "THREADS";
-$unit{$graph_threads_count} = "number";
+$legend{$graph_threads_count} = "Number of threads per process";
+$thumblegend{$graph_threads_count} = "THREAD COUNT";
+$unit{$graph_threads_count} = "number of threads";
 
+my $graph_threads_changes = "1201_threads_changes";
+$legend{$graph_threads_changes} = "Number of threads per process (only changed shown)";
+$thumblegend{$graph_threads_changes} = "THREAD CHANGES";
+$unit{$graph_threads_changes} = "number of threads";
 
 ######## SYSTEM GRAPHS ###########
 
@@ -4476,6 +4480,20 @@ sub generate_plot_threads
     close_plot($cnt, $plot, $graph_threads_count);
 }
 
+sub generate_plot_threads_changes
+{
+    my $plot = start_plotfile_linespoints($graph_threads_changes);
+    my $cnt = 0;
+    foreach my $p (reverse sort { $has_threads{$a} <=> $has_threads{$b} } keys %has_threads) {
+	my $fn = "e/thr-$p";
+	next unless $has_threads{$p};
+	next unless changes_found($fn);
+	next unless count_nonzero_entries($fn);
+	one_plot_set(fn => $fn, plot => $plot, lw => 3, cnt => \$cnt, title => $p);
+    }
+    close_plot($cnt, $plot, $graph_threads_changes);
+}
+
 sub generate_plot_xres
 {
     my $plot;
@@ -5359,6 +5377,7 @@ sub generate_plots()
     generate_plot_pss();
     generate_plot_pss_swap();
     generate_plot_threads();
+    generate_plot_threads_changes();
     generate_plot_xres();
     generate_plot_df();
     generate_plot_fd();
