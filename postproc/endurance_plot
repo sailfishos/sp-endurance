@@ -644,6 +644,8 @@ my %param_prev_vol_ctx;
 my %param_prev_nonvol_ctx;
 my %majflt_prev;
 my %majflt_cumul;
+my %minflt_prev;
+my %minflt_cumul;
 my %param_prev_utime;
 my %param_prev_stime;
 my %utime_cumul;
@@ -1269,55 +1271,86 @@ sub parse_pid_fd_block($)
     }
 }
 
+# Process status:
+# 1,(init),S,0,1,1,0,-1,4194560,26741,567383, ...
+# 2,(kthreadd),S,0,0,0,0,-1,2149613632,0,0,0,0,0,0, ...
+# ...
+sub stat_split
+{
+    my ($line) = @_;
+    my @result;
+    my $pid;
+    my $name;
+    ($pid, $line) = split(',', $line, 2);
+    # The 'comm' field may contain ','.
+    my $pos = rindex($line, ')');
+    return @results if $pos <= 1;
+    $name = substr($line, 1, $pos-1);
+    $line = substr($line, $pos+2);
+    push(@result, $pid, $name, split(',', $line));
+    return @result;
+}
+
 sub parse_process_status_block($)
 {
-    my $handle= shift;
-#    chop;
-#    chop;
-#    @names = split(',' , $_);
+    my ($handle) = @_;
     my %state_cnt;
     while (<$handle>) {
 	chop;
-	if ($_ eq "") {
-	    last;
-	}
-# it should go like this but here usage.csv does not have legend line
-#	split_values($_);
-	my ($Pid, $Name, $State, $PPid, $PGrp, $Session, $Tty, $TpGid, $Flags, $MinFlt, $CMinFlt, $MajFlt, $CMajFlt, $Utime, $Stime, $CUtime, $CStime, $Prio, $Nice, $NumThreads, $Itrealvalue, $Starttime, $Vsize, $Rss, $Rsslim, $Startcode, $Endcode, $startstack, $kstkesp, $kstkeip, $Signal, $Blocked, $Sigignore, $sigcatch, $wchan, $nswap, $cnswap, $exitsignal, $processor, $rt_prio, $policy, $delaycct_blkio_ticksm, $guest_time, $cguest_time) = split(',' , $_, 44);
-#	$Name = $val{"Name"};
-#	$Pid = $val{"Pid"};
+	last if $_ eq '';
+	my @entries = stat_split($_);
 
+###########################
+	my $Pid = $entries[0];
+	my $Name = $entries[1];
 	$Name =~ s/\(//g;
 	$Name =~ s/\)//g;
 	$Name =~ s/\///g;
 	my $pname = $Name . "-" . $Pid;
 
-	my ($param, $param_show);
-	$param = $MajFlt;
-#	$param = $val{"MajFlt"};
-#	print "$pname: majflt=$param\n";
+###########################
+	my $MajFlt = $entries[11];
+	my $major_faults;
 	if(!$majflt_prev{$pname}) {
-	    $param_show = 0;
+	    $major_faults = 0;
 	} else {
-	    $param_show = $param  - $majflt_prev{$pname};
+	    $major_faults = $MajFlt - $majflt_prev{$pname};
 	}
-	$majflt_cumul{$pname} += $param_show;
-	if ($lapsed_time{$i}) { 
-	    $param_show = $param_show/$lapsed_time{$i};
+	$majflt_cumul{$pname} += $major_faults;
+	if ($lapsed_time{$i}) {
+	    $major_faults = $major_faults/$lapsed_time{$i};
 	} else {
-	    $param_show = 0;
+	    $major_faults = 0;
 	}
 	if (defined $majflt_prev{$pname}) {
-	    my $fn = "e/majflt-$pname";
-	    value_store($fn, $i, $param_show);
+	    value_store("e/majflt-$pname", $i, $major_faults);
 	}
-	$majflt_prev{$pname} = $param;
+	$majflt_prev{$pname} = $MajFlt;
 
 ###########################
-	$param = $Utime;
+	my $MinFlt = $entries[9];
+	my $minor_faults;
+	if(!$minflt_prev{$pname}) {
+	    $minor_faults = 0;
+	} else {
+	    $minor_faults = $MinFlt - $minflt_prev{$pname};
+	}
+	$minflt_cumul{$pname} += $minor_faults;
+	if ($lapsed_time{$i}) {
+	    $minor_faults = $minor_faults/$lapsed_time{$i};
+	} else {
+	    $minor_faults = 0;
+	}
+	if (defined $minflt_prev{$pname}) {
+	    value_store("e/minflt-$pname", $i, $minor_faults);
+	}
+	$minflt_prev{$pname} = $MinFlt;
+
+###########################
+	my $Utime = $entries[13];
 	my $utim = 0;
 	if($param_prev_utime{$pname}) {
-	    $utim = $param  - $param_prev_utime{$pname};
+	    $utim = $Utime - $param_prev_utime{$pname};
 	}
 	$utime_cumul{$pname} += $utim;
 	if ($lapsed_time{$i}) {
@@ -1329,16 +1362,15 @@ sub parse_process_status_block($)
 	$utim *= 100;
 	$utim /= $ticks_per_sec;
 	if (defined $param_prev_utime{$pname}) {
-	    my $fn = "e/utime-$pname";
-	    value_store($fn, $i, $utim);
+	    value_store("e/utime-$pname", $i, $utim);
 	}
-	$param_prev_utime{$pname} = $param;
+	$param_prev_utime{$pname} = $Utime;
 
 ###########################
-	$param = $Stime;
+	my $Stime = $entries[14];
 	my $stim = 0;
 	if($param_prev_stime{$pname}) {
-	    $stim = $param  - $param_prev_stime{$pname};
+	    $stim = $Stime - $param_prev_stime{$pname};
 	}
 	$stime_cumul{$pname} += $stim;
 	if ($lapsed_time{$i}) {
@@ -1351,23 +1383,20 @@ sub parse_process_status_block($)
 	$stim /= $ticks_per_sec;
 	my $ttim = $stim + $utim;
 	if (defined $param_prev_stime{$pname}) {
-	    my $fn = "e/stime-$pname";
-	    value_store($fn, $i, $stim);
-	    $fn = "e/$pname-totaltime";
-	    value_store($fn, $i, $ttim);
+	    value_store("e/stime-$pname", $i, $stim);
+	    value_store("e/$pname-totaltime", $i, $ttim);
 	}
 	$totaltime_cumul{$pname} += $ttim;
-	$param_prev_stime{$pname} = $param;
+	$param_prev_stime{$pname} = $Stime;
 ###########################
-	$param = $NumThreads;
-#	$param = $val{"Threads"};
-	my $fn = "e/thr-$pname";
-	value_store_zeropad($fn, $i, $param);
-	if ($param > 1) {
-	    $has_threads{$pname} += $param;
+	my $NumThreads = $entries[19];
+	value_store_zeropad("e/thr-$pname", $i, $NumThreads);
+	if ($NumThreads > 1) {
+	    $has_threads{$pname} += $NumThreads;
 	    $has_threads_samples{$pname} += 1;
 	}
 ###########################
+	my $State = $entries[2];
 	$state_cnt{$State}++;
 	$process_states_seen{$State} = 1;
     }
