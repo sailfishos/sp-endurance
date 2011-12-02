@@ -487,6 +487,16 @@ $legend{$graph_cgroups_memsw_failcnt} = "cgroups memory+swap fail count";
 $thumblegend{$graph_cgroups_memsw_failcnt} = "CGROUPS MEMORY+SWAP FAILCNT";
 $unit{$graph_cgroups_memsw_failcnt} = "number of events";
 
+my $graph_wchan_count = '2350_wchan-count';
+$legend{$graph_wchan_count} = 'Process count per wchan';
+$thumblegend{$graph_wchan_count} = 'WCHAN COUNT';
+$unit{$graph_wchan_count} = 'process count';
+
+my $graph_wchan_changes = '2351_wchan-changes';
+$legend{$graph_wchan_changes} = 'Process count per wchan (only changed shown)';
+$thumblegend{$graph_wchan_changes} = 'WCHAN CHANGES';
+$unit{$graph_wchan_changes} = 'process count';
+
 #
 # Note: powertop is optional. it's files are not collected
 # by standard sp-endurance, but it is easy to use 
@@ -752,6 +762,8 @@ my %prev_time_in_state_pcpu;
 
 my %sysfs_fs_prev;
 my %sysfs_fs_devices_seen;
+
+my %wchan_seen;
 
 sub compression_check
 {
@@ -1608,6 +1620,45 @@ sub parse_pages_block($)
 	value_store_zeropad($kswapd_steal_plot_file_name, $i, $kswapd_steal);
     }
     $kswapd_steal_prev = $kswapd_steal_cumul;
+}
+
+sub parse_wchan_block
+{
+    my ($handle) = @_;
+    my %wchan_count;
+    while (<$handle>) {
+	last if $_ eq '';
+	my ($pid, $wchan) = split(',', $_, 2);
+	chomp $wchan;
+	next if $wchan eq '';
+	$wchan_count{$wchan}++;
+	$wchan_seen{$wchan}++;
+    }
+    foreach (keys %wchan_seen) {
+	my $cnt = 0;
+	$cnt = $wchan_count{$_} if $wchan_count{$_};
+	value_store_zeropad("e/wchan-$_", $i, $cnt);
+    }
+}
+
+sub process_wchan
+{
+    return unless open(WCHAN, $d . '/wchan');
+    my %wchan_count;
+    while (<WCHAN>) {
+	if (m#^==> /proc/(\d+)/wchan <==#) {
+	    my $wchan = <WCHAN>;
+	    chomp $wchan;
+	    $wchan_count{$wchan}++;
+	    $wchan_seen{$wchan}++;
+	}
+    }
+    close(WCHAN);
+    foreach (keys %wchan_seen) {
+	my $cnt = 0;
+	$cnt = $wchan_count{$_} if $wchan_count{$_};
+	value_store_zeropad("e/wchan-$_", $i, $cnt);
+    }
 }
 
 sub process_xmeminfo
@@ -5242,6 +5293,34 @@ sub generate_plot_process_state_count
     close_plot($cnt, $plot, $graph_nonsleeping_process_count);
 }
 
+sub generate_plot_wchan_count
+{
+    return unless %wchan_seen;
+    my $cnt = 0;
+    my $plot = start_plotfile_histogram($graph_wchan_count);
+    foreach my $wchan (reverse sort { $wchan_seen{$a} <=> $wchan_seen{$b} } keys %wchan_seen) {
+	one_plot_set(fn => "e/wchan-$wchan",
+	    plot => $plot, cnt => \$cnt, emit_zeroes => 1,
+	    title => $wchan);
+    }
+    close_plot($cnt, $plot, $graph_wchan_count);
+}
+
+sub generate_plot_wchan_changes
+{
+    return unless %wchan_seen;
+    my $cnt = 0;
+    my $plot = start_plotfile_linespoints($graph_wchan_changes);
+    foreach my $wchan (reverse sort { $wchan_seen{$a} <=> $wchan_seen{$b} } keys %wchan_seen) {
+	my $fn = "e/wchan-$wchan";
+	next unless changes_found($fn);
+	next unless count_nonzero_entries($fn);
+	one_plot_set(fn => $fn, lw => 3, plot => $plot, cnt => \$cnt,
+	    emit_zeroes => 1, title => $wchan);
+    }
+    close_plot($cnt, $plot, $graph_wchan_changes);
+}
+
 sub generate_plots()
 {
     print "graphs: ";
@@ -5283,6 +5362,8 @@ sub generate_plots()
     generate_plot_powertop();
     generate_plot_process_state_count();
     generate_plot_fs_written();
+    generate_plot_wchan_count();
+    generate_plot_wchan_changes();
 }
 ################ Start ######################################################
 
@@ -5515,6 +5596,10 @@ foreach $d (@dirs) {
 	    parse_pages_block($f);
 	    next;
 	} 
+	if (/^PID,wchan:/) {
+	    parse_wchan_block($f);
+	    next;
+	}
     }
     close $f;
 
@@ -5534,6 +5619,7 @@ foreach $d (@dirs) {
     process_sysfs_cpu();
     process_sysfs_fs();
     process_xmeminfo();
+    process_wchan();
 
 #    $unaccount_swapped = $swapused - $sum_app_swapped;
 #    print "swap: total=$swaptotal free=$swapfree used=$swapused sum_app=$sum_app_swapped, unacc=$unaccount_swapped\n";
