@@ -5293,6 +5293,16 @@ sub generate_plot_process_state_count
     close_plot($cnt, $plot, $graph_nonsleeping_process_count);
 }
 
+sub wchan_title
+{
+    my ($wchan) = @_;
+    if ($wchan eq '0') {
+	return "0 (in user space)";
+    } else {
+	return $wchan;
+    }
+}
+
 sub generate_plot_wchan_count
 {
     return unless %wchan_seen;
@@ -5301,7 +5311,7 @@ sub generate_plot_wchan_count
     foreach my $wchan (reverse sort { $wchan_seen{$a} <=> $wchan_seen{$b} } keys %wchan_seen) {
 	one_plot_set(fn => "e/wchan-$wchan",
 	    plot => $plot, cnt => \$cnt, emit_zeroes => 1,
-	    title => $wchan);
+	    title => wchan_title($wchan));
     }
     close_plot($cnt, $plot, $graph_wchan_count);
 }
@@ -5316,7 +5326,7 @@ sub generate_plot_wchan_changes
 	next unless changes_found($fn);
 	next unless count_nonzero_entries($fn);
 	one_plot_set(fn => $fn, lw => 3, plot => $plot, cnt => \$cnt,
-	    emit_zeroes => 1, title => $wchan);
+	    emit_zeroes => 1, title => wchan_title($wchan));
     }
     close_plot($cnt, $plot, $graph_wchan_changes);
 }
