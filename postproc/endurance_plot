@@ -488,13 +488,13 @@ $thumblegend{$graph_cgroups_memsw_failcnt} = "CGROUPS MEMORY+SWAP FAILCNT";
 $unit{$graph_cgroups_memsw_failcnt} = "number of events";
 
 my $graph_wchan_count = '2350_wchan-count';
-$legend{$graph_wchan_count} = 'Process count per wchan';
-$thumblegend{$graph_wchan_count} = 'WCHAN COUNT';
+$legend{$graph_wchan_count} = 'Process count per wait channel';
+$thumblegend{$graph_wchan_count} = 'WAIT CHANNEL COUNT';
 $unit{$graph_wchan_count} = 'process count';
 
 my $graph_wchan_changes = '2351_wchan-changes';
-$legend{$graph_wchan_changes} = 'Process count per wchan (only changed shown)';
-$thumblegend{$graph_wchan_changes} = 'WCHAN CHANGES';
+$legend{$graph_wchan_changes} = 'Process count per wait channel (only changed shown)';
+$thumblegend{$graph_wchan_changes} = 'WAIT CHANNEL CHANGES';
 $unit{$graph_wchan_changes} = 'process count';
 
 #
