@@ -806,10 +806,10 @@ sub one_plot_set
 {
     my %args = @_;
 
-    my $fn = $args{fn};
+    my $fn = $args{fn} or die "INTERNAL ERROR: 'fn' parameter required for one_plot_set()";
     my $lw = $args{lw};
-    my $plot = $args{plot};
-    my $r_cnt = $args{cnt};
+    my $plot = $args{plot} or die "INTERNAL ERROR: 'plot' parameter required for one_plot_set()";
+    my $r_cnt = $args{cnt} or die "INTERNAL ERROR: 'cnt' parameter required for one_plot_set()";
     my $emit_zeroes = $args{emit_zeroes};
     my $title = $args{title};
     my $lc = $args{lc};
