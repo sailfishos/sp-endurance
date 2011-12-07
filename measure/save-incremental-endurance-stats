@@ -228,6 +228,15 @@ if [ $? -eq 0 ] ; then
 	echo "- Battery information"
 	bmestat > $path/bmestat
 fi
+if [ -d "/sys/class/power_supply/" ] ; then
+	# Expecting symlinks in /sys/class/power_supply/, e.g. 'BAT0', ...
+	for D in /sys/class/power_supply/* ; do
+		if [ -d "$D/" ] ; then
+			find $D/ -type f | xargs head -10000 2>/dev/null
+			echo
+		fi
+	done > $path/sysfs_power_supply
+fi
 
 echo "- /sbin/ifconfig"
 /sbin/ifconfig -a > $path/ifconfig
