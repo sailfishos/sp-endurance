@@ -813,6 +813,7 @@ sub one_plot_set
     my $emit_zeroes = $args{emit_zeroes};
     my $title = $args{title};
     my $lc = $args{lc};
+    my $axes = $args{axes};
 
     my $num = value_emit($fn, $emit_zeroes);
 
@@ -833,6 +834,7 @@ sub one_plot_set
 	    print $plot "'$fn' using 2 ";
 	    print $plot "lc rgb '#$lc' " if $lc;
 	}
+	print $plot " axes $axes " if $axes;
 	$$r_cnt += 1;
 	if (length $title) {
 	    print $plot " title \"$title\"";
