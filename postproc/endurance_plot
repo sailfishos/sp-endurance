@@ -4897,30 +4897,26 @@ sub generate_plot_ramzswap
     if (not $have_ramzswap) {
 	return;
     }
-
     print "ramzswap ";
     my $plot = start_plotfile_lines_2axes($graph_ramzswap);
-
+    my $cnt = 0;
     if (count_nonzero_entries($ramzswap_bdreads_file_name) > 0) {
-	print $plot "'$ramzswap_bdreads_file_name' lw 2 axes x1y1";
-	value_emit($ramzswap_bdreads_file_name, 1);
-	print $plot ", "
+	one_plot_set(fn => $ramzswap_bdreads_file_name, plot => $plot, lw => 2,
+	    axes => 'x1y1', cnt => \$cnt, emit_zeroes => 1);
     }
-    print $plot "'$ramzswap_reads_file_name' lw 2 axes x1y1";
-    value_emit($ramzswap_reads_file_name, 1);
+    one_plot_set(fn => $ramzswap_reads_file_name, plot => $plot, lw => 2,
+	axes => 'x1y1', cnt => \$cnt, emit_zeroes => 1);
     if (count_nonzero_entries($ramzswap_bdwrites_file_name) > 0) {
-	print $plot ", '$ramzswap_bdwrites_file_name' lw 2 axes x1y1";
-	value_emit($ramzswap_bdwrites_file_name, 1);
+	one_plot_set(fn => $ramzswap_bdwrites_file_name, plot => $plot, lw => 2,
+	    axes => 'x1y1', cnt => \$cnt, emit_zeroes => 1);
     }
-    print $plot ", '$ramzswap_writes_file_name' lw 2 axes x1y1";
-    value_emit($ramzswap_writes_file_name, 1);
-
-    print $plot ", '$ramzswap_zerop_file_name' lw 4 axes x2y2";
-    value_emit($ramzswap_zerop_file_name, 1);
-    print $plot ", '$ramzswap_used_file_name' lw 4 axes x2y2";
-    value_emit($ramzswap_used_file_name, 1);
-
-    close_plot($i, $plot, $graph_ramzswap);
+    one_plot_set(fn => $ramzswap_writes_file_name, plot => $plot, lw => 2,
+	axes => 'x1y1', cnt => \$cnt, emit_zeroes => 1);
+    one_plot_set(fn => $ramzswap_zerop_file_name, plot => $plot, lw => 4,
+	axes => 'x2y2', cnt => \$cnt, emit_zeroes => 1);
+    one_plot_set(fn => $ramzswap_used_file_name, plot => $plot, lw => 4,
+	axes => 'x2y2', cnt => \$cnt, emit_zeroes => 1);
+    close_plot($cnt, $plot, $graph_ramzswap);
 }
 
 sub generate_plot_cgroups
