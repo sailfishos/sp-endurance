@@ -572,6 +572,8 @@ my $swapused_plot_file_name = "e/swapused";
 my $dirty_plot_file_name = "e/dirty";
 my $active_file_plot_file_name = "e/active_file";
 my $inactive_file_plot_file_name = "e/inactive_file";
+my $active_anon_plot_file_name = "e/active_anon";
+my $inactive_anon_plot_file_name = "e/inactive_anon";
 my $mlocked_plot_file_name = "e/mlocked";
 my $mpixmaps_plot_file_name = "e/mpixmaps";
 my $mapped_plot_file_name = "e/mapped";
@@ -1527,6 +1529,10 @@ sub parse_memtotal_block($)
     value_store($active_file_plot_file_name, $i, $active_file);
     my $inactive_file = $val{"Inactive(file)"} / 1024;
     value_store($inactive_file_plot_file_name, $i, $inactive_file);
+    my $active_anon = $val{"Active(anon)"} / 1024;
+    value_store($active_anon_plot_file_name, $i, $active_anon);
+    my $inactive_anon = $val{"Inactive(anon)"} / 1024;
+    value_store($inactive_anon_plot_file_name, $i, $inactive_anon);
     my $mlocked = $val{"Mlocked"} / 1024;
     value_store($mlocked_plot_file_name, $i, $mlocked);
 #
