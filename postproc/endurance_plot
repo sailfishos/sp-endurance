@@ -542,6 +542,8 @@ my @graph_fragmentation = (
 "3952_fragmentation",
 "3953_fragmentation");
 
+my @gnuplot_commands;
+
 my @dirs;
 my %val;
 my %all_apps;
@@ -3421,7 +3423,21 @@ sub close_plot($$$)
     if ($count) {
 	my $cmdfname = "e/" . $key . ".cmd";
 	my $img_fn   = $graphs_dir . "/" . $key . ".png";
-	system "gnuplot $cmdfname > $img_fn";
+	push(@gnuplot_commands, "gnuplot $cmdfname > $img_fn");
+	$images{$key} = $key;
+	$thumbnames{$key} = $thumblegend{$key};
+    } else {
+#	print "\nNot enough changes/samples for $key, skipped\n";
+#	print "(skip $key) ";
+	print "(skip) ";
+    }
+}
+
+sub run_gnuplot
+{
+    foreach (sort @gnuplot_commands) {
+	print " > $_\n";
+	system($_);
 	if (WIFSIGNALED($?)) {
 	    my $sig = WTERMSIG($?);
 	    # Ignore gnuplot problems (SIGSEGV etc), but stop processing if it
@@ -3430,12 +3446,6 @@ sub close_plot($$$)
 		kill($sig, $$);
 	    }
 	}
-	$images{$key} = $key;
-	$thumbnames{$key} = $thumblegend{$key};
-    } else {
-#	print "\nNot enough changes/samples for $key, skipped\n";
-#	print "(skip $key) ";
-	print "(skip) ";
     }
 }
 
@@ -5794,15 +5804,19 @@ if ($plot_width > 1920) {
 }
 #print "plot_width $plot_width\n";
 
+print "generating graph input for gnuplot...\n";
 generate_plots();
 
-print "$html_name ";
+print "plotting:\n";
+run_gnuplot();
+
+print "generating $html_name...\n";
 my @html_images = gen_html_page();
 
-print "thumbnails ";
+print "generating thumbnails...\n";
 gen_thumbnails(@html_images);
 
-print "\nendurance_plot done.\n";
+print "endurance_plot done.\n";
 
 if (not -e 'endurance-report.html') {
     print STDERR "NOTE: generate also the endurance report (with endurance_report.py),"
