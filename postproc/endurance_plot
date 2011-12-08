@@ -3429,7 +3429,7 @@ sub close_plot($$$)
     } else {
 #	print "\nNot enough changes/samples for $key, skipped\n";
 #	print "(skip $key) ";
-	print "(skip) ";
+#	print "(skip) ";
     }
 }
 
@@ -3632,7 +3632,6 @@ sub generate_plot_system_memory_2
 
 sub generate_plot_slab
 {
-    print "slab ";
     my $plot = start_plotfile_lines($graph_mem_slabs);
     my $cnt = 0;
     foreach my $p (reverse sort {$all_slabs{$a} <=> $all_slabs{$b} } keys %all_slabs) {
@@ -3655,7 +3654,6 @@ sub generate_plot_ctx
     my $fn;
 
 ############# Processes, total ctxt switches  ######################
-    print "ctx ";
     $plot = start_plotfile_linespoints($graph_events_ctx_total);
 
     $cnt = 0;
@@ -3739,7 +3737,6 @@ sub generate_plot_processes_global
 
 sub generate_plot_pagefaults
 {
-    print "pfault ";
     my $plot = start_plotfile_lines($graph_events_major_pagefaults);
     my $cnt = 0;
     foreach my $p (reverse sort {$majflt_cumul{$a} <=> $majflt_cumul{$b} } keys %majflt_cumul) {
@@ -3759,7 +3756,6 @@ sub generate_plot_pagefaults
 
 sub generate_plot_cpu
 {
-    print "cputime ";
     my $plot = start_plotfile_histogram($graph_cpu);
     my $cnt = 0;
     my %cpu_colors = (
@@ -3884,7 +3880,6 @@ sub generate_plot_shmem
     my $fn;
 
 ############### Histogram of shared mem #################
-    print "shmem ";
     $cnt = 0;
     $plot = start_plotfile_histogram($graph_mem_shared);
     one_plot_set(fn => $shared_locked_plot_file_name, plot => $plot,
@@ -3987,7 +3982,6 @@ sub generate_plot_shmem
 
 sub generate_plot_mlocked
 {
-    print "mlocked ";
     my $plot = start_plotfile_histogram($graph_appmem_locked);
     my $cnt = 0;
     foreach my $p (reverse sort {$app_sum_locked{$a} <=> $app_sum_locked{$b} } keys %app_sum_locked) {
@@ -4058,7 +4052,6 @@ sub generate_plot_smaps_segments
 
 sub generate_plot_heap_histogram
 {
-    print "heap ";
     my $plot = start_plotfile_histogram($graph_appmem_heap);
     my $cnt = 0;
     my %show_this = ();
@@ -4159,7 +4152,6 @@ sub generate_plot_heap
 
 sub generate_plot_sysvshared
 {
-    print "sharedmem ";
     my $plot = start_plotfile_histogram($graph_appmem_sysvshared);
     my $cnt = 0;
     my %show_this = ();
@@ -4218,7 +4210,6 @@ sub generate_plot_posixshared
 
 sub generate_plot_dev_pvr
 {
-    print "devpvr ";
     my $plot = start_plotfile_histogram($graph_appmem_devpvr);
     my $cnt = 0;
     my %show_this = ();
@@ -4261,7 +4252,6 @@ sub generate_plot_dev_pvr_count
 
 sub generate_plot_write_exec
 {
-    print "write-exec ";
     my $plot = start_plotfile_histogram($graph_appmem_wx);
     my $cnt = 0;
     foreach my $p (reverse sort {$app_cumul_rwxp{$a} <=> $app_cumul_rwxp{$b} } keys %app_cumul_rwxp) {
@@ -4278,7 +4268,6 @@ sub generate_plot_swap_event
 {
 ############# SWAP EVENT COUNTS ######################
     if (($swapused_total + $swap_pgout_total) > 0) {
-	print "swap ";
 	$n = 0;
 	$plot = start_plotfile_lines($graph_events_swap);
 	if (value_emit($pswp_in_plot_file_name, 1)) {
@@ -4423,7 +4412,6 @@ sub generate_plot_private_dirty
 
 sub generate_plot_pss
 {
-    print "pss ";
     my $plot = start_plotfile_histogram($graph_appmem_pss);
     my $cnt = 0;
     my %show_this = ();
@@ -4559,7 +4547,6 @@ sub generate_plot_pss_swap
 
 sub generate_plot_threads
 {
-    print "threads ";
     my $plot = start_plotfile_histogram($graph_threads_count);
     my $cnt = 0;
     foreach my $p ( reverse sort {$has_threads{$a} <=> $has_threads{$b} } keys %has_threads) {
@@ -4567,7 +4554,6 @@ sub generate_plot_threads
 	    last;
 	} 
 	if ($has_threads{$p} && ($has_threads_samples{$p} > 1)) {
-#	print "thr: [$p] num=$has_threads{$p}\n";
 	    my $fn = "e/thr-$p";
 	    one_plot_set(fn => $fn, plot => $plot, cnt => \$cnt,
 		emit_zeroes => 1, title => $p);
@@ -4596,7 +4582,6 @@ sub generate_plot_xres
     my $cnt;
 
 ############# X resource counts ######################
-    print "xres ";
     $plot = start_plotfile_linespoints($graph_xresource_cnt);
 
     $cnt = 0;
@@ -4679,7 +4664,6 @@ sub generate_plot_xres
 
 sub generate_plot_df
 {
-    print "df ";
     my $plot = start_plotfile_lines($graph_diskspace);
     my $cnt = 0;
     foreach my $p ( reverse sort {$filesystem_names{$a} <=> $filesystem_names{$b} } keys %filesystem_names) {
@@ -4698,7 +4682,6 @@ sub generate_plot_fd
     my %show_this;
 
 ############# fd_count for processes #####################
-    print "fd ";
     $plot = start_plotfile_lines($graph_fdcount);
     $cnt = 0;
     foreach my $p (reverse sort {$fd_count{$a} <=> $fd_count{$b} } keys %fd_count) {
@@ -4714,7 +4697,6 @@ sub generate_plot_fd
     close_plot($cnt, $plot, $graph_fdcount);
 
 ############# fd_count_inotify for processes #####################
-    print "fd_inotify ";
     %show_this = ();
     foreach my $p (reverse sort {$fd_inotify{$a} <=> $fd_inotify{$b} } keys %fd_inotify) {
 	$fn = "e/fd_inotify-$name_by_pid{$p}-$p";
@@ -4734,7 +4716,6 @@ sub generate_plot_fd
     }
 
 ############# fd_count_pipe for processes #####################
-    print "fd_pipe ";
     %show_this = ();
     foreach my $p (reverse sort {$fd_pipe{$a} <=> $fd_pipe{$b} } keys %fd_pipe) {
 	$fn = "e/fd_pipe-$name_by_pid{$p}-$p";
@@ -4754,7 +4735,6 @@ sub generate_plot_fd
     }
 
 ############# fd_count_socket for processes #####################
-    print "fd_socket ";
     %show_this = ();
     foreach my $p (reverse sort {$fd_socket{$a} <=> $fd_socket{$b} } keys %fd_socket) {
 	$fn = "e/fd_socket-$name_by_pid{$p}-$p";
@@ -4774,7 +4754,6 @@ sub generate_plot_fd
     }
 
 ############# fd_count_tmpfs for processes #####################
-    print "fd_tmpfs ";
     %show_this = ();
     foreach my $p (reverse sort {$fd_tmpfs{$a} <=> $fd_tmpfs{$b} } keys %fd_tmpfs) {
 	$fn = "e/fd_tmpfs-$name_by_pid{$p}-$p";
@@ -4794,7 +4773,6 @@ sub generate_plot_fd
     }
 
 ############# fd_count_eventfd for processes #####################
-    print "fd_eventfd ";
     %show_this = ();
     foreach my $p (reverse sort {$fd_eventfd{$a} <=> $fd_eventfd{$b} } keys %fd_eventfd) {
 	$fn = "e/fd_eventfd-$name_by_pid{$p}-$p";
@@ -4814,7 +4792,6 @@ sub generate_plot_fd
     }
 
 ############# fd_count_epoll for processes #####################
-    print "fd_epoll ";
     %show_this = ();
     foreach my $p (reverse sort {$fd_epoll{$a} <=> $fd_epoll{$b} } keys %fd_epoll) {
 	$fn = "e/fd_epoll-$name_by_pid{$p}-$p";
@@ -4834,7 +4811,6 @@ sub generate_plot_fd
     }
 
 ############# fd_count_signalfd for processes #####################
-    print "fd_signalfd ";
     %show_this = ();
     foreach my $p (reverse sort {$fd_signalfd{$a} <=> $fd_signalfd{$b} } keys %fd_signalfd) {
 	$fn = "e/fd_signalfd-$name_by_pid{$p}-$p";
@@ -4854,7 +4830,6 @@ sub generate_plot_fd
     }
 
 ############# fd_count_timerfd for processes #####################
-    print "fd_timerfd ";
     %show_this = ();
     foreach my $p (reverse sort {$fd_timerfd{$a} <=> $fd_timerfd{$b} } keys %fd_timerfd) {
 	$fn = "e/fd_timerfd-$name_by_pid{$p}-$p";
@@ -4874,7 +4849,6 @@ sub generate_plot_fd
     }
 
 ############# fd_count_disk for processes #####################
-    print "fd_disk ";
     %show_this = ();
     foreach my $p (reverse sort {$fd_disk{$a} <=> $fd_disk{$b} } keys %fd_disk) {
 	$fn = "e/fd_disk-$name_by_pid{$p}-$p";
@@ -4896,7 +4870,6 @@ sub generate_plot_fd
 
 sub generate_plot_interrupts
 {
-    print "interrupt ";
     my $plot = start_plotfile_lines_2axes($graph_interrupts);
     my $cnt = 0;
     foreach my $p ( reverse sort {$int_total{$a} <=> $int_total{$b} } keys %int_total) {
@@ -4924,7 +4897,6 @@ sub generate_plot_diskstats
     my $cnt_3;
 
 ############# diskstats, reads #####################
-    print "diskstat ";
     $plot_1 = start_plotfile_lines($graph_diskstats_reads_mb_per_second);
     $plot_2 = start_plotfile_lines($graph_diskstats_read_time);
     $plot_3 = start_plotfile_lines($graph_diskstats_reads_mb);
@@ -4976,7 +4948,6 @@ sub generate_plot_battery
     if (not $have_bme) {
 	return;
     }
-    print "battery ";
     my $plot = start_plotfile_lines_2axes($graph_battery);
     my $cnt = 0;
     one_plot_set(fn => $batt_charge_left_file_name, plot => $plot, lw => 4,
@@ -4993,7 +4964,6 @@ sub generate_plot_ramzswap
     if (not $have_ramzswap) {
 	return;
     }
-    print "ramzswap ";
     my $plot = start_plotfile_lines_2axes($graph_ramzswap);
     my $cnt = 0;
     if (count_nonzero_entries($ramzswap_bdreads_file_name) > 0) {
@@ -5020,7 +4990,6 @@ sub generate_plot_cgroups
     if (not %cgroups) {
 	return;
     }
-    print "cgroups ";
     my $omit;
     my @grouplist = sort keys %cgroups;
     # mem:
@@ -5216,7 +5185,6 @@ sub generate_plot_cgroups
 
 sub generate_plot_networking
 {
-    print "networking ";
     foreach my $interface (keys %interfaces_seen) {
 	my $graph_networking_bytes = '2090_networking-bytes-' . $interface;
 	$legend{$graph_networking_bytes} = 'RX and TX bytes in kB for ' . $interface;
@@ -5293,7 +5261,6 @@ sub generate_plot_powertop
     if (not $powertop_data_found) {
 	return;
     }
-    print "powertop ";
 ############# powertop C-states, freq-states to same multiplot #####################
     $plot = start_plotfile_histogram_multi($graph_powertop_cf_states);
     print_cf_states_plot_cmds($plot);
@@ -5450,7 +5417,6 @@ sub generate_plot_power_supply
 
 sub generate_plots()
 {
-    print "graphs: ";
     generate_plot_system_memory_1();
     generate_plot_system_memory_2();
     generate_plot_slab();
