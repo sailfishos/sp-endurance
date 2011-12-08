@@ -5503,8 +5503,15 @@ sub usage
     print STDERR "   --gnuplot-terminal=png           Use gnuplot terminal 'png'.\n";
     print STDERR "\n";
     print STDERR "Examples:\n";
+    print STDERR "\n";
+    print STDERR "   # Create graphs including directories 101, 102 and 103:\n";
     print STDERR "   endurance_plot 101 102 103\n";
+    print STDERR "\n";
+    print STDERR "   # Create graphs including all directories (101, ..., 999):\n";
     print STDERR "   endurance_plot ???\n";
+    print STDERR "\n";
+    print STDERR "   # Create graphs including every other directory (101, 103, 105, ...):\n";
+    print STDERR "   endurance_plot ??[13579]\n";
 }
 
 my $flag_h;
