@@ -386,26 +386,6 @@ $legend{$graph_mem_slabs} = "kernel slab memory";
 $thumblegend{$graph_mem_slabs} = "KERNEL SLABS";
 $unit{$graph_mem_slabs} = "kB";
 
-my $graph_pagetypeinfo_unmovable = "2274_pagetypeinfo_unmovable";
-$legend{$graph_pagetypeinfo_unmovable} = "pagetype unmovable from /proc/pagetypeinfo";
-$thumblegend{$graph_pagetypeinfo_unmovable} = "PAGETYPE-UNMOVABLE";
-$unit{$graph_pagetypeinfo_unmovable} = "MB";
-
-my $graph_pagetypeinfo_reclaimable = "2274_pagetypeinfo_reclaimable";
-$legend{$graph_pagetypeinfo_reclaimable} = "pagetype reclaimable from /proc/pagetypeinfo";
-$thumblegend{$graph_pagetypeinfo_reclaimable} = "PAGETYPE-RECLAIMABLE";
-$unit{$graph_pagetypeinfo_reclaimable} = "MB";
-
-my $graph_pagetypeinfo_movable = "2274_pagetypeinfo_movable";
-$legend{$graph_pagetypeinfo_movable} = "pagetype movable from /proc/pagetypeinfo";
-$thumblegend{$graph_pagetypeinfo_movable} = "PAGETYPE-MOVABLE";
-$unit{$graph_pagetypeinfo_movable} = "MB";
-
-my $graph_pagetypeinfo_reserve = "2274_pagetypeinfo_reserve";
-$legend{$graph_pagetypeinfo_reserve} = "pagetype reserve from /proc/pagetypeinfo";
-$thumblegend{$graph_pagetypeinfo_reserve} = "PAGETYPE-RESERVE";
-$unit{$graph_pagetypeinfo_reserve} = "MB";
-
 my $graph_cgroups_mem = "2300_cgroups-mem";
 $legend{$graph_cgroups_mem} = "memory usage per cgroup";
 $thumblegend{$graph_cgroups_mem} = "CGROUPS MEMORY";
@@ -2589,14 +2569,16 @@ sub process_pagetypeinfo()
     }
     close(PAGETYPEINFO);
     for (my $ordernum = 0, $order = 1; $ordernum <= 10 ; $order *= 2, $ordernum++) {
-	$fn = "e/pt-unmov-$ordernum";
-	value_store($fn, $i, ($unmovable[$ordernum+6]*$order*$pg_bytes)/$MB_bytes);
-	$fn = "e/pt-recl-$ordernum";
-	value_store($fn, $i, ($reclaimable[$ordernum+6]*$order*$pg_bytes)/$MB_bytes);
-	$fn = "e/pt-mov-$ordernum";
-	value_store($fn, $i, ($movable[$ordernum+6]*$order*$pg_bytes)/$MB_bytes);
+	$fn = "e/pt-unmovable-$ordernum";
+	value_store_zeropad($fn, $i, ($unmovable[$ordernum+6]*$order*$pg_bytes)/$MB_bytes);
+	$fn = "e/pt-reclaimable-$ordernum";
+	value_store_zeropad($fn, $i, ($reclaimable[$ordernum+6]*$order*$pg_bytes)/$MB_bytes);
+	$fn = "e/pt-movable-$ordernum";
+	value_store_zeropad($fn, $i, ($movable[$ordernum+6]*$order*$pg_bytes)/$MB_bytes);
 	$fn = "e/pt-reserve-$ordernum";
-	value_store($fn, $i, ($reserve[$ordernum+6]*$order*$pg_bytes)/$MB_bytes);
+	value_store_zeropad($fn, $i, ($reserve[$ordernum+6]*$order*$pg_bytes)/$MB_bytes);
+	$fn = "e/pt-isolate-$ordernum";
+	value_store_zeropad($fn, $i, ($isolate[$ordernum+6]*$order*$pg_bytes)/$MB_bytes);
     }
 }
 
@@ -5217,42 +5199,29 @@ sub generate_plot_networking
 
 sub generate_plot_pagetypeinfo
 {
-    if (not $have_pagetypeinfo) {
-	return;
-    }
-    print "pagetypeinfo ";
-    my $plot_1 = start_plotfile_histogram($graph_pagetypeinfo_unmovable);
-    my $plot_2 = start_plotfile_histogram($graph_pagetypeinfo_reclaimable);
-    my $plot_3 = start_plotfile_histogram($graph_pagetypeinfo_movable);
-    my $plot_4 = start_plotfile_histogram($graph_pagetypeinfo_reserve);
-
-    for ($ordernum = 0; $ordernum <= 10 ; $ordernum++) {
-	if ($ordernum > 0) {
-	    print $plot_1 ", ";
-	    print $plot_2 ", ";
-	    print $plot_3 ", ";
-	    print $plot_4 ", ";
+    return unless $have_pagetypeinfo;
+    foreach my $pagetype (qw/unmovable reclaimable movable reserve isolate/) {
+	my $skip = 1;
+	foreach my $ordernum (0 .. 10) {
+	    my $fn = "e/pt-$pagetype-$ordernum";
+	    if (count_nonzero_entries($fn)) {
+		$skip = 0;
+		last;
+	    }
 	}
-	$fn = "e/pt-unmov-$ordernum";
-	value_emit($fn, 1);
-	print $plot_1 "'$fn' using 2";
-
-	$fn = "e/pt-recl-$ordernum";
-	value_emit($fn, 1);
-	print $plot_2 "'$fn' using 2";
-
-	$fn = "e/pt-mov-$ordernum";
-	value_emit($fn, 1);
-	print $plot_3 "'$fn' using 2";
-
-	$fn = "e/pt-reserve-$ordernum";
-	value_emit($fn, 1);
-	print $plot_4 "'$fn' using 2";
+	next if $skip;
+	my $graph_pagetypeinfo = "2274_pagetypeinfo_$pagetype";
+	$legend{$graph_pagetypeinfo} = "Free memory in $pagetype migrate type block pool (from /proc/pagetypeinfo)";
+	$thumblegend{$graph_pagetypeinfo} = 'PAGETYPE &mdash; ' . uc($pagetype);
+	$unit{$graph_pagetypeinfo} = 'MB';
+	my $cnt = 0;
+	my $plot = start_plotfile_histogram($graph_pagetypeinfo);
+	foreach my $ordernum (0 .. 10) {
+	    one_plot_set(fn => "e/pt-$pagetype-$ordernum", plot => $plot, cnt => \$cnt,
+		emit_zeroes => 1, title => ucfirst($pagetype) . " order 2^$ordernum");
+	}
+	close_plot($cnt, $plot, $graph_pagetypeinfo);
     }
-    close_plot($i, $plot_1, $graph_pagetypeinfo_unmovable);
-    close_plot($i, $plot_2, $graph_pagetypeinfo_reclaimable);
-    close_plot($i, $plot_3, $graph_pagetypeinfo_movable);
-    close_plot($i, $plot_4, $graph_pagetypeinfo_reserve);
 }
 
 sub generate_plot_powertop
