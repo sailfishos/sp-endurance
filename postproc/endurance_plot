@@ -3789,14 +3789,13 @@ sub generate_plot_shmem
 
 ############### Histogram of shared mem #################
     print "shmem ";
+    $cnt = 0;
     $plot = start_plotfile_histogram($graph_mem_shared);
-
-    value_emit($shared_locked_plot_file_name, 1);
-    print $plot "'$shared_locked_plot_file_name' using 2,";
-    value_emit($shared_unlocked_plot_file_name, 1);
-    print $plot "'$shared_unlocked_plot_file_name' using 2";
-
-    close_plot($i, $plot, $graph_mem_shared);
+    one_plot_set(fn => $shared_locked_plot_file_name, plot => $plot,
+	cnt => \$cnt, emit_zeroes => 1, title => 'Locked to memory');
+    one_plot_set(fn => $shared_unlocked_plot_file_name, plot => $plot,
+	cnt => \$cnt, emit_zeroes => 1, title => 'Not locked to memory');
+    close_plot($cnt, $plot, $graph_mem_shared);
 
 ############### Histogram of shared mem lpid #################
     $plot = start_plotfile_histogram($graph_mem_shared_lpid);
@@ -3870,25 +3869,13 @@ sub generate_plot_shmem
 
     $cnt = 0;
     for (my $z = 0; $z <= $max_nattach ; $z++) {
-#	print "$z: used=$shared_used{$z}\n";
 	if (!$shared_used{$z}) {
 	    next;
 	}
-	if ($cnt > 0) {
-	    print $plot ", ";
-	}
 	$fn = "e/nattach-$z-shm";
-	print $plot "'$fn' lw 2 axes x1y1";
-	$cnt += 1;
-	value_emit($fn, 0);
+	one_plot_set(fn => $fn, plot => $plot, lw => 2, axes => 'x1y1', cnt => \$cnt);
     }
-    $fn = "e/count-shm";
-    if ($cnt > 0) {
-	print $plot ", ";
-    }
-    print $plot "'$fn' lw 4 axes x2y2";
-    $cnt += 1;
-    value_emit($fn, 0);
+    one_plot_set(fn => 'e/count-shm', plot => $plot, lw => 4, axes => 'x2y2', cnt => \$cnt);
     close_plot($cnt, $plot, $graph_mem_shared_number);
 
 ############### Histogram of shared mem size, by num of attached proc #################
