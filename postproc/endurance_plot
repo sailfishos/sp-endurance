@@ -2087,7 +2087,27 @@ sub process_smaps()
     %num_of_smaps_segments = ();
 #    %name_by_pid = ();
     while (<SMAPS_CAP>) {
-	if (m/^#/) {
+	if (m#^[A-Z]#) {
+	    if( index($_, "Pss:") != -1) {
+		my $pss = int(substr($_, 4, -4));
+		$sum_app_pss += $pss;
+		$app_pss{$nm} += $pss;
+		$num_of_smaps_segments{$nm} += 1;
+		next;
+	    }
+#	    if( index($_, "Private_Dirty:") != -1) {
+#		my $pdirty = int(substr($_, 14, -4));
+#		$sum_app_private_dirty += $pdirty;
+#		$app_private_dirty{$nm} += $pdirty;
+#		next;
+#	    }
+	    if( index($_, "Swap:") != -1) {
+		my $swapped = int(substr($_, 5, -4));
+		$sum_app_swapped += $swapped;
+		$app_swapped{$nm} += $swapped;
+		next;
+	    }
+	} elsif (m/^#/) {
 	    if( index($_, "#Name: ") != -1) {
 		chop;
 		#
@@ -2163,26 +2183,6 @@ sub process_smaps()
 		    $changed_vmsize{$nm} = 1;
 		}
 		$prev_vmsize{$nm} = $vmsz;
-		next;
-	    }
-	} elsif (m#^[A-Z]#) {
-	    if( index($_, "Pss:") != -1) {
-		my $pss = int(substr($_, 4, -4));
-		$sum_app_pss += $pss;
-		$app_pss{$nm} += $pss;
-		$num_of_smaps_segments{$nm} += 1;
-		next;
-	    }
-#	    if( index($_, "Private_Dirty:") != -1) {
-#		my $pdirty = int(substr($_, 14, -4));
-#		$sum_app_private_dirty += $pdirty;
-#		$app_private_dirty{$nm} += $pdirty;
-#		next;
-#	    }
-	    if( index($_, "Swap:") != -1) {
-		my $swapped = int(substr($_, 5, -4));
-		$sum_app_swapped += $swapped;
-		$app_swapped{$nm} += $swapped;
 		next;
 	    }
 	} else {
