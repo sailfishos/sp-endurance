@@ -3523,63 +3523,112 @@ sub print_domain_plot_cmds($$$$)
     print $plot "'e/p-domain-$domain-on' using 2 lt 1\n";
 }
 
-sub generate_plot_mem
+sub generate_plot_system_memory_1
 {
-    my $plot;
-
-    print "mem ";
-    $plot = start_plotfile_lines($graph_system_memory_1);
-
-    if ($swapused_total) {
-	value_emit($swapused_plot_file_name, 0);
-	print $plot "'$swapused_plot_file_name' lt 1 lw 5,";
-	value_emit($app_swapped_plot_file_name, 0);
-	print $plot "'$app_swapped_plot_file_name' lt 1 lw 2,";
-	value_emit($swapcached_plot_file_name, 0);
-	print $plot "'$swapcached_plot_file_name' lw 3, ";
+    my $cnt = 0;
+    my $plot = start_plotfile_lines($graph_system_memory_1);
+    if (count_nonzero_entries($swapused_plot_file_name)) {
+	one_plot_set(fn => $swapused_plot_file_name, plot => $plot,
+	    lw => 5, emit_zeroes => 1, cnt => \$cnt, lc => 'FF0000',
+	    title => 'Swap used');
     }
-
-    value_emit($memfree_plot_file_name, 0);
-    print $plot "'$memfree_plot_file_name' lw 3, ";
-    value_emit($cached_plot_file_name, 0);
-    print $plot "'$cached_plot_file_name' lw 3, ";
-    value_emit($active_file_plot_file_name, 0);
-    print $plot "'$active_file_plot_file_name' lw 3,";
-    value_emit($inactive_file_plot_file_name, 0);
-    print $plot "'$inactive_file_plot_file_name' lw 3,";
-    if ($show_shmem) {
-	value_emit($shmem_plot_file_name, 0);
-	print $plot "'$shmem_plot_file_name' lw 3, ";
+    if (count_nonzero_entries($app_swapped_plot_file_name)) {
+	one_plot_set(fn => $app_swapped_plot_file_name, plot => $plot,
+	    lw => 2, emit_zeroes => 1, cnt => \$cnt, lc => 'FF0000',
+	    title => 'Sum of swapped in applications');
     }
-    value_emit($app_pss_plot_file_name, 0);
-    print $plot "'$app_pss_plot_file_name' lw 3";
-
-    close_plot($i, $plot, $graph_system_memory_1);
-
-############# MEM SMALLER VALUES ######################
-    $plot = start_plotfile_lines($graph_system_memory_2);
-
-    value_emit($dirty_plot_file_name, 0);
-    print $plot "'$dirty_plot_file_name' lw 3,";
-    value_emit($buffers_plot_file_name, 0);
-    print $plot "'$buffers_plot_file_name' lw 3, ";
-    value_emit($mlocked_plot_file_name, 0);
-    print $plot "'$mlocked_plot_file_name' lw 3,";
-    value_emit($mpixmaps_plot_file_name, 0);
-    if (-e $mpixmaps_plot_file_name) {
-	print $plot "'$mpixmaps_plot_file_name' lw 3,";
+    if (count_nonzero_entries($swapcached_plot_file_name)) {
+	one_plot_set(fn => $swapcached_plot_file_name, plot => $plot,
+	    lw => 3, emit_zeroes => 1, cnt => \$cnt,
+	    title => 'Swapcached');
     }
-    value_emit($pagetables_plot_file_name, 0);
-    print $plot "'$pagetables_plot_file_name' lw 3, ";
-    if ($show_kernelstack) {
-	value_emit($kernelstack_plot_file_name, 0);
-	print $plot "'$kernelstack_plot_file_name' lw 3, ";
+    if (count_nonzero_entries($memfree_plot_file_name)) {
+	one_plot_set(fn => $memfree_plot_file_name, plot => $plot,
+	    lw => 3, emit_zeroes => 1, cnt => \$cnt,
+	    title => 'MemFree');
     }
-    value_emit($slabreclaim_plot_file_name, 0);
-    print $plot "'$slabreclaim_plot_file_name' lw 3,";
-    value_emit($slabunreclaim_plot_file_name, 0);
-    print $plot "'$slabunreclaim_plot_file_name' lw 3";
+    if (count_nonzero_entries($cached_plot_file_name)) {
+	one_plot_set(fn => $cached_plot_file_name, plot => $plot,
+	    lw => 3, emit_zeroes => 1, cnt => \$cnt,
+	    title => 'Cached');
+    }
+    if (count_nonzero_entries($active_file_plot_file_name)) {
+	one_plot_set(fn => $active_file_plot_file_name, plot => $plot,
+	    lw => 3, emit_zeroes => 1, cnt => \$cnt,
+	    title => 'Active (file)');
+    }
+    if (count_nonzero_entries($inactive_file_plot_file_name)) {
+	one_plot_set(fn => $inactive_file_plot_file_name, plot => $plot,
+	    lw => 3, emit_zeroes => 1, cnt => \$cnt,
+	    title => 'Inactive (file)');
+    }
+    if (count_nonzero_entries($active_anon_plot_file_name)) {
+	one_plot_set(fn => $active_anon_plot_file_name, plot => $plot,
+	    lw => 3, emit_zeroes => 1, cnt => \$cnt,
+	    title => 'Active (anon)');
+    }
+    if (count_nonzero_entries($inactive_anon_plot_file_name)) {
+	one_plot_set(fn => $inactive_anon_plot_file_name, plot => $plot,
+	    lw => 3, emit_zeroes => 1, cnt => \$cnt,
+	    title => 'Inactive (anon)');
+    }
+    if (count_nonzero_entries($shmem_plot_file_name)) {
+	one_plot_set(fn => $shmem_plot_file_name, plot => $plot,
+	    lw => 3, emit_zeroes => 1, cnt => \$cnt,
+	    title => 'Shmem');
+    }
+    if (count_nonzero_entries($app_pss_plot_file_name)) {
+	one_plot_set(fn => $app_pss_plot_file_name, plot => $plot,
+	    lw => 3, emit_zeroes => 1, cnt => \$cnt,
+	    title => 'Sum of PSS');
+    }
+    close_plot($cnt, $plot, $graph_system_memory_1);
+}
 
+sub generate_plot_system_memory_2
+{
+    my $cnt = 0;
+    my $plot = start_plotfile_lines($graph_system_memory_2);
+    if (value_exists($dirty_plot_file_name)) {
+	one_plot_set(fn => $dirty_plot_file_name, plot => $plot,
+	    lw => 3, emit_zeroes => 1, cnt => \$cnt,
+	    title => 'Dirty');
+    }
+    if (value_exists($buffers_plot_file_name)) {
+	one_plot_set(fn => $buffers_plot_file_name, plot => $plot,
+	    lw => 3, emit_zeroes => 1, cnt => \$cnt,
+	    title => 'Buffers');
+    }
+    if (value_exists($mlocked_plot_file_name)) {
+	one_plot_set(fn => $mlocked_plot_file_name, plot => $plot,
+	    lw => 3, emit_zeroes => 1, cnt => \$cnt,
+	    title => 'Mlocked');
+    }
+    if (count_nonzero_entries($mpixmaps_plot_file_name)) {
+	one_plot_set(fn => $mpixmaps_plot_file_name, plot => $plot,
+	    lw => 3, emit_zeroes => 1, cnt => \$cnt,
+	    title => 'Pixmaps');
+    }
+    if (value_exists($pagetables_plot_file_name)) {
+	one_plot_set(fn => $pagetables_plot_file_name, plot => $plot,
+	    lw => 3, emit_zeroes => 1, cnt => \$cnt,
+	    title => 'PageTables');
+    }
+    if (value_exists($kernelstack_plot_file_name)) {
+	one_plot_set(fn => $kernelstack_plot_file_name, plot => $plot,
+	    lw => 3, emit_zeroes => 1, cnt => \$cnt,
+	    title => 'KernelStack');
+    }
+    if (value_exists($slabreclaim_plot_file_name)) {
+	one_plot_set(fn => $slabreclaim_plot_file_name, plot => $plot,
+	    lw => 3, emit_zeroes => 1, cnt => \$cnt,
+	    title => 'SlabReclaimable');
+    }
+    if (value_exists($slabunreclaim_plot_file_name)) {
+	one_plot_set(fn => $slabunreclaim_plot_file_name, plot => $plot,
+	    lw => 3, emit_zeroes => 1, cnt => \$cnt,
+	    title => 'SlabUnreclaimable');
+    }
     close_plot($i, $plot, $graph_system_memory_2);
 }
 
@@ -5404,7 +5453,8 @@ sub generate_plot_power_supply
 sub generate_plots()
 {
     print "graphs: ";
-    generate_plot_mem();
+    generate_plot_system_memory_1();
+    generate_plot_system_memory_2();
     generate_plot_slab();
     generate_plot_ctx();
     generate_plot_loadavg();
