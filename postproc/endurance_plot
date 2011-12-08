@@ -3634,11 +3634,11 @@ sub generate_plot_loadavg
 
 sub generate_plot_processes_global
 {
+    my $cnt = 0;
     my $plot = start_plotfile_lines($graph_processes_global);
-    my $fn = "e/global-processes";
-    print $plot "'$fn' lw 2";
-    value_emit($fn, 1);
-    close_plot($i, $plot, $graph_processes_global);
+    one_plot_set(fn => 'e/global-processes', plot => $plot, lw => 3,
+	cnt => \$cnt, emit_zeroes => 1, title => 'Processes and threads');
+    close_plot($cnt, $plot, $graph_processes_global);
 }
 
 sub generate_plot_pagefaults
