@@ -748,6 +748,9 @@ my %prev_time_in_state_pcpu;
 
 my %sysfs_fs_prev;
 my %sysfs_fs_devices_seen;
+my %sysfs_power_supply_devices;
+my %sysfs_power_supply_device_model_name;
+my %sysfs_power_supply_device_manufacturer;
 
 my %wchan_seen;
 
@@ -2641,6 +2644,46 @@ sub process_sysfs_fs
 	}
     }
     close(SYSFS_FS);
+}
+
+sub process_sysfs_power_supply
+{
+    return unless open(SYSFS_POWER_SUPPLY, $d . '/sysfs_power_supply');
+    my %ps;
+    while (<SYSFS_POWER_SUPPLY>) {
+	if (m#==> /sys/class/power_supply/(BAT\d+)#) {
+	    $sysfs_power_supply_devices{$1} = 1;
+	}
+	if (m#==> /sys/class/power_supply/(BAT\d+)/voltage_now <==#) {
+	    $ps{$1}{voltage_now} = int(<SYSFS_POWER_SUPPLY>) / 1e6;
+	} elsif (m#==> /sys/class/power_supply/(BAT\d+)/charge_now <==#) {
+	    $ps{$1}{charge_now} = int(<SYSFS_POWER_SUPPLY>) / 1e6;
+	} elsif (m#==> /sys/class/power_supply/(BAT\d+)/charge_full_design <==#) {
+	    $ps{$1}{charge_full_design} = int(<SYSFS_POWER_SUPPLY>) / 1e6;
+	} elsif (m#==> /sys/class/power_supply/(BAT\d+)/temp <==#) {
+	    $ps{$1}{temp} = int(<SYSFS_POWER_SUPPLY>);
+	} elsif (m#==> /sys/class/power_supply/(BAT\d+)/model_name <==#) {
+	    my $line = <SYSFS_POWER_SUPPLY>;
+	    chomp $line;
+	    $sysfs_power_supply_device_model_name{$1} = $line;
+	} elsif (m#==> /sys/class/power_supply/(BAT\d+)/manufacturer <==#) {
+	    my $line = <SYSFS_POWER_SUPPLY>;
+	    chomp $line;
+	    $sysfs_power_supply_device_manufacturer{$1} = $line;
+	}
+    }
+    close(SYSFS_POWER_SUPPLY);
+    foreach my $dev (keys %ps) {
+	foreach my $key (keys(%{$ps{$dev}})) {
+	    my $value = $ps{$dev}{$key};
+	    value_store("e/power_supply-$dev-$key", $i, $value);
+	}
+	if (not defined $ps{$dev}{capacity} and
+		($ps{$dev}{charge_now} and $ps{$dev}{charge_full_design})) {
+	    value_store("e/power_supply-$dev-capacity", $i,
+		100 * ($ps{$dev}{charge_now} / $ps{$dev}{charge_full_design}));
+	}
+    }
 }
 
 sub emit_domain_values($$)
@@ -5319,6 +5362,39 @@ sub generate_plot_wchan_changes
     close_plot($cnt, $plot, $graph_wchan_changes);
 }
 
+sub generate_plot_power_supply
+{
+    foreach my $dev (keys %sysfs_power_supply_devices) {
+	my $model_name = $sysfs_power_supply_device_model_name{$dev};
+	$model_name = ": $model_name" if length $model_name;
+	my $manufacturer = $sysfs_power_supply_device_manufacturer{$dev};
+	$manufacturer = ": $manufacturer" if length $manufacturer;
+	my $graph_ps = "2000_power_supply-$dev";
+	$legend{$graph_ps} = "Battery ${dev}${model_name}${manufactorer}";
+	$thumblegend{$graph_ps} = "POWER SUPPLY &mdash; $dev";
+	$unit_1{$graph_ps} = 'charge-percent, temp-C';
+	$unit_2{$graph_ps} = 'V';
+	my $plot = start_plotfile_lines_2axes($graph_ps);
+	my $cnt = 0;
+	if (value_exists("e/power_supply-$dev-capacity")) {
+	    one_plot_set(fn => "e/power_supply-$dev-capacity", lw => 5,
+		plot => $plot, axes => 'x1y1', cnt => \$cnt, emit_zeroes => 1,
+		title => 'Charge % left');
+	}
+	if (value_exists("e/power_supply-$dev-temp")) {
+	    one_plot_set(fn => "e/power_supply-$dev-temp", lw => 3,
+		plot => $plot, axes => 'x1y1', cnt => \$cnt, emit_zeroes => 1,
+		title => 'Temperature');
+	}
+	if (value_exists("e/power_supply-$dev-voltage_now")) {
+	    one_plot_set(fn => "e/power_supply-$dev-voltage_now", lw => 3,
+		plot => $plot, axes => 'x2y2', cnt => \$cnt, emit_zeroes => 1,
+		title => 'Voltage');
+	}
+	close_plot($cnt, $plot, $graph_ps);
+    }
+}
+
 sub generate_plots()
 {
     print "graphs: ";
@@ -5363,6 +5439,7 @@ sub generate_plots()
     generate_plot_fs_written();
     generate_plot_wchan_count();
     generate_plot_wchan_changes();
+    generate_plot_power_supply();
 }
 ################ Start ######################################################
 
@@ -5619,6 +5696,7 @@ foreach $d (@dirs) {
     process_sysfs_fs();
     process_xmeminfo();
     process_wchan();
+    process_sysfs_power_supply();
 
 #    $unaccount_swapped = $swapused - $sum_app_swapped;
 #    print "swap: total=$swaptotal free=$swapfree used=$swapused sum_app=$sum_app_swapped, unacc=$unaccount_swapped\n";
