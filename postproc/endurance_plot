@@ -543,8 +543,6 @@ my @graph_fragmentation = (
 "3953_fragmentation");
 
 my @dirs;
-my $show_kernelstack = 0;
-my $show_shmem = 0;
 my %val;
 my %all_apps;
 my %pid_by_namepid;
@@ -1548,16 +1546,9 @@ sub parse_memtotal_block($)
     $pagetables = $val{"PageTables"} / 1024;
     value_store($pagetables_plot_file_name, $i, $pagetables);
     my $kernelstack = $val{"KernelStack"} / 1024;
-    if ($kernelstack) {
-	value_store($kernelstack_plot_file_name, $i, $kernelstack);
-	$show_kernelstack = 1;
-    }
+    value_store($kernelstack_plot_file_name, $i, $kernelstack);
     my $shmem = $val{"Shmem"} / 1024;
-    if ($shmem) {
-	value_store($shmem_plot_file_name, $i, $shmem);
-	$show_shmem = 1;
-    }
-#		print "$d: memfree=$mfree buf=$buffers cached=$cached kernelstack=$kernelstack shmem=$shmem\n";
+    value_store($shmem_plot_file_name, $i, $shmem);
 }
 
 sub parse_pages_block($)
