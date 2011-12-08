@@ -4807,21 +4807,12 @@ sub generate_plot_interrupts
 	if ($int_total{$p} < 1) {
 	    next;
 	}
-	if ($cnt > 0) {
-	    print $plot ", ";
-	}
 	my $fn = "e/int-$p";
-	print $plot "'$fn' lw 2 axes x1y1 title \"$p\"";
-	$cnt += 1;
-	value_emit($fn, 0);
+	one_plot_set(fn => $fn, plot => $plot, lw => 2, axes => 'x1y1',
+	    cnt => \$cnt, title => $p);
     }
-    my $fn = "e/count-int";
-    if ($cnt > 0) {
-	print $plot ", ";
-    }
-    print $plot "'$fn' lw 4 axes x2y2 title \"Total count\"";
-    $cnt += 1;
-    value_emit($fn, 0);
+    one_plot_set(fn => 'e/count-int', plot => $plot, lw => 4, axes => 'x2y2',
+	cnt => \$cnt, title => 'Total count');
     close_plot($cnt, $plot, $graph_interrupts);
 }
 
