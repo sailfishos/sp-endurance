@@ -3609,15 +3609,14 @@ sub generate_plot_ctx
 
 ############# global ctx switched #####################
     $plot = start_plotfile_lines_2axes($graph_ctx_global);
-    $fn = "e/all-ctx-switches";
-    print $plot "'$fn' lw 2 axes x1y1";
-    value_emit($fn, 1);
-
-    $fn = "e/num-processes";
-    print $plot ", '$fn' lw 2 axes x2y2";
-    value_emit($fn, 1);
-
-    close_plot($i, $plot, $graph_ctx_global);
+    $cnt = 0;
+    one_plot_set(fn => 'e/all-ctx-switches', plot => $plot, lw => 3,
+	axes => 'x1y1', emit_zeroes => 1, cnt => \$cnt,
+	title => 'Context switches');
+    one_plot_set(fn => 'e/num-processes', plot => $plot, lw => 3,
+	axes => 'x2y2', emit_zeroes => 1, cnt => \$cnt,
+	title => 'Process and thread count');
+    close_plot($cnt, $plot, $graph_ctx_global);
 }
 
 sub generate_plot_loadavg
