@@ -49,6 +49,8 @@ my %legend;
 my (%unit, %unit_1, %unit_2);
 my %thumblegend;
 
+my $forkmanager;
+
 my $secs_per_round = 0;
 my $total_duration;
 
@@ -3240,6 +3242,7 @@ sub gen_thumbnails
 {
     my @html_images = @_;
     foreach my $img (@html_images) {
+	$forkmanager->start() and next if $forkmanager;
 	my $img_fn = img_to_filename($img);
 	my $thumb_fn = img_to_thumb($img);
 	system("pngtopnm $img_fn | pnmscalefixed -width=$thumb_width -height=$thumb_height | pnmtojpeg > $thumb_fn");
@@ -3252,7 +3255,9 @@ sub gen_thumbnails
 		kill($sig, $$);
 	    }
 	}
+	$forkmanager->finish() if $forkmanager;
     }
+    $forkmanager->wait_all_children() if $forkmanager;
 }
 
 sub xtics
@@ -3436,6 +3441,7 @@ sub close_plot($$$)
 sub run_gnuplot
 {
     foreach (sort @gnuplot_commands) {
+	$forkmanager->start() and next if $forkmanager;
 	print " > $_\n";
 	system($_);
 	if (WIFSIGNALED($?)) {
@@ -3446,7 +3452,9 @@ sub run_gnuplot
 		kill($sig, $$);
 	    }
 	}
+	$forkmanager->finish() if $forkmanager;
     }
+    $forkmanager->wait_all_children() if $forkmanager;
 }
 
 sub print_cf_states_plot_cmds($)
@@ -5477,6 +5485,10 @@ sub usage
     print STDERR "   --gnuplot-terminal=pngcairo      Use gnuplot terminal 'pngcairo'.\n";
     print STDERR "                                    This is the default.\n";
     print STDERR "   --gnuplot-terminal=png           Use gnuplot terminal 'png'.\n";
+    print STDERR "   -j N                             Run N copies of gnuplot and thumbnail\n";
+    print STDERR "                                    generators in parallel. The Perl\n";
+    print STDERR "                                    Parallel::ForkManager module must be\n";
+    print STDERR "                                    available for this feature to work.\n";
     print STDERR "\n";
     print STDERR "Examples:\n";
     print STDERR "\n";
@@ -5492,11 +5504,13 @@ sub usage
 
 my $flag_h;
 my $flag_terminal;
+my $flag_j;
 
 exit(1) if not GetOptions(
 	'h' => \$flag_h,
 	'help' => \$flag_h,
 	'gnuplot-terminal=s' => \$flag_terminal,
+	'j=i' => \$flag_j,
 );
 
 if ($flag_h) {
@@ -5519,6 +5533,11 @@ if ($flag_terminal) {
     if (-e "/targets/links/scratchbox.config") {
 	$gnuplot_terminal = 'png';
     }
+}
+
+if ($flag_j > 1) {
+    eval 'require Parallel::ForkManager';
+    eval '$forkmanager = new Parallel::ForkManager(' . $flag_j . ')';
 }
 
 @dirs = @ARGV;
