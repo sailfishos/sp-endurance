@@ -2569,7 +2569,7 @@ sub process_pagetypeinfo()
 	print STDERR "WARNING: unable to open $fn: $!\n";
 	return;
     }
-    my (@unmovable, @reclaimable, @movable, @reserve);
+    my (@unmovable, @reclaimable, @movable, @reserve, @isolate);
     while (<PAGETYPEINFO>) {
 	chop;
 	if( m/Node /) {
@@ -2582,6 +2582,8 @@ sub process_pagetypeinfo()
 		(@movable) = split(' ' , $_, 17);
 	    } elsif (m/Reserve/) {
 		(@reserve) = split(' ' , $_, 17);
+	    } elsif (m/Isolate/) {
+		(@isolate) = split(' ' , $_, 17);
 	    } 
 	}
     }
