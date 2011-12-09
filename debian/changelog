@@ -1,3 +1,18 @@
+sp-endurance (3.0) unstable; urgency=low
+
+  * Fixes: NB#281308 - proc2csv cannot read processes FD information even as
+    root
+  * Fixes: NB#285793 - Utility to get names of processes in each cgroup for
+    specified endurance snapshot
+  * Fixes: NB#288500 - Grouping sp-endurance graphs better
+  * Fixes: NB#288799 - Make sp-endurance X dependency optional
+  * Fixes: NB#288847 - Wrapper for data saving which tells kernel not to cache
+    the saved data
+  * Fixes: NB#289527 - Provide tool in sp-endurance-postproc for
+    re-compressing endurance data
+
+ -- Tommi Rantala <ext-tommi.1.rantala@nokia.com>  Fri, 09 Dec 2011 15:30:18 +0200
+
 sp-endurance (2.3) unstable; urgency=low
 
   * Fixes: NB#285793 - Utility to get names of processes in each cgroup for

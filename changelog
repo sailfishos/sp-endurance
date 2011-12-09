@@ -1,8 +1,39 @@
-sp-endurance (3.0):
+sp-endurance (3.0), 9 Dec 2011:
+ * NOTE: this release introduces changes to the collected endurance data.
+   Post-processing tools are able to process both new and old formats.
  * X support/dependency is optional in build, measuring and post-processing.
- * Endurance snapshot data is changed to store "xmeminfo" (X resource usage)
-   and "df" (disk usage) output into separate files so that usage.csv
-   contains just proc2csv output + data version/date info.
+ * save-incremental-endurance-stats:
+   - The `xmeminfo' utility is now optional, and the output from the tool is
+     now written to separate file (was previously appended to usage.csv). The
+     error messages from xmeminfo written to 'xmeminfo.log' (was 'xres.log').
+   - Disk usage output from `df' is now written to separate file (was
+     previously appended to usage.csv).
+   - Collect /sys/class/power_supply/ and /sys/class/backlight/ recursively.
+   - Large disk reads and writes filtered through `sp-noncached' utility to
+     avoid polluting kernel page cache with endurance data.
+ * proc2csv:
+   - Collect /proc/pid/wchan and /proc/pid/io.
+   - The '-t' testing flag is removed.
+ * endurance_report.py:
+   - Report Upstart respawned jobs.
+   - Disk space usage changes shown for all filesystems (instead of just / and
+     /tmp).
+ * syslog_parse.py:
+   - Now uses configuration file for matching interesting lines from syslog.
+     This utility now provides results in text format only.
+   - The Python API that this file exports was changed.
+ * endurance_plot:
+   - Graphs now categorized to 'process' and 'system' groups.
+   - New graphs: disk I/O graphs that show MB per round, ext4 filesystem
+     writes per round, process counts in different wait channels, process
+     counts in different non-sleep states, separate networking plots per
+     network interface, /dev/pvrsrvkm mapping count.
+   - Improvements to graphs: legends more readable, x-axis descriptions added
+     that show round number plus date and time.
+   - Switched to `pngcairo' gnuplot terminal.
+   - Command line switch '-j' added for executing some processing in parallel.
+ * recompress-endurance-measurements: New post-processing utility for
+   re-compressing endurance data that was compressed with lzop.
 
 sp-endurance (2.3), 27 Oct 2011:
  * extract-endurance-process-cgroups:
