@@ -1824,7 +1824,7 @@ sub process_openfds()
 	} elsif (m#^.[rwx-]{9}\s+\d+\s+(\S+)\s+\S+\s+.*\d+ -> (\S+)#) {
 	    my $username = $1;
 	    my $target = $2;
-	    if ($target eq 'inotify') {
+	    if ($target eq 'inotify' or $target eq 'anon_inode:inotify') {
 		$fd_inotify{$pid} += 1;
 	    } elsif ($target =~ m/^pipe:\[\d+\]$/) {
 		$fd_pipe{$pid} += 1;
