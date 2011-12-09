@@ -57,6 +57,14 @@
 #include <assert.h>
 #include <errno.h>
 
+/* set to non-zero value to enable "-t" option which can be used
+ * to test parsing of /proc contents copied from other machines.
+ * 
+ * disabled by default as it can have security implications when
+ * proc2scv has been granted extra capabilities.
+ */
+#define PROC_TEST 0
+
 #define CSV_SEPARATOR ","
 
 /* process information taken from /proc,
@@ -531,13 +539,19 @@ static int num_sort(const struct dirent **a, const struct dirent **b)
 
 static void usage(char *name)
 {
+#if PROC_TEST
 	printf("\nusage: %s [-t|-p]\n\n"
-"First this reads all PIDs in proc, then it will read their status\n"
+#else
+	printf("\nusage: %s [-p]\n\n"
+#endif
+"First this reads all PIDs in /proc, then it will read their status\n"
 "and some other system information and output that in CSV format to\n"
 "the standard output.\n\n"
-"Without '-t' (test) option, the system /proc directory is used.\n"
-"With it, the 'proc' subdirectory in current directory is used.\n\n"
-"With -p option you can run this as normal user, as then all\n"
+#if PROC_TEST
+"With the '-t' (test) option, the 'proc' subdirectory in the current\n"
+"directory is used instead of the system /proc directory.\n\n"
+#endif
+"With the '-p' option you can run this as normal user, as then all\n"
 "permission denied errors are ignored.\n",
 	       name);
 	exit(-1);
@@ -556,9 +570,11 @@ int main(int argc, char *argv[])
 		arg = argv[1];
 		if (argc == 2 && arg[0] == '-' && arg[1] && !arg[2]) {
 			switch (arg[1]) {
+#if PROC_TEST
 			case 't':
 				proc = "proc";
 				break;
+#endif
 			case 'p':
 				ignore_user_errors = 1;
 				break;
