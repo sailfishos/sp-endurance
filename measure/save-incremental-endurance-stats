@@ -212,6 +212,16 @@ if [ -d /sys/fs ] ; then
 	echo "- File system statistics"
 	find /sys/fs -type f | xargs head -10000 2>/dev/null > $path/sysfs_fs
 fi
+if [ -d /sys/class/backlight ] ; then
+	echo "- Backlight"
+	# Expecting symlinks in /sys/class/backlight/, e.g. 'display0', ...
+	for D in /sys/class/backlight/* ; do
+		if [ -d "$D/" ] ; then
+			find $D/ -type f | xargs head -10000 2>/dev/null
+			echo
+		fi
+	done > $path/sysfs_backlight
+fi
 
 which rzscontrol >/dev/null 2>/dev/null
 if [ $? -eq 0 ] ; then
