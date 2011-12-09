@@ -735,8 +735,8 @@ my $have_pagetypeinfo = 0;
 my $swapused_total = 0;
 my $swap_pgout_total = 0;
 
-my %num_of_smaps_segments;
-my %max_smaps_segments;
+my %vma_count;
+my %vma_count_max;
 my $steps_files = 0;
 
 my %cgroups;
@@ -2064,14 +2064,14 @@ sub process_smaps()
     %app_posix_shared = ();
     %app_rwxp = ();
     %app_dev_pvr = ();
-    %num_of_smaps_segments = ();
+    %vma_count = ();
     while (<SMAPS_CAP>) {
 	if (m#^[A-Z]#) {
 	    if( index($_, "Pss:") != -1) {
 		my $pss = int(substr($_, 4, -4));
 		$sum_app_pss += $pss;
 		$app_pss{$nm} += $pss;
-		$num_of_smaps_segments{$nm} += 1;
+		$vma_count{$nm} += 1;
 		next;
 	    }
 #	    if( index($_, "Private_Dirty:") != -1) {
@@ -3000,10 +3000,10 @@ sub loop_over_all_apps()
 	}
 	$shared_cpid{$pid} = 0;
 
-	if (exists $num_of_smaps_segments{$x}) {
-	    my $fn = "e/numsegm-$x";
-	    value_store($fn, $i, $num_of_smaps_segments{$x});
-	    $max_smaps_segments{$x} = max $num_of_smaps_segments{$x}, $max_smaps_segments{$x};
+	if (exists $vma_count{$x}) {
+	    my $fn = "e/vma-count-$x";
+	    value_store($fn, $i, $vma_count{$x});
+	    $vma_count_max{$x} = max $vma_count{$x}, $vma_count_max{$x};
 	}
     }
     #
@@ -3954,41 +3954,41 @@ sub generate_plot_vmsize
     close_plot($cnt, $plot, $graph_vmsize);
 }
 
-sub generate_plot_smaps_segments
+sub generate_plot_memory_map_count
 {
-    use constant MAX_SMAPS_PLOTS => 3;
-    use constant MAX_SMAPS_PER_PLOT => 15;
-    use constant MAX_SMAPS_SPLIT_FACTOR => 5;
-    my %max_smaps_segments_to_plot = %max_smaps_segments;
-    foreach my $plot_idx (1 .. MAX_SMAPS_PLOTS) {
-	my $graph_num_of_smaps_segments = "1045_num_smaps_segments_${plot_idx}";
-	$legend{$graph_num_of_smaps_segments} = "number of smaps segments";
-	$unit{$graph_num_of_smaps_segments} = "count";
-	$plot = start_plotfile_linespoints($graph_num_of_smaps_segments);
+    use constant MAX_MMAPS_PLOTS => 3;
+    use constant MAX_MMAPS_PER_PLOT => 15;
+    use constant MAX_MMAPS_SPLIT_FACTOR => 5;
+    my %vma_count_max_to_plot = %vma_count_max;
+    foreach my $plot_idx (1 .. MAX_MMAPS_PLOTS) {
+	my $graph_num_mmaps = "1045_num_mmaps_${plot_idx}";
+	$legend{$graph_num_mmaps} = 'Number of memory maps (virtual memory areas)';
+	$unit{$graph_num_mmaps} = 'count';
+	$plot = start_plotfile_linespoints($graph_num_mmaps);
 	my $prev_max = 0;
 	my $cnt_this_round = 0;
 	my @plotted_this_round;
-	foreach my $p (reverse sort { $max_smaps_segments{$a} <=> $max_smaps_segments{$b} } keys %max_smaps_segments_to_plot) {
-	    my $fn = "e/numsegm-$p";
+	foreach my $p (reverse sort { $vma_count_max{$a} <=> $vma_count_max{$b} } keys %vma_count_max_to_plot) {
+	    my $fn = "e/vma-count-$p";
 	    next if not changes_found($fn);
 	    if (not $prev_max) {
-		$prev_max = $max_smaps_segments{$p};
+		$prev_max = $vma_count_max{$p};
 	    }
-	    if ($plot_idx < MAX_SMAPS_PLOTS and $prev_max >= (MAX_SMAPS_SPLIT_FACTOR * $max_smaps_segments{$p})) {
+	    if ($plot_idx < MAX_MMAPS_PLOTS and $prev_max >= (MAX_MMAPS_SPLIT_FACTOR * $vma_count_max{$p})) {
 		last;
 	    }
 	    one_plot_set(fn => $fn, lw => 3, plot => $plot,
 		cnt => \$cnt_this_round, title => $p);
 	    push(@plotted_this_round, $p);
-	    if ($plot_idx < MAX_SMAPS_PLOTS and $cnt_this_round > MAX_SMAPS_PER_PLOT) {
+	    if ($plot_idx < MAX_MMAPS_PLOTS and $cnt_this_round > MAX_MMAPS_PER_PLOT) {
 		last;
 	    }
 	}
 	foreach my $p (@plotted_this_round) {
-	    delete $max_smaps_segments_to_plot{$p};
+	    delete $vma_count_max_to_plot{$p};
 	}
-	$thumblegend{$graph_num_of_smaps_segments} = "#SMAPS SEGMENTS &mdash; MAX $prev_max";
-	close_plot($cnt_this_round, $plot, $graph_num_of_smaps_segments);
+	$thumblegend{$graph_num_mmaps} = "#MEMORY MAPS &mdash; MAX $prev_max";
+	close_plot($cnt_this_round, $plot, $graph_num_mmaps);
     }
 }
 
@@ -5367,7 +5367,7 @@ sub generate_plots()
     generate_plot_shmem();
     generate_plot_mlocked();
     generate_plot_vmsize();
-    generate_plot_smaps_segments();
+    generate_plot_memory_map_count();
     generate_plot_heap_histogram();
     generate_plot_heap();
     generate_plot_sysvshared();
