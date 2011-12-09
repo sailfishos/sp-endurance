@@ -531,34 +531,27 @@ static int num_sort(const struct dirent **a, const struct dirent **b)
 
 static void usage(char *name)
 {
-	printf("\nusage: %s [-t|-p]\n\n"
-"First this reads all PIDs in proc, then it will read their status\n"
+	printf("\nusage: %s [-p]\n\n"
+"First this reads all PIDs in /proc, then it will read their status\n"
 "and some other system information and output that in CSV format to\n"
 "the standard output.\n\n"
-"Without '-t' (test) option, the system /proc directory is used.\n"
-"With it, the 'proc' subdirectory in current directory is used.\n\n"
 "With -p option you can run this as normal user, as then all\n"
 "permission denied errors are ignored.\n",
 	       name);
 	exit(-1);
 }
 
-
 int main(int argc, char *argv[])
 {
 	status_t *statuslist;
-	const char *proc = "/proc", *arg;
+	const char *arg;
 	struct dirent **namelist;
 	int lines;
 
-	/* which dir to use for "proc" directory */
 	if (argc > 1) {
 		arg = argv[1];
 		if (argc == 2 && arg[0] == '-' && arg[1] && !arg[2]) {
 			switch (arg[1]) {
-			case 't':
-				proc = "proc";
-				break;
 			case 'p':
 				ignore_user_errors = 1;
 				break;
@@ -570,9 +563,8 @@ int main(int argc, char *argv[])
 		}
 	}
 	
-	/* change to proc */
-	if (chdir(proc) < 0) {
-		perror("chdir('proc')");
+	if (chdir("/proc") < 0) {
+		perror("chdir('/proc')");
 		return -1;
 	}
 
@@ -605,7 +597,7 @@ int main(int argc, char *argv[])
 	/* read process IDs for all the processes from the procfs */
 	lines = scandir(".", &namelist, filter_pids, num_sort);
 	if (lines < 0) {
-		perror("scandir('proc')");
+		perror("scandir('/proc')");
 		return -1;
 	}
 	if (!lines) {
