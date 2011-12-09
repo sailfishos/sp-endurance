@@ -21,6 +21,7 @@
  * - PID/fds/ (just the count of open FDs)
  * - PID/stat
  * - PID/status
+ * - PID/wchan
  * 
  * NOTES:
  * - Originally this was a 'top' utility contributed by Eero
