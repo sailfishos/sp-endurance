@@ -50,7 +50,7 @@ if [ $# -lt 1 ] || [ $# -gt 2 ] || [ "${1#-}" != "$1" ]; then
 	echo " - syslog.gz    (compressed syslog contents)"
 	echo " - usage.csv    (/proc info + X resource & disk usage in CSV format)"
 	echo " - xmeminfo     (X server resource usage information)"
-	echo " - xres.log     (XRes related error messages from xmeminfo)"
+	echo " - xmeminfo.log (XRes related error messages from xmeminfo)"
 	echo " - bmestat      (Battery information from Battery Management Entity)"
 	echo " - cgroups      (Control Group information)"
 	echo " - ramzswap     (ramzswap statistics)"
@@ -174,10 +174,10 @@ done
 which xmeminfo >/dev/null 2>/dev/null
 if [ $? -eq 0 ] ; then
 	echo "- X resource usage"
-	xmeminfo > $path/xmeminfo 2> $path/xres.log
+	xmeminfo > $path/xmeminfo 2> $path/xmeminfo.log
 	RET=$?
 	if [ $RET -ne 0 ]; then
-		cat $path/xres.log 1>&2
+		cat $path/xmeminfo.log 1>&2
 		echo "$script: WARNING, xmeminfo failed with exit code $RET, check \$DISPLAY and \$XAUTHORITY." 1>&2
 	fi
 fi
