@@ -189,14 +189,14 @@ ls -l /proc/[0-9]*/fd/ 2>/dev/null | lzop -c | sp-noncached --write $path/open-f
 which sysinfoclient >/dev/null 2>/dev/null
 if [ $? -eq 0 ] ; then
 	echo "- Bootreason"
-	sysinfoclient -p /component/boot-reason 2> /dev/null > $path/bootreason
+	sysinfoclient -p /component/boot-reason > $path/bootreason
 
 	echo "- HW identification"
 	{
-		echo "product     `sysinfoclient -p /component/product   2>/dev/null`"
-		echo "hw-build    `sysinfoclient -p /component/hw-build  2>/dev/null`"
-		echo "nolo        `sysinfoclient -p /component/nolo      2>/dev/null`"
-		echo "boot-mode   `sysinfoclient -p /component/boot-mode 2>/dev/null`"
+		echo "product     `sysinfoclient -p /component/product`"
+		echo "hw-build    `sysinfoclient -p /component/hw-build`"
+		echo "nolo        `sysinfoclient -p /component/nolo`"
+		echo "boot-mode   `sysinfoclient -p /component/boot-mode`"
 	} > $path/component_version
 fi
 if [ -d /syspart ] ; then
