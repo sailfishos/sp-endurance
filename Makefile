@@ -36,7 +36,7 @@ measure/proc2csv: src/proc2csv.c
 	$(CC) $(CFLAGS) -o $@ $<
 
 measure/xmeminfo: src/xmeminfo.c
-	$(CC) -I/usr/X11R6/include $(CFLAGS) -o $@ $< -lXRes
+	$(CC) -I/usr/X11R6/include $(CFLAGS) -o $@ $< -lXRes -lX11
 
 measure/sp-noncached: src/sp_noncached.c
 	$(CC) $(CFLAGS) -o $@ $<
