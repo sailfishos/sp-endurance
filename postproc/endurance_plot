@@ -782,10 +782,7 @@ sub date2seconds($)
     my (undef, undef, $date, $time) = split(' ', $line, 4);
     my ($year, $mon, $day) = split('-', $date, 3);
     my ($hour, $min, $sec) = split(':', $time, 3);
-
-#    print "call timelocal d=[$date] f2=[$time] $sec, $min, $hour, $day, $mon, $year\n";                                                                             
     my $retsec = timelocal($sec, $min, $hour, $day, $mon-1, $year-1900);
-#    print "call timelocal returned  $retsec\n";                                                                                                                     
     return $retsec;
 }
 
@@ -875,8 +872,6 @@ sub value_store($$$)
 	if (! $ra) {
 	    print STDERR "\nINTERNAL ERROR: *** store[$fn rnd=$rnd]: no ref in hash ?????\n";
 	    exit(1);
-	} else {
-#	    print "  ** store: use existing ra=$ra\n";
 	}
     }
 #    print "  store: store idx=$rnd val=$val\n";
@@ -994,8 +989,6 @@ sub value_emit($$)
 	print STDERR "ERROR: unable to create $fn: $!\n";
 	exit(1);
     }
-
-#    print "*** emit file=[$fn]\n";
     if ($emit_zeroes) {
 	$num = value_emit_all_entries($ofile, $ra);
     } else {
@@ -1144,8 +1137,6 @@ sub parse_shmem_block($)
 	if ($_ eq "") {
 	    last;
 	}
-#		    print "use line=[$_]\n";
-
 	$shared_cnt += 1;
 	split_values($_);
 	my $perms = $val{"perms"};
@@ -1200,7 +1191,6 @@ sub parse_shmem_block($)
 	} else {
 #		    print "$d: xperm=[$xperms] perm=[$perms], unlocked\n";
 	    $shared_unlocked += $szxx;
-#		print "$d: unlocked+=$szxx, now $shared_unlocked\n";
 	}
 	$shared_lpid{$lpid} += $szxx;
 	$shared_cpid{$cpid} += $szxx;
@@ -1208,7 +1198,6 @@ sub parse_shmem_block($)
 	# to name-pid hash at the end of one round
 	$shared_lpid_cnt_oneround{$lpid} += 1;
 	$shared_cpid_cnt_oneround{$cpid} += 1;
-#		print "$d: memfree=$mfree buf=$buffers cached=$cached\n";
     }
 #    if ($a_age_cnt) {
 #	$a_age_avg = $a_age_sum / $a_age_cnt;
@@ -1236,14 +1225,11 @@ sub parse_pid_fd_block($)
 	my ($Pid, $FD_count, $cmdline) = split(',' , $_, 3);
 	my ($Name, undef) = split(' ' , $cmdline);
 	my $last_slash = rindex($Name, '/');
-#		    print "fdcount:[$Name]: lastsl=$last_slash\n";
 	if ($last_slash > 0) {
 	    $Name = substr($Name, $last_slash + 1);
 	}
-#		$Name =~ s/\//\_/g;
 	if ($Name) {
 	    my $pname = $Name . "-" . $Pid;
-#		    print "fdcount: $pname: count=$FD_count\n";
 	    $fd_count{$pname} = $FD_count;
 	    $fd_count_samples{$pname} += 1;
 	    my $fn = "e/fd-$pname";
@@ -1413,7 +1399,6 @@ sub parse_xresource_block
 
 	my $Identifier = $val{"Identifier"};
 	my $xresPid = $val{"PID"};
-#		print "xresource line: Id=[$Identifier]\n";
 	$Identifier =~ s/ /-/g;
 	$Identifier =~ s/\>//g;
 	$Identifier =~ s/\<//g;
@@ -1507,7 +1492,6 @@ sub parse_memtotal_block($)
     my $handle= shift;
     chop;
     @names = split(',' , $_);
-#		print "names=[@names]\n";
 
     my $line = <$handle>;
     $line =~ s/kB//g;
@@ -1597,7 +1581,6 @@ sub parse_pages_block($)
 	value_store_zeropad($pswp_in_plot_file_name, $i, $pswp_in);
     }
     $pswp_in_prev = $pswp_in_cumul;
-#		print "$d:swpin_cumul=$pswp_in_cumul this=$pswp_in prev=$pswp_in_prev pptable=$pptablepages\n";
     # check for pagetables value sanity:
     if ((($pptablepages * $page_size)/1024) != $pagetables) {
 	print "**********************************************************************************\n";
@@ -1612,9 +1595,6 @@ sub parse_pages_block($)
     }
     $pswp_out_prev = $pswp_out_cumul;
     $swap_pgout_total += $pswp_out;
-
-#		$pgrotated = $pgrotated_cumul - $pgrotated_prev;
-#		$pgrotated_prev = $pgrotated_cumul;
 
     if ($pgscan_kswapd_normal_prev) {
 	my $pgscan_kswapd_normal = ($pgscan_kswapd_normal_cumul - $pgscan_kswapd_normal_prev)/$divider;
@@ -1761,7 +1741,6 @@ sub process_slabinfo()
 	$all_slabs{$slabname} += $active_objs;
     }
     close(SLABINFO);
-#	print "   slabinfo_done ";
 }
 
 #/proc/12/fd/:
@@ -2067,9 +2046,6 @@ sub process_ifconfig()
 
 sub process_smaps()
 {
-#
-# smaps
-#
     my $heap = 0;
     my $nm;
     my $fn = compression_check("$d/smaps.cap");
@@ -2089,7 +2065,6 @@ sub process_smaps()
     %app_rwxp = ();
     %app_dev_pvr = ();
     %num_of_smaps_segments = ();
-#    %name_by_pid = ();
     while (<SMAPS_CAP>) {
 	if (m#^[A-Z]#) {
 	    if( index($_, "Pss:") != -1) {
@@ -2141,9 +2116,7 @@ sub process_smaps()
 		###### now start with new name
 		(undef, $nm) = split(' ' , $_, 2);
 
-		#
 		# some are really long names (hald-bla-bla 384 chars)
-		#
 		my $sz = length $nm;
 		if($sz > 64) {
 		    $nm = substr($nm, 0, 64);
@@ -2151,7 +2124,6 @@ sub process_smaps()
 		$nm =~ s/\(//g;
 		$nm =~ s/\)//g;
 		$nm =~ s/\///g;
-#		print "length=$sz nm=[$nm]\n";
 		next;
 	    }
 	    if( index($_, "#Pid: ") != -1) {
@@ -2230,7 +2202,6 @@ sub process_smaps()
 	}
     }
     close(SMAPS_CAP);
-#	print "   smaps_done ";
     $sum_app_swapped /= 1024;
 #    $sum_app_private_dirty /= 1024;
     $sum_app_pss /= 1024;
@@ -2241,9 +2212,6 @@ sub process_smaps()
 
 sub process_interrupts()
 {
-#
-# interrupts
-#
     my $all_ints = 0;
 
     my $fn = $d . "/interrupts";
@@ -2276,15 +2244,9 @@ sub process_interrupts()
 
 sub process_diskstats()
 {
-#
-# diskstats
-#
     my $fn = $d . "/diskstats";
     if (! -e $fn) {
-	#
-        # this is optional as it was added later to snapshots,
-        # just return if not there
-        #
+        # this is optional as it was added later to snapshots.
 	return;
     }
     unless (open(DISKSTATS, $fn)) {
@@ -2356,15 +2318,10 @@ sub process_diskstats()
 
 sub process_bme()
 {
-#
-# bme values (battery mgmt)
-#
     my $fn = $d . "/bmestat";
     if (! -e $fn) {
-	#
         # as this is new (added in sp-endurance 2.2.1+0m6 in 2011w9), 
 	# it may be missing in snapshots, just return silently if not there
-        #
 	return;
     }
     unless (open(BMESTAT, $fn)) {
@@ -2376,19 +2333,16 @@ sub process_bme()
 	if (m/battery pct. level:/) {
 	    my (undef, undef, undef, $batt_lev) = split(' ' , $_, 4);
 	    chop $batt_lev;
-#	    print "$i: batt_lev=[$batt_lev]\n";
 	    value_store($batt_charge_left_file_name, $i, $batt_lev);
 	} 
 	elsif (m/battery cur. voltage:/) {
 	    my (undef, undef, undef, $volt) = split(' ' , $_, 4);
 	    chop $volt;
-#	    print "$i: batt_volt=[$volt]\n";
 	    value_store($batt_voltage_file_name, $i, $volt);
 	}
 	elsif (m/battery temperature:/) {
 	    my (undef, undef, $batt_temp) = split(' ' , $_, 3);
 	    chop $batt_temp;
-#	    print "$i: batt_temp=[$batt_temp]\n";
 	    value_store($batt_temperature_file_name, $i, $batt_temp);
 	}
     }
@@ -2398,15 +2352,9 @@ sub process_bme()
 
 sub process_ramzswap()
 {
-#
-# Compressed swap values
-#
     my $fn = $d . "/ramzswap";
     if (! -e $fn) {
-	#
-        # as this is optional, may be missing in snapshots,
-        # just return silently if not there
-        #
+        # as this is optional, may be missing in snapshots.
 	return;
     }
     unless (open(RAMZSWAP, $fn)) {
@@ -2426,7 +2374,6 @@ sub process_ramzswap()
 	    if ($prev_ramzswap_bdreads) {
 		$n_bdreads = ($param  - $prev_ramzswap_bdreads)/$divider;
 	    }
-#	    print "$i: n_bdreads=$n_bdreads\n";
 	    value_store($ramzswap_bdreads_file_name, $i, $n_bdreads);
 	    $prev_ramzswap_bdreads = $param;
 	} elsif (m/NumReads:/) {
@@ -2435,7 +2382,6 @@ sub process_ramzswap()
 	    if ($prev_ramzswap_reads) {
 		$n_reads = ($param  - $prev_ramzswap_reads)/$divider;
 	    }
-#	    print "$i: n_reads=$n_reads div=$divider\n";
 	    value_store($ramzswap_reads_file_name, $i, $n_reads);
 	    $prev_ramzswap_reads = $param;
 	} elsif (m/BDevNumWrites:/) {
@@ -2444,7 +2390,6 @@ sub process_ramzswap()
 	    if ($prev_ramzswap_bdwrites) {
 		$n_bdwrites = ($param  - $prev_ramzswap_bdwrites)/$divider;
 	    }
-#	    print "$i: n_bdwrites=$n_bdwrites\n";
 	    value_store($ramzswap_bdwrites_file_name, $i, $n_bdwrites);
 	    $prev_ramzswap_bdwrites = $param;
 	} elsif (m/NumWrites:/) {
@@ -2453,18 +2398,15 @@ sub process_ramzswap()
 	    if ($prev_ramzswap_writes) {
 		$n_writes = ($param  - $prev_ramzswap_writes)/$divider;
 	    }
-#	    print "$i: n_writes=$n_writes\n";
 	    value_store($ramzswap_writes_file_name, $i, $n_writes);
 	    $prev_ramzswap_writes = $param;
 	} elsif (m/ZeroPages:/) {
 	    my (undef, $zerop) = split(' ' , $_, 2);
 	    my $zerom = ($zerop * $page_size)/1024;
-#	    print "$i: n_zerop=$zerom\n";
 	    value_store($ramzswap_zerop_file_name, $i, $zerom);
 	} elsif (m/PagesUsed:/) {
 	    my (undef, $n_usedp) = split(' ' , $_, 2);
 	    my $used = ($n_usedp * $page_size)/1024;
-#	    print "$i: nused=$n_usedp used=$used\n";
 	    value_store($ramzswap_used_file_name, $i, $used);
 	    $have_ramzswap = 1;
 	}
@@ -2475,9 +2417,6 @@ sub process_ramzswap()
 
 sub process_stat()
 {
-#
-# CPU stat, global ctxts etc
-#
     my $ctx;
     my %cpu_ticks;
     my $processes;
@@ -2833,7 +2772,6 @@ sub parse_component_version
 	}
     }
     close(COMPONENT_VERSION);
-#print "hw_product=[$hw_product] hw_build=[$hw_build]\n";
 }
 
 sub loop_over_all_apps()
@@ -4331,7 +4269,6 @@ sub generate_plot_swap_event
 	    } 
 	    $show_this{$p} = 1;
 	    $cnt += 1;
-#    print "1:cnt=$cnt p=$p\n";
 	}
 	foreach my $p (sort keys %app_cumul_swp) {
 	    if ($show_this{$p}) {
@@ -4344,7 +4281,6 @@ sub generate_plot_swap_event
 	    next unless $show_this{$p};
 	    one_plot_set(fn => "e/swp-$p", plot => $plot, cnt => \$cnt,
 		emit_zeroes => 1, title => $p);
-#    print "2:cnt=$cnt p=$p show_this=$show_this{$p}\n";
 	}
 ##
 ## special: add unaccounted swapped (shared??) mem. (diff:total_swap - apps_swap)
@@ -4511,9 +4447,6 @@ sub generate_plot_pss_swap
     }
 
 ############### Lines of processes PSS+SWAP >= $lines_pss_swap_divider_1 MB #################
-#
-# XXX ??? here between _11.1 and _12, mem use jumps high!!
-#
     $cnt = 0;
     my $plot_1 = start_plotfile_linespoints($graph_appmem_pss_swap_lines_big);
     my $plot_2 = start_plotfile_linespoints($graph_appmem_pss_swap_lines_small);
@@ -5586,9 +5519,6 @@ foreach $d (@dirs) {
 	} 
 	if( m/date = (.*)/) {
 	    $round_date{$d} = $1;
-	    #                                                                                                                                                    
-	    # parse date into num of seconds,                                                                                                                    
-	    #                                                                                                                                                    
 	    $secval{$d} = date2seconds($_);
 	    next;
 	}
@@ -5745,20 +5675,14 @@ foreach $d (@dirs) {
     process_sysfs_power_supply();
 
 #    $unaccount_swapped = $swapused - $sum_app_swapped;
-#    print "swap: total=$swaptotal free=$swapfree used=$swapused sum_app=$sum_app_swapped, unacc=$unaccount_swapped\n";
-
     value_store($app_swapped_plot_file_name, $i, $sum_app_swapped);
-#    print $app_swapped_plot_file "$i, $sum_app_swapped\n";
 #    value_store($unaccount_swapped_plot_file_name, $i, $unaccount_swapped);
 #    print $unaccount_swapped_plot_file "$i, $unaccount_swapped\n";
     value_store($app_pss_plot_file_name, $i, $sum_app_pss);
-#    print $app_pss_plot_file "$i, $sum_app_pss\n";
 
     loop_over_all_apps();
 #    $total_shared_num = 0;
     for (my $z = 0; $z <= $max_nattach ; $z++) {
-#	print "round $i: z=$z; shared_num=$shared_num{$z}\n";
-#	$total_shared_num += $shared_num{$z};
 	$fn = "e/nattach-$z-shm";
 	value_store($fn, $i, $shared_num{$z});
 	if ($z > 0) {
@@ -5770,8 +5694,6 @@ foreach $d (@dirs) {
 	    }
 	}
     }
-#    print "total shared_num=$total_shared_num\n";
-
 #    $total_unaccounted = 512*1024 + $swapused - $sum_app_pss - $sum_app_swapped;
 #	print "$i: 256M + $swapused; apps=$sum_app_pss swapped=$sum_app_swapped; total unaccount = $total_unaccounted\n";
 
