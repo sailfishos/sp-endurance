@@ -2755,11 +2755,7 @@ sub process_powertop()
 
 sub parse_component_version
 {
-    my $fn = "$d/component_version";
-    unless (open(COMPONENT_VERSION, $fn)) {
-	print STDERR "ERROR: unable to open $fn: $!\n";
-	exit(1);
-    }
+    return unless open(COMPONENT_VERSION, $d . '/component_version');
     while (<COMPONENT_VERSION>) {
 	if (m/product/) {
 	    chop;
