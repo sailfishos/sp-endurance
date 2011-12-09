@@ -5474,8 +5474,8 @@ if ($flag_terminal) {
 }
 
 if ($flag_j > 1) {
-    eval 'require Parallel::ForkManager';
-    eval '$forkmanager = new Parallel::ForkManager(' . $flag_j . ')';
+    require Parallel::ForkManager;
+    $forkmanager = new Parallel::ForkManager($flag_j);
 }
 
 @dirs = @ARGV;
