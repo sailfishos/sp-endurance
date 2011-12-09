@@ -22,6 +22,7 @@
  * - PID/stat
  * - PID/status
  * - PID/wchan
+ * - PID/io (optional)
  * 
  * NOTES:
  * - Originally this was a 'top' utility contributed by Eero
@@ -346,6 +347,35 @@ static void show_proc_pid_wchan(int num, const status_t *statuslist)
 	}
 }
 
+static void show_proc_pid_io(int num, const status_t *statuslist)
+{
+	char buffer[20];
+	FILE *fp;
+	int i;
+	int header = 0;
+	for (i=0; i < num; ++i) {
+		const status_t *s = &statuslist[i];
+		if (s->skip)
+			continue;
+		snprintf(buffer, sizeof(buffer), "%s/io", s->pid);
+		buffer[sizeof(buffer)-1] = 0;
+		fp = fopen(buffer, "r");
+		if (!fp) {
+			/* Ignore, /proc/pid/io is not universally available. */
+			continue;
+		}
+		if (!header) {
+			fputs("\nPID,", stdout);
+			output_fields(fp, SHOW_FIELDS, ':');
+			rewind(fp);
+		}
+		header = 1;
+		fprintf(stdout, "%s%s", s->pid, CSV_SEPARATOR);
+		output_fields(fp, SHOW_VALUES, ':');
+		fclose(fp);
+	}
+}
+
 /* read fd counts for each process in statuslist */
 static void show_fd_counts(int num, status_t *statuslist)
 {
@@ -604,6 +634,8 @@ int main(int argc, char *argv[])
 	
 	fputs("\nPID,wchan:\n", stdout);
 	show_proc_pid_wchan(lines, statuslist);
+
+	show_proc_pid_io(lines, statuslist);
 
 	free(statuslist);
 	return 0;
