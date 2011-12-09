@@ -186,19 +186,19 @@ fi
 echo "- Open file descriptors"
 ls -l /proc/[0-9]*/fd/ 2>/dev/null | lzop -c | sp-noncached --write $path/open-fds.lzo
 
-# Get bootreason from sysinfo daemon. /proc/bootreason is deprecated.
-echo "- Bootreason"
-sysinfoclient -p /component/boot-reason 2> /dev/null > $path/bootreason
+which sysinfoclient >/dev/null 2>/dev/null
+if [ $? -eq 0 ] ; then
+	echo "- Bootreason"
+	sysinfoclient -p /component/boot-reason 2> /dev/null > $path/bootreason
 
-# Get HW identification from sysinfo daemon. /proc/component_version is deprecated.
-echo "- HW identification"
-{
-	echo "product     `sysinfoclient -p /component/product   2>/dev/null`"
-	echo "hw-build    `sysinfoclient -p /component/hw-build  2>/dev/null`"
-	echo "nolo        `sysinfoclient -p /component/nolo      2>/dev/null`"
-	echo "boot-mode   `sysinfoclient -p /component/boot-mode 2>/dev/null`"
-} > $path/component_version
-
+	echo "- HW identification"
+	{
+		echo "product     `sysinfoclient -p /component/product   2>/dev/null`"
+		echo "hw-build    `sysinfoclient -p /component/hw-build  2>/dev/null`"
+		echo "nolo        `sysinfoclient -p /component/nolo      2>/dev/null`"
+		echo "boot-mode   `sysinfoclient -p /component/boot-mode 2>/dev/null`"
+	} > $path/component_version
+fi
 if [ -d /syspart ] ; then
 	echo "- Control Group data"
 	find /syspart -type f | xargs head -10000 2>/dev/null > $path/cgroups
