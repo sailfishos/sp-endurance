@@ -5439,11 +5439,16 @@ my $flag_h;
 my $flag_terminal;
 my $flag_j;
 
+# The -e flag is intentionally undocumented. When specified, the 'e' directory
+# is not cleared after running the script.
+my $flag_e;
+
 exit(1) if not GetOptions(
 	'h' => \$flag_h,
 	'help' => \$flag_h,
 	'gnuplot-terminal=s' => \$flag_terminal,
 	'j=i' => \$flag_j,
+	'e' => \$flag_e,
 );
 
 if ($flag_h) {
@@ -5723,9 +5728,13 @@ my @html_images = gen_html_page();
 print "generating thumbnails...\n";
 gen_thumbnails(@html_images);
 
-print "endurance_plot done.\n";
-
 if (not -e 'endurance-report.html') {
     print STDERR "NOTE: generate also the endurance report (with endurance_report.py),"
 	. " and save it in current directory as 'endurance-report.html'.\n";
 }
+
+if (not $flag_e) {
+    system("rm -rf e");
+}
+
+print "endurance_plot done.\n";
