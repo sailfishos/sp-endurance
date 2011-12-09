@@ -5579,8 +5579,18 @@ printf "   - average  snapshot interval: %s\n" .
        round_duration_stats();
 
 system("rm -f e/* $graphs_dir/1???_* $graphs_dir/2???_* $html_name");
+
 mkdir "e";
-mkdir "$graphs_dir";
+if (not -d 'e') {
+    print STDERR "ERROR: unable to create directory 'e'.\n";
+    exit(1);
+}
+
+mkdir $graphs_dir;
+if (not -d $graphs_dir) {
+    print STDERR "ERROR: unable to create directory '$graphs_dir'.\n";
+    exit(1);
+}
 
 print "input: ";
 foreach $d (@dirs) {
