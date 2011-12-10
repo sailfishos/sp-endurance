@@ -3596,7 +3596,7 @@ sub generate_plot_system_memory_2
 	    lw => 3, emit_zeroes => 1, cnt => \$cnt,
 	    title => 'SlabUnreclaimable');
     }
-    close_plot($i, $plot, $graph_system_memory_2);
+    close_plot($cnt, $plot, $graph_system_memory_2);
 }
 
 sub generate_plot_slab
@@ -4983,7 +4983,7 @@ sub generate_plot_cgroups
 	    $cnt++;
 	}
     }
-    close_plot($i, $plot, $graph_cgroups_mem);
+    close_plot($cnt, $plot, $graph_cgroups_mem);
     # swap:
     $cnt = 0;
     $plot = start_plotfile_lines($graph_cgroups_swap);
@@ -4992,7 +4992,7 @@ sub generate_plot_cgroups
 	one_plot_set(fn => $fn, lw => 3, plot => $plot, cnt => \$cnt,
 	    emit_zeroes => 1, title => $cgroups_demangle{$cgroup});
     }
-    close_plot($i, $plot, $graph_cgroups_swap);
+    close_plot($cnt, $plot, $graph_cgroups_swap);
     # mem + swap:
     $cnt = 0;
     $plot = start_plotfile_lines($graph_cgroups_memsw);
@@ -5001,7 +5001,7 @@ sub generate_plot_cgroups
 	one_plot_set(fn => $fn, lw => 3, plot => $plot, cnt => \$cnt,
 	    emit_zeroes => 1, title => $cgroups_demangle{$cgroup});
     }
-    close_plot($i, $plot, $graph_cgroups_memsw);
+    close_plot($cnt, $plot, $graph_cgroups_memsw);
     # cache:
     $cnt = 0;
     $plot = start_plotfile_lines($graph_cgroups_cache);
@@ -5010,7 +5010,7 @@ sub generate_plot_cgroups
 	one_plot_set(fn => $fn, lw => 3, plot => $plot, cnt => \$cnt,
 	    emit_zeroes => 1, title => $cgroups_demangle{$cgroup});
     }
-    close_plot($i, $plot, $graph_cgroups_cache);
+    close_plot($cnt, $plot, $graph_cgroups_cache);
     # rss:
     $cnt = 0;
     $plot = start_plotfile_lines($graph_cgroups_rss);
@@ -5019,7 +5019,7 @@ sub generate_plot_cgroups
 	one_plot_set(fn => $fn, lw => 3, plot => $plot, cnt => \$cnt,
 	    emit_zeroes => 1, title => $cgroups_demangle{$cgroup});
     }
-    close_plot($i, $plot, $graph_cgroups_rss);
+    close_plot($cnt, $plot, $graph_cgroups_rss);
     # mapped_file:
     $cnt = 0;
     $plot = start_plotfile_lines($graph_cgroups_mapped_file);
@@ -5028,7 +5028,7 @@ sub generate_plot_cgroups
 	one_plot_set(fn => $fn, lw => 3, plot => $plot, cnt => \$cnt,
 	    emit_zeroes => 1, title => $cgroups_demangle{$cgroup});
     }
-    close_plot($i, $plot, $graph_cgroups_mapped_file);
+    close_plot($cnt, $plot, $graph_cgroups_mapped_file);
     # unevictable:
     $cnt = 0;
     $plot = start_plotfile_lines($graph_cgroups_unevictable);
@@ -5037,7 +5037,7 @@ sub generate_plot_cgroups
 	one_plot_set(fn => $fn, lw => 3, plot => $plot, cnt => \$cnt,
 	    emit_zeroes => 1, title => $cgroups_demangle{$cgroup});
     }
-    close_plot($i, $plot, $graph_cgroups_unevictable);
+    close_plot($cnt, $plot, $graph_cgroups_unevictable);
     # inactive_anon:
     $cnt = 0;
     $plot = start_plotfile_lines($graph_cgroups_inactive_anon);
@@ -5046,7 +5046,7 @@ sub generate_plot_cgroups
 	one_plot_set(fn => $fn, lw => 3, plot => $plot, cnt => \$cnt,
 	    emit_zeroes => 1, title => $cgroups_demangle{$cgroup});
     }
-    close_plot($i, $plot, $graph_cgroups_inactive_anon);
+    close_plot($cnt, $plot, $graph_cgroups_inactive_anon);
     # active_anon:
     $cnt = 0;
     $plot = start_plotfile_lines($graph_cgroups_active_anon);
@@ -5055,7 +5055,7 @@ sub generate_plot_cgroups
 	one_plot_set(fn => $fn, lw => 3, plot => $plot, cnt => \$cnt,
 	    emit_zeroes => 1, title => $cgroups_demangle{$cgroup});
     }
-    close_plot($i, $plot, $graph_cgroups_active_anon);
+    close_plot($cnt, $plot, $graph_cgroups_active_anon);
     # inactive_file:
     $cnt = 0;
     $plot = start_plotfile_lines($graph_cgroups_inactive_file);
@@ -5064,7 +5064,7 @@ sub generate_plot_cgroups
 	one_plot_set(fn => $fn, lw => 3, plot => $plot, cnt => \$cnt,
 	    emit_zeroes => 1, title => $cgroups_demangle{$cgroup});
     }
-    close_plot($i, $plot, $graph_cgroups_inactive_file);
+    close_plot($cnt, $plot, $graph_cgroups_inactive_file);
     # active_file:
     $cnt = 0;
     $plot = start_plotfile_lines($graph_cgroups_active_file);
@@ -5073,7 +5073,7 @@ sub generate_plot_cgroups
 	one_plot_set(fn => $fn, lw => 3, plot => $plot, cnt => \$cnt,
 	    emit_zeroes => 1, title => $cgroups_demangle{$cgroup});
     }
-    close_plot($i, $plot, $graph_cgroups_active_file);
+    close_plot($cnt, $plot, $graph_cgroups_active_file);
     # pgpgin:
     $cnt = 0;
     $plot = start_plotfile_lines($graph_cgroups_pgpgin);
@@ -5082,7 +5082,7 @@ sub generate_plot_cgroups
 	one_plot_set(fn => $fn, lw => 3, plot => $plot, cnt => \$cnt,
 	    emit_zeroes => 1, title => $cgroups_demangle{$cgroup});
     }
-    close_plot($i, $plot, $graph_cgroups_pgpgin);
+    close_plot($cnt, $plot, $graph_cgroups_pgpgin);
     # pgpgout:
     $cnt = 0;
     $plot = start_plotfile_lines($graph_cgroups_pgpgout);
@@ -5091,7 +5091,7 @@ sub generate_plot_cgroups
 	one_plot_set(fn => $fn, lw => 3, plot => $plot, cnt => \$cnt,
 	    emit_zeroes => 1, title => $cgroups_demangle{$cgroup});
     }
-    close_plot($i, $plot, $graph_cgroups_pgpgout);
+    close_plot($cnt, $plot, $graph_cgroups_pgpgout);
     # process-cnt:
     $cnt = 0;
     $plot = start_plotfile_lines($graph_cgroups_process_cnt);
@@ -5100,7 +5100,7 @@ sub generate_plot_cgroups
 	one_plot_set(fn => $fn, lw => 3, plot => $plot, cnt => \$cnt,
 	    emit_zeroes => 1, title => $cgroups_demangle{$cgroup});
     }
-    close_plot($i, $plot, $graph_cgroups_process_cnt);
+    close_plot($cnt, $plot, $graph_cgroups_process_cnt);
     # task-cnt:
     $cnt = 0;
     $plot = start_plotfile_lines($graph_cgroups_task_cnt);
@@ -5109,7 +5109,7 @@ sub generate_plot_cgroups
 	one_plot_set(fn => $fn, lw => 3, plot => $plot, cnt => \$cnt,
 	    emit_zeroes => 1, title => $cgroups_demangle{$cgroup});
     }
-    close_plot($i, $plot, $graph_cgroups_task_cnt);
+    close_plot($cnt, $plot, $graph_cgroups_task_cnt);
     # mem-failcnt:
     $cnt = 0;
     $omit = 1;
@@ -5129,7 +5129,7 @@ sub generate_plot_cgroups
 		    emit_zeroes => 1, title => $cgroups_demangle{$cgroup});
 	    }
 	}
-	close_plot($i, $plot, $graph_cgroups_mem_failcnt);
+	close_plot($cnt, $plot, $graph_cgroups_mem_failcnt);
     }
     # memsw-failcnt:
     $cnt = 0;
@@ -5150,7 +5150,7 @@ sub generate_plot_cgroups
 		    emit_zeroes => 1, title => $cgroups_demangle{$cgroup});
 	    }
 	}
-	close_plot($i, $plot, $graph_cgroups_memsw_failcnt);
+	close_plot($cnt, $plot, $graph_cgroups_memsw_failcnt);
     }
 }
 
@@ -5174,7 +5174,7 @@ sub generate_plot_networking
 		one_plot_set(fn => $fn_tx_kb, lw => 3, plot => $plot,
 		    cnt => \$cnt, emit_zeroes => 1, title => "TX kB: $interface");
 	    }
-	    close_plot($i, $plot, $graph_networking_bytes);
+	    close_plot($cnt, $plot, $graph_networking_bytes);
 	}
 	my $graph_networking_packets = '2090_networking-packets-' . $interface;
 	$legend{$graph_networking_packets} = 'RX and TX packets for ' . $interface;
@@ -5195,7 +5195,7 @@ sub generate_plot_networking
 		    cnt => \$cnt, emit_zeroes => 1,
 		    title => "TX packets/s: $interface");
 	    }
-	    close_plot($i, $plot, $graph_networking_packets);
+	    close_plot($cnt, $plot, $graph_networking_packets);
 	}
     }
 }
