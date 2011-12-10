@@ -5361,7 +5361,7 @@ sub generate_plot_power_supply
 	my $manufacturer = $sysfs_power_supply_device_manufacturer{$dev};
 	$manufacturer = ": $manufacturer" if length $manufacturer;
 	my $graph_ps = "2000_power_supply-$dev";
-	$legend{$graph_ps} = "Battery ${dev}${model_name}${manufactorer}";
+	$legend{$graph_ps} = "Battery ${dev}${model_name}${manufacturer}";
 	$thumblegend{$graph_ps} = "POWER SUPPLY &mdash; $dev";
 	$unit_1{$graph_ps} = 'charge-percent, temp-C';
 	$unit_2{$graph_ps} = 'V';
