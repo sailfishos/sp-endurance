@@ -755,6 +755,7 @@ my %sysfs_fs_devices_seen;
 my %sysfs_power_supply_devices;
 my %sysfs_power_supply_device_model_name;
 my %sysfs_power_supply_device_manufacturer;
+my %sysfs_backlight_devices;
 
 my %wchan_seen;
 
@@ -2619,6 +2620,32 @@ sub process_sysfs_power_supply
 		($ps{$dev}{charge_now} and $ps{$dev}{charge_full_design})) {
 	    value_store("e/power_supply-$dev-capacity", $i,
 		100 * ($ps{$dev}{charge_now} / $ps{$dev}{charge_full_design}));
+	}
+    }
+}
+
+sub process_sysfs_backlight
+{
+    return unless open(SYSFS_BACKLIGHT, $d . '/sysfs_backlight');
+    my %backlight;
+    while (<SYSFS_BACKLIGHT>) {
+	if (m#==> /sys/class/backlight/(\S+)/actual_brightness <==#) {
+	    $sysfs_backlight_devices{$1} = 1;
+	    $backlight{$1}{actual_brightness} = int(<SYSFS_BACKLIGHT>);
+	} elsif (m#==> /sys/class/backlight/(\S+)/max_brightness <==#) {
+	    $sysfs_backlight_devices{$1} = 1;
+	    $backlight{$1}{max_brightness} = int(<SYSFS_BACKLIGHT>);
+	}
+    }
+    close(SYSFS_BACKLIGHT);
+    foreach my $dev (keys %backlight) {
+	foreach my $key (keys(%{$backlight{$dev}})) {
+	    my $value = $backlight{$dev}{$key};
+	    value_store("e/sysfs-backlight-$dev-$key", $i, $value);
+	}
+	if ($backlight{$dev}{max_brightness} > 0 and $backlight{$dev}{actual_brightness}) {
+	    value_store("e/sysfs-backlight-$dev-percentage", $i,
+		100 * ($backlight{$dev}{actual_brightness} / $backlight{$dev}{max_brightness}));
 	}
     }
 }
@@ -4893,6 +4920,13 @@ sub generate_plot_battery
 	axes => 'x1y1', cnt => \$cnt, emit_zeroes => 1, title => 'Temperature');
     one_plot_set(fn => $batt_voltage_file_name, plot => $plot, lw => 2,
 	axes => 'x2y2', cnt => \$cnt, emit_zeroes => 1, title => 'Voltage');
+    foreach my $backlight_dev (sort keys %sysfs_backlight_devices) {
+	my $fn = "e/sysfs-backlight-$backlight_dev-percentage";
+	next unless value_exists($fn);
+	one_plot_set(fn => $fn, plot => $plot, lw => 3,
+	    emit_zeroes => 1, cnt => \$cnt, axes => 'x1y1',
+	    title => "Backlight $backlight_dev brightness %");
+    }
     close_plot($cnt, $plot, $graph_battery);
 }
 
@@ -5348,6 +5382,13 @@ sub generate_plot_power_supply
 		plot => $plot, axes => 'x2y2', cnt => \$cnt, emit_zeroes => 1,
 		title => 'Voltage');
 	}
+	foreach my $backlight_dev (sort keys %sysfs_backlight_devices) {
+	    my $fn = "e/sysfs-backlight-$backlight_dev-percentage";
+	    next unless value_exists($fn);
+	    one_plot_set(fn => $fn, plot => $plot, lw => 3,
+		emit_zeroes => 1, cnt => \$cnt, axes => 'x1y1',
+		title => "Backlight $backlight_dev brightness %");
+	}
 	close_plot($cnt, $plot, $graph_ps);
     }
 }
@@ -5684,6 +5725,7 @@ foreach $d (@dirs) {
     process_xmeminfo();
     process_wchan();
     process_sysfs_power_supply();
+    process_sysfs_backlight();
 
 #    $unaccount_swapped = $swapused - $sum_app_swapped;
     value_store($app_swapped_plot_file_name, $i, $sum_app_swapped);
