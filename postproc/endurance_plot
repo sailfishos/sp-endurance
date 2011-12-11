@@ -2070,9 +2070,9 @@ sub process_smaps()
 	return;
     }
     my %process_devpvr_count;
-    $sum_app_swapped = 0;
+    my $sum_app_swapped = 0;
 #    $sum_app_private_dirty = 0;
-    $sum_app_pss = 0;
+    my $sum_app_pss = 0;
     %app_swapped = ();
 #    %app_private_dirty = ();
     %app_pss = ();
@@ -2218,12 +2218,14 @@ sub process_smaps()
 	}
     }
     close(SMAPS_CAP);
-    $sum_app_swapped /= 1024;
-#    $sum_app_private_dirty /= 1024;
-    $sum_app_pss /= 1024;
     foreach (keys %process_devpvr_count) {
 	value_store("e/devpvr-count-$_", $i, $process_devpvr_count{$_});
     }
+    $sum_app_swapped /= 1024;
+    $sum_app_pss /= 1024;
+#    $sum_app_private_dirty /= 1024;
+    value_store($app_swapped_plot_file_name, $i, $sum_app_swapped);
+    value_store($app_pss_plot_file_name, $i, $sum_app_pss);
 }
 
 sub process_interrupts()
@@ -5736,9 +5738,6 @@ foreach $d (@dirs) {
     process_wchan();
     process_sysfs_power_supply();
     process_sysfs_backlight();
-
-    value_store($app_swapped_plot_file_name, $i, $sum_app_swapped);
-    value_store($app_pss_plot_file_name, $i, $sum_app_pss);
 
     loop_over_all_apps();
 #    $total_shared_num = 0;
