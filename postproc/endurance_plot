@@ -2519,7 +2519,8 @@ sub process_pagetypeinfo()
 	}
     }
     close(PAGETYPEINFO);
-    for (my $ordernum = 0, $order = 1; $ordernum <= 10 ; $order *= 2, $ordernum++) {
+    for my $ordernum (0 .. 10) {
+	my $order = 1 << $ordernum;
 	$fn = "e/pt-unmovable-$ordernum";
 	value_store_zeropad($fn, $i, ($unmovable[$ordernum+6]*$order*$pg_bytes)/$MB_bytes);
 	$fn = "e/pt-reclaimable-$ordernum";
