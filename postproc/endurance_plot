@@ -4062,8 +4062,8 @@ sub generate_plot_heap_histogram
 	my $ra = $files{"e/heap-$p"};
 	next if not $ra;
 	foreach (@$ra) {
-	    my ($round, $value) = split(':' , $_, 2);
-	    $heap_sum_others[$round] += $value;
+	    my ($rnd, $value) = split(':' , $_, 2);
+	    $heap_sum_others[$rnd] += $value;
 	}
     }
     for (my $ii = 0; $ii < @dirs; $ii++) {
