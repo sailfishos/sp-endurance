@@ -3306,12 +3306,12 @@ sub start_plotfile_lines_common($$)
 
     print $plot "set style data $style\n";
     print $plot "set key autotitle reverse Left\n";
-    my $add = $i/4;
+    my $add = scalar(@dirs)/4;
     if ($add < 10) {
 	$add = 10;
     }
-    my $ii = $i + $add;
-    print $plot "plot [0:$ii] ";
+    my $xmax = scalar(@dirs) + $add;
+    print $plot "plot [0:$xmax] ";
     return $plot;
 }
 
@@ -3331,10 +3331,10 @@ sub start_plotfile_lines_common_2axes($$)
     print $plot "set y2tics\n";
     print $plot "set style data $style\n";
     print $plot "set key autotitle reverse Left\n";
-    my $ii = $i+5;
-    print $plot "set xrange [0 : $ii]\n";
+    my $xmax = scalar(@dirs)+5;
+    print $plot "set xrange [0 : $xmax]\n";
     print $plot "set yrange [0 : ]\n";
-    print $plot "set x2range [0 : $ii]\n";
+    print $plot "set x2range [0 : $xmax]\n";
     print $plot "set y2range [0 : ]\n";
     print $plot "plot ";
     return $plot;
@@ -3371,12 +3371,12 @@ sub start_plotfile_histogram($)
     print $plot "set style fill solid 1.00 border -1\n";
     print $plot "set yrange [0 : ]\n";
 
-    my $add = $i/3;
+    my $add = scalar(@dirs)/3;
     if ($add < 25) {
 	$add = 25;
     }
-    my $ii = $i + $add;
-    print $plot "plot [-1:$ii] ";
+    my $xmax = scalar(@dirs) + $add;
+    print $plot "plot [-1:$xmax] ";
 
     return $plot;
 }
@@ -3443,12 +3443,12 @@ sub print_cf_states_plot_cmds($)
     my $plot = shift;
     my $cnt_1 = 0;
     my $cnt_2 = 0;
-    my $ii = $i+18;
+    my $xmax = scalar(@dirs)+18;
 
     print $plot "set size 1.0,0.4\n";
     print $plot "set origin 0.0,0.0\n";
     print $plot "set title \"C states\"\n";
-    print $plot "plot [-1:$ii] ";
+    print $plot "plot [-1:$xmax] ";
     # need number of entries for 
     # using colors in reverse order so that highest level gets red
     # (which is lowest lt number)
@@ -3469,7 +3469,7 @@ sub print_cf_states_plot_cmds($)
     print $plot "\nset size 1.0,0.4\n";
     print $plot "set origin 0.0,0.5\n";
     print $plot "set title \"Freq states\"\n";
-    print $plot "plot [-1:$ii] ";
+    print $plot "plot [-1:$xmax] ";
     $num_entries = 0;
     foreach my $p (reverse sort keys %seen_powertop_f_levels) {
 	$num_entries += 1;
@@ -3493,7 +3493,7 @@ sub print_domain_plot_cmds($$$$)
     my $height = shift;
     my $offs = shift;
 
-    my $ii = $i+18;
+    my $xmax = scalar(@dirs)+18;
     value_emit("e/p-domain-$domain-off", 1);
     value_emit("e/p-domain-$domain-ret", 1);
     value_emit("e/p-domain-$domain-ina", 1);
@@ -3504,7 +3504,7 @@ sub print_domain_plot_cmds($$$$)
 #
 # here we explicitly code bar color, lt=1:red=ON lt=2:green=OFF, others by enum
 #
-    print $plot "plot [-1:$ii] 'e/p-domain-$domain-off' using 2 lt 2, ";
+    print $plot "plot [-1:$xmax] 'e/p-domain-$domain-off' using 2 lt 2, ";
     print $plot "'e/p-domain-$domain-ret' using 2 lt 3, ";
     print $plot "'e/p-domain-$domain-ina' using 2 lt 4, ";
     print $plot "'e/p-domain-$domain-on' using 2 lt 1\n";
@@ -3883,7 +3883,7 @@ sub generate_plot_shmem
     foreach my $p (keys %shared_lpid_cnt) {
 	if ($devcount_shared_lpid{$p}) {
 	    $sumdev_shared_lpid{$p} /= $devcount_shared_lpid{$p};
-	    $sumdev_shared_lpid{$p} += (100*($i - $devcount_shared_lpid{$p}));
+	    $sumdev_shared_lpid{$p} += (100*(scalar(@dirs) - $devcount_shared_lpid{$p}));
 	}
     }
 
@@ -3916,7 +3916,7 @@ sub generate_plot_shmem
     foreach my $p (keys %shared_cpid_cnt) {
 	if ($devcount_shared_cpid{$p}) {
 	    $sumdev_shared_cpid{$p} /= $devcount_shared_cpid{$p};
-	    $sumdev_shared_cpid{$p} += (100*($i - $devcount_shared_cpid{$p}));
+	    $sumdev_shared_cpid{$p} += (100*(scalar(@dirs) - $devcount_shared_cpid{$p}));
 	}
     }
     $cnt = 0;
@@ -4053,7 +4053,7 @@ sub generate_plot_heap_histogram
     foreach my $p (sort keys %sum_heap) {
 	if ($show_this{$p}) {
 	    $sumdev_heap{$p} /= $devcount_heap{$p};
-	    $sumdev_heap{$p} += (10000*($i - $devcount_heap{$p}));
+	    $sumdev_heap{$p} += (10000*(scalar(@dirs) - $devcount_heap{$p}));
 	}
     }
     my @heap_sum_others;
@@ -4153,7 +4153,7 @@ sub generate_plot_sysvshared
     foreach my $p (sort keys %app_cumul_sysv_shared) {
 	if ($show_this{$p}) {
 	    $sumdev_sysv_shared{$p} /= $devcount_sysv_shared{$p};
-	    $sumdev_sysv_shared{$p} += (10000*($i - $devcount_sysv_shared{$p}));
+	    $sumdev_sysv_shared{$p} += (10000*(scalar(@dirs) - $devcount_sysv_shared{$p}));
 #	    print "sysvshared-adj: $p: sumdev=$sumdev_sysv_shared{$p} count=$devcount_sysv_shared{$p}\n";
 	}
     }
@@ -4182,7 +4182,7 @@ sub generate_plot_posixshared
     foreach my $p (sort keys %app_cumul_posix_shared) {
 	if ($show_this{$p}) {
 	    $sumdev_posix_shared{$p} /= $devcount_posix_shared{$p};
-	    $sumdev_posix_shared{$p} += (10000*($i - $devcount_posix_shared{$p}));
+	    $sumdev_posix_shared{$p} += (10000*(scalar(@dirs) - $devcount_posix_shared{$p}));
 #	    print "posixshared-adj: $p: sumdev=$sumdev_posix_shared{$p} count=$devcount_posix_shared{$p}\n";
 	}
     }
@@ -4211,7 +4211,7 @@ sub generate_plot_dev_pvr
     foreach my $p (sort keys %app_cumul_dev_pvr) {
 	if ($show_this{$p}) {
 	    $sumdev_dev_pvr{$p} /= $devcount_dev_pvr{$p};
-	    $sumdev_dev_pvr{$p} += (10000*($i - $devcount_dev_pvr{$p}));
+	    $sumdev_dev_pvr{$p} += (10000*(scalar(@dirs) - $devcount_dev_pvr{$p}));
 #	    print "dev_pvr-adj: $p: sumdev=$sumdev_dev_pvr{$p} count=$devcount_dev_pvr{$p}\n";
 	}
     }
@@ -4316,7 +4316,7 @@ sub generate_plot_swap_event
 	foreach my $p (sort keys %app_cumul_swp) {
 	    if ($show_this{$p}) {
 		$sumdev_swp{$p} /= $devcount_swp{$p};
-		$sumdev_swp{$p} += (100*($i - $devcount_swp{$p}));
+		$sumdev_swp{$p} += (100*(scalar(@dirs) - $devcount_swp{$p}));
 	    }
 	}
 	$cnt = 0;
@@ -4342,7 +4342,7 @@ sub generate_plot_swap_event
 	foreach my $p (sort keys %app_cumul_pss_swp) {
 	    if ($show_this{$p}) {
 		$sumdev_pss_swp_adj{$p} = $sumdev_pss_swp{$p} / $devcount_pss_swp{$p};
-		$sumdev_pss_swp_adj{$p} += (100*($i - $devcount_pss_swp{$p}));
+		$sumdev_pss_swp_adj{$p} += (100*(scalar(@dirs) - $devcount_pss_swp{$p}));
 	    }
 	}
 	$cnt = 0;
@@ -4375,7 +4375,7 @@ sub generate_plot_private_dirty
 #    foreach my $p (sort keys %app_cumul_private_dirty) {
 #	if ($show_this{$p}) {
 #	    $sumdev_private_dirty{$p} /= $devcount_private_dirty{$p};
-#	    $sumdev_private_dirty{$p} += (100*($i - $devcount_private_dirty{$p}));
+#	    $sumdev_private_dirty{$p} += (100*(scalar(@dirs) - $devcount_private_dirty{$p}));
 #	}
 #    }
 #    $cnt = 0;
@@ -4407,7 +4407,7 @@ sub generate_plot_pss
     foreach my $p (sort keys %app_cumul_pss) {
 	if ($show_this{$p}) {
 	    $sumdev_pss{$p} /= $devcount_pss{$p};
-	    $sumdev_pss{$p} += (100*($i - $devcount_pss{$p}));
+	    $sumdev_pss{$p} += (100*(scalar(@dirs) - $devcount_pss{$p}));
 	}
     }
     $cnt = 0;
@@ -5261,20 +5261,20 @@ sub generate_plot_powertop
     print_domain_plot_cmds($plot, "core", 0.3, 0.0);
     print_domain_plot_cmds($plot, "neon", 0.3, 0.35);
     print_domain_plot_cmds($plot, "periph", 0.3, 0.7);
-    close_plot($i, $plot, $graph_powertop_domain_states_1);
+    close_plot(scalar(@dirs), $plot, $graph_powertop_domain_states_1);
 ############# powertop powerdomain sgx, dss, mpu states #####################
     $plot = start_plotfile_histogram_multi($graph_powertop_domain_states_2);
     print_domain_plot_cmds($plot, "sgx", 0.3, 0.0);
     print_domain_plot_cmds($plot, "dss", 0.3, 0.35);
     print_domain_plot_cmds($plot, "mpu", 0.3, 0.7);
-    close_plot($i, $plot, $graph_powertop_domain_states_2);
+    close_plot(scalar(@dirs), $plot, $graph_powertop_domain_states_2);
 ############# powertop wakeups #####################
     $plot = start_plotfile_lines($graph_powertop_wakeups);
     value_emit("e/p-wakeups", 1);
     value_emit("e/p-timers", 1);
     print $plot "'e/p-wakeups' lw 2, ";
     print $plot "'e/p-timers' lw 2 ";
-    close_plot($i, $plot, $graph_powertop_wakeups);
+    close_plot(scalar(@dirs), $plot, $graph_powertop_wakeups);
 ############# powertop activity #####################
     $cnt = 0;
     %show_this = ();
@@ -5769,7 +5769,7 @@ foreach $d (@dirs) {
 }
 print "\n";
 
-$plot_width = $i * 13 + 200;
+$plot_width = scalar(@dirs) * 13 + 200;
 #print "desired plot_width $plot_width\n";
 if ($plot_width < 1000) {
     $plot_width = 1000;
