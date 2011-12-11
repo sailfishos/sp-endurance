@@ -2794,7 +2794,8 @@ sub process_powertop()
 
 sub parse_component_version
 {
-    return unless open(COMPONENT_VERSION, $d . '/component_version');
+    my ($dir) = @_;
+    return unless open(COMPONENT_VERSION, $dir . '/component_version');
     while (<COMPONENT_VERSION>) {
 	if (m/product/) {
 	    chop;
@@ -5544,15 +5545,12 @@ if (@dirs < 2) {
 #
 $i = 0;
 # first pass, get version, scan uptime lines to determine periods
-$cnt = 0;
-foreach $d (@dirs) {
-#
-# get HW version only from first one
-#
-    if(!$hw_build) {
-	parse_component_version();
+my $cnt = 0;
+foreach my $dir (@dirs) {
+    if (!$hw_build) {
+	parse_component_version($dir);
     }
-    my $fn = "$d/usage.csv";
+    my $fn = $dir . '/usage.csv';
     unless (open(CSV, $fn)) {
 	print STDERR "ERROR: unable to open $fn: $!\n";
 	exit(1);
@@ -5571,14 +5569,14 @@ foreach $d (@dirs) {
 		(undef, undef, $swver) = split(' ', $_, 3);
 	    }
 	    if($sw_version && ($sw_version ne $swver)) {
-		print "** NOTE: at $d version changes [$sw_version]->[$swver]; Reflash in sequence??\n"
+		print "** NOTE: at $dir version changes [$sw_version]->[$swver]; Reflash in sequence??\n";
 	    } 
 	    $sw_version = $swver;
 	    next;
 	} 
 	if( m/date = (.*)/) {
-	    $round_date{$d} = $1;
-	    $secval{$d} = date2seconds($1);
+	    $round_date{$dir} = $1;
+	    $secval{$dir} = date2seconds($1);
 	    next;
 	}
  	if( m/Uptime,Idletime /) {
@@ -5588,7 +5586,7 @@ foreach $d (@dirs) {
 	    if (@uptimes) {
 		$lapsed_time{$cnt} = int($uptime) - int($uptimes[-1]);
 		if ($uptime < $uptimes[-1]) {
-		    print "** NOTE: at $d uptime steps back. Reboot in sequence? Duration calc will have no sense..\n"
+		    print "** NOTE: at $dir uptime steps back. Reboot in sequence? Duration calc will have no sense..\n";
 		}
 	    } else {
 		$lapsed_time{$cnt} = 0;
@@ -5599,7 +5597,7 @@ foreach $d (@dirs) {
 	} 
     }
     close(CSV);
-    my $dfn = "$d/step.txt";
+    my $dfn = $dir . '/step.txt';
     if (-e $dfn) {
 	$steps_files += 1;
     }
