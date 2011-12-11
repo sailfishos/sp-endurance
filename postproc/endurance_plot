@@ -5738,7 +5738,7 @@ foreach my $round (0 .. @dirs-1) {
     process_sysfs_backlight($round, $dir);
 
     loop_over_all_apps($round);
-#    $total_shared_num = 0;
+
     for (my $z = 0; $z <= $max_nattach ; $z++) {
 	$fn = "e/nattach-$z-shm";
 	value_store($fn, $round, $shared_num{$z});
