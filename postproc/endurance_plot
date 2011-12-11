@@ -590,7 +590,6 @@ my $slabs_scanned_plot_file_name = "e/slabs_scanned";
 my $kswapd_steal_plot_file_name = "e/kswapd_steal";
 my $shared_locked_plot_file_name = "e/shared_locked";
 my $shared_unlocked_plot_file_name = "e/shared_unlocked";
-#my $unaccount_swapped_plot_file_name = "e/unaccount_swapped";
 my $app_swapped_plot_file_name = "e/all_apps_swapped";
 my $app_pss_plot_file_name = "e/all_apps_pss";
 my $load_1_file_name = "e/load_1_min";
@@ -4305,11 +4304,6 @@ sub generate_plot_swap_event
 	    one_plot_set(fn => "e/swp-$p", plot => $plot, cnt => \$cnt,
 		emit_zeroes => 1, title => $p);
 	}
-##
-## special: add unaccounted swapped (shared??) mem. (diff:total_swap - apps_swap)
-##
-#	value_emit($unaccount_swapped_plot_file_name, 1);
-#	print $plot ", 'e/unaccount_swapped' using 2";
 	close_plot($cnt, $plot, $graph_appmem_swapped);
 
 ############### Histogram of processes PSS+SWAP #################
@@ -5727,10 +5721,7 @@ foreach $d (@dirs) {
     process_sysfs_power_supply();
     process_sysfs_backlight();
 
-#    $unaccount_swapped = $swapused - $sum_app_swapped;
     value_store($app_swapped_plot_file_name, $i, $sum_app_swapped);
-#    value_store($unaccount_swapped_plot_file_name, $i, $unaccount_swapped);
-#    print $unaccount_swapped_plot_file "$i, $unaccount_swapped\n";
     value_store($app_pss_plot_file_name, $i, $sum_app_pss);
 
     loop_over_all_apps();
@@ -5747,8 +5738,6 @@ foreach $d (@dirs) {
 	    }
 	}
     }
-#    $total_unaccounted = 512*1024 + $swapused - $sum_app_pss - $sum_app_swapped;
-#	print "$i: 256M + $swapused; apps=$sum_app_pss swapped=$sum_app_swapped; total unaccount = $total_unaccounted\n";
 
     $i++;
 }
