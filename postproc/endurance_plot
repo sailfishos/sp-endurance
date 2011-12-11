@@ -790,12 +790,10 @@ sub compression_check
     return $file;
 }
 
-sub date2seconds($)
+sub date2seconds
 {
-    my $linex = shift;
-    my $line = $linex;
-    chop $line;
-    my (undef, undef, $date, $time) = split(' ', $line, 4);
+    my ($date_time) = @_;
+    my ($date, $time) = split(' ', $date_time, 2);
     my ($year, $mon, $day) = split('-', $date, 3);
     my ($hour, $min, $sec) = split(':', $time, 3);
     my $retsec = timelocal($sec, $min, $hour, $day, $mon-1, $year-1900);
@@ -5586,7 +5584,7 @@ foreach $d (@dirs) {
 	} 
 	if( m/date = (.*)/) {
 	    $round_date{$d} = $1;
-	    $secval{$d} = date2seconds($_);
+	    $secval{$d} = date2seconds($1);
 	    next;
 	}
  	if( m/Uptime,Idletime /) {
