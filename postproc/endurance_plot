@@ -1259,7 +1259,7 @@ sub stat_split
     ($pid, $line) = split(',', $line, 2);
     # The 'comm' field may contain ','.
     my $pos = rindex($line, ')');
-    return @results if $pos <= 1;
+    return @result if $pos <= 1;
     $name = substr($line, 1, $pos-1);
     $line = substr($line, $pos+2);
     push(@result, $pid, $name, split(',', $line));
