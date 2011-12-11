@@ -48,6 +48,7 @@ my ($sw_version, $hw_build, $hw_product);
 my %legend;
 my (%unit, %unit_1, %unit_2);
 my %thumblegend;
+my $plot_width;
 
 my $forkmanager;
 
@@ -672,6 +673,7 @@ my %app_cumul_pss_swp;
 my %app_cumul_rwxp;
 my %app_cumul_sysv_shared;
 my %app_cumul_posix_shared;
+my %app_cumul_dev_pvr;
 
 my %avg_pss;
 my %avg_heap;
@@ -679,8 +681,10 @@ my %avg_heap;
 my %avg_swp;
 my %avg_pss_swp;
 my %avg_shared_lpid;
+my %avg_shared_cpid;
 my %avg_sysv_shared;
 my %avg_posix_shared;
+my %avg_dev_pvr;
 
 my %devcount_pss;
 my %devcount_swp;
@@ -689,14 +693,21 @@ my %devcount_heap;
 my %devcount_pss_swp;
 my %devcount_shared_lpid;
 my %devcount_shared_cpid;
+my %devcount_sysv_shared;
+my %devcount_posix_shared;
+my %devcount_dev_pvr;
 
 my %sumdev_pss;
 my %sumdev_swp;
 #my %sumdev_private_dirty;
 my %sumdev_heap;
 my %sumdev_pss_swp;
+my %sumdev_pss_swp_adj;
 my %sumdev_shared_lpid;
 my %sumdev_shared_cpid;
+my %sumdev_sysv_shared;
+my %sumdev_posix_shared;
+my %sumdev_dev_pvr;
 
 my %show_this;
 my %xresource_latest_cnt;
@@ -730,6 +741,11 @@ my $have_diskstats = 0;
 my $have_ramzswap = 0;
 my $have_bme = 0;
 my $have_pagetypeinfo = 0;
+
+my $prev_ramzswap_bdreads;
+my $prev_ramzswap_bdwrites;
+my $prev_ramzswap_reads;
+my $prev_ramzswap_writes;
 
 my $swapused_total = 0;
 my $swap_pgout_total = 0;
