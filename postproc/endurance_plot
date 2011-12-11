@@ -3098,16 +3098,16 @@ sub add_use_case_names
     print $html "\n<br clear='all'/>\n";
     print $html "<a name='steps'/>\n";
     print $html "<h2>SNAPSHOT DATES AND DESCRIPTIONS</h2>\n";
-    foreach my $d (@dirs) {
-	my $dfn = "$d/step.txt";
+    foreach my $dir (@dirs) {
+	my $dfn = $dir . '/step.txt';
 	if (-e $dfn) {
 	    my $step = `cat $dfn`;
 	    chop $step;
-	    my $desc = $d;
-	    if (int($d) >= 101) {
-		$desc = $d - 101;
+	    my $desc = $dir;
+	    if (int($dir) >= 101) {
+		$desc = $dir - 101;
 	    }
-	    print $html "$desc: [$round_date{$d}] $step<br/>\n";
+	    print $html "$desc: [$round_date{$dir}] $step<br/>\n";
 	}
     }
 }
@@ -3245,14 +3245,14 @@ sub xtics
 {
     my @xtics;
     my $ii = 0;
-    foreach my $d (@dirs) {
-	my $desc = $d;
-	if (int($d) >= 101) {
-	    $desc = $d - 101;
+    foreach my $dir (@dirs) {
+	my $desc = $dir;
+	if (int($dir) >= 101) {
+	    $desc = $dir - 101;
 	} else {
 	    $desc = substr($desc, -5);
 	}
-	push(@xtics, "\"$desc: [$round_date{$d}]\" $ii");
+	push(@xtics, "\"$desc: [$round_date{$dir}]\" $ii");
 	$ii++;
     }
     # Less ticks if we have lots of rounds.
