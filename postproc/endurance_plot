@@ -1520,8 +1520,12 @@ sub parse_memtotal_block($)
     value_store($cached_plot_file_name, $i, $cached);
     my $swapcached = $val{"SwapCached"} / 1024;
     value_store($swapcached_plot_file_name, $i, $swapcached);
-    $swaptotal = $val{"SwapTotal"} / 1024;
-    $swapfree = $val{"SwapFree"} / 1024;
+
+    my $swaptotal = $val{"SwapTotal"} / 1024;
+    my $swapfree = $val{"SwapFree"} / 1024;
+    my $swapused = $swaptotal - $swapfree;
+    value_store($swapused_plot_file_name, $round, $swapused);
+    $swapused_total += $swapused;
 
     my $buffers = $val{"Buffers"} / 1024;
     value_store($buffers_plot_file_name, $i, $buffers);
@@ -1580,10 +1584,6 @@ sub parse_pages_block($)
     value_store($slabreclaim_plot_file_name, $i, $slabreclaim);
     my $slabunreclaim = ($pslabunreclaim * $page_size)/1024;
     value_store($slabunreclaim_plot_file_name, $i, $slabunreclaim);
-
-    my $swapused = $swaptotal - $swapfree;
-    $swapused_total += $swapused;
-    value_store($swapused_plot_file_name, $i, $swapused);
 
     my $divider;
     if ($lapsed_time{$i}) {
