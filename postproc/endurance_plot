@@ -22,6 +22,7 @@
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA
 
+use strict;
 use Time::Local;
 use POSIX qw/ceil WIFSIGNALED WTERMSIG SIGINT SIGTERM SIGKILL/;
 use List::Util qw/min max sum/;
