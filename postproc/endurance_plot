@@ -874,7 +874,7 @@ sub value_store($$$)
 
     my $rnd_val = $rnd . ":" . $val;
     my $ra;
-#    print "store: i=[$i] fn[$fn] rnd[$rnd] val[$val] rndval=[$rnd_val]\n";
+#    print "store: fn[$fn] rnd[$rnd] val[$val] rndval=[$rnd_val]\n";
 
     if (!value_exists($fn)) {
 	$ra = [ ];
@@ -1075,9 +1075,9 @@ sub split_values($)
     }
 }
 
-sub parse_name_state_block($)
+sub parse_name_state_block
 {
-    my $handle= shift;
+    my ($round, $handle) = @_;
     chop;
     chop;
     @names = split(',' , $_);
@@ -1100,14 +1100,14 @@ sub parse_name_state_block($)
 	    $nonvol_ctx = $param  - $param_prev_nonvol_ctx{$pname};
 	}
 	$cumul_nonvol_ctx{$pname} += $nonvol_ctx;
-	if ($lapsed_time{$i}) {
-	    $nonvol_ctx /= $lapsed_time{$i};
+	if ($lapsed_time{$round}) {
+	    $nonvol_ctx /= $lapsed_time{$round};
 	} else {
 	    $nonvol_ctx /= $secs_per_round;
 	}
 	if (defined $param_prev_nonvol_ctx{$pname}) {
 	    my $fn = "e/nonvol-ctx-$pname";
-	    value_store($fn, $i, $nonvol_ctx);
+	    value_store($fn, $round, $nonvol_ctx);
 	}
 	$param_prev_nonvol_ctx{$pname} = $param;
 	###############
@@ -1117,26 +1117,26 @@ sub parse_name_state_block($)
 	    $vol_ctx = $param  - $param_prev_vol_ctx{$pname};
 	}
 	$cumul_vol_ctx{$pname} += $vol_ctx;
-	if($lapsed_time{$i}) {
-	    $vol_ctx /= $lapsed_time{$i};
+	if($lapsed_time{$round}) {
+	    $vol_ctx /= $lapsed_time{$round};
 	} else {
 	    $vol_ctx /= $secs_per_round;
 	}
 	my $total_ctx = $nonvol_ctx + $vol_ctx;
 	if (defined $param_prev_vol_ctx{$pname}) {
 	    my $fn = "e/vol-ctx-$pname";
-	    value_store($fn, $i, $vol_ctx);
+	    value_store($fn, $round, $vol_ctx);
 	    $fn = "e/total-ctx-$pname";
-	    value_store($fn, $i, $total_ctx);
+	    value_store($fn, $round, $total_ctx);
 	}
 	$cumul_total_ctx{$pname} += $total_ctx;
 	$param_prev_vol_ctx{$pname} = $param;
     }
 }
 
-sub parse_shmem_block($)
+sub parse_shmem_block
 {
-    my $handle= shift;
+    my ($round, $handle) = @_;
     my $shared_locked = 0;
     my $shared_unlocked = 0;
     my $a_age_sum = 0;
@@ -1166,12 +1166,12 @@ sub parse_shmem_block($)
 
 #	print "use $atime $dtime $ctime $secval\n";
 	if (($nattach == 1) && (($lpid == $cpid) && ($dtime == 0))) {
-	    my $a_age = $secval{$d} - $atime;
+	    my $a_age = $secval{$round} - $atime;
 	    $a_age_sum += $a_age;
 	    $a_age_cnt += 1;
 
 	    if ($dtime) {
-		my $d_age = $secval{$d} - $dtime;
+		my $d_age = $secval{$round} - $dtime;
 		$d_age_sum += $d_age;
 		$d_age_cnt += 1;
 	    }
@@ -1188,7 +1188,7 @@ sub parse_shmem_block($)
 	#
         # only one attached process in shared segment, suspicious..
         #
-#	    print "$d: 1 nattach, cpid=$cpid lpid=$lpid dtime=$dtime perms=$perms size=$size\n";
+#	    print "$round: 1 nattach, cpid=$cpid lpid=$lpid dtime=$dtime perms=$perms size=$size\n";
 	    if (($lpid == $cpid) && ($dtime == 0)) {
 		#
 		# but it is really orphan only if no other process has attached
@@ -1202,10 +1202,10 @@ sub parse_shmem_block($)
 	}
 	my $xperms = hex($perms);
 	if ($xperms & 0x2000) {
-#		    print "$d: xperm=[$xperms] perm=[$perms], locked\n";
+#		    print "$round: xperm=[$xperms] perm=[$perms], locked\n";
 	    $shared_locked += $szxx;
 	} else {
-#		    print "$d: xperm=[$xperms] perm=[$perms], unlocked\n";
+#		    print "$round: xperm=[$xperms] perm=[$perms], unlocked\n";
 	    $shared_unlocked += $szxx;
 	}
 	$shared_lpid{$lpid} += $szxx;
@@ -1218,21 +1218,21 @@ sub parse_shmem_block($)
 #    if ($a_age_cnt) {
 #	$a_age_avg = $a_age_sum / $a_age_cnt;
 #	$fn = "e/nattach-a-age-shm";
-#	value_store($fn, $i, $a_age_avg);
+#	value_store($fn, $round, $a_age_avg);
 #    }
 #    if ($d_age_cnt) {
 #	$d_age_avg = $d_age_sum / $d_age_cnt;
 #	$fn = "e/nattach-d-age-shm";
-#	value_store($fn, $i, $d_age_avg);
+#	value_store($fn, $round, $d_age_avg);
 #    }
-    value_store_zeropad($shared_locked_plot_file_name, $i, $shared_locked);
-    value_store_zeropad($shared_unlocked_plot_file_name, $i, $shared_unlocked);
-    value_store_zeropad("e/count-shm", $i, $shared_cnt);
+    value_store_zeropad($shared_locked_plot_file_name, $round, $shared_locked);
+    value_store_zeropad($shared_unlocked_plot_file_name, $round, $shared_unlocked);
+    value_store_zeropad("e/count-shm", $round, $shared_cnt);
 }
 
-sub parse_pid_fd_block($)
+sub parse_pid_fd_block
 {
-    my $handle= shift;
+    my ($round, $handle) = @_;
     while (<$handle>) {
 	chop;
 	if ($_ eq "") {
@@ -1249,8 +1249,8 @@ sub parse_pid_fd_block($)
 	    $fd_count{$pname} = $FD_count;
 	    $fd_count_samples{$pname} += 1;
 	    my $fn = "e/fd-$pname";
-	    value_store($fn, $i, $FD_count);
-	    if ($i > 0) {
+	    value_store($fn, $round, $FD_count);
+	    if ($round > 0) {
 		my $fd_diff = $fd_count_prev{$pname} - $FD_count;
 		if ($fd_diff < 0) {
 		    $fd_diff *= -1;
@@ -1282,9 +1282,9 @@ sub stat_split
     return @result;
 }
 
-sub parse_process_status_block($)
+sub parse_process_status_block
 {
-    my ($handle) = @_;
+    my ($round, $handle) = @_;
     my %state_cnt;
     while (<$handle>) {
 	chop;
@@ -1308,13 +1308,13 @@ sub parse_process_status_block($)
 	    $major_faults = $MajFlt - $majflt_prev{$pname};
 	}
 	$majflt_cumul{$pname} += $major_faults;
-	if ($lapsed_time{$i}) {
-	    $major_faults = $major_faults/$lapsed_time{$i};
+	if ($lapsed_time{$round}) {
+	    $major_faults = $major_faults/$lapsed_time{$round};
 	} else {
 	    $major_faults = 0;
 	}
 	if (defined $majflt_prev{$pname}) {
-	    value_store("e/majflt-$pname", $i, $major_faults);
+	    value_store("e/majflt-$pname", $round, $major_faults);
 	}
 	$majflt_prev{$pname} = $MajFlt;
 
@@ -1327,13 +1327,13 @@ sub parse_process_status_block($)
 	    $minor_faults = $MinFlt - $minflt_prev{$pname};
 	}
 	$minflt_cumul{$pname} += $minor_faults;
-	if ($lapsed_time{$i}) {
-	    $minor_faults = $minor_faults/$lapsed_time{$i};
+	if ($lapsed_time{$round}) {
+	    $minor_faults = $minor_faults/$lapsed_time{$round};
 	} else {
 	    $minor_faults = 0;
 	}
 	if (defined $minflt_prev{$pname}) {
-	    value_store("e/minflt-$pname", $i, $minor_faults);
+	    value_store("e/minflt-$pname", $round, $minor_faults);
 	}
 	$minflt_prev{$pname} = $MinFlt;
 
@@ -1344,8 +1344,8 @@ sub parse_process_status_block($)
 	    $utim = $Utime - $param_prev_utime{$pname};
 	}
 	$utime_cumul{$pname} += $utim;
-	if ($lapsed_time{$i}) {
-	    $utim /= $lapsed_time{$i};
+	if ($lapsed_time{$round}) {
+	    $utim /= $lapsed_time{$round};
 	} else {
 	    $utim /= $secs_per_round;
 	}
@@ -1353,7 +1353,7 @@ sub parse_process_status_block($)
 	$utim *= 100;
 	$utim /= $ticks_per_sec;
 	if (defined $param_prev_utime{$pname}) {
-	    value_store("e/utime-$pname", $i, $utim);
+	    value_store("e/utime-$pname", $round, $utim);
 	}
 	$param_prev_utime{$pname} = $Utime;
 
@@ -1364,8 +1364,8 @@ sub parse_process_status_block($)
 	    $stim = $Stime - $param_prev_stime{$pname};
 	}
 	$stime_cumul{$pname} += $stim;
-	if ($lapsed_time{$i}) {
-	    $stim /= $lapsed_time{$i};
+	if ($lapsed_time{$round}) {
+	    $stim /= $lapsed_time{$round};
 	} else {
 	    $stim /= $secs_per_round;
 	}
@@ -1374,14 +1374,14 @@ sub parse_process_status_block($)
 	$stim /= $ticks_per_sec;
 	my $ttim = $stim + $utim;
 	if (defined $param_prev_stime{$pname}) {
-	    value_store("e/stime-$pname", $i, $stim);
-	    value_store("e/$pname-totaltime", $i, $ttim);
+	    value_store("e/stime-$pname", $round, $stim);
+	    value_store("e/$pname-totaltime", $round, $ttim);
 	}
 	$totaltime_cumul{$pname} += $ttim;
 	$param_prev_stime{$pname} = $Stime;
 ###########################
 	my $NumThreads = $entries[19];
-	value_store_zeropad("e/thr-$pname", $i, $NumThreads);
+	value_store_zeropad("e/thr-$pname", $round, $NumThreads);
 	if ($NumThreads > 1) {
 	    $has_threads{$pname} += $NumThreads;
 	    $has_threads_samples{$pname} += 1;
@@ -1394,13 +1394,13 @@ sub parse_process_status_block($)
     foreach (keys %process_states_seen) {
 	my $cnt = 0;
 	$cnt = $state_cnt{$_} if $state_cnt{$_};
-	value_store_zeropad("e/process-state-count-$_", $i, $cnt);
+	value_store_zeropad("e/process-state-count-$_", $round, $cnt);
     }
 }
 
 sub parse_xresource_block
 {
-    my ($handle, $header) = @_;
+    my ($round, $handle, $header) = @_;
     chomp $header;
     @names = split(',', $header);
 
@@ -1459,7 +1459,7 @@ sub parse_xresource_block
 		}
 		$resource_atom =~ tr/ /_/;
 		my $fn = "e/xres-cnt-$Identifier-${resource_atom}";
-		value_store($fn, $i, $val{$resource_atom});
+		value_store($fn, $round, $val{$resource_atom});
 		$xres_atoms_seen{$resource_atom} = 1;
 	    }
 	    }
@@ -1475,37 +1475,37 @@ sub parse_xresource_block
 	    }
 	    $xresource_latest_cnt{$Identifier} = $total_cnt;
 	    my $fn = "e/xres-cnt-$Identifier";
-	    value_store($fn, $i, $total_cnt);
+	    value_store($fn, $round, $total_cnt);
 	    my $pixmap_mem = $val{"Pixmap mem"};
 	    $pixmap_mem =~ s/B//g;
 	    $pixmap_mem /= 1024;
 	    $xresource_latest_sz_pxm{$Identifier} = $pixmap_mem;
 	    $fn = "e/xres-pxm-$Identifier";
-	    value_store($fn, $i, $pixmap_mem);
+	    value_store($fn, $round, $pixmap_mem);
 	    $sum_all_pixmaps += $pixmap_mem;
 	    $xres_pxm_size_total{$Identifier} += $pixmap_mem;
 	}
     }
 # system level file has MB units, so we divide it once more
     $sum_all_pixmaps /= 1024;
-    value_store($mpixmaps_plot_file_name, $i, $sum_all_pixmaps);
+    value_store($mpixmaps_plot_file_name, $round, $sum_all_pixmaps);
 }
 
-sub parse_filesystem_block($)
+sub parse_filesystem_block
 {
-    my $handle= shift;
+    my ($round, $handle) = @_;
     while (<$handle>) {
 	chop;
 	if ($_ eq "") {
 	    last;
 	}
-	process_df_entry(split(',' , $_, 6));
+	process_df_entry($round, split(',' , $_, 6));
     }
 }
 
-sub parse_memtotal_block($)
+sub parse_memtotal_block
 {
-    my $handle= shift;
+    my ($round, $handle) = @_;
     chop;
     @names = split(',' , $_);
 
@@ -1515,11 +1515,11 @@ sub parse_memtotal_block($)
     split_values($line);
 
     my $mfree = $val{"MemFree"} /1024 ;
-    value_store($memfree_plot_file_name, $i, $mfree);
+    value_store($memfree_plot_file_name, $round, $mfree);
     my $cached = $val{"Cached"} /1024;
-    value_store($cached_plot_file_name, $i, $cached);
+    value_store($cached_plot_file_name, $round, $cached);
     my $swapcached = $val{"SwapCached"} / 1024;
-    value_store($swapcached_plot_file_name, $i, $swapcached);
+    value_store($swapcached_plot_file_name, $round, $swapcached);
 
     my $swaptotal = $val{"SwapTotal"} / 1024;
     my $swapfree = $val{"SwapFree"} / 1024;
@@ -1528,19 +1528,19 @@ sub parse_memtotal_block($)
     $swapused_total += $swapused;
 
     my $buffers = $val{"Buffers"} / 1024;
-    value_store($buffers_plot_file_name, $i, $buffers);
+    value_store($buffers_plot_file_name, $round, $buffers);
     my $dirty = $val{"Dirty"} / 1024;
-    value_store($dirty_plot_file_name, $i, $dirty);
+    value_store($dirty_plot_file_name, $round, $dirty);
     my $active_file = $val{"Active(file)"} / 1024;
-    value_store($active_file_plot_file_name, $i, $active_file);
+    value_store($active_file_plot_file_name, $round, $active_file);
     my $inactive_file = $val{"Inactive(file)"} / 1024;
-    value_store($inactive_file_plot_file_name, $i, $inactive_file);
+    value_store($inactive_file_plot_file_name, $round, $inactive_file);
     my $active_anon = $val{"Active(anon)"} / 1024;
-    value_store($active_anon_plot_file_name, $i, $active_anon);
+    value_store($active_anon_plot_file_name, $round, $active_anon);
     my $inactive_anon = $val{"Inactive(anon)"} / 1024;
-    value_store($inactive_anon_plot_file_name, $i, $inactive_anon);
+    value_store($inactive_anon_plot_file_name, $round, $inactive_anon);
     my $mlocked = $val{"Mlocked"} / 1024;
-    value_store($mlocked_plot_file_name, $i, $mlocked);
+    value_store($mlocked_plot_file_name, $round, $mlocked);
 #
 # for some reason, (kernel bug?) mlocked gets less
 # every few rounds sometimes, until wraps under zero
@@ -1554,14 +1554,14 @@ sub parse_memtotal_block($)
     my $pagetables = $val{"PageTables"} / 1024;
     value_store($pagetables_plot_file_name, $round, $pagetables);
     my $kernelstack = $val{"KernelStack"} / 1024;
-    value_store($kernelstack_plot_file_name, $i, $kernelstack);
+    value_store($kernelstack_plot_file_name, $round, $kernelstack);
     my $shmem = $val{"Shmem"} / 1024;
-    value_store($shmem_plot_file_name, $i, $shmem);
+    value_store($shmem_plot_file_name, $round, $shmem);
 }
 
-sub parse_pages_block($)
+sub parse_pages_block
 {
-    my $handle= shift;
+    my ($round, $handle) = @_;
     chop;
     chop;
     @names = split(',' , $_);
@@ -1580,59 +1580,59 @@ sub parse_pages_block($)
     my $kswapd_steal_cumul = $val{"kswapd_steal"};
     
     my $slabreclaim = ($pslabreclaim * $page_size)/1024;
-    value_store($slabreclaim_plot_file_name, $i, $slabreclaim);
+    value_store($slabreclaim_plot_file_name, $round, $slabreclaim);
     my $slabunreclaim = ($pslabunreclaim * $page_size)/1024;
-    value_store($slabunreclaim_plot_file_name, $i, $slabunreclaim);
+    value_store($slabunreclaim_plot_file_name, $round, $slabunreclaim);
 
     my $divider;
-    if ($lapsed_time{$i}) {
-	$divider = $lapsed_time{$i};
+    if ($lapsed_time{$round}) {
+	$divider = $lapsed_time{$round};
     } else {
 	$divider = $secs_per_round;
     }
 
     if ($pswp_in_prev) {
 	my $pswp_in = ($pswp_in_cumul - $pswp_in_prev)/$divider;
-	value_store_zeropad($pswp_in_plot_file_name, $i, $pswp_in);
+	value_store_zeropad($pswp_in_plot_file_name, $round, $pswp_in);
     }
     $pswp_in_prev = $pswp_in_cumul;
 
     my $pswp_out = 0;
     if ($pswp_out_prev) {
 	$pswp_out = ($pswp_out_cumul - $pswp_out_prev)/$divider;
-	value_store_zeropad($pswp_out_plot_file_name, $i, $pswp_out);
+	value_store_zeropad($pswp_out_plot_file_name, $round, $pswp_out);
     }
     $pswp_out_prev = $pswp_out_cumul;
     $swap_pgout_total += $pswp_out;
 
     if ($pgscan_kswapd_normal_prev) {
 	my $pgscan_kswapd_normal = ($pgscan_kswapd_normal_cumul - $pgscan_kswapd_normal_prev)/$divider;
-	value_store_zeropad($pgscan_kswapd_normal_plot_file_name, $i, $pgscan_kswapd_normal);
+	value_store_zeropad($pgscan_kswapd_normal_plot_file_name, $round, $pgscan_kswapd_normal);
     }
     $pgscan_kswapd_normal_prev = $pgscan_kswapd_normal_cumul;
 
     if ($pgscan_direct_normal_prev) {
 	my $pgscan_direct_normal = ($pgscan_direct_normal_cumul - $pgscan_direct_normal_prev)/$divider;
-	value_store_zeropad($pgscan_direct_normal_plot_file_name, $i, $pgscan_direct_normal);
+	value_store_zeropad($pgscan_direct_normal_plot_file_name, $round, $pgscan_direct_normal);
     }
     $pgscan_direct_normal_prev = $pgscan_direct_normal_cumul;
     
     if ($slabs_scanned_prev) {
 	my $slabs_scanned = ($slabs_scanned_cumul - $slabs_scanned_prev)/$divider;
-	value_store_zeropad($slabs_scanned_plot_file_name, $i, $slabs_scanned);
+	value_store_zeropad($slabs_scanned_plot_file_name, $round, $slabs_scanned);
     }
     $slabs_scanned_prev = $slabs_scanned_cumul;
 
     if ($kswapd_steal_prev) {
 	my $kswapd_steal = ($kswapd_steal_cumul - $kswapd_steal_prev)/$divider;
-	value_store_zeropad($kswapd_steal_plot_file_name, $i, $kswapd_steal);
+	value_store_zeropad($kswapd_steal_plot_file_name, $round, $kswapd_steal);
     }
     $kswapd_steal_prev = $kswapd_steal_cumul;
 }
 
 sub parse_wchan_block
 {
-    my ($handle) = @_;
+    my ($round, $handle) = @_;
     my %wchan_count;
     while (<$handle>) {
 	last if $_ eq '';
@@ -1645,13 +1645,14 @@ sub parse_wchan_block
     foreach (keys %wchan_seen) {
 	my $cnt = 0;
 	$cnt = $wchan_count{$_} if $wchan_count{$_};
-	value_store_zeropad("e/wchan-$_", $i, $cnt);
+	value_store_zeropad("e/wchan-$_", $round, $cnt);
     }
 }
 
 sub process_wchan
 {
-    return unless open(WCHAN, $d . '/wchan');
+    my ($round, $dir) = @_;
+    return unless open(WCHAN, $dir . '/wchan');
     my %wchan_count;
     while (<WCHAN>) {
 	if (m#^==> /proc/(\d+)/wchan <==#) {
@@ -1665,20 +1666,19 @@ sub process_wchan
     foreach (keys %wchan_seen) {
 	my $cnt = 0;
 	$cnt = $wchan_count{$_} if $wchan_count{$_};
-	value_store_zeropad("e/wchan-$_", $i, $cnt);
+	value_store_zeropad("e/wchan-$_", $round, $cnt);
     }
 }
 
 sub process_xmeminfo
 {
-    my $fn = "$d/xmeminfo";
+    my ($round, $dir) = @_;
+    my $fn = $dir . '/xmeminfo';
     my $xmeminfo;
-    if (not open($xmeminfo, $fn)) {
-	return;
-    }
+    return unless open($xmeminfo, $fn);
     my $header = <$xmeminfo>;
     if ($header =~ m#^res-base,#) {
-	parse_xresource_block($xmeminfo, $header);
+	parse_xresource_block($round, $xmeminfo, $header);
     } else {
 	print STDERR "WARNING: unable to parse '$fn': invalid header '$header'.\n";
     }
@@ -1687,7 +1687,7 @@ sub process_xmeminfo
 
 sub process_df_entry
 {
-    my ($filesystem, $blocks_kb, $used_kb, $available, $capacity, $mounted_on) = @_;
+    my ($round, $filesystem, $blocks_kb, $used_kb, $available, $capacity, $mounted_on) = @_;
     #print STDERR "Mounted on: $mounted_on, capacity: $capacity\n";
     return if not $mounted_on;
     my $mangled = $mounted_on;
@@ -1697,20 +1697,19 @@ sub process_df_entry
     $filesystem_demangle{$mangled} = $mounted_on;
     my $fn = "e/fs-used-${mangled}";
     chop $capacity;
-    value_store($fn, $i, $capacity);
+    value_store($fn, $round, $capacity);
 }
 
 sub process_df
 {
-    my $fn = "$d/df";
-    if (not open(DF, $fn)) {
-	return;
-    }
+    my ($round, $dir) = @_;
+    my $fn = $dir . '/df';
+    return unless open(DF, $fn);
     my $header = <DF>;
     if ($header =~ m/^Filesystem/) {
 	while (<DF>) {
 	    chomp;
-	    process_df_entry(split(' ', $_, 6));
+	    process_df_entry($round, split(' ', $_, 6));
 	}
     } else {
 	print STDERR "WARNING: unable to parse '$fn': invalid header '$header'.\n";
@@ -1718,9 +1717,10 @@ sub process_df
     close(DF);
 }
 
-sub process_slabinfo()
+sub process_slabinfo
 {
-    my $fn = "$d/slabinfo";
+    my ($round, $dir) = @_;
+    my $fn = $dir . '/slabinfo';
     unless (open(SLABINFO, $fn)) {
 	print STDERR "WARNING: unable to open $fn: $!\n";
 	return;
@@ -1746,7 +1746,7 @@ sub process_slabinfo()
 
 	my $slab_sz = ($active_objs * $obj_size)/1024;
 	$fn = "e/slabs-$slabname";
-	value_store($fn, $i, $slab_sz);
+	value_store($fn, $round, $slab_sz);
 	$all_slabs{$slabname} += $active_objs;
     }
     close(SLABINFO);
@@ -1777,9 +1777,10 @@ sub process_slabinfo()
 #lr-x------    1 user     users           64 Feb  4 01:57 18 -> pipe:[9740]
 #l-wx------    1 user     users           64 Feb  4 01:57 19 -> pipe:[9740]
 #lrwx------    1 user     users           64 Feb  4 01:57 2 -> /dev/console
-sub process_openfds()
+sub process_openfds
 {
-    my $fn = compression_check("$d/open-fds");
+    my ($round, $dir) = @_;
+    my $fn = compression_check($dir . '/open-fds');
     if (not open(OPENFDS, $fn)) {
 	print STDERR "WARNING: unable to open $fn: $!\n";
 	return;
@@ -1788,15 +1789,15 @@ sub process_openfds()
     while (<OPENFDS>) {
 	if (m#/proc/(\d+)/fd/:#) {
 	    if ($pid) {
-		value_store("e/fd_inotify-$name_by_pid{$pid}-$pid",   $i, $fd_inotify{$pid});
-		value_store("e/fd_pipe-$name_by_pid{$pid}-$pid",      $i, $fd_pipe{$pid});
-		value_store("e/fd_socket-$name_by_pid{$pid}-$pid",    $i, $fd_socket{$pid});
-		value_store("e/fd_tmpfs-$name_by_pid{$pid}-$pid",     $i, $fd_tmpfs{$pid});
-		value_store("e/fd_eventfd-$name_by_pid{$pid}-$pid",   $i, $fd_eventfd{$pid});
-		value_store("e/fd_epoll-$name_by_pid{$pid}-$pid",     $i, $fd_epoll{$pid});
-		value_store("e/fd_signalfd-$name_by_pid{$pid}-$pid",  $i, $fd_signalfd{$pid});
-		value_store("e/fd_timerfd-$name_by_pid{$pid}-$pid",   $i, $fd_timerfd{$pid});
-		value_store("e/fd_disk-$name_by_pid{$pid}-$pid",      $i, $fd_disk{$pid});
+		value_store("e/fd_inotify-$name_by_pid{$pid}-$pid",   $round, $fd_inotify{$pid});
+		value_store("e/fd_pipe-$name_by_pid{$pid}-$pid",      $round, $fd_pipe{$pid});
+		value_store("e/fd_socket-$name_by_pid{$pid}-$pid",    $round, $fd_socket{$pid});
+		value_store("e/fd_tmpfs-$name_by_pid{$pid}-$pid",     $round, $fd_tmpfs{$pid});
+		value_store("e/fd_eventfd-$name_by_pid{$pid}-$pid",   $round, $fd_eventfd{$pid});
+		value_store("e/fd_epoll-$name_by_pid{$pid}-$pid",     $round, $fd_epoll{$pid});
+		value_store("e/fd_signalfd-$name_by_pid{$pid}-$pid",  $round, $fd_signalfd{$pid});
+		value_store("e/fd_timerfd-$name_by_pid{$pid}-$pid",   $round, $fd_timerfd{$pid});
+		value_store("e/fd_disk-$name_by_pid{$pid}-$pid",      $round, $fd_disk{$pid});
 	    }
 	    $pid = $1;
 	    $fd_samples{$pid} += 1;
@@ -1855,9 +1856,10 @@ sub sanitize_cgroup_name
     return $name;
 }
 
-sub process_cgroups()
+sub process_cgroups
 {
-    my $fn = "$d/cgroups";
+    my ($round, $dir) = @_;
+    my $fn = $dir . '/cgroups';
     if (not open(CGROUPS, $fn)) {
 	return;
     }
@@ -1868,19 +1870,19 @@ sub process_cgroups()
 	    $cgroup_name_orig = $1;
 	    $cgroup_name_mangled = sanitize_cgroup_name($cgroup_name_orig);
 	    my $memsw_usage = int(<CGROUPS>) / (1024*1024);
-	    value_store_zeropad("e/cgroup-${cgroup_name_mangled}-memsw", $i, $memsw_usage);
+	    value_store_zeropad("e/cgroup-${cgroup_name_mangled}-memsw", $round, $memsw_usage);
 	} elsif (m#^==> /syspart(\S*/)memory\.usage_in_bytes <==#) {
 	    $cgroup_name_orig = $1;
 	    $cgroup_name_mangled = sanitize_cgroup_name($cgroup_name_orig);
 	    my $mem_usage = int(<CGROUPS>) / (1024*1024);
-	    value_store_zeropad("e/cgroup-${cgroup_name_mangled}-mem", $i, $mem_usage);
+	    value_store_zeropad("e/cgroup-${cgroup_name_mangled}-mem", $round, $mem_usage);
 	} elsif (m#^==> /syspart(\S*/)memory\.limit_in_bytes <==#) {
 	    $cgroup_name_orig = $1;
 	    $cgroup_name_mangled = sanitize_cgroup_name($cgroup_name_orig);
 	    my $mem_limit = int(<CGROUPS>);
 	    if ($mem_limit != 9223372036854775807) {
 		$mem_limit /= (1024*1024);
-		value_store_zeropad("e/cgroup-${cgroup_name_mangled}-memlimit", $i, $mem_limit);
+		value_store_zeropad("e/cgroup-${cgroup_name_mangled}-memlimit", $round, $mem_limit);
 	    }
 	} elsif (m#^==> /syspart(\S*/)memory\.stat <==#) {
 	    # ==> /syspart/system/desktop/memory.stat <==
@@ -1926,13 +1928,13 @@ sub process_cgroups()
 		    my $val_prev = $prev_stat{$_};
 		    my $val = $val_now - $val_prev;
 		    $val = 0 if ($val < 0);
-		    value_store("e/cgroup-${cgroup_name_mangled}-$_", $i, $val);
+		    value_store("e/cgroup-${cgroup_name_mangled}-$_", $round, $val);
 		}
 	    }
 	    $prev_cgroups_stats{$cgroup_name_mangled} = \%stat;
 	    foreach (qw/cache rss mapped_file swap inactive_anon
 			active_anon inactive_file active_file unevictable/) {
-		value_store_zeropad("e/cgroup-${cgroup_name_mangled}-$_", $i,
+		value_store_zeropad("e/cgroup-${cgroup_name_mangled}-$_", $round,
 		    $stat{$_} / (1024*1024));
 	    }
 	} elsif (m#^==> /syspart(\S*/)cgroup\.procs <==#) {
@@ -1942,7 +1944,7 @@ sub process_cgroups()
 	    while (<CGROUPS> =~ m#^\d+$#) {
 		$procs_count++;
 	    }
-	    value_store_zeropad("e/cgroup-${cgroup_name_mangled}-process-cnt", $i, $procs_count);
+	    value_store_zeropad("e/cgroup-${cgroup_name_mangled}-process-cnt", $round, $procs_count);
 	} elsif (m#^==> /syspart(\S*/)tasks <==#) {
 	    $cgroup_name_orig = $1;
 	    $cgroup_name_mangled = sanitize_cgroup_name($cgroup_name_orig);
@@ -1950,7 +1952,7 @@ sub process_cgroups()
 	    while (<CGROUPS> =~ m#^\d+$#) {
 		$task_count++;
 	    }
-	    value_store_zeropad("e/cgroup-${cgroup_name_mangled}-task-cnt", $i, $task_count);
+	    value_store_zeropad("e/cgroup-${cgroup_name_mangled}-task-cnt", $round, $task_count);
 	} elsif (m#^==> /syspart(\S*/)memory\.failcnt <==#) {
 	    $cgroup_name_orig = $1;
 	    $cgroup_name_mangled = sanitize_cgroup_name($cgroup_name_orig);
@@ -1959,7 +1961,7 @@ sub process_cgroups()
 		my $failcnt_prev = $prev_cgroups_mem_failcnt{$cgroup_name_mangled};
 		my $val = $failcnt - $failcnt_prev;
 		$val = 0 if ($val < 0);
-		value_store("e/cgroup-${cgroup_name_mangled}-mem-failcnt", $i, $val);
+		value_store("e/cgroup-${cgroup_name_mangled}-mem-failcnt", $round, $val);
 	    }
 	    $prev_cgroups_mem_failcnt{$cgroup_name_mangled} = $failcnt;
 	} elsif (m#^==> /syspart(\S*/)memory\.memsw\.failcnt <==#) {
@@ -1970,7 +1972,7 @@ sub process_cgroups()
 		my $failcnt_prev = $prev_cgroups_memsw_failcnt{$cgroup_name_mangled};
 		my $val = $failcnt - $failcnt_prev;
 		$val = 0 if ($val < 0);
-		value_store("e/cgroup-${cgroup_name_mangled}-memsw-failcnt", $i, $val);
+		value_store("e/cgroup-${cgroup_name_mangled}-memsw-failcnt", $round, $val);
 	    }
 	    $prev_cgroups_memsw_failcnt{$cgroup_name_mangled} = $failcnt;
 	}
@@ -1982,12 +1984,11 @@ sub process_cgroups()
     close(CGROUPS);
 }
 
-sub process_ifconfig()
+sub process_ifconfig
 {
-    my $fn = "$d/ifconfig";
-    if (not open(IFCONFIG, $fn)) {
-	return;
-    }
+    my ($round, $dir) = @_;
+    my $fn = $dir . '/ifconfig';
+    return unless open(IFCONFIG, $fn);
     while (<IFCONFIG>) {
 	if (m/^[^ ]/) {
 	    my ($interface, undef) = split(' ', $_, 2);
@@ -2010,7 +2011,7 @@ sub process_ifconfig()
 			} else {
 			    $value = $rx;
 			}
-			value_store("e/iface-$interface-rx-packets", $i, $value);
+			value_store("e/iface-$interface-rx-packets", $round, $value);
 		    }
 		    $interfaces_prev_rx_packets{$interface} = $rx;
 		} elsif (m/TX packets:([0-9]+)/) {
@@ -2022,7 +2023,7 @@ sub process_ifconfig()
 			} else {
 			    $value = $tx;
 			}
-			value_store("e/iface-$interface-tx-packets", $i, $value);
+			value_store("e/iface-$interface-tx-packets", $round, $value);
 		    }
 		    $interfaces_prev_tx_packets{$interface} = $tx;
 		} elsif (m/RX bytes:([0-9]+).*TX bytes:([0-9]+)/) {
@@ -2035,14 +2036,14 @@ sub process_ifconfig()
 			} else {
 			    $value = $rx;
 			}
-			value_store("e/iface-$interface-rx-kB", $i, $value);
+			value_store("e/iface-$interface-rx-kB", $round, $value);
 			my $prev_tx = $interfaces_prev_tx_kB{$interface};
 			if ($prev_tx <= $tx) {
 			    $value = $tx - $prev_tx;
 			} else {
 			    $value = $tx;
 			}
-			value_store("e/iface-$interface-tx-kB", $i, $value);
+			value_store("e/iface-$interface-tx-kB", $round, $value);
 		    }
 		    $interfaces_prev_rx_kB{$interface} = $rx;
 		    $interfaces_prev_tx_kB{$interface} = $tx;
@@ -2053,11 +2054,12 @@ sub process_ifconfig()
     close(IFCONFIG);
 }
 
-sub process_smaps()
+sub process_smaps
 {
+    my ($round, $dir) = @_;
     my $heap = 0;
     my $nm;
-    my $fn = compression_check("$d/smaps.cap");
+    my $fn = compression_check($dir . '/smaps.cap');
     unless (open(SMAPS_CAP, $fn)) {
 	print STDERR "WARNING: unable to open $fn: $!\n";
 	return;
@@ -2103,7 +2105,7 @@ sub process_smaps()
 		# heap for previous.
 		# This is because heap comes in multiple segments
 		#
-		$avg_heap{$nm} = ($avg_heap{$nm} * $i + $heap)/($i+1);
+		$avg_heap{$nm} = ($avg_heap{$nm} * $round + $heap)/($round+1);
 		my $dev = ($avg_heap{$nm} - $heap);
 		if ($dev < 0) {
 		    $dev = -1 * $dev;
@@ -2119,7 +2121,7 @@ sub process_smaps()
 		$sum_heap{$nm} += $heap;
 		$num_heap_samples{$nm} += 1;
 		my $xxx = $heap / 1024;
-		value_store_zeropad($fn, $i, $xxx);
+		value_store_zeropad($fn, $round, $xxx);
 		$heap = 0;
 
 		###### now start with new name
@@ -2154,7 +2156,7 @@ sub process_smaps()
 		$fn = "e/locked-$nm";
 		$app_sum_locked{$nm} += $locked;
 		my $xxx = $locked / 1024;
-		value_store_zeropad($fn, $i, $xxx);
+		value_store_zeropad($fn, $round, $xxx);
 		next;
 	    }
 	    if( index($_, "#VmSize: ") != -1) {
@@ -2163,7 +2165,7 @@ sub process_smaps()
 		$fn = "e/vmsz-$nm";
 		$app_sum_vmsz{$nm} += $vmsz;
 		my $xxx = $vmsz / 1024;
-		value_store_zeropad($fn, $i, $xxx);
+		value_store_zeropad($fn, $round, $xxx);
 		if ($prev_vmsize{$nm} && ($prev_vmsize{$nm} != $vmsz)) {
 		    $changed_vmsize{$nm} = 1;
 		}
@@ -2212,20 +2214,21 @@ sub process_smaps()
     }
     close(SMAPS_CAP);
     foreach (keys %process_devpvr_count) {
-	value_store("e/devpvr-count-$_", $i, $process_devpvr_count{$_});
+	value_store("e/devpvr-count-$_", $round, $process_devpvr_count{$_});
     }
     $sum_app_swapped /= 1024;
     $sum_app_pss /= 1024;
 #    $sum_app_private_dirty /= 1024;
-    value_store($app_swapped_plot_file_name, $i, $sum_app_swapped);
-    value_store($app_pss_plot_file_name, $i, $sum_app_pss);
+    value_store($app_swapped_plot_file_name, $round, $sum_app_swapped);
+    value_store($app_pss_plot_file_name, $round, $sum_app_pss);
 }
 
-sub process_interrupts()
+sub process_interrupts
 {
+    my ($round, $dir) = @_;
     my $all_ints = 0;
 
-    my $fn = $d . "/interrupts";
+    my $fn = $dir . '/interrupts';
     unless (open(INTERRUPTS, $fn)) {
 	print STDERR "WARNING: unable to open $fn: $!\n";
 	return;
@@ -2237,25 +2240,26 @@ sub process_interrupts()
 	my $iname = $int_num . '-' . $int_name1 . $int_name2 . $int_name3 . $int_name4;
 	
 	my $ints = 0;
-	if (!$int_prev{$iname} or !$lapsed_time{$i}) {
+	if (!$int_prev{$iname} or !$lapsed_time{$round}) {
 	    $ints = 0;
 	} else {
-	    $ints = ($int_cnt - $int_prev{$iname})/$lapsed_time{$i};
+	    $ints = ($int_cnt - $int_prev{$iname})/$lapsed_time{$round};
 	}
 	$int_prev{$iname} = $int_cnt;
 	$int_total{$iname} += $ints;
 	$all_ints += $ints;
 	$fn = "e/int-$iname";
-	value_store($fn, $i, $ints);
-#	print "$i: ints-per-sec=$ints int_cnt=$int_cnt num=[$int_num] name=[$iname] nm=[$int_name1] nm2=[$int_name2] nm3=[$int_name3] nm4=[$int_name4]\n";
+	value_store($fn, $round, $ints);
+#	print "$round: ints-per-sec=$ints int_cnt=$int_cnt num=[$int_num] name=[$iname] nm=[$int_name1] nm2=[$int_name2] nm3=[$int_name3] nm4=[$int_name4]\n";
     }
     close(INTERRUPTS);
-    value_store("e/count-int", $i, $all_ints);
+    value_store("e/count-int", $round, $all_ints);
 }
 
-sub process_diskstats()
+sub process_diskstats
 {
-    my $fn = $d . "/diskstats";
+    my ($round, $dir) = @_;
+    my $fn = $dir . '/diskstats';
     if (! -e $fn) {
         # this is optional as it was added later to snapshots.
 	return;
@@ -2275,33 +2279,33 @@ sub process_diskstats()
 	
 	my $nreads = 0;
 	my $reads = 0;
-	if ($dev_reads_prev{$dname} and $lapsed_time{$i}) {
-#	    $reads = ($xdev_reads - $dev_reads_prev{$dname})/$lapsed_time{$i};
+	if ($dev_reads_prev{$dname} and $lapsed_time{$round}) {
+#	    $reads = ($xdev_reads - $dev_reads_prev{$dname})/$lapsed_time{$round};
 	    $nreads = $xsector_reads - $dev_reads_prev{$dname};
-	    $reads = ((($nreads * $sector_sz)/($MB_bytes)))/$lapsed_time{$i};
-	    value_store("e/devreads-mb-$dname", $i,
+	    $reads = ((($nreads * $sector_sz)/($MB_bytes)))/$lapsed_time{$round};
+	    value_store("e/devreads-mb-$dname", $round,
 		($nreads * $sector_sz) / $MB_bytes);
 	}
 #	$dev_reads_prev{$dname} = $xdev_reads;
 	$dev_reads_prev{$dname} = $xsector_reads;
 	$dev_reads_total{$dname} += $reads;
 	$fn = "e/devreads-$dname";
-	value_store($fn, $i, $reads);
+	value_store($fn, $round, $reads);
 
 	my $nwrites = 0;
 	my $writes = 0;
-	if ($dev_writes_prev{$dname} and $lapsed_time{$i}) {
-#	    $writes = ($xdev_writes - $dev_writes_prev{$dname})/$lapsed_time{$i};
+	if ($dev_writes_prev{$dname} and $lapsed_time{$round}) {
+#	    $writes = ($xdev_writes - $dev_writes_prev{$dname})/$lapsed_time{$round};
 	    $nwrites = $xsector_writes - $dev_writes_prev{$dname};
-	    $writes = ((($nwrites * $sector_sz)/($MB_bytes)))/$lapsed_time{$i};
-	    value_store("e/devwrites-mb-$dname", $i,
+	    $writes = ((($nwrites * $sector_sz)/($MB_bytes)))/$lapsed_time{$round};
+	    value_store("e/devwrites-mb-$dname", $round,
 		($nwrites * $sector_sz) / $MB_bytes);
 	}
 #	$dev_writes_prev{$dname} = $xdev_writes;
 	$dev_writes_prev{$dname} = $xsector_writes;
 	$dev_writes_total{$dname} += $writes;
 	$fn = "e/devwrites-$dname";
-	value_store($fn, $i, $writes);
+	value_store($fn, $round, $writes);
 
 	my $time_per_read = 0;
 	if ($dev_time_per_read_prev{$dname}) {
@@ -2311,7 +2315,7 @@ sub process_diskstats()
 	}
 	$dev_time_per_read_prev{$dname} = $xmsec_reading;
 	$fn = "e/devreadtime-$dname";
-	value_store($fn, $i, $time_per_read);
+	value_store($fn, $round, $time_per_read);
 
 	my $time_per_write = 0;
 	if ($dev_time_per_write_prev{$dname}) {
@@ -2321,20 +2325,17 @@ sub process_diskstats()
 	}
 	$dev_time_per_write_prev{$dname} = $xmsec_writing;
 	$fn = "e/devwritetime-$dname";
-	value_store($fn, $i, $time_per_write);
+	value_store($fn, $round, $time_per_write);
 	$have_diskstats = 1;
     }
     close(DISKSTATS);
 }
 
-sub process_bme()
+sub process_bme
 {
-    my $fn = $d . "/bmestat";
-    if (! -e $fn) {
-        # as this is new (added in sp-endurance 2.2.1+0m6 in 2011w9), 
-	# it may be missing in snapshots, just return silently if not there
-	return;
-    }
+    my ($round, $dir) = @_;
+    my $fn = $dir . '/bmestat';
+    return unless -e $fn;
     unless (open(BMESTAT, $fn)) {
 	print STDERR "WARNING: unable to open $fn: $!\n";
 	return;
@@ -2344,37 +2345,35 @@ sub process_bme()
 	if (m/battery pct. level:/) {
 	    my (undef, undef, undef, $batt_lev) = split(' ' , $_, 4);
 	    chop $batt_lev;
-	    value_store($batt_charge_left_file_name, $i, $batt_lev);
+	    value_store($batt_charge_left_file_name, $round, $batt_lev);
 	} 
 	elsif (m/battery cur. voltage:/) {
 	    my (undef, undef, undef, $volt) = split(' ' , $_, 4);
 	    chop $volt;
-	    value_store($batt_voltage_file_name, $i, $volt);
+	    value_store($batt_voltage_file_name, $round, $volt);
 	}
 	elsif (m/battery temperature:/) {
 	    my (undef, undef, $batt_temp) = split(' ' , $_, 3);
 	    chop $batt_temp;
-	    value_store($batt_temperature_file_name, $i, $batt_temp);
+	    value_store($batt_temperature_file_name, $round, $batt_temp);
 	}
     }
     close(BMESTAT);
 }
 
 
-sub process_ramzswap()
+sub process_ramzswap
 {
-    my $fn = $d . "/ramzswap";
-    if (! -e $fn) {
-        # as this is optional, may be missing in snapshots.
-	return;
-    }
+    my ($round, $dir) = @_;
+    my $fn = $dir . '/ramzswap';
+    return unless -e $fn;
     unless (open(RAMZSWAP, $fn)) {
 	print STDERR "WARNING: unable to open $fn: $!\n";
 	return;
     }
     my $divider;
-    if ($lapsed_time{$i}) {
-	$divider = $lapsed_time{$i};
+    if ($lapsed_time{$round}) {
+	$divider = $lapsed_time{$round};
     } else {
 	$divider = $secs_per_round;
     }
@@ -2385,7 +2384,7 @@ sub process_ramzswap()
 	    if ($prev_ramzswap_bdreads) {
 		$n_bdreads = ($param  - $prev_ramzswap_bdreads)/$divider;
 	    }
-	    value_store($ramzswap_bdreads_file_name, $i, $n_bdreads);
+	    value_store($ramzswap_bdreads_file_name, $round, $n_bdreads);
 	    $prev_ramzswap_bdreads = $param;
 	} elsif (m/NumReads:/) {
 	    my (undef, $param) = split(' ' , $_, 2);
@@ -2393,7 +2392,7 @@ sub process_ramzswap()
 	    if ($prev_ramzswap_reads) {
 		$n_reads = ($param  - $prev_ramzswap_reads)/$divider;
 	    }
-	    value_store($ramzswap_reads_file_name, $i, $n_reads);
+	    value_store($ramzswap_reads_file_name, $round, $n_reads);
 	    $prev_ramzswap_reads = $param;
 	} elsif (m/BDevNumWrites:/) {
 	    my (undef, $param) = split(' ' , $_, 2);
@@ -2401,7 +2400,7 @@ sub process_ramzswap()
 	    if ($prev_ramzswap_bdwrites) {
 		$n_bdwrites = ($param  - $prev_ramzswap_bdwrites)/$divider;
 	    }
-	    value_store($ramzswap_bdwrites_file_name, $i, $n_bdwrites);
+	    value_store($ramzswap_bdwrites_file_name, $round, $n_bdwrites);
 	    $prev_ramzswap_bdwrites = $param;
 	} elsif (m/NumWrites:/) {
 	    my (undef, $param) = split(' ' , $_, 2);
@@ -2409,16 +2408,16 @@ sub process_ramzswap()
 	    if ($prev_ramzswap_writes) {
 		$n_writes = ($param  - $prev_ramzswap_writes)/$divider;
 	    }
-	    value_store($ramzswap_writes_file_name, $i, $n_writes);
+	    value_store($ramzswap_writes_file_name, $round, $n_writes);
 	    $prev_ramzswap_writes = $param;
 	} elsif (m/ZeroPages:/) {
 	    my (undef, $zerop) = split(' ' , $_, 2);
 	    my $zerom = ($zerop * $page_size)/1024;
-	    value_store($ramzswap_zerop_file_name, $i, $zerom);
+	    value_store($ramzswap_zerop_file_name, $round, $zerom);
 	} elsif (m/PagesUsed:/) {
 	    my (undef, $n_usedp) = split(' ' , $_, 2);
 	    my $used = ($n_usedp * $page_size)/1024;
-	    value_store($ramzswap_used_file_name, $i, $used);
+	    value_store($ramzswap_used_file_name, $round, $used);
 	    $have_ramzswap = 1;
 	}
     }
@@ -2426,12 +2425,13 @@ sub process_ramzswap()
 }
 
 
-sub process_stat()
+sub process_stat
 {
+    my ($round, $dir) = @_;
     my $ctx;
     my %cpu_ticks;
     my $processes;
-    my $fn = $d . "/stat";
+    my $fn = $dir . '/stat';
     open(STAT, $fn);
     while (<STAT>) {
 	chop;
@@ -2443,13 +2443,13 @@ sub process_stat()
 		$global_ctx = 0;
 	    } elsif (($ctx - $global_ctx_prev) < 0) {
 		$global_ctx = 0;
-	    } elsif (!$lapsed_time{$i}) {
+	    } elsif (!$lapsed_time{$round}) {
 		$global_ctx = 0;
 	    } else {
-		$global_ctx = ($ctx - $global_ctx_prev)/$lapsed_time{$i};
+		$global_ctx = ($ctx - $global_ctx_prev)/$lapsed_time{$round};
 	    }
-	    if ($i > 0) {
-		value_store("e/all-ctx-switches", $i, $global_ctx);
+	    if ($round > 0) {
+		value_store("e/all-ctx-switches", $round, $global_ctx);
 	    }
 	} elsif(m/cpu  (\d+) (\d+) (\d+) (\d+) (\d+) (\d+) (\d+)/) {
 	    %cpu_ticks = (
@@ -2464,22 +2464,22 @@ sub process_stat()
 	    );
 	    foreach (qw/user nice sys idle iowait irq softirq/) {
 		if (%prev_cpu_ticks) {
-		    value_store_zeropad("e/cpu-$_", $i,
+		    value_store_zeropad("e/cpu-$_", $round,
 			100 * (($cpu_ticks{$_} - $prev_cpu_ticks{$_}) /
 			    ($cpu_ticks{sum} - $prev_cpu_ticks{sum})));
 		} else {
-		    value_store_zeropad("e/cpu-$_", $i, 0);
+		    value_store_zeropad("e/cpu-$_", $round, 0);
 		}
 	    }
 	} elsif( m/processes /) {
 	    (undef, $processes) = split(' ' , $_, 2);
 
 	    my $global_processes = 0;
-	    if ($global_processes_prev and $lapsed_time{$i}) {
-		$global_processes = (60*($processes - $global_processes_prev))/$lapsed_time{$i};
+	    if ($global_processes_prev and $lapsed_time{$round}) {
+		$global_processes = (60*($processes - $global_processes_prev))/$lapsed_time{$round};
 	    }
-	    if ($i > 0) {
-		value_store("e/global-processes", $i, $global_processes);
+	    if ($round > 0) {
+		value_store("e/global-processes", $round, $global_processes);
 	    }
 	    last;
 	}
@@ -2490,12 +2490,11 @@ sub process_stat()
     $global_processes_prev = $processes;
 }
 
-sub process_pagetypeinfo()
+sub process_pagetypeinfo
 {
-    my $fn = $d . "/pagetypeinfo";
-    if (! -e $fn) {
-	return;
-    }
+    my ($round, $dir) = @_;
+    my $fn = $dir . '/pagetypeinfo';
+    return unless -e $fn;
     unless (open(PAGETYPEINFO, $fn)) {
 	print STDERR "WARNING: unable to open $fn: $!\n";
 	return;
@@ -2522,15 +2521,15 @@ sub process_pagetypeinfo()
     for my $ordernum (0 .. 10) {
 	my $order = 1 << $ordernum;
 	$fn = "e/pt-unmovable-$ordernum";
-	value_store_zeropad($fn, $i, ($unmovable[$ordernum+6]*$order*$pg_bytes)/$MB_bytes);
+	value_store_zeropad($fn, $round, ($unmovable[$ordernum+6]*$order*$pg_bytes)/$MB_bytes);
 	$fn = "e/pt-reclaimable-$ordernum";
-	value_store_zeropad($fn, $i, ($reclaimable[$ordernum+6]*$order*$pg_bytes)/$MB_bytes);
+	value_store_zeropad($fn, $round, ($reclaimable[$ordernum+6]*$order*$pg_bytes)/$MB_bytes);
 	$fn = "e/pt-movable-$ordernum";
-	value_store_zeropad($fn, $i, ($movable[$ordernum+6]*$order*$pg_bytes)/$MB_bytes);
+	value_store_zeropad($fn, $round, ($movable[$ordernum+6]*$order*$pg_bytes)/$MB_bytes);
 	$fn = "e/pt-reserve-$ordernum";
-	value_store_zeropad($fn, $i, ($reserve[$ordernum+6]*$order*$pg_bytes)/$MB_bytes);
+	value_store_zeropad($fn, $round, ($reserve[$ordernum+6]*$order*$pg_bytes)/$MB_bytes);
 	$fn = "e/pt-isolate-$ordernum";
-	value_store_zeropad($fn, $i, ($isolate[$ordernum+6]*$order*$pg_bytes)/$MB_bytes);
+	value_store_zeropad($fn, $round, ($isolate[$ordernum+6]*$order*$pg_bytes)/$MB_bytes);
     }
 }
 
@@ -2541,10 +2540,9 @@ sub process_pagetypeinfo()
 # 300000 1588381
 sub process_sysfs_cpu
 {
-    my $fn = "$d/sysfs_cpu";
-    if (not open(SYSFS, $fn)) {
-	return;
-    }
+    my ($round, $dir) = @_;
+    my $fn = $dir . '/sysfs_cpu';
+    return unless open(SYSFS, $fn);
     while (<SYSFS>) {
 	if (m#^==> /sys/devices/system/cpu/cpu(\d+)/cpufreq/stats/time_in_state <==#) {
 	    my $cpu_num = $1;
@@ -2566,7 +2564,7 @@ sub process_sysfs_cpu
 			my $ticks = $time_in_state{$freq};
 			my $prev_ticks = $prev_time_in_state{$freq};
 			my $pct = 100 * (($ticks - $prev_ticks) / $total_ticks);
-			value_store_zeropad("e/sysfs_cpu${cpu_num}_${freq}mhz", $i, $pct);
+			value_store_zeropad("e/sysfs_cpu${cpu_num}_${freq}mhz", $round, $pct);
 		    }
 		}
 	    }
@@ -2578,14 +2576,15 @@ sub process_sysfs_cpu
 
 sub process_sysfs_fs
 {
-    return unless open(SYSFS_FS, $d . '/sysfs_fs');
+    my ($round, $dir) = @_;
+    return unless open(SYSFS_FS, $dir . '/sysfs_fs');
     while (<SYSFS_FS>) {
 	if (m#==> /sys/fs/ext4/(\S+)/lifetime_write_kbytes <==#) {
 	    my $device = $1;
 	    my $value = int(<SYSFS_FS>);
 	    if ($sysfs_fs_prev{$device}) {
 		my $prev_value = int($sysfs_fs_prev{$device});
-		value_store("e/fs-ext4-lifetime-write-MB-$device", $i,
+		value_store("e/fs-ext4-lifetime-write-MB-$device", $round,
 		    ($value - $prev_value) / 1024);
 	    }
 	    $sysfs_fs_prev{$device} = $value;
@@ -2597,7 +2596,8 @@ sub process_sysfs_fs
 
 sub process_sysfs_power_supply
 {
-    return unless open(SYSFS_POWER_SUPPLY, $d . '/sysfs_power_supply');
+    my ($round, $dir) = @_;
+    return unless open(SYSFS_POWER_SUPPLY, $dir . '/sysfs_power_supply');
     my %ps;
     while (<SYSFS_POWER_SUPPLY>) {
 	if (m#==> /sys/class/power_supply/(BAT\d+)#) {
@@ -2625,11 +2625,11 @@ sub process_sysfs_power_supply
     foreach my $dev (keys %ps) {
 	foreach my $key (keys(%{$ps{$dev}})) {
 	    my $value = $ps{$dev}{$key};
-	    value_store("e/power_supply-$dev-$key", $i, $value);
+	    value_store("e/power_supply-$dev-$key", $round, $value);
 	}
 	if (not defined $ps{$dev}{capacity} and
 		($ps{$dev}{charge_now} and $ps{$dev}{charge_full_design})) {
-	    value_store("e/power_supply-$dev-capacity", $i,
+	    value_store("e/power_supply-$dev-capacity", $round,
 		100 * ($ps{$dev}{charge_now} / $ps{$dev}{charge_full_design}));
 	}
     }
@@ -2637,7 +2637,8 @@ sub process_sysfs_power_supply
 
 sub process_sysfs_backlight
 {
-    return unless open(SYSFS_BACKLIGHT, $d . '/sysfs_backlight');
+    my ($round, $dir) = @_;
+    return unless open(SYSFS_BACKLIGHT, $dir . '/sysfs_backlight');
     my %backlight;
     while (<SYSFS_BACKLIGHT>) {
 	if (m#==> /sys/class/backlight/(\S+)/actual_brightness <==#) {
@@ -2652,19 +2653,18 @@ sub process_sysfs_backlight
     foreach my $dev (keys %backlight) {
 	foreach my $key (keys(%{$backlight{$dev}})) {
 	    my $value = $backlight{$dev}{$key};
-	    value_store("e/sysfs-backlight-$dev-$key", $i, $value);
+	    value_store("e/sysfs-backlight-$dev-$key", $round, $value);
 	}
 	if ($backlight{$dev}{max_brightness} > 0 and $backlight{$dev}{actual_brightness}) {
-	    value_store("e/sysfs-backlight-$dev-percentage", $i,
+	    value_store("e/sysfs-backlight-$dev-percentage", $round,
 		100 * ($backlight{$dev}{actual_brightness} / $backlight{$dev}{max_brightness}));
 	}
     }
 }
 
-sub emit_domain_values($$)
+sub emit_domain_values
 {
-    my $line = shift;
-    my $domain = shift;
+    my ($round, $line, $domain) = @_;
     chop $line;
 #    print "powerdomain $domain: line=[$line]\n";
     my (undef, $off, $ret, $ina, $on) = split('\|' , $line, 6);
@@ -2673,21 +2673,17 @@ sub emit_domain_values($$)
     (undef, $ina) = split(':' , $ina, 2);
     (undef, $on) = split(':' , $on, 2);
 
-    value_store_zeropad("e/p-domain-$domain-off", $i, $off);
-    value_store_zeropad("e/p-domain-$domain-ret", $i, $ret);
-    value_store_zeropad("e/p-domain-$domain-ina", $i, $ina);
-    value_store_zeropad("e/p-domain-$domain-on", $i, $on);
+    value_store_zeropad("e/p-domain-$domain-off", $round, $off);
+    value_store_zeropad("e/p-domain-$domain-ret", $round, $ret);
+    value_store_zeropad("e/p-domain-$domain-ina", $round, $ina);
+    value_store_zeropad("e/p-domain-$domain-on", $round, $on);
 }
 
-sub process_powertop()
+sub process_powertop
 {
-#
-# powertop output if exists
-#
-    my $fn = $d . "/powertop.out";
-    unless (open(POWERTOP, $fn)) {
-	return;
-    }
+    my ($round, $dir) = @_;
+    my $fn = $dir . '/powertop.out';
+    return unless open(POWERTOP, $fn);
     $powertop_data_found = 1;
     my $secs;
     while (<POWERTOP>) {
@@ -2732,12 +2728,12 @@ sub process_powertop()
 #		}
 		$clev =~ s/ //g;
 #		print "power-c clev=[$clev]\n";
-		value_store_zeropad("e/$clev", $i, $ratio_c);
+		value_store_zeropad("e/$clev", $round, $ratio_c);
 		$seen_powertop_c_levels{$clev} = 1;
 		if (index($freq, "MHz") != -1) {
 		    $freq =~ s/ //g;
 #		    print "power-c freq=[$freq]\n";
-		    value_store_zeropad("e/$freq", $i, $ratio_f);
+		    value_store_zeropad("e/$freq", $round, $ratio_f);
 		    $seen_powertop_f_levels{$freq} = 1;
 		}
 	    }
@@ -2745,7 +2741,7 @@ sub process_powertop()
 	    my $line = <POWERTOP>;
 	    while (1) {
 		$line = <POWERTOP>;
-#		print "$i:line=[$line]\n";
+#		print "$round:line=[$line]\n";
 		if ($line eq "\n") {
 		    last;
 		}
@@ -2756,9 +2752,9 @@ sub process_powertop()
 		$id =~ s/\<//g;
 		$id =~ s/\>//g;
 		$id =~ s/\///g;
-#		print "$i:id=[$id] [pid[$pid], activ[$activ], name[$name], func[$func]\n";
+#		print "$round:id=[$id] [pid[$pid], activ[$activ], name[$name], func[$func]\n";
 		$activ /= $secs;
-		value_store("e/$id-activity", $i, $activ);
+		value_store("e/$id-activity", $round, $activ);
 		$num_activity_samples{$id} += 1;
 		$p_activity{$id} += $activ;
 		if ($activ > $p_activity_max{$id}) {
@@ -2766,27 +2762,27 @@ sub process_powertop()
 		}
 	    }
 	} elsif( index($_, "per |OFF:") != -1) {
-	    emit_domain_values($_, "periph");
+	    emit_domain_values($round, $_, "periph");
 	} elsif( index($_, "core |OFF:") != -1) {
-	    emit_domain_values($_, "core");
+	    emit_domain_values($round, $_, "core");
 	} elsif( index($_, "neon |OFF:") != -1) {
-	    emit_domain_values($_, "neon");
+	    emit_domain_values($round, $_, "neon");
 	} elsif( index($_, "sgx |OFF:") != -1) {
-	    emit_domain_values($_, "sgx");
+	    emit_domain_values($round, $_, "sgx");
 	} elsif( index($_, "dss |OFF:") != -1) {
-	    emit_domain_values($_, "dss");
+	    emit_domain_values($round, $_, "dss");
 	} elsif( index($_, "mpu |OFF:") != -1) {
-	    emit_domain_values($_, "mpu");
+	    emit_domain_values($round, $_, "mpu");
 	} elsif( index($_, "Total wakeups") != -1) {
 	    my (undef, undef, $wakeups, $wakeups_s, undef,
 	     undef, $irqs, $irqs_s, undef, 
 	     undef, $timers, $timers_s, undef) = split(' ' , $_, 13);
 	    $wakeups_s =~ s/s//g;
 	    $wakeups_s =~ s/\///g;
-	    value_store("e/p-wakeups", $i, $wakeups_s);
+	    value_store("e/p-wakeups", $round, $wakeups_s);
 	    $timers_s =~ s/s//g;
 	    $timers_s =~ s/\///g;
-	    value_store("e/p-timers", $i, $timers_s);
+	    value_store("e/p-timers", $round, $timers_s);
 	}
     }
     close(POWERTOP);
@@ -2810,8 +2806,9 @@ sub parse_component_version
     close(COMPONENT_VERSION);
 }
 
-sub loop_over_all_apps()
+sub loop_over_all_apps
 {
+    my ($round) = @_;
     my %shared_lpid_names_sz = ();
 #
 # use same hash keys set for two things (and sum of them is 3rd)
@@ -2827,7 +2824,7 @@ sub loop_over_all_apps()
 	###############
 	if ($app_pss{$x}) {
 	    $app_cumul_pss{$x} += $app_pss{$x};
-	    $avg_pss{$x} = ($avg_pss{$x} * $i + $app_pss{$x})/($i+1);
+	    $avg_pss{$x} = ($avg_pss{$x} * $round + $app_pss{$x})/($round+1);
 	    my $dev = ($avg_pss{$x} - $app_pss{$x});
 	    if ($dev < 0) {
 		$dev = -1 * $dev;
@@ -2838,18 +2835,18 @@ sub loop_over_all_apps()
 	} else {
 	    $xxx = 0;
 	}
-#	    print "$i:$x:PSS: pss=$app_pss{$x} dev=$dev dev_cnt=$devcount_pss{$x} avg=$avg_pss{$x}\n";
-#	if ($i == 0) {
+#	    print "$round:$x:PSS: pss=$app_pss{$x} dev=$dev dev_cnt=$devcount_pss{$x} avg=$avg_pss{$x}\n";
+#	if ($round == 0) {
 #	    print "$app_pss{$x} $x\n";
 #	}
 
 	$fn = "e/p-$x";
-	value_store_zeropad($fn, $i, $xxx);
+	value_store_zeropad($fn, $round, $xxx);
 
 	###############
 	if ($app_sysv_shared{$x}) {
 	    $app_cumul_sysv_shared{$x} += $app_sysv_shared{$x};
-	    $avg_sysv_shared{$x} = ($avg_sysv_shared{$x} * $i + $app_sysv_shared{$x})/($i+1);
+	    $avg_sysv_shared{$x} = ($avg_sysv_shared{$x} * $round + $app_sysv_shared{$x})/($round+1);
 	    my $dev = ($avg_sysv_shared{$x} - $app_sysv_shared{$x});
 	    if ($dev < 0) {
 		$dev = -1 * $dev;
@@ -2860,15 +2857,15 @@ sub loop_over_all_apps()
 	} else {
 	    $xxx = 0;
 	}
-#	print "$i:$x:SYSV: pss=$app_sysv_shared{$x} dev=$dev dev_cnt=$devcount_sysv_shared{$x} avg=$avg_sysv_shared{$x}\n";
+#	print "$round:$x:SYSV: pss=$app_sysv_shared{$x} dev=$dev dev_cnt=$devcount_sysv_shared{$x} avg=$avg_sysv_shared{$x}\n";
 
 	$fn = "e/sysvshm-$x";
-	value_store_zeropad($fn, $i, $xxx);
+	value_store_zeropad($fn, $round, $xxx);
 
 	###############
 	if ($app_posix_shared{$x}) {
 	    $app_cumul_posix_shared{$x} += $app_posix_shared{$x};
-	    $avg_posix_shared{$x} = ($avg_posix_shared{$x} * $i + $app_posix_shared{$x})/($i+1);
+	    $avg_posix_shared{$x} = ($avg_posix_shared{$x} * $round + $app_posix_shared{$x})/($round+1);
 	    my $dev = ($avg_posix_shared{$x} - $app_posix_shared{$x});
 	    if ($dev < 0) {
 		$dev = -1 * $dev;
@@ -2879,15 +2876,15 @@ sub loop_over_all_apps()
 	} else {
 	    $xxx = 0;
 	}
-#	print "$i:$x:POSIX: pss=$app_posix_shared{$x} dev=$dev dev_cnt=$devcount_posix_shared{$x} avg=$avg_posix_shared{$x}\n";
+#	print "$round:$x:POSIX: pss=$app_posix_shared{$x} dev=$dev dev_cnt=$devcount_posix_shared{$x} avg=$avg_posix_shared{$x}\n";
 
 	$fn = "e/posixshm-$x";
-	value_store_zeropad($fn, $i, $xxx);
+	value_store_zeropad($fn, $round, $xxx);
 
 	###############
 	if ($app_dev_pvr{$x}) {
 	    $app_cumul_dev_pvr{$x} += $app_dev_pvr{$x};
-	    $avg_dev_pvr{$x} = ($avg_dev_pvr{$x} * $i + $app_dev_pvr{$x})/($i+1);
+	    $avg_dev_pvr{$x} = ($avg_dev_pvr{$x} * $round + $app_dev_pvr{$x})/($round+1);
 	    my $dev = ($avg_dev_pvr{$x} - $app_dev_pvr{$x});
 	    if ($dev < 0) {
 		$dev = -1 * $dev;
@@ -2900,13 +2897,13 @@ sub loop_over_all_apps()
 	}
 
 	$fn = "e/devpvr-$x";
-	value_store_zeropad($fn, $i, $xxx);
+	value_store_zeropad($fn, $round, $xxx);
 
 	###############
 	if ($app_swapped{$x}) {
 	    $app_cumul_swp{$x} += $app_swapped{$x};
 
-	    $avg_swp{$x} = ($avg_swp{$x} * $i + $app_swapped{$x})/($i+1);
+	    $avg_swp{$x} = ($avg_swp{$x} * $round + $app_swapped{$x})/($round+1);
 	    my $dev = ($avg_swp{$x} - $app_swapped{$x});
 	    if ($dev < 0) {
 		$dev = -1 * $dev;
@@ -2918,7 +2915,7 @@ sub loop_over_all_apps()
 	    $xxx = 0;
 	}
 	$fn = "e/swp-$x";
-	value_store_zeropad($fn, $i, $xxx);
+	value_store_zeropad($fn, $round, $xxx);
 
 	###############
 	if ($app_rwxp{$x}) {
@@ -2928,13 +2925,13 @@ sub loop_over_all_apps()
 	    $xxx = 0;
 	}
 	$fn = "e/$x-wx";
-	value_store_zeropad($fn, $i, $xxx);
+	value_store_zeropad($fn, $round, $xxx);
 
 	###############
 #	if ($app_private_dirty{$x}) {
 #	    $app_cumul_private_dirty{$x} += $app_private_dirty{$x};
 #
-#	    $avg_private_dirty{$x} = ($avg_private_dirty{$x} * $i + $app_private_dirty{$x})/($i+1);
+#	    $avg_private_dirty{$x} = ($avg_private_dirty{$x} * $round + $app_private_dirty{$x})/($round+1);
 #	    my $dev = ($avg_private_dirty{$x} - $app_private_dirty{$x});
 #	    if ($dev < 0) {
 #		$dev = -1 * $dev;
@@ -2944,19 +2941,19 @@ sub loop_over_all_apps()
 #	}
 #	$fn = "e/$x-pdirty";
 #	if ( ! -e $fn) {
-#	    for ($z = 0 ; $z < $i ; $z++) {
+#	    for ($z = 0 ; $z < $round ; $z++) {
 #		system("echo '$z, 0' >> $fn");
 #	    }
 #	}
 #	$xxx = $app_private_dirty{$x} / 1024;
-#	system("echo '$i, $xxx' >> $fn");
+#	system("echo '$round, $xxx' >> $fn");
 
 	###############
 	my $pss_swap = ($app_pss{$x} + $app_swapped{$x})/1024;
 	if ($pss_swap) {
 	    $app_cumul_pss_swp{$x} += $pss_swap;
 
-#		$avg_pss_swp{$x} = ($avg_pss_swp{$x} * $i + $pss_swap)/($i+1);
+#		$avg_pss_swp{$x} = ($avg_pss_swp{$x} * $round + $pss_swap)/($round+1);
 	    $avg_pss_swp{$x} = ($avg_pss_swp{$x} * $devcount_pss_swp{$x} + $pss_swap)/($devcount_pss_swp{$x} + 1);
 	    my $dev = ($avg_pss_swp{$x} - $pss_swap);
 	    if ($dev < 0) {
@@ -2967,15 +2964,15 @@ sub loop_over_all_apps()
 	    $pss_swap_num_samples{$x} += 1;
 	}
 	$fn = "e/pswp-$x";
-	value_store_zeropad($fn, $i, $pss_swap);
+	value_store_zeropad($fn, $round, $pss_swap);
 
-#	if ($i == 0) {
+#	if ($round == 0) {
 #	    print "$pss_swap $x\n";
 #	}
 	###############
 	my $pid = $pid_by_namepid{$x};
 	my $lpid_name = $name_by_pid{$pid} ;
-#	print "$i: lpid_name by pid=[$pid] is [$lpid_name]\n";
+#	print "$round: lpid_name by pid=[$pid] is [$lpid_name]\n";
 	if (defined $shared_lpid_cnt_oneround{$pid}) {
 	    $shared_lpid_cnt{$x} += $shared_lpid_cnt_oneround{$pid};
 	}
@@ -2988,9 +2985,9 @@ sub loop_over_all_apps()
 	$shared = $shared_lpid{$pid};
 	$fn = "e/shml-$x";
 	if ($shared) {
-#	    print "$i: lpid shared[x=$x pid=$pid] = $shared\n";
-	    value_store_zeropad($fn, $i, $shared);
-	    $avg_shared_lpid{$pid} = ($avg_shared_lpid{$pid} * $i + $shared)/($i+1);
+#	    print "$round: lpid shared[x=$x pid=$pid] = $shared\n";
+	    value_store_zeropad($fn, $round, $shared);
+	    $avg_shared_lpid{$pid} = ($avg_shared_lpid{$pid} * $round + $shared)/($round+1);
 	    my $dev = ($avg_shared_lpid{$pid} - $shared);
 	    if ($dev < 0) {
 		$dev = -1 * $dev;
@@ -3010,13 +3007,13 @@ sub loop_over_all_apps()
 		    $shared_lpid_names_sz{$lpid_name} += $shared;
 		}
 		else {
-		    print "$i: lpid-name: pid=$pid name=$lpid_name cnt=$shared_lpid_cnt_oneround{$pid};\n";
+		    print "$round: lpid-name: pid=$pid name=$lpid_name cnt=$shared_lpid_cnt_oneround{$pid};\n";
 		}
 	    }
 	    
 
 	} else {
-	    value_store_zeropad($fn, $i, 0);
+	    value_store_zeropad($fn, $round, 0);
 	    if ($lpid_name) {
 		$shared_lpid_names_sz{$lpid_name} += 0;
 	    }
@@ -3027,9 +3024,9 @@ sub loop_over_all_apps()
 	$shared = $shared_cpid{$pid};
 	$fn = "e/shmc-$x";
 	if ($shared) {
-#	    print "$i: cpid shared[x=$x pid=$pid] = $shared\n";
-	    value_store_zeropad($fn, $i, $shared);
-	    $avg_shared_cpid{$pid} = ($avg_shared_cpid{$pid} * $i + $shared)/($i+1);
+#	    print "$round: cpid shared[x=$x pid=$pid] = $shared\n";
+	    value_store_zeropad($fn, $round, $shared);
+	    $avg_shared_cpid{$pid} = ($avg_shared_cpid{$pid} * $round + $shared)/($round+1);
 	    my $dev = ($avg_shared_cpid{$pid} - $shared);
 	    if ($dev < 0) {
 		$dev = -1 * $dev;
@@ -3038,13 +3035,13 @@ sub loop_over_all_apps()
 	    $devcount_shared_cpid{$x} += 1;
 #		print "   cpid: inc devcount[$x] now = $devcount_shared_lpid{$x}\n";
 	} else {
-	    value_store_zeropad($fn, $i, 0);
+	    value_store_zeropad($fn, $round, 0);
 	}
 	$shared_cpid{$pid} = 0;
 
 	if (exists $vma_count{$x}) {
 	    my $fn = "e/vma-count-$x";
-	    value_store($fn, $i, $vma_count{$x});
+	    value_store($fn, $round, $vma_count{$x});
 	    $vma_count_max{$x} = max $vma_count{$x}, $vma_count_max{$x};
 	}
     }
@@ -3053,7 +3050,7 @@ sub loop_over_all_apps()
     #
     foreach my $x (keys %shared_lpid_names_sz) {
 	my $fn = "e/shmln-$x";
-	value_store_zeropad($fn, $i, $shared_lpid_names_sz{$x});
+	value_store_zeropad($fn, $round, $shared_lpid_names_sz{$x});
     }
 }
 
@@ -5540,10 +5537,6 @@ if (@dirs < 2) {
     exit(1);
 }
 
-#
-# note: this is global rounds counter! (name not well chosen..)
-#
-$i = 0;
 # first pass, get version, scan uptime lines to determine periods
 my $cnt = 0;
 foreach my $dir (@dirs) {
@@ -5576,7 +5569,6 @@ foreach my $dir (@dirs) {
 	} 
 	if( m/date = (.*)/) {
 	    $round_date{$dir} = $1;
-	    $secval{$dir} = date2seconds($1);
 	    next;
 	}
  	if( m/Uptime,Idletime /) {
@@ -5649,30 +5641,32 @@ if (not -d $graphs_dir) {
 }
 
 print "input: ";
-foreach $d (@dirs) {
-    my $fn = "$d/usage.csv";
+foreach my $round (0 .. @dirs-1) {
+    my $dir = $dirs[$round];
+    my $fn = $dir . '/usage.csv';
     my $f;
     unless (open($f, $fn)) {
 	print STDERR "ERROR: unable to open $fn: $!\n";
 	exit(1);
     }
-    print "$d ";
+    print "$dir ";
     %shared_lpid = ();
     %shared_cpid = ();
     %shared_lpid_cnt_oneround = ();
     %shared_cpid_cnt_oneround = ();
     %shared_num = ();
     %shared_size = ();
+    $secval{$round} = date2seconds($round_date{$dir});
     while (<$f>) {
 	if( (index($_, "Loadavg ") != -1)) {
 	    my $line = <$f>;
 	    chop $line;
 	    my ($load_1,$load_5,$load_15,$running_all,$lastpid) = split(',' , $line, 5);
-	    value_store($load_1_file_name, $i, $load_1);
-	    value_store($load_5_file_name, $i, $load_5);
-	    value_store($load_15_file_name, $i, $load_15);
+	    value_store($load_1_file_name, $round, $load_1);
+	    value_store($load_5_file_name, $round, $load_5);
+	    value_store($load_15_file_name, $round, $load_15);
 	    my ($running,$all) = split('/' , $running_all, 2);
-	    value_store("e/num-processes", $i, $all);
+	    value_store("e/num-processes", $round, $all);
 	    next;
 	} 
 	if( (index($_, "Allocated FDs,") != -1)) {
@@ -5684,80 +5678,78 @@ foreach $d (@dirs) {
 	    next;
 	} 
 	if( index($_, "Name,State") != -1) {
-	    parse_name_state_block($f);
+	    parse_name_state_block($round, $f);
 	    next;
 	} 
 	if( index($_, "Shared memory segments:") != -1) {
-	    parse_shmem_block($f);
+	    parse_shmem_block($round, $f);
 	    next;
 	} 
 	if( index($_, "PID,FD count,Command") != -1) {
-	    parse_pid_fd_block($f);
+	    parse_pid_fd_block($round, $f);
 	    next;
 	} 
 	if( index($_, "Process status:") != -1) {
-	    parse_process_status_block($f);
+	    parse_process_status_block($round, $f);
 	    next;
 	}
 	if( index($_, "res-base,") != -1) {
-	    parse_xresource_block($f, $_);
+	    parse_xresource_block($round, $f, $_);
 	    next;
 	}
 	if( index($_, "Filesystem,") != -1) {
-	    parse_filesystem_block($f);
+	    parse_filesystem_block($round, $f);
 	    next;
 	}
 	if( index($_, "MemTotal") != -1) {
-	    parse_memtotal_block($f);
+	    parse_memtotal_block($round, $f);
 	    next;
 	} 
 	if( index($_, "nr_free_pages") != -1) {
-	    parse_pages_block($f);
+	    parse_pages_block($round, $f);
 	    next;
 	} 
 	if (/^PID,wchan:/) {
-	    parse_wchan_block($f);
+	    parse_wchan_block($round, $f);
 	    next;
 	}
     }
     close $f;
 
-    process_df();
-    process_slabinfo();
-    process_smaps();
-    process_interrupts();
-    process_diskstats();
-    process_stat();
-    process_powertop();
-    process_bme();
-    process_ramzswap();
-    process_pagetypeinfo();
-    process_openfds();
-    process_cgroups();
-    process_ifconfig();
-    process_sysfs_cpu();
-    process_sysfs_fs();
-    process_xmeminfo();
-    process_wchan();
-    process_sysfs_power_supply();
-    process_sysfs_backlight();
+    process_df($round, $dir);
+    process_slabinfo($round, $dir);
+    process_smaps($round, $dir);
+    process_interrupts($round, $dir);
+    process_diskstats($round, $dir);
+    process_stat($round, $dir);
+    process_powertop($round, $dir);
+    process_bme($round, $dir);
+    process_ramzswap($round, $dir);
+    process_pagetypeinfo($round, $dir);
+    process_openfds($round, $dir);
+    process_cgroups($round, $dir);
+    process_ifconfig($round, $dir);
+    process_sysfs_cpu($round, $dir);
+    process_sysfs_fs($round, $dir);
+    process_xmeminfo($round, $dir);
+    process_wchan($round, $dir);
+    process_sysfs_power_supply($round, $dir);
+    process_sysfs_backlight($round, $dir);
 
-    loop_over_all_apps();
+    loop_over_all_apps($round);
 #    $total_shared_num = 0;
     for (my $z = 0; $z <= $max_nattach ; $z++) {
 	$fn = "e/nattach-$z-shm";
-	value_store($fn, $i, $shared_num{$z});
+	value_store($fn, $round, $shared_num{$z});
 	if ($z > 0) {
 	    $fn = "e/nattach-$z-shm-sz";
 	    if (defined $shared_size{$z}) {
-		value_store($fn, $i, $shared_size{$z});
+		value_store($fn, $round, $shared_size{$z});
 	    } else {
-		value_store($fn, $i, 0);
+		value_store($fn, $round, 0);
 	    }
 	}
     }
-
-    $i++;
 }
 print "\n";
 
