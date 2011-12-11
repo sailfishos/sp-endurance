@@ -1551,8 +1551,8 @@ sub parse_memtotal_block($)
     if($mlocked >  1024) {
 	$mlocked = 0;
     }
-    $pagetables = $val{"PageTables"} / 1024;
-    value_store($pagetables_plot_file_name, $i, $pagetables);
+    my $pagetables = $val{"PageTables"} / 1024;
+    value_store($pagetables_plot_file_name, $round, $pagetables);
     my $kernelstack = $val{"KernelStack"} / 1024;
     value_store($kernelstack_plot_file_name, $i, $kernelstack);
     my $shmem = $val{"Shmem"} / 1024;
@@ -1570,7 +1570,6 @@ sub parse_pages_block($)
     chop $line;
     split_values($line);
 
-    my $pptablepages = $val{"nr_page_table_pages"};
     my $pslabreclaim = $val{"nr_slab_reclaimable"};
     my $pslabunreclaim = $val{"nr_slab_unreclaimable"};
     my $pswp_in_cumul = $val{"pswpin"};
@@ -1597,12 +1596,6 @@ sub parse_pages_block($)
 	value_store_zeropad($pswp_in_plot_file_name, $i, $pswp_in);
     }
     $pswp_in_prev = $pswp_in_cumul;
-    # check for pagetables value sanity:
-    if ((($pptablepages * $page_size)/1024) != $pagetables) {
-	print "**********************************************************************************\n";
-	print "***** MEM values mismatch. pagetables by mem:$pagetables vs by pages:$pptablepages\n";
-	print "**********************************************************************************\n";
-    }
 
     my $pswp_out = 0;
     if ($pswp_out_prev) {
