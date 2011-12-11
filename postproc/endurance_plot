@@ -2959,7 +2959,7 @@ sub loop_over_all_apps()
 #	system("echo '$i, $xxx' >> $fn");
 
 	###############
-	$pss_swap = ($app_pss{$x} + $app_swapped{$x})/1024;
+	my $pss_swap = ($app_pss{$x} + $app_swapped{$x})/1024;
 	if ($pss_swap) {
 	    $app_cumul_pss_swp{$x} += $pss_swap;
 
@@ -2989,6 +2989,8 @@ sub loop_over_all_apps()
 	if (defined $shared_cpid_cnt_oneround{$pid}) {
 	    $shared_cpid_cnt{$x} += $shared_cpid_cnt_oneround{$pid};
 	}
+
+	my $shared;
 
 	$shared = $shared_lpid{$pid};
 	$fn = "e/shml-$x";
@@ -4257,7 +4259,7 @@ sub generate_plot_swap_event
     my $plot;
 ############# SWAP EVENT COUNTS ######################
     if (($swapused_total + $swap_pgout_total) > 0) {
-	$n = 0;
+	my $n = 0;
 	$plot = start_plotfile_lines($graph_events_swap);
 	if (value_emit($pswp_in_plot_file_name, 1)) {
 	    print $plot "'$pswp_in_plot_file_name' lw 3";
