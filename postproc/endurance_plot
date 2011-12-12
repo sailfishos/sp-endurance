@@ -4246,90 +4246,90 @@ sub generate_plot_write_exec
 
 sub generate_plot_swap_event
 {
+    return if $swapused_total == 0 and $swap_pgout_total == 0;
     my $cnt;
     my $plot;
+
 ############# SWAP EVENT COUNTS ######################
-    if (($swapused_total + $swap_pgout_total) > 0) {
-	$plot = start_plotfile_lines($graph_events_swap);
-	if (count_nonzero_entries($pswp_in_plot_file_name)) {
-	    one_plot_set(fn => $pswp_in_plot_file_name, plot => $plot,
-		lw => 3, emit_zeroes => 1, cnt => \$cnt);
-	}
-	if (count_nonzero_entries($pswp_out_plot_file_name)) {
-	    one_plot_set(fn => $pswp_out_plot_file_name, plot => $plot,
-		lw => 3, emit_zeroes => 1, cnt => \$cnt);
-	}
-	if (count_nonzero_entries($pgscan_kswapd_normal_plot_file_name)) {
-	    one_plot_set(fn => $pgscan_kswapd_normal_plot_file_name,
-		plot => $plot, lw => 3, emit_zeroes => 1, cnt => \$cnt);
-	}
-	if (count_nonzero_entries($pgscan_direct_normal_plot_file_name)) {
-	    one_plot_set(fn => $pgscan_direct_normal_plot_file_name,
-		plot => $plot, lw => 3, emit_zeroes => 1, cnt => \$cnt);
-	}
-	if (count_nonzero_entries($slabs_scanned_plot_file_name)) {
-	    one_plot_set(fn => $slabs_scanned_plot_file_name,
-		plot => $plot, lw => 3, emit_zeroes => 1, cnt => \$cnt);
-	}
-	if (count_nonzero_entries($kswapd_steal_plot_file_name)) {
-	    one_plot_set(fn => $kswapd_steal_plot_file_name,
-		plot => $plot, lw => 3, emit_zeroes => 1, cnt => \$cnt);
-	}
-	close_plot($cnt, $plot, $graph_events_swap);
+    $plot = start_plotfile_lines($graph_events_swap);
+    if (count_nonzero_entries($pswp_in_plot_file_name)) {
+	one_plot_set(fn => $pswp_in_plot_file_name, plot => $plot,
+	    lw => 3, emit_zeroes => 1, cnt => \$cnt);
+    }
+    if (count_nonzero_entries($pswp_out_plot_file_name)) {
+	one_plot_set(fn => $pswp_out_plot_file_name, plot => $plot,
+	    lw => 3, emit_zeroes => 1, cnt => \$cnt);
+    }
+    if (count_nonzero_entries($pgscan_kswapd_normal_plot_file_name)) {
+	one_plot_set(fn => $pgscan_kswapd_normal_plot_file_name,
+	    plot => $plot, lw => 3, emit_zeroes => 1, cnt => \$cnt);
+    }
+    if (count_nonzero_entries($pgscan_direct_normal_plot_file_name)) {
+	one_plot_set(fn => $pgscan_direct_normal_plot_file_name,
+	    plot => $plot, lw => 3, emit_zeroes => 1, cnt => \$cnt);
+    }
+    if (count_nonzero_entries($slabs_scanned_plot_file_name)) {
+	one_plot_set(fn => $slabs_scanned_plot_file_name,
+	    plot => $plot, lw => 3, emit_zeroes => 1, cnt => \$cnt);
+    }
+    if (count_nonzero_entries($kswapd_steal_plot_file_name)) {
+	one_plot_set(fn => $kswapd_steal_plot_file_name,
+	    plot => $plot, lw => 3, emit_zeroes => 1, cnt => \$cnt);
+    }
+    close_plot($cnt, $plot, $graph_events_swap);
 
 ############### Histogram of processes swapped #################
-	$plot = start_plotfile_histogram($graph_appmem_swapped);
+    $plot = start_plotfile_histogram($graph_appmem_swapped);
 
-	$cnt = 0;
-	%show_this = ();
+    $cnt = 0;
+    %show_this = ();
 
-	foreach my $p (reverse sort {$app_cumul_swp{$a} <=> $app_cumul_swp{$b} } keys %app_cumul_swp) {
-	    if ($cnt > ($max_per_graph_onecolumn - 1)) {
-		last;
-	    } 
-	    $show_this{$p} = 1;
-	    $cnt += 1;
+    foreach my $p (reverse sort {$app_cumul_swp{$a} <=> $app_cumul_swp{$b} } keys %app_cumul_swp) {
+	if ($cnt > ($max_per_graph_onecolumn - 1)) {
+	    last;
 	}
-	foreach my $p (sort keys %app_cumul_swp) {
-	    if ($show_this{$p}) {
-		$sumdev_swp{$p} /= $devcount_swp{$p};
-		$sumdev_swp{$p} += (100*(scalar(@dirs) - $devcount_swp{$p}));
-	    }
+	$show_this{$p} = 1;
+	$cnt += 1;
+    }
+    foreach my $p (sort keys %app_cumul_swp) {
+	if ($show_this{$p}) {
+	    $sumdev_swp{$p} /= $devcount_swp{$p};
+	    $sumdev_swp{$p} += (100*(scalar(@dirs) - $devcount_swp{$p}));
 	}
-	$cnt = 0;
-	foreach my $p (sort {$sumdev_swp{$a} <=> $sumdev_swp{$b} } keys %app_cumul_swp) {
-	    next unless $show_this{$p};
-	    one_plot_set(fn => "e/swp-$p", plot => $plot, cnt => \$cnt,
-		emit_zeroes => 1, title => $p);
-	}
-	close_plot($cnt, $plot, $graph_appmem_swapped);
+    }
+    $cnt = 0;
+    foreach my $p (sort {$sumdev_swp{$a} <=> $sumdev_swp{$b} } keys %app_cumul_swp) {
+	next unless $show_this{$p};
+	one_plot_set(fn => "e/swp-$p", plot => $plot, cnt => \$cnt,
+	    emit_zeroes => 1, title => $p);
+    }
+    close_plot($cnt, $plot, $graph_appmem_swapped);
 
 ############### Histogram of processes PSS+SWAP #################
-	$plot = start_plotfile_histogram($graph_appmem_pss_swap);
+    $plot = start_plotfile_histogram($graph_appmem_pss_swap);
 
-	$cnt = 0;
-	%show_this = ();
-	foreach my $p (reverse sort {$app_cumul_pss_swp{$a} <=> $app_cumul_pss_swp{$b} } keys %app_cumul_pss_swp) {
-	    if ($cnt > $max_per_graph_onecolumn) {
-		last;
-	    } 
-	    $show_this{$p} = 1;
-	    $cnt += 1;
+    $cnt = 0;
+    %show_this = ();
+    foreach my $p (reverse sort {$app_cumul_pss_swp{$a} <=> $app_cumul_pss_swp{$b} } keys %app_cumul_pss_swp) {
+	if ($cnt > $max_per_graph_onecolumn) {
+	    last;
 	}
-	foreach my $p (sort keys %app_cumul_pss_swp) {
-	    if ($show_this{$p}) {
-		$sumdev_pss_swp_adj{$p} = $sumdev_pss_swp{$p} / $devcount_pss_swp{$p};
-		$sumdev_pss_swp_adj{$p} += (100*(scalar(@dirs) - $devcount_pss_swp{$p}));
-	    }
-	}
-	$cnt = 0;
-	foreach my $p (sort {$sumdev_pss_swp_adj{$a} <=> $sumdev_pss_swp_adj{$b} } keys %app_cumul_pss_swp) {
-	    next unless $show_this{$p};
-	    one_plot_set(fn => "e/pswp-$p", plot => $plot, cnt => \$cnt,
-		emit_zeroes => 1, title => $p);
-	}
-	close_plot($cnt, $plot, $graph_appmem_pss_swap);
+	$show_this{$p} = 1;
+	$cnt += 1;
     }
+    foreach my $p (sort keys %app_cumul_pss_swp) {
+	if ($show_this{$p}) {
+	    $sumdev_pss_swp_adj{$p} = $sumdev_pss_swp{$p} / $devcount_pss_swp{$p};
+	    $sumdev_pss_swp_adj{$p} += (100*(scalar(@dirs) - $devcount_pss_swp{$p}));
+	}
+    }
+    $cnt = 0;
+    foreach my $p (sort {$sumdev_pss_swp_adj{$a} <=> $sumdev_pss_swp_adj{$b} } keys %app_cumul_pss_swp) {
+	next unless $show_this{$p};
+	one_plot_set(fn => "e/pswp-$p", plot => $plot, cnt => \$cnt,
+	    emit_zeroes => 1, title => $p);
+    }
+    close_plot($cnt, $plot, $graph_appmem_pss_swap);
 }
 
 sub generate_plot_private_dirty
