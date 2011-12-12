@@ -3325,7 +3325,7 @@ sub xtics
 	@xtics = grep { not ($pick++ % 10) } @xtics;
     } elsif (($plot_width / scalar(@dirs)) < 20) {
 	@xtics = grep { not ($pick++ % 5) } @xtics;
-    } elsif (($plot_width / scalar(@dirs)) < 35) {
+    } elsif (($plot_width / scalar(@dirs)) < 40) {
 	@xtics = grep { not ($pick++ % 2) } @xtics;
     }
     return join(',', @xtics);
