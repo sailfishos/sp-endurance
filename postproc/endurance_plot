@@ -385,10 +385,15 @@ $legend{$graph_mem_shared_size} = "shared by nattach, size";
 $thumblegend{$graph_mem_shared_size} = "SHMEM ATTACH SIZES";
 $unit{$graph_mem_shared_size} = "MB";
 
-my $graph_mem_slabs = "2255_mem_slabs";
-$legend{$graph_mem_slabs} = "kernel slab memory";
-$thumblegend{$graph_mem_slabs} = "KERNEL SLABS";
-$unit{$graph_mem_slabs} = "kB";
+my $graph_mem_slabs_count = '2255_mem_slabs_count';
+$legend{$graph_mem_slabs_count} = 'Kernel slab memory';
+$thumblegend{$graph_mem_slabs_count} = 'KERNEL SLABS COUNT';
+$unit{$graph_mem_slabs_count} = 'kB';
+
+my $graph_mem_slabs_changes = '2256_mem_slabs_changes';
+$legend{$graph_mem_slabs_changes} = 'Kernel slab memory (changed only)';
+$thumblegend{$graph_mem_slabs_changes} = 'KERNEL SLABS CHANGES';
+$unit{$graph_mem_slabs_changes} = 'kB';
 
 my $graph_cgroups_mem = "2300_cgroups-mem";
 $legend{$graph_cgroups_mem} = "memory usage per cgroup";
@@ -1821,7 +1826,7 @@ sub process_slabinfo
 	my $slab_sz = ($active_objs * $obj_size)/1024;
 	$fn = "e/slabs-$slabname";
 	value_store($fn, $round, $slab_sz);
-	$all_slabs{$slabname} += $active_objs;
+	$all_slabs{$slabname} += $slab_sz;
     }
     close(SLABINFO);
 }
@@ -3683,21 +3688,30 @@ sub generate_plot_system_memory_2
     close_plot($cnt, $plot, $graph_system_memory_2);
 }
 
-sub generate_plot_slab
+sub generate_plot_slab_count
 {
-    my $plot = start_plotfile_lines($graph_mem_slabs);
+    my $plot = start_plotfile_histogram($graph_mem_slabs_count);
     my $cnt = 0;
-    foreach my $p (reverse sort {$all_slabs{$a} <=> $all_slabs{$b} } keys %all_slabs) {
-	if ($cnt > $max_per_graph_onecolumn) {
-	    last;
-	} 
-	if ($all_slabs{$p} == 0) {
-	    next;
-	}
-	one_plot_set(fn => "e/slabs-$p", lw => 3, plot => $plot, cnt => \$cnt,
-	    title => $p);
+    foreach my $p (reverse sort { $all_slabs{$a} <=> $all_slabs{$b} } keys %all_slabs) {
+	my $fn = "e/slabs-$p";
+	next unless count_nonzero_entries($fn);
+	one_plot_set(fn => $fn, plot => $plot, cnt => \$cnt,
+	    emit_zeroes => 1, title => $p);
     }
-    close_plot($cnt, $plot, $graph_mem_slabs);
+    close_plot($cnt, $plot, $graph_mem_slabs_count);
+}
+
+sub generate_plot_slab_changes
+{
+    my $plot = start_plotfile_linespoints($graph_mem_slabs_changes);
+    my $cnt = 0;
+    foreach my $p (reverse sort { $all_slabs{$a} <=> $all_slabs{$b} } keys %all_slabs) {
+	my $fn = "e/slabs-$p";
+	next unless changes_found($fn);
+	one_plot_set(fn => $fn, lw => 3, plot => $plot, cnt => \$cnt,
+	    emit_zeroes => 1, title => $p);
+    }
+    close_plot($cnt, $plot, $graph_mem_slabs_changes);
 }
 
 sub generate_plot_ctx
@@ -5482,7 +5496,8 @@ sub generate_plots()
 {
     generate_plot_system_memory_1();
     generate_plot_system_memory_2();
-    generate_plot_slab();
+    generate_plot_slab_count();
+    generate_plot_slab_changes();
     generate_plot_ctx();
     generate_plot_loadavg();
     generate_plot_processes_global();
