@@ -753,7 +753,6 @@ my $swap_pgout_total = 0;
 
 my %vma_count;
 my %vma_count_max;
-my $steps_files = 0;
 
 my %cgroups;
 my %cgroups_demangle;
@@ -3159,9 +3158,6 @@ sub echo_one_img_line
 sub add_use_case_names
 {
     my ($html) = @_;
-    if (!$steps_files) {
-	return;
-    }
     print $html "\n<br clear='all'/>\n";
     print $html "<a name='steps'/>\n";
     print $html "<h2>SNAPSHOT DATES AND DESCRIPTIONS</h2>\n";
@@ -5657,10 +5653,6 @@ foreach my $dir (@dirs) {
 	} 
     }
     close(CSV);
-    my $dfn = $dir . '/step.txt';
-    if (-e $dfn) {
-	$steps_files += 1;
-    }
 }
 
 if ($cnt < 2) {
