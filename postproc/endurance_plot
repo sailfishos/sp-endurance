@@ -5029,22 +5029,35 @@ sub generate_plot_ramzswap
     }
     my $plot = start_plotfile_lines_2axes($graph_ramzswap);
     my $cnt = 0;
-    if (count_nonzero_entries($ramzswap_bdreads_file_name) > 0) {
+    if (count_nonzero_entries($ramzswap_bdreads_file_name)) {
 	one_plot_set(fn => $ramzswap_bdreads_file_name, plot => $plot, lw => 2,
-	    axes => 'x1y1', cnt => \$cnt, emit_zeroes => 1);
+	    axes => 'x1y1', cnt => \$cnt, emit_zeroes => 1,
+	    title => 'Backing device reads');
     }
-    one_plot_set(fn => $ramzswap_reads_file_name, plot => $plot, lw => 2,
-	axes => 'x1y1', cnt => \$cnt, emit_zeroes => 1);
+    if (count_nonzero_entries($ramzswap_reads_file_name)) {
+	one_plot_set(fn => $ramzswap_reads_file_name, plot => $plot, lw => 2,
+	    axes => 'x1y1', cnt => \$cnt, emit_zeroes => 1, title => 'Reads');
+    }
     if (count_nonzero_entries($ramzswap_bdwrites_file_name) > 0) {
-	one_plot_set(fn => $ramzswap_bdwrites_file_name, plot => $plot, lw => 2,
-	    axes => 'x1y1', cnt => \$cnt, emit_zeroes => 1);
+	one_plot_set(fn => $ramzswap_bdwrites_file_name, plot => $plot,
+	    lw => 2, axes => 'x1y1', cnt => \$cnt, emit_zeroes => 1,
+	    title => 'Backing device writes');
     }
-    one_plot_set(fn => $ramzswap_writes_file_name, plot => $plot, lw => 2,
-	axes => 'x1y1', cnt => \$cnt, emit_zeroes => 1);
-    one_plot_set(fn => $ramzswap_zerop_file_name, plot => $plot, lw => 4,
-	axes => 'x2y2', cnt => \$cnt, emit_zeroes => 1);
-    one_plot_set(fn => $ramzswap_used_file_name, plot => $plot, lw => 4,
-	axes => 'x2y2', cnt => \$cnt, emit_zeroes => 1);
+    if (count_nonzero_entries($ramzswap_writes_file_name)) {
+	one_plot_set(fn => $ramzswap_writes_file_name, plot => $plot, lw => 2,
+	    axes => 'x1y1', cnt => \$cnt, emit_zeroes => 1,
+	    title => 'Writes');
+    }
+    if (count_nonzero_entries($ramzswap_zerop_file_name)) {
+	one_plot_set(fn => $ramzswap_zerop_file_name, plot => $plot, lw => 4,
+	    axes => 'x2y2', cnt => \$cnt, emit_zeroes => 1,
+	    title => 'ZeroPages');
+    }
+    if (count_nonzero_entries($ramzswap_used_file_name)) {
+	one_plot_set(fn => $ramzswap_used_file_name, plot => $plot, lw => 4,
+	    axes => 'x2y2', cnt => \$cnt, emit_zeroes => 1,
+	    title => 'Memory used');
+    }
     close_plot($cnt, $plot, $graph_ramzswap);
 }
 
