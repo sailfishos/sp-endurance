@@ -1076,6 +1076,19 @@ sub split_values($)
     }
 }
 
+sub parse_loadavg_block
+{
+    my ($round, $handle) = @_;
+    my $line = <$handle>;
+    chop $line;
+    my ($load_1,$load_5,$load_15,$running_all,$lastpid) = split(',' , $line, 5);
+    value_store($load_1_file_name, $round, $load_1);
+    value_store($load_5_file_name, $round, $load_5);
+    value_store($load_15_file_name, $round, $load_15);
+    my ($running,$all) = split('/' , $running_all, 2);
+    value_store('e/num-processes', $round, $all);
+}
+
 sub parse_allocated_fds_block
 {
     my ($round, $handle) = @_;
@@ -5663,14 +5676,7 @@ foreach my $round (0 .. @dirs-1) {
     $secval{$round} = date2seconds($round_date{$dir});
     while (<$f>) {
 	if( (index($_, "Loadavg ") != -1)) {
-	    my $line = <$f>;
-	    chop $line;
-	    my ($load_1,$load_5,$load_15,$running_all,$lastpid) = split(',' , $line, 5);
-	    value_store($load_1_file_name, $round, $load_1);
-	    value_store($load_5_file_name, $round, $load_5);
-	    value_store($load_15_file_name, $round, $load_15);
-	    my ($running,$all) = split('/' , $running_all, 2);
-	    value_store("e/num-processes", $round, $all);
+	    parse_loadavg_block($round, $f);
 	    next;
 	} 
 	if( (index($_, "Allocated FDs,") != -1)) {
