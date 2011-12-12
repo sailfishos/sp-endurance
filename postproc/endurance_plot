@@ -4144,8 +4144,10 @@ sub generate_plot_heap_histogram
 	one_plot_set(fn => "e/heap-$p", plot => $plot, cnt => \$cnt,
 	    emit_zeroes => 1, title => $p);
     }
-    one_plot_set(fn => "e/heap-sum-others", plot => $plot,
-	cnt => \$cnt, emit_zeroes => 1, title => "(sum of rest heaps)");
+    if (count_nonzero_entries('e/heap-sum-others')) {
+	one_plot_set(fn => 'e/heap-sum-others', plot => $plot,
+	    cnt => \$cnt, emit_zeroes => 1, title => '(sum of rest heaps)');
+    }
     close_plot($cnt, $plot, $graph_appmem_heap);
 }
 
