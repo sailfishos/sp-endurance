@@ -3163,15 +3163,16 @@ sub add_use_case_names
     print $html "<h2>SNAPSHOT DATES AND DESCRIPTIONS</h2>\n";
     foreach my $dir (@dirs) {
 	my $dfn = $dir . '/step.txt';
+	my $step;
 	if (-e $dfn) {
-	    my $step = `cat $dfn`;
+	    $step = `cat $dfn`;
 	    chop $step;
-	    my $desc = $dir;
-	    if (int($dir) >= 101) {
-		$desc = $dir - 101;
-	    }
-	    print $html "$desc: [$round_date{$dir}] $step<br/>\n";
 	}
+	my $desc = $dir;
+	if (int($dir) >= 101) {
+	    $desc = $dir - 101;
+	}
+	print $html "$desc: [$round_date{$dir}] $step<br/>\n";
     }
 }
 
