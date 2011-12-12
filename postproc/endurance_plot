@@ -1076,6 +1076,16 @@ sub split_values($)
     }
 }
 
+sub parse_allocated_fds_block
+{
+    my ($round, $handle) = @_;
+    my $line = <$handle>;
+    chop $line;
+    my ($Allocated_FDs, $Freed_FDs, $Max_FDs) = split(',' , $line, 3);
+    my $perc_fd = (100 * $Allocated_FDs) / $Max_FDs;
+    value_store($fd_perc_file_name, $round, $perc_fd);
+}
+
 sub parse_name_state_block
 {
     my ($round, $handle) = @_;
@@ -5664,11 +5674,7 @@ foreach my $round (0 .. @dirs-1) {
 	    next;
 	} 
 	if( (index($_, "Allocated FDs,") != -1)) {
-	    my $line = <$f>;
-	    chop $line;
-	    my ($Allocated_FDs,$Freed_FDs,$Max_FDs) = split(',' , $line, 3);
-	    my $perc_fd = (100 * $Allocated_FDs) / $Max_FDs;
-	    value_store($fd_perc_file_name, $round, $perc_fd);
+	    parse_allocated_fds_block($round, $f);
 	    next;
 	} 
 	if( index($_, "Name,State") != -1) {
