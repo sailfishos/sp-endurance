@@ -3932,13 +3932,16 @@ sub generate_plot_shmem
     my $fn;
 
 ############### Histogram of shared mem #################
-    $cnt = 0;
-    $plot = start_plotfile_histogram($graph_mem_shared);
-    one_plot_set(fn => $shared_locked_plot_file_name, plot => $plot,
-	cnt => \$cnt, emit_zeroes => 1, title => 'Locked to memory');
-    one_plot_set(fn => $shared_unlocked_plot_file_name, plot => $plot,
-	cnt => \$cnt, emit_zeroes => 1, title => 'Not locked to memory');
-    close_plot($cnt, $plot, $graph_mem_shared);
+    if (count_nonzero_entries($shared_locked_plot_file_name) or
+		count_nonzero_entries($shared_unlocked_plot_file_name)) {
+	$cnt = 0;
+	$plot = start_plotfile_histogram($graph_mem_shared);
+	one_plot_set(fn => $shared_locked_plot_file_name, plot => $plot,
+	    cnt => \$cnt, emit_zeroes => 1, title => 'Locked to memory');
+	one_plot_set(fn => $shared_unlocked_plot_file_name, plot => $plot,
+	    cnt => \$cnt, emit_zeroes => 1, title => 'Not locked to memory');
+	close_plot($cnt, $plot, $graph_mem_shared);
+    }
 
 ############### Histogram of shared mem lpid #################
     $plot = start_plotfile_histogram($graph_mem_shared_lpid);
