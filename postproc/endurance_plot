@@ -559,7 +559,7 @@ my (%shared_lpid, %shared_cpid);
 my (%shared_lpid_cnt, %shared_lpid_cnt_oneround);
 my (%shared_cpid_cnt, %shared_cpid_cnt_oneround);
 my %shared_lpid_names_all_sz;
-my (%shared_num, %shared_size, %shared_used);
+my (%shared_used);
 my (%fd_count, %fd_count_samples, %fd_count_diff, %fd_count_prev);
 my %pss_swap_num_samples;
 my %lapsed_time;
@@ -1168,6 +1168,8 @@ sub parse_shmem_block
     my $d_age_sum = 0;
     my $d_age_cnt = 0;
     my $shared_cnt = 0;
+    my %shared_num;
+    my %shared_size;
 
     my $line = <$handle>;
     chop $line;
@@ -1252,6 +1254,18 @@ sub parse_shmem_block
     value_store_zeropad($shared_locked_plot_file_name, $round, $shared_locked);
     value_store_zeropad($shared_unlocked_plot_file_name, $round, $shared_unlocked);
     value_store_zeropad("e/count-shm", $round, $shared_cnt);
+
+    for my $z (0 .. $max_nattach) {
+	value_store("e/nattach-$z-shm", $round, $shared_num{$z});
+    }
+    for my $z (1 .. $max_nattach) {
+	my $fn = "e/nattach-$z-shm-sz";
+	if (defined $shared_size{$z}) {
+	    value_store($fn, $round, $shared_size{$z});
+	} else {
+	    value_store($fn, $round, 0);
+	}
+    }
 }
 
 sub parse_pid_fd_block
@@ -5671,8 +5685,6 @@ foreach my $round (0 .. @dirs-1) {
     %shared_cpid = ();
     %shared_lpid_cnt_oneround = ();
     %shared_cpid_cnt_oneround = ();
-    %shared_num = ();
-    %shared_size = ();
     $secval{$round} = date2seconds($round_date{$dir});
     while (<$f>) {
 	if( (index($_, "Loadavg ") != -1)) {
@@ -5743,19 +5755,6 @@ foreach my $round (0 .. @dirs-1) {
     process_sysfs_backlight($round, $dir);
 
     loop_over_all_apps($round);
-
-    for (my $z = 0; $z <= $max_nattach ; $z++) {
-	$fn = "e/nattach-$z-shm";
-	value_store($fn, $round, $shared_num{$z});
-	if ($z > 0) {
-	    $fn = "e/nattach-$z-shm-sz";
-	    if (defined $shared_size{$z}) {
-		value_store($fn, $round, $shared_size{$z});
-	    } else {
-		value_store($fn, $round, 0);
-	    }
-	}
-    }
 }
 print "\n";
 
