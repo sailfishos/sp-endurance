@@ -1076,6 +1076,43 @@ sub split_values($)
     }
 }
 
+sub process_usage_csv
+{
+    my ($round, $dir) = @_;
+    my $fn = $dir . '/usage.csv';
+    my $f;
+    unless (open($f, $fn)) {
+	print STDERR "ERROR: unable to open $fn: $!\n";
+	exit(1);
+    }
+    while (<$f>) {
+	if (index($_, "Loadavg ") != -1) {
+	    parse_loadavg_block($round, $f);
+	} elsif (index($_, "Allocated FDs,") != -1) {
+	    parse_allocated_fds_block($round, $f);
+	} elsif (index($_, "Name,State") != -1) {
+	    parse_name_state_block($round, $f);
+	} elsif (index($_, "Shared memory segments:") != -1) {
+	    parse_shmem_block($round, $f);
+	} elsif (index($_, "PID,FD count,Command") != -1) {
+	    parse_pid_fd_block($round, $f);
+	} elsif (index($_, "Process status:") != -1) {
+	    parse_process_status_block($round, $f);
+	} elsif (index($_, "res-base,") != -1) {
+	    parse_xresource_block($round, $f, $_);
+	} elsif (index($_, "Filesystem,") != -1) {
+	    parse_filesystem_block($round, $f);
+	} elsif (index($_, "MemTotal") != -1) {
+	    parse_memtotal_block($round, $f);
+	} elsif (index($_, "nr_free_pages") != -1) {
+	    parse_pages_block($round, $f);
+	} elsif (/^PID,wchan:/) {
+	    parse_wchan_block($round, $f);
+	}
+    }
+    close($f);
+}
+
 sub parse_loadavg_block
 {
     my ($round, $handle) = @_;
@@ -5674,66 +5711,14 @@ if (not -d $graphs_dir) {
 print "input: ";
 foreach my $round (0 .. @dirs-1) {
     my $dir = $dirs[$round];
-    my $fn = $dir . '/usage.csv';
-    my $f;
-    unless (open($f, $fn)) {
-	print STDERR "ERROR: unable to open $fn: $!\n";
-	exit(1);
-    }
     print "$dir ";
     %shared_lpid = ();
     %shared_cpid = ();
     %shared_lpid_cnt_oneround = ();
     %shared_cpid_cnt_oneround = ();
     $secval{$round} = date2seconds($round_date{$dir});
-    while (<$f>) {
-	if( (index($_, "Loadavg ") != -1)) {
-	    parse_loadavg_block($round, $f);
-	    next;
-	} 
-	if( (index($_, "Allocated FDs,") != -1)) {
-	    parse_allocated_fds_block($round, $f);
-	    next;
-	} 
-	if( index($_, "Name,State") != -1) {
-	    parse_name_state_block($round, $f);
-	    next;
-	} 
-	if( index($_, "Shared memory segments:") != -1) {
-	    parse_shmem_block($round, $f);
-	    next;
-	} 
-	if( index($_, "PID,FD count,Command") != -1) {
-	    parse_pid_fd_block($round, $f);
-	    next;
-	} 
-	if( index($_, "Process status:") != -1) {
-	    parse_process_status_block($round, $f);
-	    next;
-	}
-	if( index($_, "res-base,") != -1) {
-	    parse_xresource_block($round, $f, $_);
-	    next;
-	}
-	if( index($_, "Filesystem,") != -1) {
-	    parse_filesystem_block($round, $f);
-	    next;
-	}
-	if( index($_, "MemTotal") != -1) {
-	    parse_memtotal_block($round, $f);
-	    next;
-	} 
-	if( index($_, "nr_free_pages") != -1) {
-	    parse_pages_block($round, $f);
-	    next;
-	} 
-	if (/^PID,wchan:/) {
-	    parse_wchan_block($round, $f);
-	    next;
-	}
-    }
-    close $f;
 
+    process_usage_csv($round, $dir);
     process_df($round, $dir);
     process_slabinfo($round, $dir);
     process_smaps($round, $dir);
