@@ -4250,49 +4250,33 @@ sub generate_plot_swap_event
     my $plot;
 ############# SWAP EVENT COUNTS ######################
     if (($swapused_total + $swap_pgout_total) > 0) {
-	my $n = 0;
 	$plot = start_plotfile_lines($graph_events_swap);
-	if (value_emit($pswp_in_plot_file_name, 1)) {
-	    print $plot "'$pswp_in_plot_file_name' lw 3";
-	    $n += 1;
+	if (count_nonzero_entries($pswp_in_plot_file_name)) {
+	    one_plot_set(fn => $pswp_in_plot_file_name, plot => $plot,
+		lw => 3, emit_zeroes => 1, cnt => \$cnt);
 	}
-	if (value_emit($pswp_out_plot_file_name, 1)) {
-	    if ($n > 0) {
-		print $plot ", ";
-	    }
-	    print $plot "'$pswp_out_plot_file_name' lw 3";
-	    $n += 1;
+	if (count_nonzero_entries($pswp_out_plot_file_name)) {
+	    one_plot_set(fn => $pswp_out_plot_file_name, plot => $plot,
+		lw => 3, emit_zeroes => 1, cnt => \$cnt);
 	}
-	if (value_emit($pgscan_kswapd_normal_plot_file_name, 1)) {
-	    if ($n > 0) {
-		print $plot ", ";
-	    }
-	    print $plot "'$pgscan_kswapd_normal_plot_file_name' lw 3";
-	    $n += 1;
+	if (count_nonzero_entries($pgscan_kswapd_normal_plot_file_name)) {
+	    one_plot_set(fn => $pgscan_kswapd_normal_plot_file_name,
+		plot => $plot, lw => 3, emit_zeroes => 1, cnt => \$cnt);
 	}
-	if (value_emit($pgscan_direct_normal_plot_file_name, 1)) {
-	    if ($n > 0) {
-		print $plot ", ";
-	    }
-	    print $plot "'$pgscan_direct_normal_plot_file_name' lw 3";
-	    $n += 1;
+	if (count_nonzero_entries($pgscan_direct_normal_plot_file_name)) {
+	    one_plot_set(fn => $pgscan_direct_normal_plot_file_name,
+		plot => $plot, lw => 3, emit_zeroes => 1, cnt => \$cnt);
 	}
-	if (value_emit($slabs_scanned_plot_file_name, 1)) {
-	    if ($n > 0) {
-		print $plot ", ";
-	    }
-	    print $plot "'$slabs_scanned_plot_file_name' lw 3";
-	    $n += 1;
+	if (count_nonzero_entries($slabs_scanned_plot_file_name)) {
+	    one_plot_set(fn => $slabs_scanned_plot_file_name,
+		plot => $plot, lw => 3, emit_zeroes => 1, cnt => \$cnt);
 	}
-	if (value_emit($kswapd_steal_plot_file_name, 1)) {
-	    if ($n > 0) {
-		print $plot ", ";
-	    }
-	    print $plot "'$kswapd_steal_plot_file_name' lw 3";
-	    $n += 1;
+	if (count_nonzero_entries($kswapd_steal_plot_file_name)) {
+	    one_plot_set(fn => $kswapd_steal_plot_file_name,
+		plot => $plot, lw => 3, emit_zeroes => 1, cnt => \$cnt);
 	}
-	close_plot($n, $plot, $graph_events_swap);
-	
+	close_plot($cnt, $plot, $graph_events_swap);
+
 ############### Histogram of processes swapped #################
 	$plot = start_plotfile_histogram($graph_appmem_swapped);
 
