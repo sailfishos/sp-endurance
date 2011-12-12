@@ -4904,12 +4904,21 @@ sub generate_plot_diskstats
 	my $title = $device;
 	my $fs = device_to_filesystem($device);
 	$title = $device . ': ' . $fs if $fs;
-	one_plot_set(fn => "e/devwrites-$device", lw => 3, plot => $plot_1,
-	    cnt => \$cnt_1, emit_zeroes => 1, title => $title);
-	one_plot_set(fn => "e/devwritetime-$device", lw => 3, plot => $plot_2,
-	    cnt => \$cnt_2, emit_zeroes => 1, title => $title);
-	one_plot_set(fn => "e/devwrites-mb-$device", lw => 3, plot => $plot_3,
-	    cnt => \$cnt_3, emit_zeroes => 1, title => $title);
+	if (value_exists("e/devwrites-$device")) {
+	    one_plot_set(fn => "e/devwrites-$device", lw => 3,
+		plot => $plot_1, cnt => \$cnt_1, emit_zeroes => 1,
+		title => $title);
+	}
+	if (value_exists("e/devwritetime-$device")) {
+	    one_plot_set(fn => "e/devwritetime-$device", lw => 3,
+		plot => $plot_2, cnt => \$cnt_2, emit_zeroes => 1,
+		title => $title);
+	}
+	if (value_exists("e/devwrites-mb-$device")) {
+	    one_plot_set(fn => "e/devwrites-mb-$device", lw => 3,
+		plot => $plot_3, cnt => \$cnt_3, emit_zeroes => 1,
+		title => $title);
+	}
     }
     close_plot($cnt_1, $plot_1, $graph_diskstats_writes_mb_per_second);
     close_plot($cnt_2, $plot_2, $graph_diskstats_write_time);
