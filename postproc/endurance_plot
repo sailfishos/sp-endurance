@@ -755,7 +755,6 @@ my %ramzswap_prev;
 my $swapused_total = 0;
 my $swap_pgout_total = 0;
 
-my %vma_count;
 my %vma_count_max;
 
 my %cgroups;
@@ -2153,7 +2152,7 @@ sub process_smaps
     %app_posix_shared = ();
     %app_rwxp = ();
     %app_dev_pvr = ();
-    %vma_count = ();
+    my %vma_count;
     while (<SMAPS_CAP>) {
 	if (m#^[A-Z]#) {
 	    if( index($_, "Pss:") != -1) {
@@ -2293,6 +2292,10 @@ sub process_smaps
     close(SMAPS_CAP);
     foreach (keys %process_devpvr_count) {
 	value_store("e/devpvr-count-$_", $round, $process_devpvr_count{$_});
+    }
+    foreach (keys %vma_count) {
+	value_store("e/vma-count-$_", $round, $vma_count{$_});
+	$vma_count_max{$_} = max $vma_count{$_}, $vma_count_max{$_};
     }
     $sum_app_swapped /= 1024;
     $sum_app_pss /= 1024;
@@ -3103,12 +3106,6 @@ sub loop_over_all_apps
 	    value_store_zeropad($fn, $round, 0);
 	}
 	$shared_cpid{$pid} = 0;
-
-	if (exists $vma_count{$x}) {
-	    my $fn = "e/vma-count-$x";
-	    value_store($fn, $round, $vma_count{$x});
-	    $vma_count_max{$x} = max $vma_count{$x}, $vma_count_max{$x};
-	}
     }
     #
     # loops over shmem lpid names and insert values
