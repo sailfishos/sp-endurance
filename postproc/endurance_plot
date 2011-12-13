@@ -5642,6 +5642,10 @@ foreach my $dir (@dirs) {
 	parse_component_version($dir);
     }
     my $fn = $dir . '/usage.csv';
+    if (-z $fn) {
+	print STDERR "ERROR: $fn is empty!\n";
+	exit(1);
+    }
     unless (open(CSV, $fn)) {
 	print STDERR "ERROR: unable to open $fn: $!\n";
 	exit(1);
