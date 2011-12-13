@@ -351,11 +351,21 @@ $legend{$graph_events_swap} = "swap-related events";
 $thumblegend{$graph_events_swap} = "SWAP EVENTS";
 $unit{$graph_events_swap} = "count per second";
 
-my $graph_ramzswap = "2111_ramzswap";
-$legend{$graph_ramzswap} = "compressed swap counters; left:reads/writes right:used amount, bold";
-$thumblegend{$graph_ramzswap} = "COMPR-SWAP";
-$unit_1{$graph_ramzswap} = "MB per second";
-$unit_2{$graph_ramzswap} = "MB used";
+my $graph_ramzswap_1 = '2111_ramzswap_1';
+$legend{$graph_ramzswap_1} = 'ramzswap (compressed swap) reads and writes';
+$thumblegend{$graph_ramzswap_1} = "COMPR-SWAP READS/WRITES";
+$unit{$graph_ramzswap_1} = 'MB';
+
+my $graph_ramzswap_2 = '2111_ramzswap_2';
+$legend{$graph_ramzswap_2} = 'ramzswap (compressed swap) memory usage';
+$thumblegend{$graph_ramzswap_2} = 'COMPR-SWAP MEM USAGE';
+$unit_1{$graph_ramzswap_2} = 'GoodCompress and NoCompress %';
+$unit_2{$graph_ramzswap_2} = 'MB';
+
+my $graph_ramzswap_3 = '2111_ramzswap_3';
+$legend{$graph_ramzswap_3} = 'ramzswap (compressed swap) errors';
+$thumblegend{$graph_ramzswap_3} = 'COMPR-SWAP ERRORS';
+$unit{$graph_ramzswap_3} = 'count';
 
 my $graph_system_memory_1   = "2200_system_memory_1";
 $legend{$graph_system_memory_1} = "system-level memory";
@@ -609,13 +619,6 @@ my $batt_charge_left_file_name = "e/batt-charge-left";
 my $batt_voltage_file_name = "e/batt-voltage";
 my $batt_temperature_file_name = "e/batt-temp";
 
-my $ramzswap_bdreads_file_name = "e/ramzswap-bdreads";
-my $ramzswap_reads_file_name = "e/ramzswap-reads";
-my $ramzswap_bdwrites_file_name = "e/ramzswap-bdwrites";
-my $ramzswap_writes_file_name = "e/ramzswap-writes";
-my $ramzswap_zerop_file_name = "e/ramzswap-zerop";
-my $ramzswap_used_file_name = "e/ramzswap-used";
-
 my $pswp_in_prev = 0;
 my $pswp_out_prev = 0;
 my $pgscan_kswapd_normal_prev = 0;
@@ -744,14 +747,10 @@ my %secval;
 my %round_date;
 
 my $have_diskstats = 0;
-my $have_ramzswap = 0;
 my $have_bme = 0;
 my $have_pagetypeinfo = 0;
 
-my $prev_ramzswap_bdreads;
-my $prev_ramzswap_bdwrites;
-my $prev_ramzswap_reads;
-my $prev_ramzswap_writes;
+my %ramzswap_prev;
 
 my $swapused_total = 0;
 my $swap_pgout_total = 0;
@@ -2440,7 +2439,6 @@ sub process_bme
     close(BMESTAT);
 }
 
-
 sub process_ramzswap
 {
     my ($round, $dir) = @_;
@@ -2450,59 +2448,47 @@ sub process_ramzswap
 	print STDERR "WARNING: unable to open $fn: $!\n";
 	return;
     }
-    my $divider;
-    if ($lapsed_time{$round}) {
-	$divider = $lapsed_time{$round};
-    } else {
-	$divider = $secs_per_round;
-    }
+    my %keyval;
     while (<RAMZSWAP>) {
-	if (m/BDevNumReads:/) {
-	    my (undef, $param) = split(' ' , $_, 2);
-	    my $n_bdreads = 0;
-	    if ($prev_ramzswap_bdreads) {
-		$n_bdreads = ($param  - $prev_ramzswap_bdreads)/$divider;
-	    }
-	    value_store($ramzswap_bdreads_file_name, $round, $n_bdreads);
-	    $prev_ramzswap_bdreads = $param;
-	} elsif (m/NumReads:/) {
-	    my (undef, $param) = split(' ' , $_, 2);
-	    my $n_reads = 0;
-	    if ($prev_ramzswap_reads) {
-		$n_reads = ($param  - $prev_ramzswap_reads)/$divider;
-	    }
-	    value_store($ramzswap_reads_file_name, $round, $n_reads);
-	    $prev_ramzswap_reads = $param;
-	} elsif (m/BDevNumWrites:/) {
-	    my (undef, $param) = split(' ' , $_, 2);
-	    my $n_bdwrites = 0;
-	    if ($prev_ramzswap_bdwrites) {
-		$n_bdwrites = ($param  - $prev_ramzswap_bdwrites)/$divider;
-	    }
-	    value_store($ramzswap_bdwrites_file_name, $round, $n_bdwrites);
-	    $prev_ramzswap_bdwrites = $param;
-	} elsif (m/NumWrites:/) {
-	    my (undef, $param) = split(' ' , $_, 2);
-	    my $n_writes = 0;
-	    if ($prev_ramzswap_writes) {
-		$n_writes = ($param  - $prev_ramzswap_writes)/$divider;
-	    }
-	    value_store($ramzswap_writes_file_name, $round, $n_writes);
-	    $prev_ramzswap_writes = $param;
-	} elsif (m/ZeroPages:/) {
-	    my (undef, $zerop) = split(' ' , $_, 2);
-	    my $zerom = ($zerop * $page_size)/1024;
-	    value_store($ramzswap_zerop_file_name, $round, $zerom);
-	} elsif (m/PagesUsed:/) {
-	    my (undef, $n_usedp) = split(' ' , $_, 2);
-	    my $used = ($n_usedp * $page_size)/1024;
-	    value_store($ramzswap_used_file_name, $round, $used);
-	    $have_ramzswap = 1;
+	if (/^(\S+):\s*(\d+)/) {
+	    my $key = $1;
+	    my $value = int($2);
+	    $keyval{$key} = $2;
 	}
     }
     close(RAMZSWAP);
+    if (%ramzswap_prev) {
+	foreach (qw/NumReads NumWrites BDevNumReads BDevNumWrites/) {
+	    next unless exists $keyval{$_};
+	    my $prev = $ramzswap_prev{$_};
+	    my $value = $keyval{$_};
+	    # Convert "reads" and "writes" to megabytes. I'm assuming that the
+	    # reads and writes are always page sized operations...
+	    value_store("e/ramzswap-$_", $round,
+		(($value - $prev) * $pg_bytes) / $MB_bytes);
+	}
+	foreach (qw/FailedReads FailedWrites InvalidIO/) {
+	    next unless exists $keyval{$_};
+	    my $prev = $ramzswap_prev{$_};
+	    my $value = $keyval{$_};
+	    value_store("e/ramzswap-$_", $round, $value - $prev);
+	}
+    }
+    foreach (qw/GoodCompress NoCompress/) {
+	next unless exists $keyval{$_};
+	value_store("e/ramzswap-$_", $round, $keyval{$_});
+    }
+    foreach (qw/OrigDataSize ComprDataSize MemUsedTotal/) {
+	next unless exists $keyval{$_};
+	value_store("e/ramzswap-$_", $round, $keyval{$_} / 1024);
+    }
+    foreach (qw/ZeroPages/) {
+	next unless exists $keyval{$_};
+	value_store("e/ramzswap-$_", $round,
+	    ($keyval{$_} * $pg_bytes) / $MB_bytes);
+    }
+    %ramzswap_prev = %keyval;
 }
-
 
 sub process_stat
 {
@@ -5022,43 +5008,53 @@ sub generate_plot_battery
     close_plot($cnt, $plot, $graph_battery);
 }
 
-sub generate_plot_ramzswap
+sub generate_plot_ramzswap_1
 {
-    if (not $have_ramzswap) {
-	return;
-    }
-    my $plot = start_plotfile_lines_2axes($graph_ramzswap);
     my $cnt = 0;
-    if (count_nonzero_entries($ramzswap_bdreads_file_name)) {
-	one_plot_set(fn => $ramzswap_bdreads_file_name, plot => $plot, lw => 2,
-	    axes => 'x1y1', cnt => \$cnt, emit_zeroes => 1,
-	    title => 'Backing device reads');
+    my $plot = start_plotfile_linespoints($graph_ramzswap_1);
+    foreach (qw/NumReads NumWrites BDevNumReads BDevNumWrites/) {
+	my $fn = "e/ramzswap-$_";
+	if (count_nonzero_entries($fn)) {
+	    one_plot_set(fn => $fn, plot => $plot, lw => 3, cnt => \$cnt,
+		emit_zeroes => 1, title => $_);
+	}
     }
-    if (count_nonzero_entries($ramzswap_reads_file_name)) {
-	one_plot_set(fn => $ramzswap_reads_file_name, plot => $plot, lw => 2,
-	    axes => 'x1y1', cnt => \$cnt, emit_zeroes => 1, title => 'Reads');
+    close_plot($cnt, $plot, $graph_ramzswap_1);
+}
+
+sub generate_plot_ramzswap_2
+{
+    my $cnt = 0;
+    my $plot = start_plotfile_lines_2axes($graph_ramzswap_2);
+    foreach (qw/OrigDataSize ComprDataSize MemUsedTotal ZeroPages/) {
+	my $fn = "e/ramzswap-$_";
+	if (count_nonzero_entries($fn)) {
+	    one_plot_set(fn => $fn, plot => $plot, lw => 5, cnt => \$cnt,
+		emit_zeroes => 1, axes => 'x2y2', title => $_);
+	}
     }
-    if (count_nonzero_entries($ramzswap_bdwrites_file_name) > 0) {
-	one_plot_set(fn => $ramzswap_bdwrites_file_name, plot => $plot,
-	    lw => 2, axes => 'x1y1', cnt => \$cnt, emit_zeroes => 1,
-	    title => 'Backing device writes');
+    foreach (qw/GoodCompress NoCompress/) {
+	my $fn = "e/ramzswap-$_";
+	if (count_nonzero_entries($fn)) {
+	    one_plot_set(fn => $fn, plot => $plot, lw => 3, cnt => \$cnt,
+		emit_zeroes => 1, axes => 'x1y1', title => $_);
+	}
     }
-    if (count_nonzero_entries($ramzswap_writes_file_name)) {
-	one_plot_set(fn => $ramzswap_writes_file_name, plot => $plot, lw => 2,
-	    axes => 'x1y1', cnt => \$cnt, emit_zeroes => 1,
-	    title => 'Writes');
+    close_plot($cnt, $plot, $graph_ramzswap_2);
+}
+
+sub generate_plot_ramzswap_3
+{
+    my $cnt = 0;
+    my $plot = start_plotfile_linespoints($graph_ramzswap_3);
+    foreach (qw/FailedReads FailedWrites InvalidIO/) {
+	my $fn = "e/ramzswap-$_";
+	if (count_nonzero_entries($fn)) {
+	    one_plot_set(fn => $fn, plot => $plot, lw => 3, cnt => \$cnt,
+		emit_zeroes => 1, title => $_);
+	}
     }
-    if (count_nonzero_entries($ramzswap_zerop_file_name)) {
-	one_plot_set(fn => $ramzswap_zerop_file_name, plot => $plot, lw => 4,
-	    axes => 'x2y2', cnt => \$cnt, emit_zeroes => 1,
-	    title => 'ZeroPages');
-    }
-    if (count_nonzero_entries($ramzswap_used_file_name)) {
-	one_plot_set(fn => $ramzswap_used_file_name, plot => $plot, lw => 4,
-	    axes => 'x2y2', cnt => \$cnt, emit_zeroes => 1,
-	    title => 'Memory used');
-    }
-    close_plot($cnt, $plot, $graph_ramzswap);
+    close_plot($cnt, $plot, $graph_ramzswap_3);
 }
 
 sub generate_plot_cgroups
@@ -5541,7 +5537,9 @@ sub generate_plots()
     generate_plot_interrupts();
     generate_plot_diskstats();
     generate_plot_battery();
-    generate_plot_ramzswap();
+    generate_plot_ramzswap_1();
+    generate_plot_ramzswap_2();
+    generate_plot_ramzswap_3();
     generate_plot_cgroups();
     generate_plot_networking();
     generate_plot_pagetypeinfo();
