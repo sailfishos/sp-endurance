@@ -1712,6 +1712,7 @@ sub parse_wchan_block
     my ($round, $handle) = @_;
     my %wchan_count;
     while (<$handle>) {
+	chomp;
 	last if $_ eq '';
 	my ($pid, $wchan) = split(',', $_, 2);
 	chomp $wchan;
