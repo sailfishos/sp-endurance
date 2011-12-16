@@ -2146,10 +2146,11 @@ def output_html_report(data):
             reboots.append(idx)
             print "  <li><font color=red>REBOOT</font> (after <i>previous</i> round uptime of %s)</i>" % readable_uptime(uptime_prev)
         uptime_prev = uptime_next
+        desc = ""
+        if 'datetime' in data[idx] and data[idx]['datetime']:
+            desc += " [%s]" % data[idx]['datetime']
         if data[idx].has_key('description') and data[idx]['description']:
-            desc = " (%s)" % data[idx]['description']
-        else:
-            desc = ""
+            desc += " (%s)" % data[idx]['description']
         print '  <li><a href="#round-%d">Round %d</a>%s' % (idx, idx, desc)
     print """
   </ul>
