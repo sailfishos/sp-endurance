@@ -312,11 +312,11 @@ static void show_statuses(int num, status_t *statuslist)
 
 
 /* read /proc/pid/stat */
-static void show_proc_pid_stat(int num, status_t *statuslist)
+static void show_proc_pid_stat(int num, const status_t *statuslist)
 {
 	char stat[20];
 	int i;
-	status_t *s;
+	const status_t *s;
 	for (i=0; i < num; ++i) {
 		s = &statuslist[i];
 		if (s->skip) {
@@ -537,7 +537,7 @@ static int num_sort(const struct dirent **a, const struct dirent **b)
 }
 
 
-static void usage(char *name)
+static void usage(const char *name)
 {
 #if PROC_TEST
 	printf("\nusage: %s [-t|-p]\n\n", name);
