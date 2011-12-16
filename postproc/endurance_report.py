@@ -368,6 +368,16 @@ def get_xres_usage(file, header = None):
 
     return xmeminfo
 
+def get_component_version(file):
+    component_version = {}
+    for line in file:
+        m = re.match("product\s+(\S+)", line)
+        if m:
+            component_version['product'] = m.group(1)
+        m = re.match("hw-build\s+(\S+)", line)
+        if m:
+            component_version['hw-build'] = m.group(1)
+    return component_version
 
 def get_process_info(file, headers):
     """returns all process information in a hash indexed by the process PID,
@@ -1560,10 +1570,20 @@ def output_run_diffs(idx1, idx2, data, do_summary):
         if 'upstart_jobs_respawned' in run1: upstart_jobs_respawned1 = run1['upstart_jobs_respawned']
         output_new_upstart_jobs_respawned(upstart_jobs_respawned1, upstart_jobs_respawned2)
 
+def hw_string(run):
+    hw = ''
+    if 'component_version' in run:
+        if 'product' in run['component_version']:
+            hw += run['component_version']['product']
+        if 'hw-build' in run['component_version']:
+            hw += ':' + run['component_version']['hw-build']
+    return hw
 
 def output_initial_state(run):
     "show basic information about the test run"
     print "<p>%s" % run['release']
+    if hw_string(run):
+        print "<p>HW: %s" % hw_string(run)
     print "<p>Date: %s" % run['datetime']
     print "<p>Free system RAM: <b>%d</b> kB" % run['ram_free']
     print "<br>(free = free+cached+buffered+slab reclaimable)"
@@ -2334,6 +2354,13 @@ def parse_syte_stats(dirs):
             if file:
                 print >>sys.stderr, "Parsing '%s'..." % filename
                 items['mounts'] = get_filesystem_usage_df(file)
+        except RuntimeError: pass
+
+        try:
+            file, filename = syslog.open_compressed("%s/component_version" % dirname)
+            if file:
+                print >>sys.stderr, "Parsing '%s'..." % filename
+                items['component_version'] = get_component_version(file)
         except RuntimeError: pass
 
         data.append(items)
