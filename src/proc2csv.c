@@ -540,10 +540,11 @@ static int num_sort(const struct dirent **a, const struct dirent **b)
 static void usage(char *name)
 {
 #if PROC_TEST
-	printf("\nusage: %s [-t|-p]\n\n"
+	printf("\nusage: %s [-t|-p]\n\n", name);
 #else
-	printf("\nusage: %s [-p]\n\n"
+	printf("\nusage: %s [-p]\n\n", name);
 #endif
+	printf(
 "First this reads all PIDs in /proc, then it will read their status\n"
 "and some other system information and output that in CSV format to\n"
 "the standard output.\n\n"
@@ -552,8 +553,7 @@ static void usage(char *name)
 "directory is used instead of the system /proc directory.\n\n"
 #endif
 "With the '-p' option you can run this as normal user, as then all\n"
-"permission denied errors are ignored.\n",
-	       name);
+"permission denied errors are ignored.\n");
 	exit(-1);
 }
 
