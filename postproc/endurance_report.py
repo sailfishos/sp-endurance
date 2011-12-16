@@ -1676,7 +1676,12 @@ def output_apps_memory_graphs(cases):
                 smaps_available = 1
             except KeyError:
                 if 'smaps' in testcase:
-                    parse_warning("WARNING: SMAPS data missing for %s[%s]" % (name,pid))
+                    # The endurance snapshotting script uses the 'sp-noncached'
+                    # utility for streaming data from & to disk. The processes
+                    # are short-living, so do not bother to give a warning
+                    # about those.
+                    if name != 'sp-noncached':
+                        parse_warning("WARNING: SMAPS data missing for %s[%s]" % (name,pid))
                 continue
             try: process['SMAPS_SWAP'] = testcase['smaps'][pid]['swap']
             except KeyError: pass
