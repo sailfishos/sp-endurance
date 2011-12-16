@@ -1918,6 +1918,11 @@ leaks which cause process eventually to run out of (2GB) address space
             titles[4] = "" #PSS
         output_graph_table(titles, bar2colors, columndata)
 
+def test_round_link(idx):
+    if idx == 0:
+        return '<a href="#initial-state">Initial state</a>:'
+    else:
+        return '<a href="#round-%d">Test round %02d</a>:' % (idx, idx)
 
 def output_system_load_graphs(data):
     print '<p>System CPU time distribution during the execution of test cases.'
@@ -1926,7 +1931,7 @@ def output_system_load_graphs(data):
     entries = []
     idx = 1
     for testcase in data[1:]:
-        case = '<a href="#round-%d">Test round %02d</a>:' % (idx, idx)
+        case = test_round_link(idx)
         if total_cpu_tickdiff(prev, testcase) < 0:
             entries.append((case, (0,0,0,0,0), "-"))
         elif total_cpu_tickdiff(prev, testcase) == 0:
@@ -2032,7 +2037,7 @@ def output_network_use_graphs(data):
         idx += 1
         bars = [x/scale for x in b]
         vals = ["%dkB" % (x/1024) for x in v]
-        entries.append(('Test round %02d:' % idx, bars, vals))
+        entries.append((test_round_link(idx), bars, vals))
     titles = ["Test-case:", "network usage:"] + ["%s:" % x for x in faces]
     ifcolors = [interface_colors[i % len(interface_colors)] for i in range(len(faces))]
     output_graph_table(titles, ifcolors, entries)
@@ -2055,10 +2060,7 @@ def output_system_memory_graphs(data):
             swaptext = "swap used:"
             break
     for testcase in data:
-        if not idx:
-            case = '<a href="#initial-state">Initial state</a>:'
-        else:
-            case = '<a href="#round-%d">Test round %02d</a>:' % (idx, idx)
+        case = test_round_link(idx)
         idx += 1
 
         # amount of memory in the device (float for calculations)
