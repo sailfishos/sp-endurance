@@ -638,9 +638,11 @@ def parse_csv(file, filename):
     file.readline()
     data['release'] = file.readline().strip()
     data['datetime'] = file.readline().strip()
-    if data['release'][:2] != "SW" or data['datetime'][:4] != "date":
+    if data['release'][:2] != "SW" or data['datetime'][:7] != "date = ":
         sys.stderr.write("\nError: CSV file '%s' is missing 'SW-version' or 'date' fields!\n" % filename)
         sys.exit(1)
+
+    data['datetime'] = data['datetime'][7:]
 
     # get uptime for reboot detection
     skip_to(file, "Uptime")
@@ -1562,7 +1564,7 @@ def output_run_diffs(idx1, idx2, data, do_summary):
 def output_initial_state(run):
     "show basic information about the test run"
     print "<p>%s" % run['release']
-    print "<p>%s" % run['datetime']
+    print "<p>Date: %s" % run['datetime']
     print "<p>Free system RAM: <b>%d</b> kB" % run['ram_free']
     print "<br>(free = free+cached+buffered+slab reclaimable)"
     if run['swap_total']:
@@ -2208,7 +2210,7 @@ see <a href="#%s">resource changes summary section</a>.
         print
         print '<a name="round-%d"></a>' % (idx+1)
         print "<h3>%s</h3>" % title
-        print "<p>%s" % data[idx+1]['datetime']
+        print "<p>Date: %s" % data[idx+1]['datetime']
         output_run_diffs(idx, idx+1, data, 0)
         output_data_links(data[idx+1])
         print "\n<hr>"
