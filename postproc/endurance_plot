@@ -2874,10 +2874,7 @@ sub loop_over_all_apps
 	if ($app_pss{$x}) {
 	    $app_cumul_pss{$x} += $app_pss{$x};
 	    $avg_pss{$x} = ($avg_pss{$x} * $round + $app_pss{$x})/($round+1);
-	    my $dev = ($avg_pss{$x} - $app_pss{$x});
-	    if ($dev < 0) {
-		$dev = -1 * $dev;
-	    }
+	    my $dev = abs($avg_pss{$x} - $app_pss{$x});
 	    $sumdev_pss{$x} += $dev;
 	    $devcount_pss{$x} += 1;
 	    $xxx = $app_pss{$x} / 1024;
@@ -2896,10 +2893,7 @@ sub loop_over_all_apps
 	if ($app_sysv_shared{$x}) {
 	    $app_cumul_sysv_shared{$x} += $app_sysv_shared{$x};
 	    $avg_sysv_shared{$x} = ($avg_sysv_shared{$x} * $round + $app_sysv_shared{$x})/($round+1);
-	    my $dev = ($avg_sysv_shared{$x} - $app_sysv_shared{$x});
-	    if ($dev < 0) {
-		$dev = -1 * $dev;
-	    }
+	    my $dev = abs($avg_sysv_shared{$x} - $app_sysv_shared{$x});
 	    $sumdev_sysv_shared{$x} += $dev;
 	    $devcount_sysv_shared{$x} += 1;
 	    $xxx = $app_sysv_shared{$x} / 1024;
@@ -2915,10 +2909,7 @@ sub loop_over_all_apps
 	if ($app_posix_shared{$x}) {
 	    $app_cumul_posix_shared{$x} += $app_posix_shared{$x};
 	    $avg_posix_shared{$x} = ($avg_posix_shared{$x} * $round + $app_posix_shared{$x})/($round+1);
-	    my $dev = ($avg_posix_shared{$x} - $app_posix_shared{$x});
-	    if ($dev < 0) {
-		$dev = -1 * $dev;
-	    }
+	    my $dev = abs($avg_posix_shared{$x} - $app_posix_shared{$x});
 	    $sumdev_posix_shared{$x} += $dev;
 	    $devcount_posix_shared{$x} += 1;
 	    $xxx = $app_posix_shared{$x} / 1024;
@@ -2934,10 +2925,7 @@ sub loop_over_all_apps
 	if ($app_dev_pvr{$x}) {
 	    $app_cumul_dev_pvr{$x} += $app_dev_pvr{$x};
 	    $avg_dev_pvr{$x} = ($avg_dev_pvr{$x} * $round + $app_dev_pvr{$x})/($round+1);
-	    my $dev = ($avg_dev_pvr{$x} - $app_dev_pvr{$x});
-	    if ($dev < 0) {
-		$dev = -1 * $dev;
-	    }
+	    my $dev = abs($avg_dev_pvr{$x} - $app_dev_pvr{$x});
 	    $sumdev_dev_pvr{$x} += $dev;
 	    $devcount_dev_pvr{$x} += 1;
 	    $xxx = $app_dev_pvr{$x} / 1024;
@@ -2953,10 +2941,7 @@ sub loop_over_all_apps
 	    $app_cumul_swp{$x} += $app_swapped{$x};
 
 	    $avg_swp{$x} = ($avg_swp{$x} * $round + $app_swapped{$x})/($round+1);
-	    my $dev = ($avg_swp{$x} - $app_swapped{$x});
-	    if ($dev < 0) {
-		$dev = -1 * $dev;
-	    }
+	    my $dev = abs($avg_swp{$x} - $app_swapped{$x});
 	    $sumdev_swp{$x} += $dev;
 	    $devcount_swp{$x} += 1;
 	    $xxx = $app_swapped{$x} / 1024;
@@ -2983,10 +2968,7 @@ sub loop_over_all_apps
 
 #		$avg_pss_swp{$x} = ($avg_pss_swp{$x} * $round + $pss_swap)/($round+1);
 	    $avg_pss_swp{$x} = ($avg_pss_swp{$x} * $devcount_pss_swp{$x} + $pss_swap)/($devcount_pss_swp{$x} + 1);
-	    my $dev = ($avg_pss_swp{$x} - $pss_swap);
-	    if ($dev < 0) {
-		$dev = -1 * $dev;
-	    }
+	    my $dev = abs($avg_pss_swp{$x} - $pss_swap);
 	    $sumdev_pss_swp{$x} += $dev;
 	    $devcount_pss_swp{$x} += 1;
 	    $pss_swap_num_samples{$x} += 1;
