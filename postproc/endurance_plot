@@ -75,11 +75,6 @@ $legend{$graph_appmem_heap} = "process heap mem size";
 $thumblegend{$graph_appmem_heap} = "HEAP";
 $unit{$graph_appmem_heap} = "MB";
 
-#my $graph_appmem_private_dirty = "1002_appmem_private_dirty";
-#$legend{$graph_appmem_private_dirty} = "private dirty mem by processes";
-#$thumblegend{$graph_appmem_private_dirty} = "PRIVATE DIRTY";
-#$unit{$graph_appmem_private_dirty} = "MB";
-
 my $graph_appmem_pss_swap = "1003_appmem_pss_swap";
 $legend{$graph_appmem_pss_swap} = "apps PSS+SWAP";
 $thumblegend{$graph_appmem_pss_swap} = "PSS+SWAP";
@@ -669,7 +664,6 @@ my %app_pss;
 my %app_swapped;
 my %app_sum_locked;
 my (%app_sum_vmsz, %prev_vmsize, %changed_vmsize);
-#my %app_private_dirty;
 my %app_sysv_shared;
 my %app_posix_shared;
 my %app_rwxp;
@@ -677,7 +671,6 @@ my %app_dev_pvr;
 
 my %app_cumul_pss;
 my %app_cumul_swp;
-#my %app_cumul_private_dirty;
 my %app_cumul_pss_swp;
 my %app_cumul_rwxp;
 my %app_cumul_sysv_shared;
@@ -686,7 +679,6 @@ my %app_cumul_dev_pvr;
 
 my %avg_pss;
 my %avg_heap;
-#my %avg_private_dirty;
 my %avg_swp;
 my %avg_pss_swp;
 my %avg_shared_lpid;
@@ -697,7 +689,6 @@ my %avg_dev_pvr;
 
 my %devcount_pss;
 my %devcount_swp;
-#my %devcount_private_dirty;
 my %devcount_heap;
 my %devcount_pss_swp;
 my %devcount_shared_lpid;
@@ -708,7 +699,6 @@ my %devcount_dev_pvr;
 
 my %sumdev_pss;
 my %sumdev_swp;
-#my %sumdev_private_dirty;
 my %sumdev_heap;
 my %sumdev_pss_swp;
 my %sumdev_pss_swp_adj;
@@ -2144,10 +2134,8 @@ sub process_smaps
     }
     my %process_devpvr_count;
     my $sum_app_swapped = 0;
-#    $sum_app_private_dirty = 0;
     my $sum_app_pss = 0;
     %app_swapped = ();
-#    %app_private_dirty = ();
     %app_pss = ();
     %app_sysv_shared = ();
     %app_posix_shared = ();
@@ -2163,12 +2151,6 @@ sub process_smaps
 		$vma_count{$nm} += 1;
 		next;
 	    }
-#	    if( index($_, "Private_Dirty:") != -1) {
-#		my $pdirty = int(substr($_, 14, -4));
-#		$sum_app_private_dirty += $pdirty;
-#		$app_private_dirty{$nm} += $pdirty;
-#		next;
-#	    }
 	    if( index($_, "Swap:") != -1) {
 		my $swapped = int(substr($_, 5, -4));
 		$sum_app_swapped += $swapped;
@@ -2221,7 +2203,6 @@ sub process_smaps
 		$name_by_pid{$s_pid} = $nm;
 		$nm = $nm . "-" . $s_pid;
 		$app_swapped{$nm} = 0;
-#		$app_private_dirty{$nm} = 0;
 		$app_pss{$nm} = 0;
 		# create mapping from pid to name-pid
 		$pid_by_namepid{$nm} = $s_pid;
@@ -2300,7 +2281,6 @@ sub process_smaps
     }
     $sum_app_swapped /= 1024;
     $sum_app_pss /= 1024;
-#    $sum_app_private_dirty /= 1024;
     value_store($app_swapped_plot_file_name, $round, $sum_app_swapped);
     value_store($app_pss_plot_file_name, $round, $sum_app_pss);
 }
@@ -2995,27 +2975,6 @@ sub loop_over_all_apps
 	}
 	$fn = "e/$x-wx";
 	value_store_zeropad($fn, $round, $xxx);
-
-	###############
-#	if ($app_private_dirty{$x}) {
-#	    $app_cumul_private_dirty{$x} += $app_private_dirty{$x};
-#
-#	    $avg_private_dirty{$x} = ($avg_private_dirty{$x} * $round + $app_private_dirty{$x})/($round+1);
-#	    my $dev = ($avg_private_dirty{$x} - $app_private_dirty{$x});
-#	    if ($dev < 0) {
-#		$dev = -1 * $dev;
-#	    }
-#	    $sumdev_private_dirty{$x} += $dev;
-#	    $devcount_private_dirty{$x} += 1;
-#	}
-#	$fn = "e/$x-pdirty";
-#	if ( ! -e $fn) {
-#	    for ($z = 0 ; $z < $round ; $z++) {
-#		system("echo '$z, 0' >> $fn");
-#	    }
-#	}
-#	$xxx = $app_private_dirty{$x} / 1024;
-#	system("echo '$round, $xxx' >> $fn");
 
 	###############
 	my $pss_swap = ($app_pss{$x} + $app_swapped{$x})/1024;
@@ -4406,43 +4365,6 @@ sub generate_plot_swap_event
     close_plot($cnt, $plot, $graph_appmem_pss_swap);
 }
 
-sub generate_plot_private_dirty
-{
-############### Histogram of processes private dirty #################
-#    print "privdirty ";
-#    $plot = start_plotfile_histogram($graph_appmem_private_dirty);
-#
-#    $cnt = 0;
-#    %show_this = ();
-#
-#    foreach my $p (reverse sort {$app_cumul_private_dirty{$a} <=> $app_cumul_private_dirty{$b} } keys %app_cumul_private_dirty) {
-#	if ($cnt > ($max_per_graph_onecolumn - 1)) {
-#	    last;
-#	} 
-#	$show_this{$p} = 1;
-#	$cnt += 1;
-##    print "1:cnt=$cnt p=$p\n";
-#    }
-#    foreach my $p (sort keys %app_cumul_private_dirty) {
-#	if ($show_this{$p}) {
-#	    $sumdev_private_dirty{$p} /= $devcount_private_dirty{$p};
-#	    $sumdev_private_dirty{$p} += (100*(scalar(@dirs) - $devcount_private_dirty{$p}));
-#	}
-#    }
-#    $cnt = 0;
-#    foreach my $p (sort {$sumdev_private_dirty{$a} <=> $sumdev_private_dirty{$b} } keys %app_cumul_private_dirty) {
-#	if ($show_this{$p} != 1) {
-#	    next;
-#	} 
-#	if ($cnt > 0) {
-#	    print $plot ", ";
-#	}
-#	print $plot "'e/$p-pdirty' using 2";
-#	$cnt += 1;
-#    }
-#    close_plot($cnt, $plot, $graph_appmem_private_dirty);
-}
-
 sub generate_plot_pss
 {
     my $plot = start_plotfile_histogram($graph_appmem_pss);
@@ -5524,7 +5446,6 @@ sub generate_plots()
     generate_plot_dev_pvr_count();
     generate_plot_write_exec();
     generate_plot_swap_event();
-    generate_plot_private_dirty();
     generate_plot_pss();
     generate_plot_pss_swap();
     generate_plot_threads();
