@@ -2859,16 +2859,13 @@ sub loop_over_all_apps
 {
     my ($round) = @_;
     my %shared_lpid_names_sz = ();
-#
-# use same hash keys set for two things (and sum of them is 3rd)
-#
+
     foreach my $x (keys %all_apps) {
 	my $fn;
 	my $xxx;
 	if (!$x) {
 	    next;
 	}
-#	    print "$x ";
 
 	###############
 	if ($app_pss{$x}) {
@@ -2881,10 +2878,6 @@ sub loop_over_all_apps
 	} else {
 	    $xxx = 0;
 	}
-#	    print "$round:$x:PSS: pss=$app_pss{$x} dev=$dev dev_cnt=$devcount_pss{$x} avg=$avg_pss{$x}\n";
-#	if ($round == 0) {
-#	    print "$app_pss{$x} $x\n";
-#	}
 
 	$fn = "e/p-$x";
 	value_store_zeropad($fn, $round, $xxx);
@@ -2900,7 +2893,6 @@ sub loop_over_all_apps
 	} else {
 	    $xxx = 0;
 	}
-#	print "$round:$x:SYSV: pss=$app_sysv_shared{$x} dev=$dev dev_cnt=$devcount_sysv_shared{$x} avg=$avg_sysv_shared{$x}\n";
 
 	$fn = "e/sysvshm-$x";
 	value_store_zeropad($fn, $round, $xxx);
@@ -2916,7 +2908,6 @@ sub loop_over_all_apps
 	} else {
 	    $xxx = 0;
 	}
-#	print "$round:$x:POSIX: pss=$app_posix_shared{$x} dev=$dev dev_cnt=$devcount_posix_shared{$x} avg=$avg_posix_shared{$x}\n";
 
 	$fn = "e/posixshm-$x";
 	value_store_zeropad($fn, $round, $xxx);
@@ -2966,7 +2957,6 @@ sub loop_over_all_apps
 	if ($pss_swap) {
 	    $app_cumul_pss_swp{$x} += $pss_swap;
 
-#		$avg_pss_swp{$x} = ($avg_pss_swp{$x} * $round + $pss_swap)/($round+1);
 	    $avg_pss_swp{$x} = ($avg_pss_swp{$x} * $devcount_pss_swp{$x} + $pss_swap)/($devcount_pss_swp{$x} + 1);
 	    my $dev = abs($avg_pss_swp{$x} - $pss_swap);
 	    $sumdev_pss_swp{$x} += $dev;
@@ -2976,13 +2966,9 @@ sub loop_over_all_apps
 	$fn = "e/pswp-$x";
 	value_store_zeropad($fn, $round, $pss_swap);
 
-#	if ($round == 0) {
-#	    print "$pss_swap $x\n";
-#	}
 	###############
 	my $pid = $pid_by_namepid{$x};
 	my $lpid_name = $name_by_pid{$pid} ;
-#	print "$round: lpid_name by pid=[$pid] is [$lpid_name]\n";
 	if (defined $shared_lpid_cnt_oneround{$pid}) {
 	    $shared_lpid_cnt{$x} += $shared_lpid_cnt_oneround{$pid};
 	}
@@ -2995,7 +2981,6 @@ sub loop_over_all_apps
 	$shared = $shared_lpid{$pid};
 	$fn = "e/shml-$x";
 	if ($shared) {
-#	    print "$round: lpid shared[x=$x pid=$pid] = $shared\n";
 	    value_store_zeropad($fn, $round, $shared);
 	    $avg_shared_lpid{$pid} = ($avg_shared_lpid{$pid} * $round + $shared)/($round+1);
 	    my $dev = ($avg_shared_lpid{$pid} - $shared);
@@ -3004,7 +2989,6 @@ sub loop_over_all_apps
 	    }
 	    $sumdev_shared_lpid{$x} += $dev/$shared;
 	    $devcount_shared_lpid{$x} += 1;
-#		print "   lpid: inc devcount[$x] now = $devcount_shared_lpid{$x}\n";
 	#
 	# also by name-only. sum  up different shm mappings for apps that
 	# have carried different PIDs. After this loop we loop over app names
@@ -3012,7 +2996,6 @@ sub loop_over_all_apps
 	#
 	    if ($shared_lpid_cnt_oneround{$pid}) {
 		if ($lpid_name) {
-#		print "lpid-name: pid=$pid name=$lpid_name cnt=$shared_lpid_cnt_oneround{$pid};\n";
 		    $shared_lpid_names_all_sz{$lpid_name} += $shared;
 		    $shared_lpid_names_sz{$lpid_name} += $shared;
 		}
@@ -3034,7 +3017,6 @@ sub loop_over_all_apps
 	$shared = $shared_cpid{$pid};
 	$fn = "e/shmc-$x";
 	if ($shared) {
-#	    print "$round: cpid shared[x=$x pid=$pid] = $shared\n";
 	    value_store_zeropad($fn, $round, $shared);
 	    $avg_shared_cpid{$pid} = ($avg_shared_cpid{$pid} * $round + $shared)/($round+1);
 	    my $dev = ($avg_shared_cpid{$pid} - $shared);
@@ -3043,7 +3025,6 @@ sub loop_over_all_apps
 	    }
 	    $sumdev_shared_cpid{$x} += $dev/$shared;
 	    $devcount_shared_cpid{$x} += 1;
-#		print "   cpid: inc devcount[$x] now = $devcount_shared_lpid{$x}\n";
 	} else {
 	    value_store_zeropad($fn, $round, 0);
 	}
