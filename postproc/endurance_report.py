@@ -379,6 +379,37 @@ def get_component_version(file):
             component_version['hw-build'] = m.group(1)
     return component_version
 
+#++ BME stat
+#   charger state:         CONNECTED
+#   charger type:          USBWALL
+#   charging state:        STARTED
+#   charging type:         LITHIUM
+#   charging time:         15
+#   battery state:         OK
+#   battery type:          LI4V35
+#   battery temperature:   33.85
+#   battery max. level:    8
+#   battery cur. level:    8
+#   battery pct. level:    100
+#   battery max. capacity: 1450
+#   battery cur. capacity: 1450
+#   battery last full cap: 1508
+#   battery max. voltage:  4350
+#   battery cur. voltage:  4333
+#   battery current:       -146
+#   battery condition:     UNKNOWN
+def get_bmestat(file):
+    bmestat = {}
+    for line in file:
+        m = re.match("\s+(\S+.*):\s*(\S+)", line)
+        if m:
+            key = m.group(1)
+            value = m.group(2)
+            key = key.replace(' ', '_')
+            key = key.replace('.', '')
+            bmestat[key] = value
+    return bmestat
+
 def get_process_info(file, headers):
     """returns all process information in a hash indexed by the process PID,
     containing hash of information provided by the /proc/PID/status file
@@ -2052,6 +2083,58 @@ def output_network_use_graphs(data):
         print '<tr><td bgcolor="%s" height=16 width=16><td>%s' % (ifcolors[i], faces[i])
     print '</table>'
 
+def hl_error(s):
+    if "ERROR" in s:
+        return "<font color='red'>%s</font>" % s
+    return s
+
+def output_battery_data(data):
+    skip = True
+    for testcase in data:
+        if 'bmestat' in testcase:
+            skip = False
+    if skip:
+        return
+    print "<hr>"
+    print "<h3>Battery status</h3>"
+    print "<table border='1' cellpadding='3'>"
+    print " <thead>"
+    print "  <tr>"
+    print "   <th>"
+    print "   <th colspan='2'>Charger"
+    print "   <th colspan='2'>Charging"
+    print "   <th colspan='4'>Battery"
+    print "  <tr>"
+    print "   <th>Test-case:"
+    print "   <th>State:"
+    print "   <th>Type:"
+    print "   <th>State:"
+    print "   <th>Type:"
+    print "   <th>State:"
+    print "   <th>Temperature:"
+    print "   <th>Capacity:"
+    print "   <th>Voltage:"
+    print " </thead>"
+    print " <tbody>"
+    idx = 0
+    for testcase in data:
+        if 'bmestat' in testcase:
+            try:
+                print "  <tr>"
+                print "   <td>%s" % test_round_link(idx)
+                print "   <td>%s" % hl_error(testcase['bmestat']['charger_state'])
+                print "   <td>%s" % hl_error(testcase['bmestat']['charger_type'])
+                print "   <td>%s" % hl_error(testcase['bmestat']['charging_state'])
+                print "   <td>%s" % hl_error(testcase['bmestat']['charging_type'])
+                print "   <td>%s" % hl_error(testcase['bmestat']['battery_state'])
+                print "   <td>%s&deg;C" % testcase['bmestat']['battery_temperature']
+                print "   <td>%smAh" % testcase['bmestat']['battery_cur_capacity']
+                print "   <td>%.3fV" % (float(testcase['bmestat']['battery_cur_voltage'])/1000)
+            except:
+                pass
+        idx += 1
+    print " </tbody>"
+    print "</table>"
 
 def output_system_memory_graphs(data):
     "outputs memory graphs bars for the system"
@@ -2212,6 +2295,7 @@ def output_html_report(data):
 <a name="network-use"></a>
 <h3>Network usage</h3>"""
     output_network_use_graphs(data)
+    output_battery_data(data)
     print """
 <hr>
 <a name="process-memory"></a>
@@ -2368,6 +2452,13 @@ def parse_syte_stats(dirs):
             if file:
                 print >>sys.stderr, "Parsing '%s'..." % filename
                 items['component_version'] = get_component_version(file)
+        except RuntimeError: pass
+
+        try:
+            file, filename = syslog.open_compressed("%s/bmestat" % dirname)
+            if file:
+                print >>sys.stderr, "Parsing '%s'..." % filename
+                items['bmestat'] = get_bmestat(file)
         except RuntimeError: pass
 
         data.append(items)
