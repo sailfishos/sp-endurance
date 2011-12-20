@@ -84,8 +84,10 @@ Requires: python, lzop
 %{_mandir}/man1/split-endurance-measurements.1.gz
 %{_mandir}/man1/extract-endurance-process-smaps.1.gz
 %{_mandir}/man1/recompress-endurance-measurements.1.gz
+%{_datadir}/%{name}-postproc/
 %{_datadir}/%{name}-postproc/logparser-syslog
 %{_datadir}/%{name}-postproc/harmattan-syslog
+%{_defaultdocdir}/%{name}-postproc/
 %{_defaultdocdir}/%{name}-postproc/README
 %{_defaultdocdir}/%{name}-postproc/endurance.pdf
 
