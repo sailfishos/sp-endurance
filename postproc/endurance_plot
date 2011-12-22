@@ -27,6 +27,7 @@ use Time::Local;
 use POSIX qw/ceil WIFSIGNALED WTERMSIG SIGINT SIGTERM SIGKILL/;
 use List::Util qw/min max sum/;
 use Getopt::Long;
+use File::Basename qw/basename/;
 
 my $gnuplot_terminal = 'pngcairo';
 
@@ -2186,6 +2187,8 @@ sub process_smaps
 
 		###### now start with new name
 		(undef, $nm) = split(' ' , $_, 2);
+		($nm, undef) = split(' ', $nm, 2);
+		$nm = basename($nm);
 
 		# some are really long names (hald-bla-bla 384 chars)
 		my $sz = length $nm;
