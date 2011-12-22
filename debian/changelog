@@ -1,3 +1,11 @@
+sp-endurance (3.0.1) unstable; urgency=low
+
+  * Fixes: NB#292824 - Misc sp-endurance portability issues
+  * Fixes: NB#289527 - Provide tool in sp-endurance-postproc for
+    re-compressing endurance data
+
+ -- Tommi Rantala <ext-tommi.1.rantala@nokia.com>  Thu, 22 Dec 2011 15:35:35 +0200
+
 sp-endurance (3.0) unstable; urgency=low
 
   * Fixes: NB#281308 - proc2csv cannot read processes FD information even as

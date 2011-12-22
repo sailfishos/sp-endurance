@@ -1,3 +1,20 @@
+sp-endurance (3.0.1), 22 Dec 2011:
+ * endurance_plot:
+   - Rename '#smaps segments' plot to '#memory maps'.
+   - Split the kernel slab graph to count and changes graphs.
+   - Split the single ramzswap graph into three separate graphs:
+     1. Reads and writes in megabytes per round.
+     2. Memory usage: OrigDataSize, ComprDataSize, MemUsedTotal, ZeroPages,
+        GoodCompress and NoCompress.
+     3. Errors, if any (in most cases this graph will not be created).
+   - Fix wchan parsing /proc/pid/io data from usage.csv.
+   - Add backlight brightness information to battery graph.
+ * endurance_report.py:
+   - Do not warn about missing data for 'sp-noncached'.
+   - Add hardware information to the endurance report by parsing the
+     `component_version' file from the endurance data.
+   - Add battery information table.
+
 sp-endurance (3.0), 9 Dec 2011:
  * NOTE: this release introduces changes to the collected endurance data.
    Post-processing tools are able to process both new and old formats.
