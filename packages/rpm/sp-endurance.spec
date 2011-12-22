@@ -58,7 +58,9 @@ BuildArch: noarch
 # HTML report generation dependencies
 Requires: python, lzop
 # graph report generation dependencies
-#Requires: perl, perl-List-MoreUtils, gnuplot, netpbm
+#Requires: perl, gnuplot, netpbm
+# misc helper script dependencies
+#Requires: perl-List-MoreUtils, xz
 
 %description postproc
  Postprocessing scripts to parse and generate a report from the endurance
