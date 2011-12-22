@@ -5,12 +5,14 @@
 /usr/bin/split-endurance-measurements
 /usr/bin/extract-endurance-process-smaps
 /usr/bin/extract-endurance-process-cgroups
+/usr/bin/recompress-endurance-measurements
 /usr/share/man/man1/endurance_plot.1
 /usr/share/man/man1/endurance_report.py.1
 /usr/share/man/man1/syslog_parse.py.1
 /usr/share/man/man1/parse-endurance-measurements.1
 /usr/share/man/man1/split-endurance-measurements.1
 /usr/share/man/man1/extract-endurance-process-smaps.1
+/usr/share/man/man1/recompress-endurance-measurements.1
 /usr/share/doc/sp-endurance-postproc/README
 /usr/share/doc/sp-endurance-postproc/endurance.pdf
 /usr/share/sp-endurance-postproc/*
