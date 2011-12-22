@@ -229,6 +229,10 @@ if [ $? -eq 0 ] ; then
 	for D in /dev/ramzswap[0-9]* ; do
 		echo "==> $D <=="
 		rzscontrol "$D" --stats
+		RET=$?
+		if [ $RET -ne 0 ] ; then
+			echo "$script: WARNING, rzscontrol exited with non-zero return value $RET when collecting statistics for device '$D'." 1>&2
+		fi
 	done > $path/ramzswap
 fi
 
