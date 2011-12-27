@@ -1,3 +1,6 @@
+sp-endurance (3.0.2), 27 Dec 2011:
+ * Harmattan 'sp-endurance-tests' package integration fix.
+
 sp-endurance (3.0.1), 22 Dec 2011:
  * endurance_plot:
    - Rename '#smaps segments' plot to '#memory maps'.
