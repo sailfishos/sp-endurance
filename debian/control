@@ -30,7 +30,7 @@ Description: Postprocessing for endurance data
 
 Package: sp-endurance-tests
 Priority: extra
-Architecture: all
+Architecture: any
 Depends: ${misc:Depends}, ci-testing, sp-endurance (=${binary:Version}), sp-endurance-postproc (=${binary:Version})
 XB-Maemo-CI-Packages: sp-endurance, sp-endurance-postproc
 XB-Maemo-CI-Stage: fast, staging, acceptance
