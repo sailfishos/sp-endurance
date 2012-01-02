@@ -3,7 +3,7 @@
 # Extract given process SMAPS data from sp-endurance smaps.cap.lzo files.
 # This file is part of sp-endurance.
 #
-# Copyright (C) 2009-2011 by Nokia Corporation
+# Copyright (C) 2009-2012 by Nokia Corporation
 #
 # Contact: Eero Tamminen <eero.tamminen@nokia.com>
 #
@@ -95,7 +95,7 @@ extract_info ()
 	fi
 	$READER | awk "
 /^==/ {	show=0; next }
-/Name: $prog/ {	show=1 }
+/Name: .*$prog/ { show=1 }
 { if(show) print }" > $name
 }
 
@@ -123,7 +123,7 @@ else
 	done
 fi
 
-fgrep -q "Name: $prog" $prog-*.cap
+grep -q "Name: .*$prog" $prog-*.cap
 if [ $? -ne 0 ]; then
 	echo "ERROR: No matches found for program '$prog'!" 1>&2
 	rm $prog-*.cap
