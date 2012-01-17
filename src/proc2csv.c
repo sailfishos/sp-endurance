@@ -33,7 +33,7 @@
  *   relative to that
  * 
  * Copyright (C) 2003 by Eero Tamminen
- * Copyright (C) 2006,2007,2009,2011 by Nokia Corporation
+ * Copyright (C) 2006,2007,2009,2011,2012 by Nokia Corporation
  * 
  * Contact: Eero Tamminen <eero.tamminen@nokia.com>
  *
@@ -65,7 +65,11 @@
  */
 #define PROC_TEST 0
 
-#define CSV_SEPARATOR ","
+/* field separator and what that is replaced with if it appears
+ * in the input.
+ */
+#define CSV_SEPARATOR ','
+#define SEPARATOR_REPLACEMENT '/'
 
 /* process information taken from /proc,
  * The code takes into account how long the fields below are.
@@ -110,15 +114,16 @@ static void error_exit(const char *fun, const char *msg, const char *file)
 	}
 }
 
-/* converts contents of given file to CSV so that all whitespace
- * and control characters are compressed and replaced with ','.
+/* converts contents of given file to CSV so that all whitespace and
+ * control characters are compressed and replaced with CSV_SEPARATOR.
+ * CSV_SEPARATOR chars in the input itself are replaced.
  * For example "foo    bar" -> "foo,bar"
  * 
  * Only count columns from 'start'th one are output.
  */
 static void show_as_csv(const char *filename, int start, int count)
 {
-	char buffer[256], *buf, *value;
+	char buffer[512], *buf, *value;
 	int field, fields_out;
 	FILE *fp;
 
@@ -141,6 +146,9 @@ static void show_as_csv(const char *filename, int start, int count)
 				break;
 			}
 			while (*buf && *buf > ' ') {
+				if (*buf == CSV_SEPARATOR) {
+					*buf = SEPARATOR_REPLACEMENT;
+				}
 				buf++;
 			}
 			if (field < start) {
@@ -150,7 +158,7 @@ static void show_as_csv(const char *filename, int start, int count)
 				*buf++ = '\0';
 			}
 			if (fields_out) {
-				fputs(CSV_SEPARATOR, stdout);
+				fputc(CSV_SEPARATOR, stdout);
 			} else {
 				fields_out = 1;
 			}
@@ -164,6 +172,7 @@ static void show_as_csv(const char *filename, int start, int count)
 
 /* splits the given buffer into 'sep' separated key and value strings
  * which are stripped of white space & control chars from both ends.
+ * CSV_SEPARATOR chars in the value part are replaced.
  * Returns zero on success and -1 on error.
  */
 static int split_key_value(char *buf, char **key, char **value, char sep)
@@ -186,6 +195,9 @@ static int split_key_value(char *buf, char **key, char **value, char sep)
 	}
 	*value = buf;
 	while (*buf) {
+		if (*buf == CSV_SEPARATOR) {
+			*buf = SEPARATOR_REPLACEMENT;
+		}
 		buf++;
 	}
 	while (buf > *value) {
@@ -216,7 +228,7 @@ static void output_fields(FILE *fp, int show, char separator)
 			continue;
 		}
 		if (fields) {
-			fputs(CSV_SEPARATOR, stdout);
+			fputc(CSV_SEPARATOR, stdout);
 		} else {
 			fields = 1;
 		}
@@ -347,7 +359,7 @@ static void show_proc_pid_wchan(int num, const status_t *statuslist)
 		if (fgets(buffer, sizeof(buffer), fp)) {
 			buffer[sizeof(buffer)-1] = 0;
 			if (strlen(buffer) > 0) {
-				fprintf(stdout, "%s%s%s\n",
+				fprintf(stdout, "%s%c%s\n",
 					s->pid, CSV_SEPARATOR, buffer);
 			}
 		}
@@ -378,7 +390,7 @@ static void show_proc_pid_io(int num, const status_t *statuslist)
 			rewind(fp);
 		}
 		header = 1;
-		fprintf(stdout, "%s%s", s->pid, CSV_SEPARATOR);
+		fprintf(stdout, "%s%c", s->pid, CSV_SEPARATOR);
 		output_fields(fp, SHOW_VALUES, ':');
 		fclose(fp);
 	}
@@ -419,7 +431,7 @@ static void show_fd_counts(int num, status_t *statuslist)
 		/* ignore current and parent dir entries */
 		fds -= 2;
 		assert(fds >= 0);
-		fprintf(stdout, "%s%s%d%s%s\n",
+		fprintf(stdout, "%s%c%d%c%s\n",
 			s->pid, CSV_SEPARATOR, fds, CSV_SEPARATOR, s->cmd);
 	}
 	if (exited) {
