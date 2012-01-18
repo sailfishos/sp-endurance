@@ -26,6 +26,7 @@ use strict;
 use Time::Local;
 use POSIX qw/ceil WIFSIGNALED WTERMSIG SIGINT SIGTERM SIGKILL/;
 use List::Util qw/min max sum/;
+use List::MoreUtils qw/uniq/;
 use Getopt::Long;
 use File::Basename qw/basename/;
 
@@ -2009,19 +2010,21 @@ sub process_cgroups
 	} elsif (m#^==> /syspart(\S*/)cgroup\.procs <==#) {
 	    $cgroup_name_orig = $1;
 	    $cgroup_name_mangled = sanitize_cgroup_name($cgroup_name_orig);
-	    my $procs_count = 0;
-	    while (<CGROUPS> =~ m#^\d+$#) {
-		$procs_count++;
+	    my @procs_list;
+	    while (<CGROUPS> =~ m#^(\d+)$#) {
+		push(@procs_list, $1);
 	    }
-	    value_store_zeropad("e/cgroup-${cgroup_name_mangled}-process-cnt", $round, $procs_count);
+	    @procs_list = uniq(@procs_list);
+	    value_store_zeropad("e/cgroup-${cgroup_name_mangled}-process-cnt", $round, scalar(@procs_list));
 	} elsif (m#^==> /syspart(\S*/)tasks <==#) {
 	    $cgroup_name_orig = $1;
 	    $cgroup_name_mangled = sanitize_cgroup_name($cgroup_name_orig);
-	    my $task_count = 0;
-	    while (<CGROUPS> =~ m#^\d+$#) {
-		$task_count++;
+	    my @task_list;
+	    while (<CGROUPS> =~ m#^(\d+)$#) {
+		push(@task_list, $1);
 	    }
-	    value_store_zeropad("e/cgroup-${cgroup_name_mangled}-task-cnt", $round, $task_count);
+	    @task_list = uniq(@task_list);
+	    value_store_zeropad("e/cgroup-${cgroup_name_mangled}-task-cnt", $round, scalar(@task_list));
 	} elsif (m#^==> /syspart(\S*/)memory\.failcnt <==#) {
 	    $cgroup_name_orig = $1;
 	    $cgroup_name_mangled = sanitize_cgroup_name($cgroup_name_orig);
