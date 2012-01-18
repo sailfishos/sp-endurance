@@ -4952,6 +4952,7 @@ sub generate_plot_cgroups
     my @grouplist = sort keys %cgroups;
     my $cnt;
     my $plot;
+    my $swap_used;
     # mem:
     $cnt = 0;
     $plot = start_plotfile_lines($graph_cgroups_mem);
@@ -4975,23 +4976,28 @@ sub generate_plot_cgroups
     }
     close_plot($cnt, $plot, $graph_cgroups_mem);
     # swap:
+    $swap_used = 0;
     $cnt = 0;
     $plot = start_plotfile_lines($graph_cgroups_swap);
     foreach my $cgroup (@grouplist) {
 	my $fn = "e/cgroup-${cgroup}-swap";
+	next unless count_nonzero_entries($fn);
+	$swap_used = 1;
 	one_plot_set(fn => $fn, lw => 3, plot => $plot, cnt => \$cnt,
 	    emit_zeroes => 1, title => $cgroups_demangle{$cgroup});
     }
     close_plot($cnt, $plot, $graph_cgroups_swap);
     # mem + swap:
-    $cnt = 0;
-    $plot = start_plotfile_lines($graph_cgroups_memsw);
-    foreach my $cgroup (@grouplist) {
-	my $fn = "e/cgroup-${cgroup}-memsw";
-	one_plot_set(fn => $fn, lw => 3, plot => $plot, cnt => \$cnt,
-	    emit_zeroes => 1, title => $cgroups_demangle{$cgroup});
+    if ($swap_used) {
+	$cnt = 0;
+	$plot = start_plotfile_lines($graph_cgroups_memsw);
+	foreach my $cgroup (@grouplist) {
+	    my $fn = "e/cgroup-${cgroup}-memsw";
+	    one_plot_set(fn => $fn, lw => 3, plot => $plot, cnt => \$cnt,
+		emit_zeroes => 1, title => $cgroups_demangle{$cgroup});
+	}
+	close_plot($cnt, $plot, $graph_cgroups_memsw);
     }
-    close_plot($cnt, $plot, $graph_cgroups_memsw);
     # cache:
     $cnt = 0;
     $plot = start_plotfile_lines($graph_cgroups_cache);
