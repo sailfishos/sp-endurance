@@ -457,12 +457,12 @@ $thumblegend{$graph_cgroups_active_file} = "CGROUPS ACTIVE FILE";
 $unit{$graph_cgroups_active_file} = "MB";
 
 my $graph_cgroups_pgpgin = "2305_cgroups-pgpgin";
-$legend{$graph_cgroups_pgpgin} = "cgroups pages paged in";
+$legend{$graph_cgroups_pgpgin} = "Number of charging events to the memory cgroup.\\n(Charging event = page accounted as mapped anon page or cache page.)";
 $thumblegend{$graph_cgroups_pgpgin} = "CGROUPS PGPGIN";
 $unit{$graph_cgroups_pgpgin} = "number of events";
 
 my $graph_cgroups_pgpgout = "2305_cgroups-pgpgout";
-$legend{$graph_cgroups_pgpgout} = "cgroups pages paged out";
+$legend{$graph_cgroups_pgpgout} = "Number of uncharging events to the memory cgroup.\\n(Uncharging event = page unaccounted from the cgroup.)";
 $thumblegend{$graph_cgroups_pgpgout} = "CGROUPS PGPGOUT";
 $unit{$graph_cgroups_pgpgout} = "number of events";
 
