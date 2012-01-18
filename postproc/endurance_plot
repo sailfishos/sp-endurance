@@ -4967,7 +4967,8 @@ sub generate_plot_cgroups
 	my $fn = "e/cgroup-${cgroup}-memlimit";
 	if (count_nonzero_entries($fn) > 0) {
 	    one_plot_set(fn => $fn, lw => 5, plot => $plot, cnt => \$cnt,
-		emit_zeroes => 1, title => $cgroups_demangle{$cgroup});
+		emit_zeroes => 1,
+		title => 'Limit for: ' . $cgroups_demangle{$cgroup});
 	} else {
 	    $cnt++;
 	}
