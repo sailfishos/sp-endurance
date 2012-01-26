@@ -10,10 +10,11 @@ Collecting the endurance measurements
     (like Maemo and about all normal Linux distributions)
   - sp-endurance package and its dependencies installed
 
-1. Clean syslog (as root), e.g. with:
-   * If you have normal syslog:
+1. If you don't want to have lot of uninteresting log data,
+   clean the syslog (as root), e.g. with:
      echo "" > /var/log/syslog.old
      echo "" > /var/log/syslog
+   (If your logs are in normal place)
 2. Reboot the device
 3. If you have X, DISPLAY is not set and needs to be something else
    than ":0", set it (its needed for xmeminfo run by the script):
@@ -25,7 +26,14 @@ Collecting the endurance measurements
 5. Repeat step 4) after each test round.
    Note: if you're going to do this many times for use-cases which
    write a lot of data to syslog, you might clean the syslog also
-   after step 4)
+   after every step 4)
+
+Note: The purpose of the first snapshot in step 4) is to have separate
+values for state before tests and how much resources are used when
+everything involved in the test round are initialized after that. 
+Rest of the steps where the same use-case is repeated, are then about
+catching resource leakage (e.g. inappropriate caching of resources).
+
 
 With the "endurance-mem-overview" script one can quickly check from
 the collected data whether there were (already) large differencies
