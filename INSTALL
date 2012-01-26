@@ -13,6 +13,10 @@ Alternatively you can disable X resource tracking support:
 
 Install (as root):
  # make install
+ 
+DESTDIR=<path> can be added to install line to change the
+install prefix and DOCDIR=<path> to change documentation
+path (differs between distros).
 
 Post-processing tools have certain runtime dependencies.
 To get them working, install the following packages:

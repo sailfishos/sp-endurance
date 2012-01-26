@@ -56,13 +56,15 @@ recompress-endurance-measurements.1: postproc/recompress-endurance-measurements 
 %.1: man/$@ mandir
 	install -m 644 man/$@ $(DESTDIR)/usr/share/man/man1/
 
+DOCDIR ?= /usr/share/doc
+
 install: $(MAN)
 	 install -d $(DESTDIR)/usr/bin/
 	 cp measure/* $(DESTDIR)/usr/bin/
 	 cp postproc/* $(DESTDIR)/usr/bin/
-	 install -d $(DESTDIR)/usr/share/doc/sp-endurance-postproc/
-	 cp README $(DESTDIR)/usr/share/doc/sp-endurance-postproc/
-	 cp doc/endurance.pdf $(DESTDIR)/usr/share/doc/sp-endurance-postproc/
+	 install -d $(DESTDIR)/$(DOCDIR)/sp-endurance-postproc/
+	 cp README $(DESTDIR)/$(DOCDIR)/sp-endurance-postproc/
+	 cp doc/endurance.pdf $(DESTDIR)/$(DOCDIR)/sp-endurance-postproc/
 	 install -d $(DESTDIR)/usr/share/sp-endurance-tests/
 	 cp -a tests/* $(DESTDIR)/usr/share/sp-endurance-tests/
 	 install -d $(DESTDIR)/usr/share/sp-endurance-postproc/

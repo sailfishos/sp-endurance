@@ -1,6 +1,6 @@
 Name: sp-endurance
-Version: 3.0
-Release: 1%{?dist}
+Version: 3.0.1
+Release: 0%{?dist}
 Summary:  Memory usage reporting tools
 Group: Development/Tools
 License: GPLv2	
@@ -30,7 +30,7 @@ make %{!?_with_x11: NO_X=1}
 
 %install
 rm -rf %{buildroot}
-make install DESTDIR=%{buildroot} %{!?_with_x11: NO_X=1}
+make install DESTDIR=%{buildroot} DOCDIR=%{_defaultdocdir} %{!?_with_x11: NO_X=1}
 
 %clean
 rm -rf %{buildroot}
@@ -104,15 +104,19 @@ Requires: ci-testing, sp-endurance, sp-endurance-postproc
 
 %files tests
 %defattr(-,root,root,-)
- %{_datadir}/%{name}-tests
+%{_datadir}/%{name}-tests/
  
 
 %changelog
+* Tue Dec 27 2011 Eero Tamminen <eero.tamminen@nokia.com> 3.0.1
+ * Update to sp-endurance v3.0.1 with large updates to reports
+
 * Tue Nov 22 2011 Eero Tamminen <eero.tamminen@nokia.com> 3.0
  * X support/dependency is optional in build, measuring and post-processing.
  * Endurance snapshot data is changed to store "xmeminfo" (X resource usage)
    and "df" (disk usage) output into separate files so that usage.csv
    contains just proc2csv output + data version/date info.
+ * Plot output is split to process and system graphs.
 
 * Thu Oct 27 2011 Eero Tamminen <eero.tamminen@nokia.com> 2.3
  * extract-endurance-process-cgroups:

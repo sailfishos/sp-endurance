@@ -1,8 +1,9 @@
 sp-endurance (-), -:
-* proc2csv fixes for newer kernels (desktop Ubuntu):
-  - change ',' in proc files field contents to '/'
-  - increase proc file CSV line buffer size from 256 to 512,
-    otherwise long lines can get split
+ * proc2csv fixes for newer kernels (desktop Ubuntu):
+   - change ',' in proc files field contents to '/'
+   - increase proc file CSV line buffer size from 256 to 512,
+     otherwise long lines can get split
+ * support separate doc install path
 
 sp-endurance (3.0.2), 27 Dec 2011:
  * Harmattan 'sp-endurance-tests' package integration fix.
