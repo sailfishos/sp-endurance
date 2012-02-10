@@ -23,6 +23,9 @@ Bootup reason: sw_rst$
 Kernel command line:.* bootreason=32wd_to
 Bootup reason: 32wd_to$
 
+[reboot/skipped] "Reboot skipped due to RD settings"
+ kernel: .* failed but reboot skipped:
+
 [kernel/oops] "Kernel OOPS"
  kernel: .* [Oo]ops: 
 
@@ -34,6 +37,10 @@ Bootup reason: 32wd_to$
 
 [kernel/oom] "Kernel memory shortage issues"
  kernel: .* [Oo]ut of [Mm]emory: [Kk]ill|lowmem: denying memory
+ kernel: .* invoked oom-killer:
+
+[kernel/task_blocked] "Task blocked for long period of time"
+ kernel: .* task (.*) blocked for more than \d+ seconds
 
 [kernel/pvr] "Kernel SGX PVR issues"
  kernel: .* pvr: \S*: IOCTL \d+ failed
@@ -110,3 +117,6 @@ Bootup reason: 32wd_to$
 
 [dbus/signal_matching_issues] "DBus signal matching warnings (using too wide match pattern)"
 dbus\[\d+\]: WARNING: match .* added by .* who owns services:
+
+[aegisfs/error] "AegisFS error messages"
+aegisfs: .* ERROR
