@@ -165,13 +165,13 @@ int main(int argc, char* argv[])
 	}
 
 	/* command line options */
-	struct option long_options[] = {
+	static const struct option long_options[] = {
 			 {"help", 0, 0, 'h'},
 			 {"write", 0, 0, 'w'},
 			 {"read", 0, 0, 'r'},
 			 {0, 0, 0, 0},
 	};
-	char short_options[] = "hwr";
+	static const char short_options[] = "hwr";
 
 	/* parse command line options */
 	int opt;
