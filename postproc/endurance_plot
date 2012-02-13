@@ -4,7 +4,7 @@
 #
 # vim: sw=4
 #
-# Copyright (C) 2010-2011 by Nokia Corporation
+# Copyright (C) 2010-2012 by Nokia Corporation
 #
 # Contact: Eero Tamminen <eero.tamminen@nokia.com>
 #
@@ -578,43 +578,43 @@ my %lapsed_time;
 my @uptimes;
 my $global_ctx_prev = 0;
 my $global_processes_prev;
-my $memfree_plot_file_name = "e/memfree";
-my $buffers_plot_file_name = "e/buffers";
-my $cached_plot_file_name = "e/cached";
-my $swapcached_plot_file_name = "e/swapcached";
-my $kernelstack_plot_file_name = "e/kernelstack";
-my $shmem_plot_file_name = "e/shmem";
-my $swapused_plot_file_name = "e/swapused";
-my $dirty_plot_file_name = "e/dirty";
-my $active_file_plot_file_name = "e/active_file";
-my $inactive_file_plot_file_name = "e/inactive_file";
-my $active_anon_plot_file_name = "e/active_anon";
-my $inactive_anon_plot_file_name = "e/inactive_anon";
-my $mlocked_plot_file_name = "e/mlocked";
-my $mpixmaps_plot_file_name = "e/mpixmaps";
-my $mapped_plot_file_name = "e/mapped";
-my $slabreclaim_plot_file_name = "e/slabreclaim";
-my $slabunreclaim_plot_file_name = "e/slabunreclaim";
-my $pagetables_plot_file_name = "e/pagetables";
-my $pswp_in_plot_file_name = "e/pswp_in";
-my $pswp_out_plot_file_name = "e/pswp_out";
-my $pgscan_kswapd_normal_plot_file_name = "e/pgscan_kswapd_normal";
-my $pgscan_direct_normal_plot_file_name = "e/pgscan_direct_normal";
-my $slabs_scanned_plot_file_name = "e/slabs_scanned";
-my $kswapd_steal_plot_file_name = "e/kswapd_steal";
-my $shared_locked_plot_file_name = "e/shared_locked";
-my $shared_unlocked_plot_file_name = "e/shared_unlocked";
-my $app_swapped_plot_file_name = "e/all_apps_swapped";
-my $app_pss_plot_file_name = "e/all_apps_pss";
-my $load_1_file_name = "e/load_1_min";
-my $load_5_file_name = "e/load_5_min";
-my $load_15_file_name = "e/load_15_min";
-my $fd_perc_file_name = "e/global-FD-percentage";
+my $memfree_plot_file_name = "memfree";
+my $buffers_plot_file_name = "buffers";
+my $cached_plot_file_name = "cached";
+my $swapcached_plot_file_name = "swapcached";
+my $kernelstack_plot_file_name = "kernelstack";
+my $shmem_plot_file_name = "shmem";
+my $swapused_plot_file_name = "swapused";
+my $dirty_plot_file_name = "dirty";
+my $active_file_plot_file_name = "active_file";
+my $inactive_file_plot_file_name = "inactive_file";
+my $active_anon_plot_file_name = "active_anon";
+my $inactive_anon_plot_file_name = "inactive_anon";
+my $mlocked_plot_file_name = "mlocked";
+my $mpixmaps_plot_file_name = "mpixmaps";
+my $mapped_plot_file_name = "mapped";
+my $slabreclaim_plot_file_name = "slabreclaim";
+my $slabunreclaim_plot_file_name = "slabunreclaim";
+my $pagetables_plot_file_name = "pagetables";
+my $pswp_in_plot_file_name = "pswp_in";
+my $pswp_out_plot_file_name = "pswp_out";
+my $pgscan_kswapd_normal_plot_file_name = "pgscan_kswapd_normal";
+my $pgscan_direct_normal_plot_file_name = "pgscan_direct_normal";
+my $slabs_scanned_plot_file_name = "slabs_scanned";
+my $kswapd_steal_plot_file_name = "kswapd_steal";
+my $shared_locked_plot_file_name = "shared_locked";
+my $shared_unlocked_plot_file_name = "shared_unlocked";
+my $app_swapped_plot_file_name = "all_apps_swapped";
+my $app_pss_plot_file_name = "all_apps_pss";
+my $load_1_file_name = "load_1_min";
+my $load_5_file_name = "load_5_min";
+my $load_15_file_name = "load_15_min";
+my $fd_perc_file_name = "global-FD-percentage";
 
-my $batt_charge_left_file_name = "e/batt-charge-left";
-#my $batt_reporting_file_name = "e/batt-reporting";
-my $batt_voltage_file_name = "e/batt-voltage";
-my $batt_temperature_file_name = "e/batt-temp";
+my $batt_charge_left_file_name = "batt-charge-left";
+#my $batt_reporting_file_name = "batt-reporting";
+my $batt_voltage_file_name = "batt-voltage";
+my $batt_temperature_file_name = "batt-temp";
 
 my $pswp_in_prev = 0;
 my $pswp_out_prev = 0;
@@ -799,6 +799,7 @@ sub one_plot_set
 {
     my %args = @_;
 
+    my $key = $args{key} or die "INTERNAL ERROR: 'key' parameter required for one_plot_set()";
     my $fn = $args{fn} or die "INTERNAL ERROR: 'fn' parameter required for one_plot_set()";
     my $lw = $args{lw};
     my $plot = $args{plot} or die "INTERNAL ERROR: 'plot' parameter required for one_plot_set()";
@@ -808,7 +809,7 @@ sub one_plot_set
     my $lc = $args{lc};
     my $axes = $args{axes};
 
-    my $num = value_emit($fn, $emit_zeroes);
+    my $num = value_emit($key, $fn, $emit_zeroes);
 
     if ($num) {
 	if ($$r_cnt > 0) {
@@ -819,12 +820,12 @@ sub one_plot_set
 	}
 	if ($lw) {
 	    # line plot
-	    print $plot "'$fn' lt ";
+	    print $plot "'e/$key/$fn' lt ";
 	    print $plot "rgb '#$lc' " if $lc;
 	    print $plot "lw $lw";
 	} else {
 	    # histogram
-	    print $plot "'$fn' using 2 ";
+	    print $plot "'e/$key/$fn' using 2 ";
 	    print $plot "lc rgb '#$lc' " if $lc;
 	}
 	print $plot " axes $axes " if $axes;
@@ -982,8 +983,9 @@ sub value_emit_nonzero_entries($$)
     return $num;
 }
 
-sub value_emit($$)
+sub value_emit($$$)
 {
+    my $key = shift;
     my $fn = shift;
     my $emit_zeroes = shift;
     my $num = 0;
@@ -994,8 +996,8 @@ sub value_emit($$)
 	return $num;
     }
     my $ofile;
-    unless (open ($ofile, "> $fn")) {
-	print STDERR "ERROR: unable to create $fn: $!\n";
+    unless (open ($ofile, "> e/$key/$fn")) {
+	print STDERR "ERROR: unable to create 'e/$key/$fn': $!\n";
 	exit(1);
     }
     if ($emit_zeroes) {
@@ -1009,50 +1011,6 @@ sub value_emit($$)
 	unlink($fn);
     }
     return $num;
-}
-
-#
-# Data for histogram-style graph needs pre-padded zero lines
-# or otherwise columns get shifted, (even if entries are numbered!)
-# Line-style graphs in turn shows better without zero entries,
-# or graphs starting not from start would show
-# zero line and then rise to first real sample.
-# In cases we re-use same data file for both,
-# we delete zero lines for line graph generation
-# (which happen come after histogram generation)
-#
-# with new store & emit technique, (starting in 0.22)
-# we always have zero-padded-at-start data files,
-# so we need to "clean" them from zeroes
-# for cases where this is meaningful: threads
-
-sub delete_zero_lines($)
-{
-    my $fn = shift;
-    my $tmpf = "zeroing-tmp";
-    my $sz = 0;
-
-    if(! -s $fn) { 
-	print "file $fn is empty zeros-delete!!\n";
-	return $sz;
-    }
-#    printf("zero $fn before:\n==================\n");
-#    system("cat $fn");
-    rename($fn, $tmpf);
-    system("grep -v \', 0\$\' zeroing-tmp > $fn");
-#    printf("after:\n==================\n");
-#    system("cat $fn");
-#    printf("==================\n");
-    $sz = -s $fn;
-#
-# this should not happen if files are generated correctly,
-# but watch out anyway since we delete lines
-# 
-    if(! $sz) { 
-	print "file $fn got truncated by zeros-delete!!\n";
-    }
-    unlink($tmpf);
-    return $sz;
 }
 
 my @names;
@@ -1117,7 +1075,7 @@ sub parse_loadavg_block
     value_store($load_5_file_name, $round, $load_5);
     value_store($load_15_file_name, $round, $load_15);
     my ($running,$all) = split('/' , $running_all, 2);
-    value_store('e/num-processes', $round, $all);
+    value_store('num-processes', $round, $all);
 }
 
 sub parse_allocated_fds_block
@@ -1161,7 +1119,7 @@ sub parse_name_state_block
 	    $nonvol_ctx /= $secs_per_round;
 	}
 	if (defined $param_prev_nonvol_ctx{$pname}) {
-	    my $fn = "e/nonvol-ctx-$pname";
+	    my $fn = "nonvol-ctx-$pname";
 	    value_store($fn, $round, $nonvol_ctx);
 	}
 	$param_prev_nonvol_ctx{$pname} = $param;
@@ -1179,9 +1137,9 @@ sub parse_name_state_block
 	}
 	my $total_ctx = $nonvol_ctx + $vol_ctx;
 	if (defined $param_prev_vol_ctx{$pname}) {
-	    my $fn = "e/vol-ctx-$pname";
+	    my $fn = "vol-ctx-$pname";
 	    value_store($fn, $round, $vol_ctx);
-	    $fn = "e/total-ctx-$pname";
+	    $fn = "total-ctx-$pname";
 	    value_store($fn, $round, $total_ctx);
 	}
 	$cumul_total_ctx{$pname} += $total_ctx;
@@ -1274,23 +1232,23 @@ sub parse_shmem_block
     }
 #    if ($a_age_cnt) {
 #	$a_age_avg = $a_age_sum / $a_age_cnt;
-#	$fn = "e/nattach-a-age-shm";
+#	$fn = "nattach-a-age-shm";
 #	value_store($fn, $round, $a_age_avg);
 #    }
 #    if ($d_age_cnt) {
 #	$d_age_avg = $d_age_sum / $d_age_cnt;
-#	$fn = "e/nattach-d-age-shm";
+#	$fn = "nattach-d-age-shm";
 #	value_store($fn, $round, $d_age_avg);
 #    }
     value_store_zeropad($shared_locked_plot_file_name, $round, $shared_locked);
     value_store_zeropad($shared_unlocked_plot_file_name, $round, $shared_unlocked);
-    value_store_zeropad("e/count-shm", $round, $shared_cnt);
+    value_store_zeropad("count-shm", $round, $shared_cnt);
 
     for my $z (0 .. $max_nattach) {
-	value_store("e/nattach-$z-shm", $round, $shared_num{$z});
+	value_store("nattach-$z-shm", $round, $shared_num{$z});
     }
     for my $z (1 .. $max_nattach) {
-	my $fn = "e/nattach-$z-shm-sz";
+	my $fn = "nattach-$z-shm-sz";
 	if (defined $shared_size{$z}) {
 	    value_store($fn, $round, $shared_size{$z});
 	} else {
@@ -1317,7 +1275,7 @@ sub parse_pid_fd_block
 	    my $pname = $Name . "-" . $Pid;
 	    $fd_count{$pname} = $FD_count;
 	    $fd_count_samples{$pname} += 1;
-	    my $fn = "e/fd-$pname";
+	    my $fn = "fd-$pname";
 	    value_store($fn, $round, $FD_count);
 	    if ($round > 0) {
 		my $fd_diff = $fd_count_prev{$pname} - $FD_count;
@@ -1383,7 +1341,7 @@ sub parse_process_status_block
 	    $major_faults = 0;
 	}
 	if (defined $majflt_prev{$pname}) {
-	    value_store("e/majflt-$pname", $round, $major_faults);
+	    value_store("majflt-$pname", $round, $major_faults);
 	}
 	$majflt_prev{$pname} = $MajFlt;
 
@@ -1402,7 +1360,7 @@ sub parse_process_status_block
 	    $minor_faults = 0;
 	}
 	if (defined $minflt_prev{$pname}) {
-	    value_store("e/minflt-$pname", $round, $minor_faults);
+	    value_store("minflt-$pname", $round, $minor_faults);
 	}
 	$minflt_prev{$pname} = $MinFlt;
 
@@ -1422,7 +1380,7 @@ sub parse_process_status_block
 	$utim *= 100;
 	$utim /= $ticks_per_sec;
 	if (defined $param_prev_utime{$pname}) {
-	    value_store("e/utime-$pname", $round, $utim);
+	    value_store("utime-$pname", $round, $utim);
 	}
 	$param_prev_utime{$pname} = $Utime;
 
@@ -1443,14 +1401,14 @@ sub parse_process_status_block
 	$stim /= $ticks_per_sec;
 	my $ttim = $stim + $utim;
 	if (defined $param_prev_stime{$pname}) {
-	    value_store("e/stime-$pname", $round, $stim);
-	    value_store("e/$pname-totaltime", $round, $ttim);
+	    value_store("stime-$pname", $round, $stim);
+	    value_store("$pname-totaltime", $round, $ttim);
 	}
 	$totaltime_cumul{$pname} += $ttim;
 	$param_prev_stime{$pname} = $Stime;
 ###########################
 	my $NumThreads = $entries[19];
-	value_store_zeropad("e/thr-$pname", $round, $NumThreads);
+	value_store_zeropad("thr-$pname", $round, $NumThreads);
 	if ($NumThreads > 1) {
 	    $has_threads{$pname} += $NumThreads;
 	    $has_threads_samples{$pname} += 1;
@@ -1463,7 +1421,7 @@ sub parse_process_status_block
     foreach (keys %process_states_seen) {
 	my $cnt = 0;
 	$cnt = $state_cnt{$_} if $state_cnt{$_};
-	value_store_zeropad("e/process-state-count-$_", $round, $cnt);
+	value_store_zeropad("process-state-count-$_", $round, $cnt);
     }
 }
 
@@ -1527,7 +1485,7 @@ sub parse_xresource_block
 		    next;
 		}
 		$resource_atom =~ tr/ /_/;
-		my $fn = "e/xres-cnt-$Identifier-${resource_atom}";
+		my $fn = "xres-cnt-$Identifier-${resource_atom}";
 		value_store($fn, $round, $val{$resource_atom});
 		$xres_atoms_seen{$resource_atom} = 1;
 	    }
@@ -1543,13 +1501,13 @@ sub parse_xresource_block
 		    $val{"CRTCs"} + $val{"Modes"} + $val{"Outputs"} + $val{"Xi clients"} + $val{"Unknown"};
 	    }
 	    $xresource_latest_cnt{$Identifier} = $total_cnt;
-	    my $fn = "e/xres-cnt-$Identifier";
+	    my $fn = "xres-cnt-$Identifier";
 	    value_store($fn, $round, $total_cnt);
 	    my $pixmap_mem = $val{"Pixmap mem"};
 	    $pixmap_mem =~ s/B//g;
 	    $pixmap_mem /= 1024;
 	    $xresource_latest_sz_pxm{$Identifier} = $pixmap_mem;
-	    $fn = "e/xres-pxm-$Identifier";
+	    $fn = "xres-pxm-$Identifier";
 	    value_store($fn, $round, $pixmap_mem);
 	    $sum_all_pixmaps += $pixmap_mem;
 	    $xres_pxm_size_total{$Identifier} += $pixmap_mem;
@@ -1715,7 +1673,7 @@ sub parse_wchan_block
     foreach (keys %wchan_seen) {
 	my $cnt = 0;
 	$cnt = $wchan_count{$_} if $wchan_count{$_};
-	value_store_zeropad("e/wchan-$_", $round, $cnt);
+	value_store_zeropad("wchan-$_", $round, $cnt);
     }
 }
 
@@ -1736,7 +1694,7 @@ sub process_wchan
     foreach (keys %wchan_seen) {
 	my $cnt = 0;
 	$cnt = $wchan_count{$_} if $wchan_count{$_};
-	value_store_zeropad("e/wchan-$_", $round, $cnt);
+	value_store_zeropad("wchan-$_", $round, $cnt);
     }
 }
 
@@ -1765,7 +1723,7 @@ sub process_df_entry
     $filesystem_to_mountpoint{$filesystem} = $mounted_on;
     $filesystem_names{$mangled} = $used_kb;
     $filesystem_demangle{$mangled} = $mounted_on;
-    my $fn = "e/fs-used-${mangled}";
+    my $fn = "fs-used-${mangled}";
     chop $capacity;
     value_store($fn, $round, $capacity);
 }
@@ -1815,7 +1773,7 @@ sub process_slabinfo
 	$slabname =~ s/\|/-/g;
 
 	my $slab_sz = ($active_objs * $obj_size)/1024;
-	$fn = "e/slabs-$slabname";
+	$fn = "slabs-$slabname";
 	value_store($fn, $round, $slab_sz);
 	$all_slabs{$slabname} += $slab_sz;
     }
@@ -1859,15 +1817,15 @@ sub process_openfds
     while (<OPENFDS>) {
 	if (m#/proc/(\d+)/fd/:#) {
 	    if ($pid) {
-		value_store("e/fd_inotify-$name_by_pid{$pid}-$pid",   $round, $fd_inotify{$pid});
-		value_store("e/fd_pipe-$name_by_pid{$pid}-$pid",      $round, $fd_pipe{$pid});
-		value_store("e/fd_socket-$name_by_pid{$pid}-$pid",    $round, $fd_socket{$pid});
-		value_store("e/fd_tmpfs-$name_by_pid{$pid}-$pid",     $round, $fd_tmpfs{$pid});
-		value_store("e/fd_eventfd-$name_by_pid{$pid}-$pid",   $round, $fd_eventfd{$pid});
-		value_store("e/fd_epoll-$name_by_pid{$pid}-$pid",     $round, $fd_epoll{$pid});
-		value_store("e/fd_signalfd-$name_by_pid{$pid}-$pid",  $round, $fd_signalfd{$pid});
-		value_store("e/fd_timerfd-$name_by_pid{$pid}-$pid",   $round, $fd_timerfd{$pid});
-		value_store("e/fd_disk-$name_by_pid{$pid}-$pid",      $round, $fd_disk{$pid});
+		value_store("fd_inotify-$name_by_pid{$pid}-$pid",   $round, $fd_inotify{$pid});
+		value_store("fd_pipe-$name_by_pid{$pid}-$pid",      $round, $fd_pipe{$pid});
+		value_store("fd_socket-$name_by_pid{$pid}-$pid",    $round, $fd_socket{$pid});
+		value_store("fd_tmpfs-$name_by_pid{$pid}-$pid",     $round, $fd_tmpfs{$pid});
+		value_store("fd_eventfd-$name_by_pid{$pid}-$pid",   $round, $fd_eventfd{$pid});
+		value_store("fd_epoll-$name_by_pid{$pid}-$pid",     $round, $fd_epoll{$pid});
+		value_store("fd_signalfd-$name_by_pid{$pid}-$pid",  $round, $fd_signalfd{$pid});
+		value_store("fd_timerfd-$name_by_pid{$pid}-$pid",   $round, $fd_timerfd{$pid});
+		value_store("fd_disk-$name_by_pid{$pid}-$pid",      $round, $fd_disk{$pid});
 	    }
 	    $pid = $1;
 	    $fd_samples{$pid} += 1;
@@ -1940,19 +1898,19 @@ sub process_cgroups
 	    $cgroup_name_orig = $1;
 	    $cgroup_name_mangled = sanitize_cgroup_name($cgroup_name_orig);
 	    my $memsw_usage = int(<CGROUPS>) / (1024*1024);
-	    value_store_zeropad("e/cgroup-${cgroup_name_mangled}-memsw", $round, $memsw_usage);
+	    value_store_zeropad("cgroup-${cgroup_name_mangled}-memsw", $round, $memsw_usage);
 	} elsif (m#^==> /syspart(\S*/)memory\.usage_in_bytes <==#) {
 	    $cgroup_name_orig = $1;
 	    $cgroup_name_mangled = sanitize_cgroup_name($cgroup_name_orig);
 	    my $mem_usage = int(<CGROUPS>) / (1024*1024);
-	    value_store_zeropad("e/cgroup-${cgroup_name_mangled}-mem", $round, $mem_usage);
+	    value_store_zeropad("cgroup-${cgroup_name_mangled}-mem", $round, $mem_usage);
 	} elsif (m#^==> /syspart(\S*/)memory\.limit_in_bytes <==#) {
 	    $cgroup_name_orig = $1;
 	    $cgroup_name_mangled = sanitize_cgroup_name($cgroup_name_orig);
 	    my $mem_limit = int(<CGROUPS>);
 	    if ($mem_limit != 9223372036854775807) {
 		$mem_limit /= (1024*1024);
-		value_store_zeropad("e/cgroup-${cgroup_name_mangled}-memlimit", $round, $mem_limit);
+		value_store_zeropad("cgroup-${cgroup_name_mangled}-memlimit", $round, $mem_limit);
 	    }
 	} elsif (m#^==> /syspart(\S*/)memory\.stat <==#) {
 	    # ==> /syspart/system/desktop/memory.stat <==
@@ -1998,13 +1956,13 @@ sub process_cgroups
 		    my $val_prev = $prev_stat{$_};
 		    my $val = $val_now - $val_prev;
 		    $val = 0 if ($val < 0);
-		    value_store("e/cgroup-${cgroup_name_mangled}-$_", $round, $val);
+		    value_store("cgroup-${cgroup_name_mangled}-$_", $round, $val);
 		}
 	    }
 	    $prev_cgroups_stats{$cgroup_name_mangled} = \%stat;
 	    foreach (qw/cache rss mapped_file swap inactive_anon
 			active_anon inactive_file active_file unevictable/) {
-		value_store_zeropad("e/cgroup-${cgroup_name_mangled}-$_", $round,
+		value_store_zeropad("cgroup-${cgroup_name_mangled}-$_", $round,
 		    $stat{$_} / (1024*1024));
 	    }
 	} elsif (m#^==> /syspart(\S*/)cgroup\.procs <==#) {
@@ -2015,7 +1973,7 @@ sub process_cgroups
 		push(@procs_list, $1);
 	    }
 	    @procs_list = uniq(@procs_list);
-	    value_store_zeropad("e/cgroup-${cgroup_name_mangled}-process-cnt", $round, scalar(@procs_list));
+	    value_store_zeropad("cgroup-${cgroup_name_mangled}-process-cnt", $round, scalar(@procs_list));
 	} elsif (m#^==> /syspart(\S*/)tasks <==#) {
 	    $cgroup_name_orig = $1;
 	    $cgroup_name_mangled = sanitize_cgroup_name($cgroup_name_orig);
@@ -2024,7 +1982,7 @@ sub process_cgroups
 		push(@task_list, $1);
 	    }
 	    @task_list = uniq(@task_list);
-	    value_store_zeropad("e/cgroup-${cgroup_name_mangled}-task-cnt", $round, scalar(@task_list));
+	    value_store_zeropad("cgroup-${cgroup_name_mangled}-task-cnt", $round, scalar(@task_list));
 	} elsif (m#^==> /syspart(\S*/)memory\.failcnt <==#) {
 	    $cgroup_name_orig = $1;
 	    $cgroup_name_mangled = sanitize_cgroup_name($cgroup_name_orig);
@@ -2033,7 +1991,7 @@ sub process_cgroups
 		my $failcnt_prev = $prev_cgroups_mem_failcnt{$cgroup_name_mangled};
 		my $val = $failcnt - $failcnt_prev;
 		$val = 0 if ($val < 0);
-		value_store("e/cgroup-${cgroup_name_mangled}-mem-failcnt", $round, $val);
+		value_store("cgroup-${cgroup_name_mangled}-mem-failcnt", $round, $val);
 	    }
 	    $prev_cgroups_mem_failcnt{$cgroup_name_mangled} = $failcnt;
 	} elsif (m#^==> /syspart(\S*/)memory\.memsw\.failcnt <==#) {
@@ -2044,7 +2002,7 @@ sub process_cgroups
 		my $failcnt_prev = $prev_cgroups_memsw_failcnt{$cgroup_name_mangled};
 		my $val = $failcnt - $failcnt_prev;
 		$val = 0 if ($val < 0);
-		value_store("e/cgroup-${cgroup_name_mangled}-memsw-failcnt", $round, $val);
+		value_store("cgroup-${cgroup_name_mangled}-memsw-failcnt", $round, $val);
 	    }
 	    $prev_cgroups_memsw_failcnt{$cgroup_name_mangled} = $failcnt;
 	}
@@ -2083,7 +2041,7 @@ sub process_ifconfig
 			} else {
 			    $value = $rx;
 			}
-			value_store("e/iface-$interface-rx-packets", $round, $value);
+			value_store("iface-$interface-rx-packets", $round, $value);
 		    }
 		    $interfaces_prev_rx_packets{$interface} = $rx;
 		} elsif (m/TX packets:([0-9]+)/) {
@@ -2095,7 +2053,7 @@ sub process_ifconfig
 			} else {
 			    $value = $tx;
 			}
-			value_store("e/iface-$interface-tx-packets", $round, $value);
+			value_store("iface-$interface-tx-packets", $round, $value);
 		    }
 		    $interfaces_prev_tx_packets{$interface} = $tx;
 		} elsif (m/RX bytes:([0-9]+).*TX bytes:([0-9]+)/) {
@@ -2108,14 +2066,14 @@ sub process_ifconfig
 			} else {
 			    $value = $rx;
 			}
-			value_store("e/iface-$interface-rx-kB", $round, $value);
+			value_store("iface-$interface-rx-kB", $round, $value);
 			my $prev_tx = $interfaces_prev_tx_kB{$interface};
 			if ($prev_tx <= $tx) {
 			    $value = $tx - $prev_tx;
 			} else {
 			    $value = $tx;
 			}
-			value_store("e/iface-$interface-tx-kB", $round, $value);
+			value_store("iface-$interface-tx-kB", $round, $value);
 		    }
 		    $interfaces_prev_rx_kB{$interface} = $rx;
 		    $interfaces_prev_tx_kB{$interface} = $tx;
@@ -2181,7 +2139,7 @@ sub process_smaps
 		} else {
 		    $max_heap{$nm} = max $heap, $max_heap{$nm};
 		}
-		$fn = "e/heap-$nm";
+		$fn = "heap-$nm";
 		$sum_heap{$nm} += $heap;
 		$num_heap_samples{$nm} += 1;
 		my $xxx = $heap / 1024;
@@ -2218,7 +2176,7 @@ sub process_smaps
 	    if( index($_, "#VmLck: ") != -1) {
 		chop;
 		my (undef, $locked) = split(' ' , $_, 2);
-		$fn = "e/locked-$nm";
+		$fn = "locked-$nm";
 		$app_sum_locked{$nm} += $locked;
 		my $xxx = $locked / 1024;
 		value_store_zeropad($fn, $round, $xxx);
@@ -2227,7 +2185,7 @@ sub process_smaps
 	    if( index($_, "#VmSize: ") != -1) {
 		chop;
 		my (undef, $vmsz) = split(' ' , $_, 2);
-		$fn = "e/vmsz-$nm";
+		$fn = "vmsz-$nm";
 		$app_sum_vmsz{$nm} += $vmsz;
 		my $xxx = $vmsz / 1024;
 		value_store_zeropad($fn, $round, $xxx);
@@ -2279,10 +2237,10 @@ sub process_smaps
     }
     close(SMAPS_CAP);
     foreach (keys %process_devpvr_count) {
-	value_store("e/devpvr-count-$_", $round, $process_devpvr_count{$_});
+	value_store("devpvr-count-$_", $round, $process_devpvr_count{$_});
     }
     foreach (keys %vma_count) {
-	value_store("e/vma-count-$_", $round, $vma_count{$_});
+	value_store("vma-count-$_", $round, $vma_count{$_});
 	$vma_count_max{$_} = max $vma_count{$_}, $vma_count_max{$_};
     }
     $sum_app_swapped /= 1024;
@@ -2316,12 +2274,12 @@ sub process_interrupts
 	$int_prev{$iname} = $int_cnt;
 	$int_total{$iname} += $ints;
 	$all_ints += $ints;
-	$fn = "e/int-$iname";
+	$fn = "int-$iname";
 	value_store($fn, $round, $ints);
 #	print "$round: ints-per-sec=$ints int_cnt=$int_cnt num=[$int_num] name=[$iname] nm=[$int_name1] nm2=[$int_name2] nm3=[$int_name3] nm4=[$int_name4]\n";
     }
     close(INTERRUPTS);
-    value_store("e/count-int", $round, $all_ints);
+    value_store("count-int", $round, $all_ints);
 }
 
 sub process_diskstats
@@ -2351,13 +2309,13 @@ sub process_diskstats
 #	    $reads = ($xdev_reads - $dev_reads_prev{$dname})/$lapsed_time{$round};
 	    $nreads = $xsector_reads - $dev_reads_prev{$dname};
 	    $reads = ((($nreads * $sector_sz)/($MB_bytes)))/$lapsed_time{$round};
-	    value_store("e/devreads-mb-$dname", $round,
+	    value_store("devreads-mb-$dname", $round,
 		($nreads * $sector_sz) / $MB_bytes);
 	}
 #	$dev_reads_prev{$dname} = $xdev_reads;
 	$dev_reads_prev{$dname} = $xsector_reads;
 	$dev_reads_total{$dname} += $reads;
-	$fn = "e/devreads-$dname";
+	$fn = "devreads-$dname";
 	value_store($fn, $round, $reads);
 
 	my $nwrites = 0;
@@ -2366,13 +2324,13 @@ sub process_diskstats
 #	    $writes = ($xdev_writes - $dev_writes_prev{$dname})/$lapsed_time{$round};
 	    $nwrites = $xsector_writes - $dev_writes_prev{$dname};
 	    $writes = ((($nwrites * $sector_sz)/($MB_bytes)))/$lapsed_time{$round};
-	    value_store("e/devwrites-mb-$dname", $round,
+	    value_store("devwrites-mb-$dname", $round,
 		($nwrites * $sector_sz) / $MB_bytes);
 	}
 #	$dev_writes_prev{$dname} = $xdev_writes;
 	$dev_writes_prev{$dname} = $xsector_writes;
 	$dev_writes_total{$dname} += $writes;
-	$fn = "e/devwrites-$dname";
+	$fn = "devwrites-$dname";
 	value_store($fn, $round, $writes);
 
 	my $time_per_read = 0;
@@ -2382,7 +2340,7 @@ sub process_diskstats
 	    }
 	}
 	$dev_time_per_read_prev{$dname} = $xmsec_reading;
-	$fn = "e/devreadtime-$dname";
+	$fn = "devreadtime-$dname";
 	value_store($fn, $round, $time_per_read);
 
 	my $time_per_write = 0;
@@ -2392,7 +2350,7 @@ sub process_diskstats
 	    }
 	}
 	$dev_time_per_write_prev{$dname} = $xmsec_writing;
-	$fn = "e/devwritetime-$dname";
+	$fn = "devwritetime-$dname";
 	value_store($fn, $round, $time_per_write);
 	$have_diskstats = 1;
     }
@@ -2454,27 +2412,27 @@ sub process_ramzswap
 	    my $value = $keyval{$_};
 	    # Convert "reads" and "writes" to megabytes. I'm assuming that the
 	    # reads and writes are always page sized operations...
-	    value_store("e/ramzswap-$_", $round,
+	    value_store("ramzswap-$_", $round,
 		(($value - $prev) * $pg_bytes) / $MB_bytes);
 	}
 	foreach (qw/FailedReads FailedWrites InvalidIO/) {
 	    next unless exists $keyval{$_};
 	    my $prev = $ramzswap_prev{$_};
 	    my $value = $keyval{$_};
-	    value_store("e/ramzswap-$_", $round, $value - $prev);
+	    value_store("ramzswap-$_", $round, $value - $prev);
 	}
     }
     foreach (qw/GoodCompress NoCompress/) {
 	next unless exists $keyval{$_};
-	value_store("e/ramzswap-$_", $round, $keyval{$_});
+	value_store("ramzswap-$_", $round, $keyval{$_});
     }
     foreach (qw/OrigDataSize ComprDataSize MemUsedTotal/) {
 	next unless exists $keyval{$_};
-	value_store("e/ramzswap-$_", $round, $keyval{$_} / 1024);
+	value_store("ramzswap-$_", $round, $keyval{$_} / 1024);
     }
     foreach (qw/ZeroPages/) {
 	next unless exists $keyval{$_};
-	value_store("e/ramzswap-$_", $round,
+	value_store("ramzswap-$_", $round,
 	    ($keyval{$_} * $pg_bytes) / $MB_bytes);
     }
     %ramzswap_prev = %keyval;
@@ -2504,7 +2462,7 @@ sub process_stat
 		$global_ctx = ($ctx - $global_ctx_prev)/$lapsed_time{$round};
 	    }
 	    if ($round > 0) {
-		value_store("e/all-ctx-switches", $round, $global_ctx);
+		value_store("all-ctx-switches", $round, $global_ctx);
 	    }
 	} elsif(m/cpu  (\d+) (\d+) (\d+) (\d+) (\d+) (\d+) (\d+)/) {
 	    %cpu_ticks = (
@@ -2519,11 +2477,11 @@ sub process_stat
 	    );
 	    foreach (qw/user nice sys idle iowait irq softirq/) {
 		if (%prev_cpu_ticks) {
-		    value_store_zeropad("e/cpu-$_", $round,
+		    value_store_zeropad("cpu-$_", $round,
 			100 * (($cpu_ticks{$_} - $prev_cpu_ticks{$_}) /
 			    ($cpu_ticks{sum} - $prev_cpu_ticks{sum})));
 		} else {
-		    value_store_zeropad("e/cpu-$_", $round, 0);
+		    value_store_zeropad("cpu-$_", $round, 0);
 		}
 	    }
 	} elsif( m/processes /) {
@@ -2534,7 +2492,7 @@ sub process_stat
 		$global_processes = (60*($processes - $global_processes_prev))/$lapsed_time{$round};
 	    }
 	    if ($round > 0) {
-		value_store("e/global-processes", $round, $global_processes);
+		value_store("global-processes", $round, $global_processes);
 	    }
 	    last;
 	}
@@ -2575,15 +2533,15 @@ sub process_pagetypeinfo
     close(PAGETYPEINFO);
     for my $ordernum (0 .. 10) {
 	my $order = 1 << $ordernum;
-	$fn = "e/pt-unmovable-$ordernum";
+	$fn = "pt-unmovable-$ordernum";
 	value_store_zeropad($fn, $round, ($unmovable[$ordernum+6]*$order*$pg_bytes)/$MB_bytes);
-	$fn = "e/pt-reclaimable-$ordernum";
+	$fn = "pt-reclaimable-$ordernum";
 	value_store_zeropad($fn, $round, ($reclaimable[$ordernum+6]*$order*$pg_bytes)/$MB_bytes);
-	$fn = "e/pt-movable-$ordernum";
+	$fn = "pt-movable-$ordernum";
 	value_store_zeropad($fn, $round, ($movable[$ordernum+6]*$order*$pg_bytes)/$MB_bytes);
-	$fn = "e/pt-reserve-$ordernum";
+	$fn = "pt-reserve-$ordernum";
 	value_store_zeropad($fn, $round, ($reserve[$ordernum+6]*$order*$pg_bytes)/$MB_bytes);
-	$fn = "e/pt-isolate-$ordernum";
+	$fn = "pt-isolate-$ordernum";
 	value_store_zeropad($fn, $round, ($isolate[$ordernum+6]*$order*$pg_bytes)/$MB_bytes);
     }
 }
@@ -2619,7 +2577,7 @@ sub process_sysfs_cpu
 			my $ticks = $time_in_state{$freq};
 			my $prev_ticks = $prev_time_in_state{$freq};
 			my $pct = 100 * (($ticks - $prev_ticks) / $total_ticks);
-			value_store_zeropad("e/sysfs_cpu${cpu_num}_${freq}mhz", $round, $pct);
+			value_store_zeropad("sysfs_cpu${cpu_num}_${freq}mhz", $round, $pct);
 		    }
 		}
 	    }
@@ -2639,7 +2597,7 @@ sub process_sysfs_fs
 	    my $value = int(<SYSFS_FS>);
 	    if ($sysfs_fs_prev{$device}) {
 		my $prev_value = int($sysfs_fs_prev{$device});
-		value_store("e/fs-ext4-lifetime-write-MB-$device", $round,
+		value_store("fs-ext4-lifetime-write-MB-$device", $round,
 		    ($value - $prev_value) / 1024);
 	    }
 	    $sysfs_fs_prev{$device} = $value;
@@ -2680,11 +2638,11 @@ sub process_sysfs_power_supply
     foreach my $dev (keys %ps) {
 	foreach my $key (keys(%{$ps{$dev}})) {
 	    my $value = $ps{$dev}{$key};
-	    value_store("e/power_supply-$dev-$key", $round, $value);
+	    value_store("power_supply-$dev-$key", $round, $value);
 	}
 	if (not defined $ps{$dev}{capacity} and
 		($ps{$dev}{charge_now} and $ps{$dev}{charge_full_design})) {
-	    value_store("e/power_supply-$dev-capacity", $round,
+	    value_store("power_supply-$dev-capacity", $round,
 		100 * ($ps{$dev}{charge_now} / $ps{$dev}{charge_full_design}));
 	}
     }
@@ -2708,10 +2666,10 @@ sub process_sysfs_backlight
     foreach my $dev (keys %backlight) {
 	foreach my $key (keys(%{$backlight{$dev}})) {
 	    my $value = $backlight{$dev}{$key};
-	    value_store("e/sysfs-backlight-$dev-$key", $round, $value);
+	    value_store("sysfs-backlight-$dev-$key", $round, $value);
 	}
 	if ($backlight{$dev}{max_brightness} > 0 and $backlight{$dev}{actual_brightness}) {
-	    value_store("e/sysfs-backlight-$dev-percentage", $round,
+	    value_store("sysfs-backlight-$dev-percentage", $round,
 		100 * ($backlight{$dev}{actual_brightness} / $backlight{$dev}{max_brightness}));
 	}
     }
@@ -2728,10 +2686,10 @@ sub emit_domain_values
     (undef, $ina) = split(':' , $ina, 2);
     (undef, $on) = split(':' , $on, 2);
 
-    value_store_zeropad("e/p-domain-$domain-off", $round, $off);
-    value_store_zeropad("e/p-domain-$domain-ret", $round, $ret);
-    value_store_zeropad("e/p-domain-$domain-ina", $round, $ina);
-    value_store_zeropad("e/p-domain-$domain-on", $round, $on);
+    value_store_zeropad("p-domain-$domain-off", $round, $off);
+    value_store_zeropad("p-domain-$domain-ret", $round, $ret);
+    value_store_zeropad("p-domain-$domain-ina", $round, $ina);
+    value_store_zeropad("p-domain-$domain-on", $round, $on);
 }
 
 sub process_powertop
@@ -2783,12 +2741,12 @@ sub process_powertop
 #		}
 		$clev =~ s/ //g;
 #		print "power-c clev=[$clev]\n";
-		value_store_zeropad("e/$clev", $round, $ratio_c);
+		value_store_zeropad($clev, $round, $ratio_c);
 		$seen_powertop_c_levels{$clev} = 1;
 		if (index($freq, "MHz") != -1) {
 		    $freq =~ s/ //g;
 #		    print "power-c freq=[$freq]\n";
-		    value_store_zeropad("e/$freq", $round, $ratio_f);
+		    value_store_zeropad($freq, $round, $ratio_f);
 		    $seen_powertop_f_levels{$freq} = 1;
 		}
 	    }
@@ -2809,7 +2767,7 @@ sub process_powertop
 		$id =~ s/\///g;
 #		print "$round:id=[$id] [pid[$pid], activ[$activ], name[$name], func[$func]\n";
 		$activ /= $secs;
-		value_store("e/$id-activity", $round, $activ);
+		value_store("$id-activity", $round, $activ);
 		$num_activity_samples{$id} += 1;
 		$p_activity{$id} += $activ;
 		if ($activ > $p_activity_max{$id}) {
@@ -2834,10 +2792,10 @@ sub process_powertop
 	     undef, $timers, $timers_s, undef) = split(' ' , $_, 13);
 	    $wakeups_s =~ s/s//g;
 	    $wakeups_s =~ s/\///g;
-	    value_store("e/p-wakeups", $round, $wakeups_s);
+	    value_store("p-wakeups", $round, $wakeups_s);
 	    $timers_s =~ s/s//g;
 	    $timers_s =~ s/\///g;
-	    value_store("e/p-timers", $round, $timers_s);
+	    value_store("p-timers", $round, $timers_s);
 	}
     }
     close(POWERTOP);
@@ -2885,7 +2843,7 @@ sub loop_over_all_apps
 	    $xxx = 0;
 	}
 
-	$fn = "e/p-$x";
+	$fn = "p-$x";
 	value_store_zeropad($fn, $round, $xxx);
 
 	###############
@@ -2900,7 +2858,7 @@ sub loop_over_all_apps
 	    $xxx = 0;
 	}
 
-	$fn = "e/sysvshm-$x";
+	$fn = "sysvshm-$x";
 	value_store_zeropad($fn, $round, $xxx);
 
 	###############
@@ -2915,7 +2873,7 @@ sub loop_over_all_apps
 	    $xxx = 0;
 	}
 
-	$fn = "e/posixshm-$x";
+	$fn = "posixshm-$x";
 	value_store_zeropad($fn, $round, $xxx);
 
 	###############
@@ -2930,7 +2888,7 @@ sub loop_over_all_apps
 	    $xxx = 0;
 	}
 
-	$fn = "e/devpvr-$x";
+	$fn = "devpvr-$x";
 	value_store_zeropad($fn, $round, $xxx);
 
 	###############
@@ -2945,7 +2903,7 @@ sub loop_over_all_apps
 	} else {
 	    $xxx = 0;
 	}
-	$fn = "e/swp-$x";
+	$fn = "swp-$x";
 	value_store_zeropad($fn, $round, $xxx);
 
 	###############
@@ -2955,7 +2913,7 @@ sub loop_over_all_apps
 	} else {
 	    $xxx = 0;
 	}
-	$fn = "e/$x-wx";
+	$fn = "$x-wx";
 	value_store_zeropad($fn, $round, $xxx);
 
 	###############
@@ -2969,7 +2927,7 @@ sub loop_over_all_apps
 	    $devcount_pss_swp{$x} += 1;
 	    $pss_swap_num_samples{$x} += 1;
 	}
-	$fn = "e/pswp-$x";
+	$fn = "pswp-$x";
 	value_store_zeropad($fn, $round, $pss_swap);
 
 	###############
@@ -2985,7 +2943,7 @@ sub loop_over_all_apps
 	my $shared;
 
 	$shared = $shared_lpid{$pid};
-	$fn = "e/shml-$x";
+	$fn = "shml-$x";
 	if ($shared) {
 	    value_store_zeropad($fn, $round, $shared);
 	    $avg_shared_lpid{$pid} = ($avg_shared_lpid{$pid} * $round + $shared)/($round+1);
@@ -3021,7 +2979,7 @@ sub loop_over_all_apps
 	$shared_lpid{$pid} = 0;
 	
 	$shared = $shared_cpid{$pid};
-	$fn = "e/shmc-$x";
+	$fn = "shmc-$x";
 	if ($shared) {
 	    value_store_zeropad($fn, $round, $shared);
 	    $avg_shared_cpid{$pid} = ($avg_shared_cpid{$pid} * $round + $shared)/($round+1);
@@ -3040,7 +2998,7 @@ sub loop_over_all_apps
     # loops over shmem lpid names and insert values
     #
     foreach my $x (keys %shared_lpid_names_sz) {
-	my $fn = "e/shmln-$x";
+	my $fn = "shmln-$x";
 	value_store_zeropad($fn, $round, $shared_lpid_names_sz{$x});
     }
 }
@@ -3259,8 +3217,10 @@ sub start_plotfile_common($)
     my $cmdfname = "e/" . $key . ".cmd";
 
     unless (open ($plot, "> $cmdfname")) {
-	print STDERR "WARNING: unable to create $cmdfname: $!\n";
+	print STDERR "WARNING: unable to create '$cmdfname': $!\n";
     }
+
+    mkdir "e/$key";
 
     $title = $title . "\\nSW=" . $sw_version . "\\nHW=" . $hw_product . ":" . $hw_build;
 
@@ -3419,8 +3379,9 @@ sub run_gnuplot
     $forkmanager->wait_all_children() if $forkmanager;
 }
 
-sub print_cf_states_plot_cmds($)
+sub print_cf_states_plot_cmds($$)
 {
+    my $key = shift;
     my $plot = shift;
     my $cnt_1 = 0;
     my $cnt_2 = 0;
@@ -3442,8 +3403,8 @@ sub print_cf_states_plot_cmds($)
 	if ($cnt_1 > 0) {
 	    print $plot ", ";
 	}
-	print $plot "'e/$p' using 2 lt $num_entries";
-	value_emit("e/$p", 1);
+	print $plot "'e/$key/$p' using 2 lt $num_entries";
+	value_emit($key, $p, 1);
 	$cnt_1 += 1;
 	$num_entries -= 1;
     }
@@ -3459,36 +3420,37 @@ sub print_cf_states_plot_cmds($)
 	if ($cnt_2 > 0) {
 	    print $plot ", ";
 	}
-	print $plot "'e/$p' using 2 lt $num_entries";
-	value_emit("e/$p", 1);
+	print $plot "'e/$key/$p' using 2 lt $num_entries";
+	value_emit($key, $p, 1);
 	$cnt_2 += 1;
 	$num_entries -= 1;
     }
     return ($cnt_1 + $cnt_2);
 }
 
-sub print_domain_plot_cmds($$$$)
+sub print_domain_plot_cmds($$$$$)
 {
+    my $key = shift;
     my $plot = shift;
     my $domain = shift;
     my $height = shift;
     my $offs = shift;
 
     my $xmax = scalar(@dirs)+18;
-    value_emit("e/p-domain-$domain-off", 1);
-    value_emit("e/p-domain-$domain-ret", 1);
-    value_emit("e/p-domain-$domain-ina", 1);
-    value_emit("e/p-domain-$domain-on", 1);
+    value_emit($key, "p-domain-$domain-off", 1);
+    value_emit($key, "p-domain-$domain-ret", 1);
+    value_emit($key, "p-domain-$domain-ina", 1);
+    value_emit($key, "p-domain-$domain-on", 1);
     print $plot "set size 1.0,$height\n";
     print $plot "set origin 0.0,$offs\n";
     print $plot "set title \"$domain states\"\n";
 #
 # here we explicitly code bar color, lt=1:red=ON lt=2:green=OFF, others by enum
 #
-    print $plot "plot [-1:$xmax] 'e/p-domain-$domain-off' using 2 lt 2, ";
-    print $plot "'e/p-domain-$domain-ret' using 2 lt 3, ";
-    print $plot "'e/p-domain-$domain-ina' using 2 lt 4, ";
-    print $plot "'e/p-domain-$domain-on' using 2 lt 1\n";
+    print $plot "plot [-1:$xmax] 'e/$key/p-domain-$domain-off' using 2 lt 2, ";
+    print $plot "'e/$key/p-domain-$domain-ret' using 2 lt 3, ";
+    print $plot "'e/$key/p-domain-$domain-ina' using 2 lt 4, ";
+    print $plot "'e/$key/p-domain-$domain-on' using 2 lt 1\n";
 }
 
 sub generate_plot_system_memory_1
@@ -3496,57 +3458,68 @@ sub generate_plot_system_memory_1
     my $cnt = 0;
     my $plot = start_plotfile_lines($graph_system_memory_1);
     if (count_nonzero_entries($swapused_plot_file_name)) {
-	one_plot_set(fn => $swapused_plot_file_name, plot => $plot,
+	one_plot_set(key => $graph_system_memory_1,
+	    fn => $swapused_plot_file_name, plot => $plot,
 	    lw => 5, emit_zeroes => 1, cnt => \$cnt, lc => 'FF0000',
 	    title => 'Swap used');
     }
     if (count_nonzero_entries($app_swapped_plot_file_name)) {
-	one_plot_set(fn => $app_swapped_plot_file_name, plot => $plot,
+	one_plot_set(key => $graph_system_memory_1,
+	    fn => $app_swapped_plot_file_name, plot => $plot,
 	    lw => 2, emit_zeroes => 1, cnt => \$cnt, lc => 'FF0000',
 	    title => 'Sum of swapped in applications');
     }
     if (count_nonzero_entries($swapcached_plot_file_name)) {
-	one_plot_set(fn => $swapcached_plot_file_name, plot => $plot,
+	one_plot_set(key => $graph_system_memory_1,
+	    fn => $swapcached_plot_file_name, plot => $plot,
 	    lw => 3, emit_zeroes => 1, cnt => \$cnt,
 	    title => 'Swapcached');
     }
     if (count_nonzero_entries($memfree_plot_file_name)) {
-	one_plot_set(fn => $memfree_plot_file_name, plot => $plot,
+	one_plot_set(key => $graph_system_memory_1,
+	    fn => $memfree_plot_file_name, plot => $plot,
 	    lw => 3, emit_zeroes => 1, cnt => \$cnt,
 	    title => 'MemFree');
     }
     if (count_nonzero_entries($cached_plot_file_name)) {
-	one_plot_set(fn => $cached_plot_file_name, plot => $plot,
+	one_plot_set(key => $graph_system_memory_1,
+	    fn => $cached_plot_file_name, plot => $plot,
 	    lw => 3, emit_zeroes => 1, cnt => \$cnt,
 	    title => 'Cached');
     }
     if (count_nonzero_entries($active_file_plot_file_name)) {
-	one_plot_set(fn => $active_file_plot_file_name, plot => $plot,
+	one_plot_set(key => $graph_system_memory_1,
+	    fn => $active_file_plot_file_name, plot => $plot,
 	    lw => 3, emit_zeroes => 1, cnt => \$cnt,
 	    title => 'Active (file)');
     }
     if (count_nonzero_entries($inactive_file_plot_file_name)) {
-	one_plot_set(fn => $inactive_file_plot_file_name, plot => $plot,
+	one_plot_set(key => $graph_system_memory_1,
+	    fn => $inactive_file_plot_file_name, plot => $plot,
 	    lw => 3, emit_zeroes => 1, cnt => \$cnt,
 	    title => 'Inactive (file)');
     }
     if (count_nonzero_entries($active_anon_plot_file_name)) {
-	one_plot_set(fn => $active_anon_plot_file_name, plot => $plot,
+	one_plot_set(key => $graph_system_memory_1,
+	    fn => $active_anon_plot_file_name, plot => $plot,
 	    lw => 3, emit_zeroes => 1, cnt => \$cnt,
 	    title => 'Active (anon)');
     }
     if (count_nonzero_entries($inactive_anon_plot_file_name)) {
-	one_plot_set(fn => $inactive_anon_plot_file_name, plot => $plot,
+	one_plot_set(key => $graph_system_memory_1,
+	    fn => $inactive_anon_plot_file_name, plot => $plot,
 	    lw => 3, emit_zeroes => 1, cnt => \$cnt,
 	    title => 'Inactive (anon)');
     }
     if (count_nonzero_entries($shmem_plot_file_name)) {
-	one_plot_set(fn => $shmem_plot_file_name, plot => $plot,
+	one_plot_set(key => $graph_system_memory_1,
+	    fn => $shmem_plot_file_name, plot => $plot,
 	    lw => 3, emit_zeroes => 1, cnt => \$cnt,
 	    title => 'Shmem');
     }
     if (count_nonzero_entries($app_pss_plot_file_name)) {
-	one_plot_set(fn => $app_pss_plot_file_name, plot => $plot,
+	one_plot_set(key => $graph_system_memory_1,
+	    fn => $app_pss_plot_file_name, plot => $plot,
 	    lw => 3, emit_zeroes => 1, cnt => \$cnt,
 	    title => 'Sum of PSS');
     }
@@ -3558,42 +3531,50 @@ sub generate_plot_system_memory_2
     my $cnt = 0;
     my $plot = start_plotfile_lines($graph_system_memory_2);
     if (value_exists($dirty_plot_file_name)) {
-	one_plot_set(fn => $dirty_plot_file_name, plot => $plot,
+	one_plot_set(key => $graph_system_memory_2,
+	    fn => $dirty_plot_file_name, plot => $plot,
 	    lw => 3, emit_zeroes => 1, cnt => \$cnt,
 	    title => 'Dirty');
     }
     if (value_exists($buffers_plot_file_name)) {
-	one_plot_set(fn => $buffers_plot_file_name, plot => $plot,
+	one_plot_set(key => $graph_system_memory_2,
+	    fn => $buffers_plot_file_name, plot => $plot,
 	    lw => 3, emit_zeroes => 1, cnt => \$cnt,
 	    title => 'Buffers');
     }
     if (value_exists($mlocked_plot_file_name)) {
-	one_plot_set(fn => $mlocked_plot_file_name, plot => $plot,
+	one_plot_set(key => $graph_system_memory_2,
+	    fn => $mlocked_plot_file_name, plot => $plot,
 	    lw => 3, emit_zeroes => 1, cnt => \$cnt,
 	    title => 'Mlocked');
     }
     if (count_nonzero_entries($mpixmaps_plot_file_name)) {
-	one_plot_set(fn => $mpixmaps_plot_file_name, plot => $plot,
+	one_plot_set(key => $graph_system_memory_2,
+	    fn => $mpixmaps_plot_file_name, plot => $plot,
 	    lw => 3, emit_zeroes => 1, cnt => \$cnt,
 	    title => 'Pixmaps');
     }
     if (value_exists($pagetables_plot_file_name)) {
-	one_plot_set(fn => $pagetables_plot_file_name, plot => $plot,
+	one_plot_set(key => $graph_system_memory_2,
+	    fn => $pagetables_plot_file_name, plot => $plot,
 	    lw => 3, emit_zeroes => 1, cnt => \$cnt,
 	    title => 'PageTables');
     }
     if (value_exists($kernelstack_plot_file_name)) {
-	one_plot_set(fn => $kernelstack_plot_file_name, plot => $plot,
+	one_plot_set(key => $graph_system_memory_2,
+	    fn => $kernelstack_plot_file_name, plot => $plot,
 	    lw => 3, emit_zeroes => 1, cnt => \$cnt,
 	    title => 'KernelStack');
     }
     if (value_exists($slabreclaim_plot_file_name)) {
-	one_plot_set(fn => $slabreclaim_plot_file_name, plot => $plot,
+	one_plot_set(key => $graph_system_memory_2,
+	    fn => $slabreclaim_plot_file_name, plot => $plot,
 	    lw => 3, emit_zeroes => 1, cnt => \$cnt,
 	    title => 'SlabReclaimable');
     }
     if (value_exists($slabunreclaim_plot_file_name)) {
-	one_plot_set(fn => $slabunreclaim_plot_file_name, plot => $plot,
+	one_plot_set(key => $graph_system_memory_2,
+	    fn => $slabunreclaim_plot_file_name, plot => $plot,
 	    lw => 3, emit_zeroes => 1, cnt => \$cnt,
 	    title => 'SlabUnreclaimable');
     }
@@ -3605,9 +3586,10 @@ sub generate_plot_slab_count
     my $plot = start_plotfile_histogram($graph_mem_slabs_count);
     my $cnt = 0;
     foreach my $p (reverse sort { $all_slabs{$a} <=> $all_slabs{$b} } keys %all_slabs) {
-	my $fn = "e/slabs-$p";
+	my $fn = "slabs-$p";
 	next unless count_nonzero_entries($fn);
-	one_plot_set(fn => $fn, plot => $plot, cnt => \$cnt,
+	one_plot_set(key => $graph_mem_slabs_count,
+	    fn => $fn, plot => $plot, cnt => \$cnt,
 	    emit_zeroes => 1, title => $p);
     }
     close_plot($cnt, $plot, $graph_mem_slabs_count);
@@ -3618,9 +3600,10 @@ sub generate_plot_slab_changes
     my $plot = start_plotfile_linespoints($graph_mem_slabs_changes);
     my $cnt = 0;
     foreach my $p (reverse sort { $all_slabs{$a} <=> $all_slabs{$b} } keys %all_slabs) {
-	my $fn = "e/slabs-$p";
+	my $fn = "slabs-$p";
 	next unless changes_found($fn);
-	one_plot_set(fn => $fn, lw => 3, plot => $plot, cnt => \$cnt,
+	one_plot_set(key => $graph_mem_slabs_changes,
+	    fn => $fn, lw => 3, plot => $plot, cnt => \$cnt,
 	    emit_zeroes => 1, title => $p);
     }
     close_plot($cnt, $plot, $graph_mem_slabs_changes);
@@ -3643,7 +3626,8 @@ sub generate_plot_ctx
 	if ($cumul_total_ctx{$p} == 0) {
 	    last;
 	}
-	one_plot_set(fn => "e/total-ctx-$p", lw => 3, plot => $plot,
+	one_plot_set(key => $graph_events_ctx_total,
+	    fn => "total-ctx-$p", lw => 3, plot => $plot,
 	    cnt => \$cnt, emit_zeroes => 1, title => $p);
     }
     close_plot($cnt, $plot, $graph_events_ctx_total);
@@ -3659,7 +3643,8 @@ sub generate_plot_ctx
 	if ($cumul_nonvol_ctx{$p} == 0) {
 	    last;
 	}
-	one_plot_set(fn => "e/nonvol-ctx-$p", lw => 3, plot => $plot,
+	one_plot_set(key => $graph_events_ctx_nonvolunt,
+	    fn => "nonvol-ctx-$p", lw => 3, plot => $plot,
 	    cnt => \$cnt, emit_zeroes => 1, title => $p);
     }
     close_plot($cnt, $plot, $graph_events_ctx_nonvolunt);
@@ -3675,7 +3660,8 @@ sub generate_plot_ctx
 	if ($cumul_vol_ctx{$p} == 0) {
 	    last;
 	}
-	one_plot_set(fn => "e/vol-ctx-$p", lw => 3, plot => $plot,
+	one_plot_set(key => $graph_events_ctx_volunt,
+	    fn => "vol-ctx-$p", lw => 3, plot => $plot,
 	    cnt => \$cnt, emit_zeroes => 1, title => $p);
     }
     close_plot($cnt, $plot, $graph_events_ctx_volunt);
@@ -3683,10 +3669,12 @@ sub generate_plot_ctx
 ############# global ctx switched #####################
     $plot = start_plotfile_lines_2axes($graph_ctx_global);
     $cnt = 0;
-    one_plot_set(fn => 'e/all-ctx-switches', plot => $plot, lw => 3,
+    one_plot_set(key => $graph_ctx_global,
+	fn => 'all-ctx-switches', plot => $plot, lw => 3,
 	axes => 'x1y1', emit_zeroes => 1, cnt => \$cnt,
 	title => 'Context switches');
-    one_plot_set(fn => 'e/num-processes', plot => $plot, lw => 3,
+    one_plot_set(key => $graph_ctx_global,
+	fn => 'num-processes', plot => $plot, lw => 3,
 	axes => 'x2y2', emit_zeroes => 1, cnt => \$cnt,
 	title => 'Process and thread count');
     close_plot($cnt, $plot, $graph_ctx_global);
@@ -3696,11 +3684,14 @@ sub generate_plot_loadavg
 {
     my $cnt = 0;
     my $plot = start_plotfile_lines($graph_loadavg);
-    one_plot_set(fn => $load_1_file_name, plot => $plot, lw => 3,
+    one_plot_set(key => $graph_loadavg,
+	fn => $load_1_file_name, plot => $plot, lw => 3,
 	cnt => \$cnt, emit_zeroes => 1, title => '1 minute average');
-    one_plot_set(fn => $load_5_file_name, plot => $plot, lw => 3,
+    one_plot_set(key => $graph_loadavg,
+	fn => $load_5_file_name, plot => $plot, lw => 3,
 	cnt => \$cnt, emit_zeroes => 1, title => '5 minute average');
-    one_plot_set(fn => $load_15_file_name, plot => $plot, lw => 3,
+    one_plot_set(key => $graph_loadavg,
+	fn => $load_15_file_name, plot => $plot, lw => 3,
 	cnt => \$cnt, emit_zeroes => 1, title => '15 minute average');
     close_plot($cnt, $plot, $graph_loadavg);
 }
@@ -3709,7 +3700,8 @@ sub generate_plot_processes_global
 {
     my $cnt = 0;
     my $plot = start_plotfile_lines($graph_processes_global);
-    one_plot_set(fn => 'e/global-processes', plot => $plot, lw => 3,
+    one_plot_set(key => $graph_processes_global,
+	fn => 'global-processes', plot => $plot, lw => 3,
 	cnt => \$cnt, emit_zeroes => 1, title => 'Processes and threads');
     close_plot($cnt, $plot, $graph_processes_global);
 }
@@ -3726,7 +3718,8 @@ sub generate_plot_pagefaults
 	if ($majflt_cumul{$p} == 0) {
 	    last;
 	} 
-	one_plot_set(fn => "e/majflt-$p", lw => 3, plot => $plot, cnt => \$cnt,
+	one_plot_set(key => $graph_events_major_pagefaults,
+	    fn => "majflt-$p", lw => 3, plot => $plot, cnt => \$cnt,
 	    emit_zeroes => 1, title => $p);
     }
     close_plot($cnt, $plot, $graph_events_major_pagefaults);
@@ -3745,7 +3738,8 @@ sub generate_plot_cpu
 	    "iowait" => "EE00FF",
 	    "idle" => "ADE739");
     foreach (qw/sys irq softirq user nice iowait idle/) {
-	one_plot_set(fn => "e/cpu-$_", plot => $plot, cnt => \$cnt,
+	one_plot_set(key => $graph_cpu,
+	    fn => "cpu-$_", plot => $plot, cnt => \$cnt,
 	    emit_zeroes => 1, title => $_, lc => $cpu_colors{$_});
     }
     close_plot($cnt, $plot, $graph_cpu);
@@ -3762,7 +3756,8 @@ sub generate_plot_cpu_freq
 	my $plot = start_plotfile_histogram($graph_cpu_time_in_state);
 	my @freqs = keys(%{$time_in_state_freqs_seen{$cpu_num}});
 	foreach my $freq (sort {$a <=> $b} @freqs) {
-	    one_plot_set(fn => "e/sysfs_cpu${cpu_num}_${freq}mhz",
+	    one_plot_set(key => $graph_cpu_time_in_state,
+		fn => "sysfs_cpu${cpu_num}_${freq}mhz",
 		plot => $plot, cnt => \$cnt, emit_zeroes => 1,
 		title => "${freq}MHz");
 	}
@@ -3791,7 +3786,8 @@ sub generate_plot_fs_written
 	my $title = $device;
 	my $fs = device_to_filesystem($device);
 	$title = $device . ': ' . $fs if $fs;
-	one_plot_set(fn => "e/fs-ext4-lifetime-write-MB-$device", lw => 3,
+	one_plot_set(key => $graph_ext4_written,
+	    fn => "fs-ext4-lifetime-write-MB-$device", lw => 3,
 	    plot => $plot, cnt => \$cnt, emit_zeroes => 1, title => $title);
     }
     close_plot($cnt, $plot, $graph_ext4_written);
@@ -3813,8 +3809,8 @@ sub generate_plot_cputime
 	if ($utime_cumul{$p} == 0) {
 	    last;
 	}
-	one_plot_set(fn => "e/utime-$p", lw => 3, plot => $plot, cnt => \$cnt,
-	    emit_zeroes => 1, title => $p);
+	one_plot_set(key => $graph_cpu_usertime, fn => "utime-$p", lw => 3,
+	    plot => $plot, cnt => \$cnt, emit_zeroes => 1, title => $p);
     }
     close_plot($cnt, $plot, $graph_cpu_usertime);
 
@@ -3829,8 +3825,8 @@ sub generate_plot_cputime
 	if ($stime_cumul{$p} == 0) {
 	    last;
 	}
-	one_plot_set(fn => "e/stime-$p", lw => 3, plot => $plot, cnt => \$cnt,
-	    emit_zeroes => 1, title => $p);
+	one_plot_set(key => $graph_cpu_systime, fn => "stime-$p", lw => 3,
+	    plot => $plot, cnt => \$cnt, emit_zeroes => 1, title => $p);
     }
     close_plot($cnt, $plot, $graph_cpu_systime);
 
@@ -3845,8 +3841,9 @@ sub generate_plot_cputime
 	if ($totaltime_cumul{$p} == 0) {
 	    last;
 	}
-	one_plot_set(fn => "e/$p-totaltime", lw => 3, plot => $plot,
-	    cnt => \$cnt, emit_zeroes => 1, title => $p);
+	one_plot_set(key => $graph_cpu_totaltime, fn => "$p-totaltime",
+	    lw => 3, plot => $plot, cnt => \$cnt, emit_zeroes => 1,
+	    title => $p);
     }
     close_plot($cnt, $plot, $graph_cpu_totaltime);
 }
@@ -3862,9 +3859,11 @@ sub generate_plot_shmem
 		count_nonzero_entries($shared_unlocked_plot_file_name)) {
 	$cnt = 0;
 	$plot = start_plotfile_histogram($graph_mem_shared);
-	one_plot_set(fn => $shared_locked_plot_file_name, plot => $plot,
+	one_plot_set(key => $graph_mem_shared,
+	    fn => $shared_locked_plot_file_name, plot => $plot,
 	    cnt => \$cnt, emit_zeroes => 1, title => 'Locked to memory');
-	one_plot_set(fn => $shared_unlocked_plot_file_name, plot => $plot,
+	one_plot_set(key => $graph_mem_shared,
+	    fn => $shared_unlocked_plot_file_name, plot => $plot,
 	    cnt => \$cnt, emit_zeroes => 1, title => 'Not locked to memory');
 	close_plot($cnt, $plot, $graph_mem_shared);
     }
@@ -3885,8 +3884,11 @@ sub generate_plot_shmem
 
 #    print "plot_lpid: name=$p, sumdev=$sumdev_shared_lpid{$p} devcount=$devcount_shared_lpid{$p} cnt=$shared_lpid_cnt{$p}\n";
 	if ($devcount_shared_lpid{$p}) {
-	    one_plot_set(fn => "e/shml-$p", plot => $plot, cnt => \$cnt, emit_zeroes => 1, title => $p);
-#	    one_plot_set(fn => "e/shml-$p", lw => 1, plot => $plot, cnt => \$cnt, emit_zeroes => 1, title => $p);
+	    one_plot_set(key => $graph_mem_shared_lpid, fn => "shml-$p",
+		plot => $plot, cnt => \$cnt, emit_zeroes => 1, title => $p);
+#	    one_plot_set(key => $graph_mem_shared_lpid, fn => "shml-$p",
+#		lw => 1, plot => $plot, cnt => \$cnt, emit_zeroes => 1,
+#		title => $p);
 	}
     }
     close_plot($cnt, $plot, $graph_mem_shared_lpid);
@@ -3897,9 +3899,11 @@ sub generate_plot_shmem
 
     $cnt = 0;
     foreach my $p (reverse sort {$shared_lpid_names_all_sz{$a} <=> $shared_lpid_names_all_sz{$b} } keys %shared_lpid_names_all_sz) {
-	$fn = "e/shmln-$p";
-	one_plot_set(fn => $fn, lw => 3, plot => $plot, cnt => \$cnt, emit_zeroes => 1, title => $p);
-#	one_plot_set(fn => $fn, lw => 0, plot => $plot, cnt => \$cnt, emit_zeroes => 1, title => $p);
+	$fn = "shmln-$p";
+	one_plot_set(key => $graph_mem_shared_lpid_name, fn => $fn, lw => 3,
+	    plot => $plot, cnt => \$cnt, emit_zeroes => 1, title => $p);
+	#one_plot_set(key => $graph_mem_shared_lpid_name, fn => $fn, lw => 0,
+	#    plot => $plot, cnt => \$cnt, emit_zeroes => 1, title => $p);
     }
     close_plot($cnt, $plot, $graph_mem_shared_lpid_name);
 
@@ -3917,8 +3921,8 @@ sub generate_plot_shmem
 
 	if ($devcount_shared_cpid{$p}) {
 #	print "plot_cpid: name-pid=$p, sumdev=$sumdev_shared_cpid{$p} devcount=$devcount_shared_cpid{$p} cnt=$shared_cpid_cnt{$p}\n";
-	    one_plot_set(fn => "e/shmc-$p", plot => $plot,
-		cnt => \$cnt, emit_zeroes => 1, title => $p);
+	    one_plot_set(key => $graph_mem_shared_cpid, fn => "shmc-$p",
+		plot => $plot, cnt => \$cnt, emit_zeroes => 1, title => $p);
 	}
     }
     close_plot($cnt, $plot, $graph_mem_shared_cpid);
@@ -3928,13 +3932,13 @@ sub generate_plot_shmem
 
 #    $cnt = 0;
 #    for ($z = 0; $z <= $max_nattach ; $z++) {
-#	$fn = "e/nattach-$z-shm";
-#	one_plot_set(fn => $fn, lw => 2, plot => $plot, cnt => \$cnt);
+#	$fn = "nattach-$z-shm";
+#	one_plot_set(key => $graph_mem_shared_number, fn => $fn, lw => 2, plot => $plot, cnt => \$cnt);
 #    }
-##    $fn = "e/nattach-a-age-shm";
-##    one_plot_set(fn => $fn, lw => 3, plot => $plot, cnt => \$cnt);
-##    $fn = "e/nattach-d-age-shm";
-##    one_plot_set(fn => $fn, lw => 3, plot => $plot, cnt => \$cnt);
+##    $fn = "nattach-a-age-shm";
+##    one_plot_set(key => $graph_mem_shared_number, fn => $fn, lw => 3, plot => $plot, cnt => \$cnt);
+##    $fn = "nattach-d-age-shm";
+##    one_plot_set(key => $graph_mem_shared_number, fn => $fn, lw => 3, plot => $plot, cnt => \$cnt);
 #    close_plot($cnt, $plot, $graph_mem_shared_number);
 ############### Lines of shared mem segments count, by num of attached proc #################
     $plot = start_plotfile_lines_2axes($graph_mem_shared_number);
@@ -3944,10 +3948,12 @@ sub generate_plot_shmem
 	if (!$shared_used{$z}) {
 	    next;
 	}
-	$fn = "e/nattach-$z-shm";
-	one_plot_set(fn => $fn, plot => $plot, lw => 2, axes => 'x1y1', cnt => \$cnt);
+	$fn = "nattach-$z-shm";
+	one_plot_set(key => $graph_mem_shared_number, fn => $fn, plot => $plot,
+	    lw => 2, axes => 'x1y1', cnt => \$cnt);
     }
-    one_plot_set(fn => 'e/count-shm', plot => $plot, lw => 4, axes => 'x2y2', cnt => \$cnt);
+    one_plot_set(key => $graph_mem_shared_number, fn => 'count-shm',
+	plot => $plot, lw => 4, axes => 'x2y2', cnt => \$cnt);
     close_plot($cnt, $plot, $graph_mem_shared_number);
 
 ############### Histogram of shared mem size, by num of attached proc #################
@@ -3955,8 +3961,9 @@ sub generate_plot_shmem
 
     $cnt = 0;
     for (my $z = $max_nattach; $z > 0; $z--) {
-	$fn = "e/nattach-$z-shm-sz";
-	one_plot_set(fn => $fn, plot => $plot, cnt => \$cnt, emit_zeroes => 1);
+	$fn = "nattach-$z-shm-sz";
+	one_plot_set(key => $graph_mem_shared_size, fn => $fn, plot => $plot,
+	    cnt => \$cnt, emit_zeroes => 1);
     }
     close_plot($cnt, $plot, $graph_mem_shared_size);
 }
@@ -3972,8 +3979,8 @@ sub generate_plot_mlocked
 	if (!$app_sum_locked{$p}) {
 	    last;
 	}
-	one_plot_set(fn => "e/locked-$p", plot => $plot, cnt => \$cnt,
-	    emit_zeroes => 1, title => $p);
+	one_plot_set(key => $graph_appmem_locked, fn => "locked-$p",
+	    plot => $plot, cnt => \$cnt, emit_zeroes => 1, title => $p);
 	$cnt += 1;
     }
     close_plot($cnt, $plot, $graph_appmem_locked);
@@ -3985,8 +3992,8 @@ sub generate_plot_vmsize
     my $cnt = 0;
     foreach my $p (reverse sort {$app_sum_vmsz{$a} <=> $app_sum_vmsz{$b} } keys %app_sum_vmsz) {
 	if ($changed_vmsize{$p}) {
-	    one_plot_set(fn => "e/vmsz-$p", lw => 3, plot => $plot,
-		cnt => \$cnt, title => $p);
+	    one_plot_set(key => $graph_vmsize, fn => "vmsz-$p", lw => 3,
+		plot => $plot, cnt => \$cnt, title => $p);
 	}
     }
     close_plot($cnt, $plot, $graph_vmsize);
@@ -4007,7 +4014,7 @@ sub generate_plot_memory_map_count
 	my $cnt_this_round = 0;
 	my @plotted_this_round;
 	foreach my $p (reverse sort { $vma_count_max{$a} <=> $vma_count_max{$b} } keys %vma_count_max_to_plot) {
-	    my $fn = "e/vma-count-$p";
+	    my $fn = "vma-count-$p";
 	    next if not changes_found($fn);
 	    if (not $prev_max) {
 		$prev_max = $vma_count_max{$p};
@@ -4015,8 +4022,8 @@ sub generate_plot_memory_map_count
 	    if ($plot_idx < MAX_MMAPS_PLOTS and $prev_max >= (MAX_MMAPS_SPLIT_FACTOR * $vma_count_max{$p})) {
 		last;
 	    }
-	    one_plot_set(fn => $fn, lw => 3, plot => $plot,
-		cnt => \$cnt_this_round, title => $p);
+	    one_plot_set(key => $graph_num_mmaps, fn => $fn, lw => 3,
+		plot => $plot, cnt => \$cnt_this_round, title => $p);
 	    push(@plotted_this_round, $p);
 	    if ($plot_idx < MAX_MMAPS_PLOTS and $cnt_this_round > MAX_MMAPS_PER_PLOT) {
 		last;
@@ -4036,7 +4043,7 @@ sub generate_plot_heap_histogram
     my $cnt = 0;
     my %show_this = ();
     foreach my $p (reverse sort {$sum_heap{$a} <=> $sum_heap{$b} } keys %sum_heap) {
-	if (count_nonzero_entries("e/heap-$p") <= 0) { next; }
+	if (count_nonzero_entries("heap-$p") <= 0) { next; }
 	if ($cnt > $max_per_graph_onecolumn - 1) {
 	    last;
 	}
@@ -4052,7 +4059,7 @@ sub generate_plot_heap_histogram
     my @heap_sum_others;
     foreach my $p (keys %sum_heap) {
 	next if $show_this{$p};
-	my $ra = $files{"e/heap-$p"};
+	my $ra = $files{"heap-$p"};
 	next if not $ra;
 	foreach (@$ra) {
 	    my ($rnd, $value) = split(':' , $_, 2);
@@ -4061,18 +4068,19 @@ sub generate_plot_heap_histogram
     }
     for (my $ii = 0; $ii < @dirs; $ii++) {
 	if ($heap_sum_others[$ii]) {
-	    value_store_zeropad("e/heap-sum-others", $ii, $heap_sum_others[$ii]);
+	    value_store_zeropad("heap-sum-others", $ii, $heap_sum_others[$ii]);
 	}
     }
     $cnt = 0;
     foreach my $p (sort {$sumdev_heap{$a} <=> $sumdev_heap{$b} } keys %sum_heap) {
 	next unless $show_this{$p};
-	one_plot_set(fn => "e/heap-$p", plot => $plot, cnt => \$cnt,
-	    emit_zeroes => 1, title => $p);
+	one_plot_set(key => $graph_appmem_heap, fn => "heap-$p", plot => $plot,
+	    cnt => \$cnt, emit_zeroes => 1, title => $p);
     }
-    if (count_nonzero_entries('e/heap-sum-others')) {
-	one_plot_set(fn => 'e/heap-sum-others', plot => $plot,
-	    cnt => \$cnt, emit_zeroes => 1, title => '(sum of rest heaps)');
+    if (count_nonzero_entries('heap-sum-others')) {
+	one_plot_set(key => $graph_appmem_heap, fn => 'heap-sum-others',
+	    plot => $plot, cnt => \$cnt, emit_zeroes => 1,
+	    title => '(sum of rest heaps)');
     }
     close_plot($cnt, $plot, $graph_appmem_heap);
 }
@@ -4088,7 +4096,7 @@ sub generate_plot_heap
 	if (!$sumdev_heap{$p}) {
 	    next;
 	}
-	if (!changes_found_ignore_zeroes("e/heap-$p")) {
+	if (!changes_found_ignore_zeroes("heap-$p")) {
 	    next;
 	}
 	# if one sample and under 1 MB, do not show
@@ -4115,10 +4123,9 @@ sub generate_plot_heap
 	    if ($plot_idx < MAX_HEAP_PLOTS and $prev_max >= (MAX_HEAP_SPLIT_CONSTANT * $max_heap{$p})) {
 		last;
 	    }
-	    my $fn = "e/heap-$p";
-	    one_plot_set(fn => $fn, lw => 3, plot => $plot,
-		cnt => \$cnt_this_round, title => $p);
-	    delete_zero_lines($fn);
+	    my $fn = "heap-$p";
+	    one_plot_set(key => $graph_appmem_heap_lines, fn => $fn, lw => 3,
+		plot => $plot, cnt => \$cnt_this_round, title => $p);
 	    push(@plotted_this_round, $p);
 	    if ($plot_idx < MAX_HEAP_PLOTS and $cnt_this_round > MAX_HEAP_PER_PLOT) {
 		last;
@@ -4155,8 +4162,8 @@ sub generate_plot_sysvshared
     $cnt = 0;
     foreach my $p (sort {$sumdev_sysv_shared{$a} <=> $sumdev_sysv_shared{$b} } keys %app_cumul_sysv_shared) {
 	next unless $show_this{$p};
-	one_plot_set(fn => "e/sysvshm-$p", plot => $plot,
-	    cnt => \$cnt, emit_zeroes => 1, title => $p);
+	one_plot_set(key => $graph_appmem_sysvshared, fn => "sysvshm-$p",
+	    plot => $plot, cnt => \$cnt, emit_zeroes => 1, title => $p);
     }
     close_plot($cnt, $plot, $graph_appmem_sysvshared);
 }
@@ -4184,8 +4191,8 @@ sub generate_plot_posixshared
     $cnt = 0;
     foreach my $p (sort {$sumdev_posix_shared{$a} <=> $sumdev_posix_shared{$b} } keys %app_cumul_posix_shared) {
 	next unless $show_this{$p};
-	one_plot_set(fn => "e/posixshm-$p", plot => $plot, cnt => \$cnt,
-	    emit_zeroes => 1, title => $p);
+	one_plot_set(key => $graph_appmem_posixshared, fn => "posixshm-$p",
+	    plot => $plot, cnt => \$cnt, emit_zeroes => 1, title => $p);
     }
     close_plot($cnt, $plot, $graph_appmem_posixshared);
 }
@@ -4213,8 +4220,8 @@ sub generate_plot_dev_pvr
     $cnt = 0;
     foreach my $p (sort {$sumdev_dev_pvr{$a} <=> $sumdev_dev_pvr{$b} } keys %app_cumul_dev_pvr) {
 	next unless $show_this{$p};
-	one_plot_set(fn => "e/devpvr-$p", plot => $plot, cnt => \$cnt,
-	    emit_zeroes => 1, title => $p);
+	one_plot_set(key => $graph_appmem_devpvr, fn => "devpvr-$p",
+	    plot => $plot, cnt => \$cnt, emit_zeroes => 1, title => $p);
     }
     close_plot($cnt, $plot, $graph_appmem_devpvr);
 }
@@ -4224,10 +4231,11 @@ sub generate_plot_dev_pvr_count
     my $plot = start_plotfile_linespoints($graph_devpvr_count);
     my $cnt = 0;
     foreach my $process (keys %app_dev_pvr) {
-	my $fn = "e/devpvr-count-$process";
+	my $fn = "devpvr-count-$process";
 	next unless changes_found($fn);
 	next unless count_nonzero_entries($fn);
-	one_plot_set(fn => $fn, lw => 3, plot => $plot, cnt => \$cnt, title => $process);
+	one_plot_set(key => $graph_devpvr_count, fn => $fn, lw => 3,
+	    plot => $plot, cnt => \$cnt, title => $process);
     }
     close_plot($cnt, $plot, $graph_devpvr_count);
 }
@@ -4240,8 +4248,8 @@ sub generate_plot_write_exec
 	if ($cnt > $max_per_graph_onecolumn -1 ) {
 	    last;
 	} 
-	one_plot_set(fn => "e/$p-wx", plot => $plot, cnt => \$cnt,
-	    emit_zeroes => 1, title => $p);
+	one_plot_set(key => $graph_appmem_wx, fn => "$p-wx", plot => $plot,
+	    cnt => \$cnt, emit_zeroes => 1, title => $p);
     }
     close_plot($cnt, $plot, $graph_appmem_wx);
 }
@@ -4255,27 +4263,33 @@ sub generate_plot_swap_event
 ############# SWAP EVENT COUNTS ######################
     $plot = start_plotfile_lines($graph_events_swap);
     if (count_nonzero_entries($pswp_in_plot_file_name)) {
-	one_plot_set(fn => $pswp_in_plot_file_name, plot => $plot,
+	one_plot_set(key => $graph_events_swap,
+	    fn => $pswp_in_plot_file_name, plot => $plot,
 	    lw => 3, emit_zeroes => 1, cnt => \$cnt);
     }
     if (count_nonzero_entries($pswp_out_plot_file_name)) {
-	one_plot_set(fn => $pswp_out_plot_file_name, plot => $plot,
+	one_plot_set(key => $graph_events_swap,
+	    fn => $pswp_out_plot_file_name, plot => $plot,
 	    lw => 3, emit_zeroes => 1, cnt => \$cnt);
     }
     if (count_nonzero_entries($pgscan_kswapd_normal_plot_file_name)) {
-	one_plot_set(fn => $pgscan_kswapd_normal_plot_file_name,
+	one_plot_set(key => $graph_events_swap,
+	    fn => $pgscan_kswapd_normal_plot_file_name,
 	    plot => $plot, lw => 3, emit_zeroes => 1, cnt => \$cnt);
     }
     if (count_nonzero_entries($pgscan_direct_normal_plot_file_name)) {
-	one_plot_set(fn => $pgscan_direct_normal_plot_file_name,
+	one_plot_set(key => $graph_events_swap,
+	    fn => $pgscan_direct_normal_plot_file_name,
 	    plot => $plot, lw => 3, emit_zeroes => 1, cnt => \$cnt);
     }
     if (count_nonzero_entries($slabs_scanned_plot_file_name)) {
-	one_plot_set(fn => $slabs_scanned_plot_file_name,
+	one_plot_set(key => $graph_events_swap,
+	    fn => $slabs_scanned_plot_file_name,
 	    plot => $plot, lw => 3, emit_zeroes => 1, cnt => \$cnt);
     }
     if (count_nonzero_entries($kswapd_steal_plot_file_name)) {
-	one_plot_set(fn => $kswapd_steal_plot_file_name,
+	one_plot_set(key => $graph_events_swap,
+	    fn => $kswapd_steal_plot_file_name,
 	    plot => $plot, lw => 3, emit_zeroes => 1, cnt => \$cnt);
     }
     close_plot($cnt, $plot, $graph_events_swap);
@@ -4302,8 +4316,8 @@ sub generate_plot_swap_event
     $cnt = 0;
     foreach my $p (sort {$sumdev_swp{$a} <=> $sumdev_swp{$b} } keys %app_cumul_swp) {
 	next unless $show_this{$p};
-	one_plot_set(fn => "e/swp-$p", plot => $plot, cnt => \$cnt,
-	    emit_zeroes => 1, title => $p);
+	one_plot_set(key => $graph_appmem_swapped, fn => "swp-$p",
+	    plot => $plot, cnt => \$cnt, emit_zeroes => 1, title => $p);
     }
     close_plot($cnt, $plot, $graph_appmem_swapped);
 
@@ -4328,8 +4342,8 @@ sub generate_plot_swap_event
     $cnt = 0;
     foreach my $p (sort {$sumdev_pss_swp_adj{$a} <=> $sumdev_pss_swp_adj{$b} } keys %app_cumul_pss_swp) {
 	next unless $show_this{$p};
-	one_plot_set(fn => "e/pswp-$p", plot => $plot, cnt => \$cnt,
-	    emit_zeroes => 1, title => $p);
+	one_plot_set(key => $graph_appmem_pss_swap, fn => "pswp-$p",
+	    plot => $plot, cnt => \$cnt, emit_zeroes => 1, title => $p);
     }
     close_plot($cnt, $plot, $graph_appmem_pss_swap);
 }
@@ -4356,8 +4370,8 @@ sub generate_plot_pss
     foreach my $p (sort {$sumdev_pss{$a} <=> $sumdev_pss{$b} } keys %app_cumul_pss) {
 	next unless $show_this{$p};
 #    print "pss:$p: sumdev=$sumdev_pss{$p} devcount=$devcount_pss{$p}\n";
-	one_plot_set(fn => "e/p-$p", plot => $plot, cnt => \$cnt,
-	    emit_zeroes => 1, title => $p);
+	one_plot_set(key => $graph_appmem_pss, fn => "p-$p", plot => $plot,
+	    cnt => \$cnt, emit_zeroes => 1, title => $p);
     }
     close_plot($cnt, $plot, $graph_appmem_pss);
 }
@@ -4440,23 +4454,27 @@ sub generate_plot_pss_swap
     foreach my $p (reverse sort {$avg_pss_swp{$a} <=> $avg_pss_swp{$b} } keys %avg_pss_swp) {
 	if ($show_this{$p}) {
 	    my $handle;
+	    my $key;
 	    if ($cnt < (1*$elems_per_graph)) {
 		$handle = $plot_1;
+		$key = $graph_appmem_pss_swap_lines_big;
 	    } elsif ($cnt < (2*$elems_per_graph)) {
 		$handle = $plot_2;
+		$key = $graph_appmem_pss_swap_lines_small;
 	    } elsif ($cnt < (3*$elems_per_graph)) {
 		$handle = $plot_3;
+		$key = $graph_appmem_pss_swap_lines_smaller;
 #	    } elsif ($cnt < (4*$elems_per_graph)) {
 	    } elsif (1) {
 		$handle = $plot_4;
+		$key = $graph_appmem_pss_swap_lines_smallest;
 	    } else {
 		print "graph_appmem_lines: no handle...p=[$p] cnt=$cnt\n";
 		next;
 	    }
-	    my $fn = "e/pswp-$p";
-	    one_plot_set(fn => $fn, lw => 3, plot => $handle,
+	    my $fn = "pswp-$p";
+	    one_plot_set(key => $key, fn => $fn, lw => 3, plot => $handle,
 		cnt => \$cnt_per_file{$handle}, title => $p);
-	    delete_zero_lines($fn);
 	    $cnt += 1;
 	}
     }
@@ -4475,9 +4493,9 @@ sub generate_plot_threads
 	    last;
 	} 
 	if ($has_threads{$p} && ($has_threads_samples{$p} > 1)) {
-	    my $fn = "e/thr-$p";
-	    one_plot_set(fn => $fn, plot => $plot, cnt => \$cnt,
-		emit_zeroes => 1, title => $p);
+	    my $fn = "thr-$p";
+	    one_plot_set(key => $graph_threads_count, fn => $fn, plot => $plot,
+		cnt => \$cnt, emit_zeroes => 1, title => $p);
 	}
     }
     close_plot($cnt, $plot, $graph_threads_count);
@@ -4488,11 +4506,12 @@ sub generate_plot_threads_changes
     my $plot = start_plotfile_linespoints($graph_threads_changes);
     my $cnt = 0;
     foreach my $p (reverse sort { $has_threads{$a} <=> $has_threads{$b} } keys %has_threads) {
-	my $fn = "e/thr-$p";
+	my $fn = "thr-$p";
 	next unless $has_threads{$p};
 	next unless changes_found($fn);
 	next unless count_nonzero_entries($fn);
-	one_plot_set(fn => $fn, plot => $plot, lw => 3, cnt => \$cnt, title => $p);
+	one_plot_set(key => $graph_threads_changes, fn => $fn, plot => $plot,
+	    lw => 3, cnt => \$cnt, title => $p);
     }
     close_plot($cnt, $plot, $graph_threads_changes);
 }
@@ -4513,9 +4532,9 @@ sub generate_plot_xres
 	if ($xres_samples{$p} < $samples_required) {
 	    next;
 	}
-	my $fn = "e/xres-cnt-$p";
-	one_plot_set(fn => $fn, lw => 3, plot => $plot, cnt => \$cnt,
-	    title => $p);
+	my $fn = "xres-cnt-$p";
+	one_plot_set(key => $graph_xresource_cnt, fn => $fn, lw => 3,
+	    plot => $plot, cnt => \$cnt, title => $p);
     }
     close_plot($cnt, $plot, $graph_xresource_cnt);
 
@@ -4533,9 +4552,9 @@ sub generate_plot_xres
 	if (!$xres_pxm_size_total{$p}) {
 	    next;
 	}
-	my $fn = "e/xres-pxm-$p";
-	one_plot_set(fn => $fn, lw => 3, plot => $plot, cnt => \$cnt,
-	    title => $p);
+	my $fn = "xres-pxm-$p";
+	one_plot_set(key => $graph_xresource_sz_pxm, fn => $fn, lw => 3,
+	    plot => $plot, cnt => \$cnt, title => $p);
     }
     close_plot($cnt, $plot, $graph_xresource_sz_pxm);
 
@@ -4545,7 +4564,7 @@ sub generate_plot_xres
 	my $omit = 1;
 	foreach my $Identifier (keys %xres_samples) {
 	    if ($xres_samples{$Identifier} < 2) { next; }
-	    my $fn = "e/xres-cnt-$Identifier-${resource_atom}";
+	    my $fn = "xres-cnt-$Identifier-${resource_atom}";
 	    if (count_nonzero_entries($fn) <= 0) { next; }
 	    if (!changes_found($fn)) { next; }
 	    $omit = 0;
@@ -4560,27 +4579,15 @@ sub generate_plot_xres
 	$plot = start_plotfile_linespoints($graph_xresource_atom_cnt);
 	foreach my $Identifier (keys %xres_samples) {
 	    if ($xres_samples{$Identifier} < 2) { next; }
-	    my $fn = "e/xres-cnt-$Identifier-${resource_atom}";
+	    my $fn = "xres-cnt-$Identifier-${resource_atom}";
 	    if (count_nonzero_entries($fn) <= 0) { next; }
 	    if (!changes_found($fn)) { next; }
-	    one_plot_set(fn => $fn, lw => 3, plot => $plot, cnt => \$cnt,
+	    one_plot_set(key => $graph_xresource_atom_cnt,
+		fn => $fn, lw => 3, plot => $plot, cnt => \$cnt,
 		emit_zeroes => 1, title => $Identifier);
 	}
 	close_plot($cnt, $plot, $graph_xresource_atom_cnt);
     }
-
-############# X resource sizes, misc ######################
-#$plot = start_plotfile_linespoints($graph_xresource_sz_misc);
-#
-#$cnt = 0;
-#foreach my $p ( reverse sort {$xresource_latest_sz_misc{$a} <=> $xresource_latest_sz_misc{$b} } keys %xresource_latest_sz_misc) {
-#    if ($cnt > 0) {
-#	print $plot ", ";
-#    }
-#    print $plot "'e/$p-xres-mem-misc' lw 3";
-#    $cnt += 1;
-#}
-#close_plot($cnt, $plot, $graph_xresource_sz_misc);
 }
 
 sub generate_plot_df
@@ -4588,10 +4595,12 @@ sub generate_plot_df
     my $plot = start_plotfile_lines($graph_diskspace);
     my $cnt = 0;
     foreach my $p ( reverse sort {$filesystem_names{$a} <=> $filesystem_names{$b} } keys %filesystem_names) {
-	one_plot_set(fn => "e/fs-used-$p", lw => 3, plot => $plot,
+	one_plot_set(key => $graph_diskspace,
+	    fn => "fs-used-$p", lw => 3, plot => $plot,
 	    cnt => \$cnt, emit_zeroes => 1, title => $filesystem_demangle{$p});
     }
-    one_plot_set(fn => $fd_perc_file_name, lw => 5, plot => $plot, cnt => \$cnt);
+    one_plot_set(key => $graph_diskspace, fn => $fd_perc_file_name, lw => 5,
+	plot => $plot, cnt => \$cnt);
     close_plot($cnt, $plot, $graph_diskspace);
 }
 
@@ -4612,15 +4621,16 @@ sub generate_plot_fd
 	if ($fd_count_diff{$p} < 1) {
 	    next;
 	}
-	$fn = "e/fd-$p";
-	one_plot_set(fn => $fn, lw => 3, plot => $plot, cnt => \$cnt, title => $p);
+	$fn = "fd-$p";
+	one_plot_set(key => $graph_fdcount, fn => $fn, lw => 3, plot => $plot,
+	    cnt => \$cnt, title => $p);
     }
     close_plot($cnt, $plot, $graph_fdcount);
 
 ############# fd_count_inotify for processes #####################
     %show_this = ();
     foreach my $p (reverse sort {$fd_inotify{$a} <=> $fd_inotify{$b} } keys %fd_inotify) {
-	$fn = "e/fd_inotify-$name_by_pid{$p}-$p";
+	$fn = "fd_inotify-$name_by_pid{$p}-$p";
 	if (count_nonzero_entries($fn) <= 0) { next; }
 	$show_this{$p} = changes_found($fn);
     }
@@ -4629,8 +4639,9 @@ sub generate_plot_fd
 	$plot = start_plotfile_linespoints($graph_fdcount_inotify);
 	foreach my $p (reverse sort {$fd_inotify{$a} <=> $fd_inotify{$b} } keys %fd_inotify) {
 	    next unless $show_this{$p};
-	    $fn = "e/fd_inotify-$name_by_pid{$p}-$p";
-	    one_plot_set(fn => $fn, lw => 3, plot => $plot, cnt => \$cnt,
+	    $fn = "fd_inotify-$name_by_pid{$p}-$p";
+	    one_plot_set(key => $graph_fdcount_inotify,
+		fn => $fn, lw => 3, plot => $plot, cnt => \$cnt,
 		emit_zeroes => 1, title => "$name_by_pid{$p}-$p");
 	}
 	close_plot($cnt, $plot, $graph_fdcount_inotify);
@@ -4639,7 +4650,7 @@ sub generate_plot_fd
 ############# fd_count_pipe for processes #####################
     %show_this = ();
     foreach my $p (reverse sort {$fd_pipe{$a} <=> $fd_pipe{$b} } keys %fd_pipe) {
-	$fn = "e/fd_pipe-$name_by_pid{$p}-$p";
+	$fn = "fd_pipe-$name_by_pid{$p}-$p";
 	if (count_nonzero_entries($fn) <= 0) { next; }
 	$show_this{$p} = changes_found($fn);
     }
@@ -4648,8 +4659,9 @@ sub generate_plot_fd
 	$plot = start_plotfile_linespoints($graph_fdcount_pipe);
 	foreach my $p (reverse sort {$fd_pipe{$a} <=> $fd_pipe{$b} } keys %fd_pipe) {
 	    next unless $show_this{$p};
-	    $fn = "e/fd_pipe-$name_by_pid{$p}-$p";
-	    one_plot_set(fn => $fn, lw => 3, plot => $plot, cnt => \$cnt,
+	    $fn = "fd_pipe-$name_by_pid{$p}-$p";
+	    one_plot_set(key => $graph_fdcount_pipe,
+		fn => $fn, lw => 3, plot => $plot, cnt => \$cnt,
 		emit_zeroes => 1, title => "$name_by_pid{$p}-$p");
 	}
 	close_plot($cnt, $plot, $graph_fdcount_pipe);
@@ -4658,7 +4670,7 @@ sub generate_plot_fd
 ############# fd_count_socket for processes #####################
     %show_this = ();
     foreach my $p (reverse sort {$fd_socket{$a} <=> $fd_socket{$b} } keys %fd_socket) {
-	$fn = "e/fd_socket-$name_by_pid{$p}-$p";
+	$fn = "fd_socket-$name_by_pid{$p}-$p";
 	if (count_nonzero_entries($fn) <= 0) { next; }
 	$show_this{$p} = changes_found($fn);
     }
@@ -4667,8 +4679,9 @@ sub generate_plot_fd
 	$cnt = 0;
 	foreach my $p (reverse sort {$fd_socket{$a} <=> $fd_socket{$b} } keys %fd_socket) {
 	    next unless $show_this{$p};
-	    $fn = "e/fd_socket-$name_by_pid{$p}-$p";
-	    one_plot_set(fn => $fn, lw => 3, plot => $plot, cnt => \$cnt,
+	    $fn = "fd_socket-$name_by_pid{$p}-$p";
+	    one_plot_set(key => $graph_fdcount_socket,
+		fn => $fn, lw => 3, plot => $plot, cnt => \$cnt,
 		emit_zeroes => 1, title => "$name_by_pid{$p}-$p");
 	}
 	close_plot($cnt, $plot, $graph_fdcount_socket);
@@ -4677,7 +4690,7 @@ sub generate_plot_fd
 ############# fd_count_tmpfs for processes #####################
     %show_this = ();
     foreach my $p (reverse sort {$fd_tmpfs{$a} <=> $fd_tmpfs{$b} } keys %fd_tmpfs) {
-	$fn = "e/fd_tmpfs-$name_by_pid{$p}-$p";
+	$fn = "fd_tmpfs-$name_by_pid{$p}-$p";
 	if (count_nonzero_entries($fn) <= 0) { next; }
 	$show_this{$p} = changes_found($fn);
     }
@@ -4686,8 +4699,9 @@ sub generate_plot_fd
 	$cnt = 0;
 	foreach my $p (reverse sort {$fd_tmpfs{$a} <=> $fd_tmpfs{$b} } keys %fd_tmpfs) {
 	    next unless $show_this{$p};
-	    $fn = "e/fd_tmpfs-$name_by_pid{$p}-$p";
-	    one_plot_set(fn => $fn, lw => 3, plot => $plot, cnt => \$cnt,
+	    $fn = "fd_tmpfs-$name_by_pid{$p}-$p";
+	    one_plot_set(key => $graph_fdcount_tmpfs,
+		fn => $fn, lw => 3, plot => $plot, cnt => \$cnt,
 		emit_zeroes => 1, title => "$name_by_pid{$p}-$p");
 	}
 	close_plot($cnt, $plot, $graph_fdcount_tmpfs);
@@ -4696,7 +4710,7 @@ sub generate_plot_fd
 ############# fd_count_eventfd for processes #####################
     %show_this = ();
     foreach my $p (reverse sort {$fd_eventfd{$a} <=> $fd_eventfd{$b} } keys %fd_eventfd) {
-	$fn = "e/fd_eventfd-$name_by_pid{$p}-$p";
+	$fn = "fd_eventfd-$name_by_pid{$p}-$p";
 	if (count_nonzero_entries($fn) <= 0) { next; }
 	$show_this{$p} = changes_found($fn);
     }
@@ -4705,8 +4719,9 @@ sub generate_plot_fd
 	$cnt = 0;
 	foreach my $p (reverse sort {$fd_eventfd{$a} <=> $fd_eventfd{$b} } keys %fd_eventfd) {
 	    next unless $show_this{$p};
-	    $fn = "e/fd_eventfd-$name_by_pid{$p}-$p";
-	    one_plot_set(fn => $fn, lw => 3, plot => $plot, cnt => \$cnt,
+	    $fn = "fd_eventfd-$name_by_pid{$p}-$p";
+	    one_plot_set(key => $graph_fdcount_eventfd,
+		fn => $fn, lw => 3, plot => $plot, cnt => \$cnt,
 		emit_zeroes => 1, title => "$name_by_pid{$p}-$p");
 	}
 	close_plot($cnt, $plot, $graph_fdcount_eventfd);
@@ -4715,7 +4730,7 @@ sub generate_plot_fd
 ############# fd_count_epoll for processes #####################
     %show_this = ();
     foreach my $p (reverse sort {$fd_epoll{$a} <=> $fd_epoll{$b} } keys %fd_epoll) {
-	$fn = "e/fd_epoll-$name_by_pid{$p}-$p";
+	$fn = "fd_epoll-$name_by_pid{$p}-$p";
 	if (count_nonzero_entries($fn) <= 0) { next; }
 	$show_this{$p} = changes_found($fn);
     }
@@ -4724,8 +4739,9 @@ sub generate_plot_fd
 	$cnt = 0;
 	foreach my $p (reverse sort {$fd_epoll{$a} <=> $fd_epoll{$b} } keys %fd_epoll) {
 	    next unless $show_this{$p};
-	    $fn = "e/fd_epoll-$name_by_pid{$p}-$p";
-	    one_plot_set(fn => $fn, lw => 3, plot => $plot, cnt => \$cnt,
+	    $fn = "fd_epoll-$name_by_pid{$p}-$p";
+	    one_plot_set(key => $graph_fdcount_epoll,
+		fn => $fn, lw => 3, plot => $plot, cnt => \$cnt,
 		emit_zeroes => 1, title => "$name_by_pid{$p}-$p");
 	}
 	close_plot($cnt, $plot, $graph_fdcount_epoll);
@@ -4734,7 +4750,7 @@ sub generate_plot_fd
 ############# fd_count_signalfd for processes #####################
     %show_this = ();
     foreach my $p (reverse sort {$fd_signalfd{$a} <=> $fd_signalfd{$b} } keys %fd_signalfd) {
-	$fn = "e/fd_signalfd-$name_by_pid{$p}-$p";
+	$fn = "fd_signalfd-$name_by_pid{$p}-$p";
 	if (count_nonzero_entries($fn) <= 0) { next; }
 	$show_this{$p} = changes_found($fn);
     }
@@ -4743,8 +4759,9 @@ sub generate_plot_fd
 	$cnt = 0;
 	foreach my $p (reverse sort {$fd_signalfd{$a} <=> $fd_signalfd{$b} } keys %fd_signalfd) {
 	    next unless $show_this{$p};
-	    $fn = "e/fd_signalfd-$name_by_pid{$p}-$p";
-	    one_plot_set(fn => $fn, lw => 3, plot => $plot, cnt => \$cnt,
+	    $fn = "fd_signalfd-$name_by_pid{$p}-$p";
+	    one_plot_set(key => $graph_fdcount_signalfd,
+		fn => $fn, lw => 3, plot => $plot, cnt => \$cnt,
 		emit_zeroes => 1, title => "$name_by_pid{$p}-$p");
 	}
 	close_plot($cnt, $plot, $graph_fdcount_signalfd);
@@ -4753,7 +4770,7 @@ sub generate_plot_fd
 ############# fd_count_timerfd for processes #####################
     %show_this = ();
     foreach my $p (reverse sort {$fd_timerfd{$a} <=> $fd_timerfd{$b} } keys %fd_timerfd) {
-	$fn = "e/fd_timerfd-$name_by_pid{$p}-$p";
+	$fn = "fd_timerfd-$name_by_pid{$p}-$p";
 	if (count_nonzero_entries($fn) <= 0) { next; }
 	$show_this{$p} = changes_found($fn);
     }
@@ -4762,8 +4779,9 @@ sub generate_plot_fd
 	$cnt = 0;
 	foreach my $p (reverse sort {$fd_timerfd{$a} <=> $fd_timerfd{$b} } keys %fd_timerfd) {
 	    next unless $show_this{$p};
-	    $fn = "e/fd_timerfd-$name_by_pid{$p}-$p";
-	    one_plot_set(fn => $fn, lw => 3, plot => $plot, cnt => \$cnt,
+	    $fn = "fd_timerfd-$name_by_pid{$p}-$p";
+	    one_plot_set(key => $graph_fdcount_timerfd,
+		fn => $fn, lw => 3, plot => $plot, cnt => \$cnt,
 		emit_zeroes => 1, title => "$name_by_pid{$p}-$p");
 	}
 	close_plot($cnt, $plot, $graph_fdcount_timerfd);
@@ -4772,7 +4790,7 @@ sub generate_plot_fd
 ############# fd_count_disk for processes #####################
     %show_this = ();
     foreach my $p (reverse sort {$fd_disk{$a} <=> $fd_disk{$b} } keys %fd_disk) {
-	$fn = "e/fd_disk-$name_by_pid{$p}-$p";
+	$fn = "fd_disk-$name_by_pid{$p}-$p";
 	if (count_nonzero_entries($fn) <= 0) { next; }
 	$show_this{$p} = changes_found($fn);
     }
@@ -4781,8 +4799,9 @@ sub generate_plot_fd
 	$cnt = 0;
 	foreach my $p (reverse sort {$fd_disk{$a} <=> $fd_disk{$b} } keys %fd_disk) {
 	    next unless $show_this{$p};
-	    $fn = "e/fd_disk-$name_by_pid{$p}-$p";
-	    one_plot_set(fn => $fn, lw => 3, plot => $plot, cnt => \$cnt,
+	    $fn = "fd_disk-$name_by_pid{$p}-$p";
+	    one_plot_set(key => $graph_fdcount_disk,
+		fn => $fn, lw => 3, plot => $plot, cnt => \$cnt,
 		emit_zeroes => 1, title => "$name_by_pid{$p}-$p");
 	}
 	close_plot($cnt, $plot, $graph_fdcount_disk);
@@ -4797,12 +4816,12 @@ sub generate_plot_interrupts
 	if ($int_total{$p} < 1) {
 	    next;
 	}
-	my $fn = "e/int-$p";
-	one_plot_set(fn => $fn, plot => $plot, lw => 2, axes => 'x1y1',
-	    cnt => \$cnt, title => $p);
+	my $fn = "int-$p";
+	one_plot_set(key => $graph_interrupts, fn => $fn, plot => $plot,
+	    lw => 2, axes => 'x1y1', cnt => \$cnt, title => $p);
     }
-    one_plot_set(fn => 'e/count-int', plot => $plot, lw => 4, axes => 'x2y2',
-	cnt => \$cnt, title => 'Total count');
+    one_plot_set(key => $graph_interrupts, fn => 'count-int', plot => $plot,
+	lw => 4, axes => 'x2y2', cnt => \$cnt, title => 'Total count');
     close_plot($cnt, $plot, $graph_interrupts);
 }
 
@@ -4830,11 +4849,14 @@ sub generate_plot_diskstats
 	my $title = $device;
 	my $fs = device_to_filesystem($device);
 	$title = $device . ': ' . $fs if $fs;
-	one_plot_set(fn => "e/devreads-$device", lw => 3, plot => $plot_1,
+	one_plot_set(key => $graph_diskstats_reads_mb_per_second,
+	    fn => "devreads-$device", lw => 3, plot => $plot_1,
 	    cnt => \$cnt_1, emit_zeroes => 1, title => $title);
-	one_plot_set(fn => "e/devreadtime-$device", lw => 3, plot => $plot_2,
+	one_plot_set(key => $graph_diskstats_read_time,
+	    fn => "devreadtime-$device", lw => 3, plot => $plot_2,
 	    cnt => \$cnt_2, emit_zeroes => 1, title => $title);
-	one_plot_set(fn => "e/devreads-mb-$device", lw => 3, plot => $plot_3,
+	one_plot_set(key => $graph_diskstats_reads_mb,
+	    fn => "devreads-mb-$device", lw => 3, plot => $plot_3,
 	    cnt => \$cnt_3, emit_zeroes => 1, title => $title);
     }
     close_plot($cnt_1, $plot_1, $graph_diskstats_reads_mb_per_second);
@@ -4853,18 +4875,21 @@ sub generate_plot_diskstats
 	my $title = $device;
 	my $fs = device_to_filesystem($device);
 	$title = $device . ': ' . $fs if $fs;
-	if (value_exists("e/devwrites-$device")) {
-	    one_plot_set(fn => "e/devwrites-$device", lw => 3,
+	if (value_exists("devwrites-$device")) {
+	    one_plot_set(key => $graph_diskstats_writes_mb_per_second,
+		fn => "devwrites-$device", lw => 3,
 		plot => $plot_1, cnt => \$cnt_1, emit_zeroes => 1,
 		title => $title);
 	}
-	if (value_exists("e/devwritetime-$device")) {
-	    one_plot_set(fn => "e/devwritetime-$device", lw => 3,
+	if (value_exists("devwritetime-$device")) {
+	    one_plot_set(key => $graph_diskstats_write_time,
+		fn => "devwritetime-$device", lw => 3,
 		plot => $plot_2, cnt => \$cnt_2, emit_zeroes => 1,
 		title => $title);
 	}
-	if (value_exists("e/devwrites-mb-$device")) {
-	    one_plot_set(fn => "e/devwrites-mb-$device", lw => 3,
+	if (value_exists("devwrites-mb-$device")) {
+	    one_plot_set(key => $graph_diskstats_writes_mb,
+		fn => "devwrites-mb-$device", lw => 3,
 		plot => $plot_3, cnt => \$cnt_3, emit_zeroes => 1,
 		title => $title);
 	}
@@ -4881,16 +4906,20 @@ sub generate_plot_battery
     }
     my $plot = start_plotfile_lines_2axes($graph_battery);
     my $cnt = 0;
-    one_plot_set(fn => $batt_charge_left_file_name, plot => $plot, lw => 4,
+    one_plot_set(key => $graph_battery,
+	fn => $batt_charge_left_file_name, plot => $plot, lw => 4,
 	axes => 'x1y1', cnt => \$cnt, emit_zeroes => 1, title => 'Charge % left');
-    one_plot_set(fn => $batt_temperature_file_name, plot => $plot, lw => 2,
+    one_plot_set(key => $graph_battery,
+	fn => $batt_temperature_file_name, plot => $plot, lw => 2,
 	axes => 'x1y1', cnt => \$cnt, emit_zeroes => 1, title => 'Temperature');
-    one_plot_set(fn => $batt_voltage_file_name, plot => $plot, lw => 2,
+    one_plot_set(key => $graph_battery,
+	fn => $batt_voltage_file_name, plot => $plot, lw => 2,
 	axes => 'x2y2', cnt => \$cnt, emit_zeroes => 1, title => 'Voltage');
     foreach my $backlight_dev (sort keys %sysfs_backlight_devices) {
-	my $fn = "e/sysfs-backlight-$backlight_dev-percentage";
+	my $fn = "sysfs-backlight-$backlight_dev-percentage";
 	next unless value_exists($fn);
-	one_plot_set(fn => $fn, plot => $plot, lw => 3,
+	one_plot_set(key => $graph_battery,
+	    fn => $fn, plot => $plot, lw => 3,
 	    emit_zeroes => 1, cnt => \$cnt, axes => 'x1y1',
 	    title => "Backlight $backlight_dev brightness %");
     }
@@ -4902,9 +4931,10 @@ sub generate_plot_ramzswap_1
     my $cnt = 0;
     my $plot = start_plotfile_linespoints($graph_ramzswap_1);
     foreach (qw/NumReads NumWrites BDevNumReads BDevNumWrites/) {
-	my $fn = "e/ramzswap-$_";
+	my $fn = "ramzswap-$_";
 	if (count_nonzero_entries($fn)) {
-	    one_plot_set(fn => $fn, plot => $plot, lw => 3, cnt => \$cnt,
+	    one_plot_set(key => $graph_ramzswap_1,
+		fn => $fn, plot => $plot, lw => 3, cnt => \$cnt,
 		emit_zeroes => 1, title => $_);
 	}
     }
@@ -4916,16 +4946,18 @@ sub generate_plot_ramzswap_2
     my $cnt = 0;
     my $plot = start_plotfile_lines_2axes($graph_ramzswap_2);
     foreach (qw/OrigDataSize ComprDataSize MemUsedTotal ZeroPages/) {
-	my $fn = "e/ramzswap-$_";
+	my $fn = "ramzswap-$_";
 	if (count_nonzero_entries($fn)) {
-	    one_plot_set(fn => $fn, plot => $plot, lw => 5, cnt => \$cnt,
+	    one_plot_set(key => $graph_ramzswap_2,
+		fn => $fn, plot => $plot, lw => 5, cnt => \$cnt,
 		emit_zeroes => 1, axes => 'x2y2', title => $_);
 	}
     }
     foreach (qw/GoodCompress NoCompress/) {
-	my $fn = "e/ramzswap-$_";
+	my $fn = "ramzswap-$_";
 	if (count_nonzero_entries($fn)) {
-	    one_plot_set(fn => $fn, plot => $plot, lw => 3, cnt => \$cnt,
+	    one_plot_set(key => $graph_ramzswap_2,
+		fn => $fn, plot => $plot, lw => 3, cnt => \$cnt,
 		emit_zeroes => 1, axes => 'x1y1', title => $_);
 	}
     }
@@ -4937,9 +4969,10 @@ sub generate_plot_ramzswap_3
     my $cnt = 0;
     my $plot = start_plotfile_linespoints($graph_ramzswap_3);
     foreach (qw/FailedReads FailedWrites InvalidIO/) {
-	my $fn = "e/ramzswap-$_";
+	my $fn = "ramzswap-$_";
 	if (count_nonzero_entries($fn)) {
-	    one_plot_set(fn => $fn, plot => $plot, lw => 3, cnt => \$cnt,
+	    one_plot_set(key => $graph_ramzswap_3,
+		fn => $fn, plot => $plot, lw => 3, cnt => \$cnt,
 		emit_zeroes => 1, title => $_);
 	}
     }
@@ -4960,17 +4993,19 @@ sub generate_plot_cgroups
     $cnt = 0;
     $plot = start_plotfile_lines($graph_cgroups_mem);
     foreach my $cgroup (@grouplist) {
-	my $fn = "e/cgroup-${cgroup}-mem";
-	one_plot_set(fn => $fn, lw => 3, plot => $plot, cnt => \$cnt,
+	my $fn = "cgroup-${cgroup}-mem";
+	one_plot_set(key => $graph_cgroups_mem,
+	    fn => $fn, lw => 3, plot => $plot, cnt => \$cnt,
 	    emit_zeroes => 1, title => $cgroups_demangle{$cgroup});
     }
     # Plot the limits to the same graph. We want the colors to match the
     # groups, so start counting from the beginning.
     $cnt = 0;
     foreach my $cgroup (@grouplist) {
-	my $fn = "e/cgroup-${cgroup}-memlimit";
+	my $fn = "cgroup-${cgroup}-memlimit";
 	if (count_nonzero_entries($fn) > 0) {
-	    one_plot_set(fn => $fn, lw => 5, plot => $plot, cnt => \$cnt,
+	    one_plot_set(key => $graph_cgroups_mem,
+		fn => $fn, lw => 5, plot => $plot, cnt => \$cnt,
 		emit_zeroes => 1,
 		title => 'Limit for: ' . $cgroups_demangle{$cgroup});
 	} else {
@@ -4983,10 +5018,11 @@ sub generate_plot_cgroups
     $cnt = 0;
     $plot = start_plotfile_lines($graph_cgroups_swap);
     foreach my $cgroup (@grouplist) {
-	my $fn = "e/cgroup-${cgroup}-swap";
+	my $fn = "cgroup-${cgroup}-swap";
 	next unless count_nonzero_entries($fn);
 	$swap_used = 1;
-	one_plot_set(fn => $fn, lw => 3, plot => $plot, cnt => \$cnt,
+	one_plot_set(key => $graph_cgroups_swap,
+	    fn => $fn, lw => 3, plot => $plot, cnt => \$cnt,
 	    emit_zeroes => 1, title => $cgroups_demangle{$cgroup});
     }
     close_plot($cnt, $plot, $graph_cgroups_swap);
@@ -4995,8 +5031,9 @@ sub generate_plot_cgroups
 	$cnt = 0;
 	$plot = start_plotfile_lines($graph_cgroups_memsw);
 	foreach my $cgroup (@grouplist) {
-	    my $fn = "e/cgroup-${cgroup}-memsw";
-	    one_plot_set(fn => $fn, lw => 3, plot => $plot, cnt => \$cnt,
+	    my $fn = "cgroup-${cgroup}-memsw";
+	    one_plot_set(key => $graph_cgroups_memsw,
+		fn => $fn, lw => 3, plot => $plot, cnt => \$cnt,
 		emit_zeroes => 1, title => $cgroups_demangle{$cgroup});
 	}
 	close_plot($cnt, $plot, $graph_cgroups_memsw);
@@ -5005,8 +5042,9 @@ sub generate_plot_cgroups
     $cnt = 0;
     $plot = start_plotfile_lines($graph_cgroups_cache);
     foreach my $cgroup (@grouplist) {
-	my $fn = "e/cgroup-${cgroup}-cache";
-	one_plot_set(fn => $fn, lw => 3, plot => $plot, cnt => \$cnt,
+	my $fn = "cgroup-${cgroup}-cache";
+	one_plot_set(key => $graph_cgroups_cache,
+	    fn => $fn, lw => 3, plot => $plot, cnt => \$cnt,
 	    emit_zeroes => 1, title => $cgroups_demangle{$cgroup});
     }
     close_plot($cnt, $plot, $graph_cgroups_cache);
@@ -5014,8 +5052,9 @@ sub generate_plot_cgroups
     $cnt = 0;
     $plot = start_plotfile_lines($graph_cgroups_rss);
     foreach my $cgroup (@grouplist) {
-	my $fn = "e/cgroup-${cgroup}-rss";
-	one_plot_set(fn => $fn, lw => 3, plot => $plot, cnt => \$cnt,
+	my $fn = "cgroup-${cgroup}-rss";
+	one_plot_set(key => $graph_cgroups_rss,
+	    fn => $fn, lw => 3, plot => $plot, cnt => \$cnt,
 	    emit_zeroes => 1, title => $cgroups_demangle{$cgroup});
     }
     close_plot($cnt, $plot, $graph_cgroups_rss);
@@ -5023,8 +5062,9 @@ sub generate_plot_cgroups
     $cnt = 0;
     $plot = start_plotfile_lines($graph_cgroups_mapped_file);
     foreach my $cgroup (@grouplist) {
-	my $fn = "e/cgroup-${cgroup}-mapped_file";
-	one_plot_set(fn => $fn, lw => 3, plot => $plot, cnt => \$cnt,
+	my $fn = "cgroup-${cgroup}-mapped_file";
+	one_plot_set(key => $graph_cgroups_mapped_file,
+	    fn => $fn, lw => 3, plot => $plot, cnt => \$cnt,
 	    emit_zeroes => 1, title => $cgroups_demangle{$cgroup});
     }
     close_plot($cnt, $plot, $graph_cgroups_mapped_file);
@@ -5032,8 +5072,9 @@ sub generate_plot_cgroups
     $cnt = 0;
     $plot = start_plotfile_lines($graph_cgroups_unevictable);
     foreach my $cgroup (@grouplist) {
-	my $fn = "e/cgroup-${cgroup}-unevictable";
-	one_plot_set(fn => $fn, lw => 3, plot => $plot, cnt => \$cnt,
+	my $fn = "cgroup-${cgroup}-unevictable";
+	one_plot_set(key => $graph_cgroups_unevictable,
+	    fn => $fn, lw => 3, plot => $plot, cnt => \$cnt,
 	    emit_zeroes => 1, title => $cgroups_demangle{$cgroup});
     }
     close_plot($cnt, $plot, $graph_cgroups_unevictable);
@@ -5041,8 +5082,9 @@ sub generate_plot_cgroups
     $cnt = 0;
     $plot = start_plotfile_lines($graph_cgroups_inactive_anon);
     foreach my $cgroup (@grouplist) {
-	my $fn = "e/cgroup-${cgroup}-inactive_anon";
-	one_plot_set(fn => $fn, lw => 3, plot => $plot, cnt => \$cnt,
+	my $fn = "cgroup-${cgroup}-inactive_anon";
+	one_plot_set(key => $graph_cgroups_inactive_anon,
+	    fn => $fn, lw => 3, plot => $plot, cnt => \$cnt,
 	    emit_zeroes => 1, title => $cgroups_demangle{$cgroup});
     }
     close_plot($cnt, $plot, $graph_cgroups_inactive_anon);
@@ -5050,8 +5092,9 @@ sub generate_plot_cgroups
     $cnt = 0;
     $plot = start_plotfile_lines($graph_cgroups_active_anon);
     foreach my $cgroup (@grouplist) {
-	my $fn = "e/cgroup-${cgroup}-active_anon";
-	one_plot_set(fn => $fn, lw => 3, plot => $plot, cnt => \$cnt,
+	my $fn = "cgroup-${cgroup}-active_anon";
+	one_plot_set(key => $graph_cgroups_active_anon,
+	    fn => $fn, lw => 3, plot => $plot, cnt => \$cnt,
 	    emit_zeroes => 1, title => $cgroups_demangle{$cgroup});
     }
     close_plot($cnt, $plot, $graph_cgroups_active_anon);
@@ -5059,8 +5102,9 @@ sub generate_plot_cgroups
     $cnt = 0;
     $plot = start_plotfile_lines($graph_cgroups_inactive_file);
     foreach my $cgroup (@grouplist) {
-	my $fn = "e/cgroup-${cgroup}-inactive_file";
-	one_plot_set(fn => $fn, lw => 3, plot => $plot, cnt => \$cnt,
+	my $fn = "cgroup-${cgroup}-inactive_file";
+	one_plot_set(key => $graph_cgroups_inactive_file,
+	    fn => $fn, lw => 3, plot => $plot, cnt => \$cnt,
 	    emit_zeroes => 1, title => $cgroups_demangle{$cgroup});
     }
     close_plot($cnt, $plot, $graph_cgroups_inactive_file);
@@ -5068,8 +5112,9 @@ sub generate_plot_cgroups
     $cnt = 0;
     $plot = start_plotfile_lines($graph_cgroups_active_file);
     foreach my $cgroup (@grouplist) {
-	my $fn = "e/cgroup-${cgroup}-active_file";
-	one_plot_set(fn => $fn, lw => 3, plot => $plot, cnt => \$cnt,
+	my $fn = "cgroup-${cgroup}-active_file";
+	one_plot_set(key => $graph_cgroups_active_file,
+	    fn => $fn, lw => 3, plot => $plot, cnt => \$cnt,
 	    emit_zeroes => 1, title => $cgroups_demangle{$cgroup});
     }
     close_plot($cnt, $plot, $graph_cgroups_active_file);
@@ -5077,8 +5122,9 @@ sub generate_plot_cgroups
     $cnt = 0;
     $plot = start_plotfile_lines($graph_cgroups_pgpgin);
     foreach my $cgroup (@grouplist) {
-	my $fn = "e/cgroup-${cgroup}-pgpgin";
-	one_plot_set(fn => $fn, lw => 3, plot => $plot, cnt => \$cnt,
+	my $fn = "cgroup-${cgroup}-pgpgin";
+	one_plot_set(key => $graph_cgroups_pgpgin,
+	    fn => $fn, lw => 3, plot => $plot, cnt => \$cnt,
 	    emit_zeroes => 1, title => $cgroups_demangle{$cgroup});
     }
     close_plot($cnt, $plot, $graph_cgroups_pgpgin);
@@ -5086,8 +5132,9 @@ sub generate_plot_cgroups
     $cnt = 0;
     $plot = start_plotfile_lines($graph_cgroups_pgpgout);
     foreach my $cgroup (@grouplist) {
-	my $fn = "e/cgroup-${cgroup}-pgpgout";
-	one_plot_set(fn => $fn, lw => 3, plot => $plot, cnt => \$cnt,
+	my $fn = "cgroup-${cgroup}-pgpgout";
+	one_plot_set(key => $graph_cgroups_pgpgout,
+	    fn => $fn, lw => 3, plot => $plot, cnt => \$cnt,
 	    emit_zeroes => 1, title => $cgroups_demangle{$cgroup});
     }
     close_plot($cnt, $plot, $graph_cgroups_pgpgout);
@@ -5095,8 +5142,9 @@ sub generate_plot_cgroups
     $cnt = 0;
     $plot = start_plotfile_lines($graph_cgroups_process_cnt);
     foreach my $cgroup (@grouplist) {
-	my $fn = "e/cgroup-${cgroup}-process-cnt";
-	one_plot_set(fn => $fn, lw => 3, plot => $plot, cnt => \$cnt,
+	my $fn = "cgroup-${cgroup}-process-cnt";
+	one_plot_set(key => $graph_cgroups_process_cnt,
+	    fn => $fn, lw => 3, plot => $plot, cnt => \$cnt,
 	    emit_zeroes => 1, title => $cgroups_demangle{$cgroup});
     }
     close_plot($cnt, $plot, $graph_cgroups_process_cnt);
@@ -5104,8 +5152,9 @@ sub generate_plot_cgroups
     $cnt = 0;
     $plot = start_plotfile_lines($graph_cgroups_task_cnt);
     foreach my $cgroup (@grouplist) {
-	my $fn = "e/cgroup-${cgroup}-task-cnt";
-	one_plot_set(fn => $fn, lw => 3, plot => $plot, cnt => \$cnt,
+	my $fn = "cgroup-${cgroup}-task-cnt";
+	one_plot_set(key => $graph_cgroups_task_cnt,
+	    fn => $fn, lw => 3, plot => $plot, cnt => \$cnt,
 	    emit_zeroes => 1, title => $cgroups_demangle{$cgroup});
     }
     close_plot($cnt, $plot, $graph_cgroups_task_cnt);
@@ -5113,7 +5162,7 @@ sub generate_plot_cgroups
     $cnt = 0;
     $omit = 1;
     foreach my $cgroup (@grouplist) {
-	my $fn = "e/cgroup-${cgroup}-mem-failcnt";
+	my $fn = "cgroup-${cgroup}-mem-failcnt";
 	if (count_nonzero_entries($fn) > 0) {
 	    $omit = 0;
 	    last;
@@ -5122,9 +5171,10 @@ sub generate_plot_cgroups
     if (!$omit) {
 	$plot = start_plotfile_lines($graph_cgroups_mem_failcnt);
 	foreach my $cgroup (@grouplist) {
-	    my $fn = "e/cgroup-${cgroup}-mem-failcnt";
+	    my $fn = "cgroup-${cgroup}-mem-failcnt";
 	    if (count_nonzero_entries($fn) > 0) {
-		one_plot_set(fn => $fn, lw => 3, plot => $plot, cnt => \$cnt,
+		one_plot_set(key => $graph_cgroups_mem_failcnt,
+		    fn => $fn, lw => 3, plot => $plot, cnt => \$cnt,
 		    emit_zeroes => 1, title => $cgroups_demangle{$cgroup});
 	    }
 	}
@@ -5134,7 +5184,7 @@ sub generate_plot_cgroups
     $cnt = 0;
     $omit = 1;
     foreach my $cgroup (@grouplist) {
-	my $fn = "e/cgroup-${cgroup}-memsw-failcnt";
+	my $fn = "cgroup-${cgroup}-memsw-failcnt";
 	if (count_nonzero_entries($fn) > 0) {
 	    $omit = 0;
 	    last;
@@ -5143,9 +5193,10 @@ sub generate_plot_cgroups
     if (!$omit) {
 	$plot = start_plotfile_lines($graph_cgroups_memsw_failcnt);
 	foreach my $cgroup (@grouplist) {
-	    my $fn = "e/cgroup-${cgroup}-memsw-failcnt";
+	    my $fn = "cgroup-${cgroup}-memsw-failcnt";
 	    if (count_nonzero_entries($fn) > 0) {
-		one_plot_set(fn => $fn, lw => 3, plot => $plot, cnt => \$cnt,
+		one_plot_set(key => $graph_cgroups_memsw_failcnt,
+		    fn => $fn, lw => 3, plot => $plot, cnt => \$cnt,
 		    emit_zeroes => 1, title => $cgroups_demangle{$cgroup});
 	    }
 	}
@@ -5160,17 +5211,19 @@ sub generate_plot_networking
 	$legend{$graph_networking_bytes} = 'RX and TX bytes in kB for ' . $interface;
 	$thumblegend{$graph_networking_bytes} = 'NET RX/TX BYTES &mdash; ' . $interface;
 	$unit{$graph_networking_bytes} = 'kB';
-	my $fn_rx_kb = "e/iface-$interface-rx-kB";
-	my $fn_tx_kb = "e/iface-$interface-tx-kB";
+	my $fn_rx_kb = "iface-$interface-rx-kB";
+	my $fn_tx_kb = "iface-$interface-tx-kB";
 	if (count_nonzero_entries($fn_rx_kb) > 0 or count_nonzero_entries($fn_tx_kb) > 0) {
 	    my $plot = start_plotfile_lines($graph_networking_bytes);
 	    my $cnt = 0;
 	    if (count_nonzero_entries($fn_rx_kb) > 0) {
-		one_plot_set(fn => $fn_rx_kb, lw => 3, plot => $plot,
+		one_plot_set(key => $graph_networking_bytes,
+		    fn => $fn_rx_kb, lw => 3, plot => $plot,
 		    cnt => \$cnt, emit_zeroes => 1, title => "RX kB: $interface");
 	    }
 	    if (count_nonzero_entries($fn_tx_kb) > 0) {
-		one_plot_set(fn => $fn_tx_kb, lw => 3, plot => $plot,
+		one_plot_set(key => $graph_networking_bytes,
+		    fn => $fn_tx_kb, lw => 3, plot => $plot,
 		    cnt => \$cnt, emit_zeroes => 1, title => "TX kB: $interface");
 	    }
 	    close_plot($cnt, $plot, $graph_networking_bytes);
@@ -5179,18 +5232,20 @@ sub generate_plot_networking
 	$legend{$graph_networking_packets} = 'RX and TX packets for ' . $interface;
 	$thumblegend{$graph_networking_packets} = 'NET RX/TX PACKETS &mdash; ' . $interface;
 	$unit{$graph_networking_packets} = 'packets';
-	my $fn_rx_packets = "e/iface-$interface-rx-packets";
-	my $fn_tx_packets = "e/iface-$interface-tx-packets";
+	my $fn_rx_packets = "iface-$interface-rx-packets";
+	my $fn_tx_packets = "iface-$interface-tx-packets";
 	if (count_nonzero_entries($fn_rx_packets) > 0 or count_nonzero_entries($fn_tx_packets) > 0) {
 	    my $plot = start_plotfile_lines($graph_networking_packets);
 	    my $cnt = 0;
 	    if (count_nonzero_entries($fn_rx_packets) > 0) {
-		one_plot_set(fn => $fn_rx_packets, lw => 3, plot => $plot,
+		one_plot_set(key => $graph_networking_packets,
+		    fn => $fn_rx_packets, lw => 3, plot => $plot,
 		    cnt => \$cnt, emit_zeroes => 1,
 		    title => "RX packets/s: $interface");
 	    }
 	    if (count_nonzero_entries($fn_tx_packets) > 0) {
-		one_plot_set(fn => $fn_tx_packets, lw => 3, plot => $plot,
+		one_plot_set(key => $graph_networking_packets,
+		    fn => $fn_tx_packets, lw => 3, plot => $plot,
 		    cnt => \$cnt, emit_zeroes => 1,
 		    title => "TX packets/s: $interface");
 	    }
@@ -5205,7 +5260,7 @@ sub generate_plot_pagetypeinfo
     foreach my $pagetype (qw/unmovable reclaimable movable reserve isolate/) {
 	my $skip = 1;
 	foreach my $ordernum (0 .. 10) {
-	    my $fn = "e/pt-$pagetype-$ordernum";
+	    my $fn = "pt-$pagetype-$ordernum";
 	    if (count_nonzero_entries($fn)) {
 		$skip = 0;
 		last;
@@ -5219,7 +5274,8 @@ sub generate_plot_pagetypeinfo
 	my $cnt = 0;
 	my $plot = start_plotfile_histogram($graph_pagetypeinfo);
 	foreach my $ordernum (0 .. 10) {
-	    one_plot_set(fn => "e/pt-$pagetype-$ordernum", plot => $plot, cnt => \$cnt,
+	    one_plot_set(key => $graph_pagetypeinfo,
+		fn => "pt-$pagetype-$ordernum", plot => $plot, cnt => \$cnt,
 		emit_zeroes => 1, title => ucfirst($pagetype) . " order 2^$ordernum");
 	}
 	close_plot($cnt, $plot, $graph_pagetypeinfo);
@@ -5235,27 +5291,28 @@ sub generate_plot_powertop
     my $cnt;
 ############# powertop C-states, freq-states to same multiplot #####################
     $plot = start_plotfile_histogram_multi($graph_powertop_cf_states);
-    print_cf_states_plot_cmds($plot);
+    print_cf_states_plot_cmds($graph_powertop_cf_states, $plot);
     close_plot($cnt, $plot, $graph_powertop_cf_states);
 ############# powertop powerdomain core, neon, periph states #####################
     $plot = start_plotfile_histogram_multi($graph_powertop_domain_states_1);
-    print_domain_plot_cmds($plot, "core", 0.3, 0.0);
-    print_domain_plot_cmds($plot, "neon", 0.3, 0.35);
-    print_domain_plot_cmds($plot, "periph", 0.3, 0.7);
+    print_domain_plot_cmds($graph_powertop_domain_states_1, $plot, "core", 0.3, 0.0);
+    print_domain_plot_cmds($graph_powertop_domain_states_1, $plot, "neon", 0.3, 0.35);
+    print_domain_plot_cmds($graph_powertop_domain_states_1, $plot, "periph", 0.3, 0.7);
     close_plot(scalar(@dirs), $plot, $graph_powertop_domain_states_1);
 ############# powertop powerdomain sgx, dss, mpu states #####################
     $plot = start_plotfile_histogram_multi($graph_powertop_domain_states_2);
-    print_domain_plot_cmds($plot, "sgx", 0.3, 0.0);
-    print_domain_plot_cmds($plot, "dss", 0.3, 0.35);
-    print_domain_plot_cmds($plot, "mpu", 0.3, 0.7);
+    print_domain_plot_cmds($graph_powertop_domain_states_2, $plot, "sgx", 0.3, 0.0);
+    print_domain_plot_cmds($graph_powertop_domain_states_2, $plot, "dss", 0.3, 0.35);
+    print_domain_plot_cmds($graph_powertop_domain_states_2, $plot, "mpu", 0.3, 0.7);
     close_plot(scalar(@dirs), $plot, $graph_powertop_domain_states_2);
 ############# powertop wakeups #####################
+    $cnt = 0;
     $plot = start_plotfile_lines($graph_powertop_wakeups);
-    value_emit("e/p-wakeups", 1);
-    value_emit("e/p-timers", 1);
-    print $plot "'e/p-wakeups' lw 2, ";
-    print $plot "'e/p-timers' lw 2 ";
-    close_plot(scalar(@dirs), $plot, $graph_powertop_wakeups);
+    one_plot_set(key => $graph_powertop_wakeups, fn => "p-wakeups",
+	emit_zeroes => 1, plot => $plot, lw => 2, cnt => \$cnt);
+    one_plot_set(key => $graph_powertop_wakeups, fn => "p-timers",
+	emit_zeroes => 1, plot => $plot, lw => 2, cnt => \$cnt);
+    close_plot($cnt, $plot, $graph_powertop_wakeups);
 ############# powertop activity #####################
     $cnt = 0;
     %show_this = ();
@@ -5284,13 +5341,17 @@ sub generate_plot_powertop
 	}
 	next unless $show_this{$p};
 	if (($cnt_1 + $cnt_2 + $cnt_3 + $cnt_4) <= $split_point) {
-	    one_plot_set(fn => "e/$p-activity", lw => 2, plot => $plot_1, cnt => \$cnt_1);
+	    one_plot_set(key => $graph_powertop_activity_1,
+		fn => "$p-activity", lw => 2, plot => $plot_1, cnt => \$cnt_1);
 	} elsif (($cnt_1 + $cnt_2 + $cnt_3 + $cnt_4) <= 2 * $split_point) {
-	    one_plot_set(fn => "e/$p-activity", lw => 2, plot => $plot_2, cnt => \$cnt_2);
+	    one_plot_set(key => $graph_powertop_activity_2,
+		fn => "$p-activity", lw => 2, plot => $plot_2, cnt => \$cnt_2);
 	} elsif (($cnt_1 + $cnt_2 + $cnt_3 + $cnt_4) <= 3 * $split_point) {
-	    one_plot_set(fn => "e/$p-activity", lw => 2, plot => $plot_3, cnt => \$cnt_3);
+	    one_plot_set(key => $graph_powertop_activity_3,
+		fn => "$p-activity", lw => 2, plot => $plot_3, cnt => \$cnt_3);
 	} elsif (($cnt_1 + $cnt_2 + $cnt_3 + $cnt_4) <= 4 * $split_point) {
-	    one_plot_set(fn => "e/$p-activity", lw => 2, plot => $plot_4, cnt => \$cnt_4);
+	    one_plot_set(key => $graph_powertop_activity_4,
+		fn => "$p-activity", lw => 2, plot => $plot_4, cnt => \$cnt_4);
 	}
     }
     close_plot($cnt_1, $plot_1, $graph_powertop_activity_1);
@@ -5312,7 +5373,8 @@ sub generate_plot_process_state_count
     my $plot = start_plotfile_histogram($graph_nonsleeping_process_count);
     foreach my $state (reverse sort keys %process_states_seen) {
 	next if $state =~ /S/;
-	one_plot_set(fn => "e/process-state-count-$state",
+	one_plot_set(key => $graph_nonsleeping_process_count,
+	    fn => "process-state-count-$state",
 	    plot => $plot, cnt => \$cnt, emit_zeroes => 1,
 	    title => $state . $state_desc{$state});
     }
@@ -5335,7 +5397,7 @@ sub generate_plot_wchan_count
     my $cnt = 0;
     my $plot = start_plotfile_histogram($graph_wchan_count);
     foreach my $wchan (reverse sort { $wchan_seen{$a} <=> $wchan_seen{$b} } keys %wchan_seen) {
-	one_plot_set(fn => "e/wchan-$wchan",
+	one_plot_set(key => $graph_wchan_count, fn => "wchan-$wchan",
 	    plot => $plot, cnt => \$cnt, emit_zeroes => 1,
 	    title => wchan_title($wchan));
     }
@@ -5348,11 +5410,12 @@ sub generate_plot_wchan_changes
     my $cnt = 0;
     my $plot = start_plotfile_linespoints($graph_wchan_changes);
     foreach my $wchan (reverse sort { $wchan_seen{$a} <=> $wchan_seen{$b} } keys %wchan_seen) {
-	my $fn = "e/wchan-$wchan";
+	my $fn = "wchan-$wchan";
 	next unless changes_found($fn);
 	next unless count_nonzero_entries($fn);
-	one_plot_set(fn => $fn, lw => 3, plot => $plot, cnt => \$cnt,
-	    emit_zeroes => 1, title => wchan_title($wchan));
+	one_plot_set(key => $graph_wchan_changes, fn => $fn, lw => 3,
+	    plot => $plot, cnt => \$cnt, emit_zeroes => 1,
+	    title => wchan_title($wchan));
     }
     close_plot($cnt, $plot, $graph_wchan_changes);
 }
@@ -5371,25 +5434,28 @@ sub generate_plot_power_supply
 	$unit_2{$graph_ps} = 'V';
 	my $plot = start_plotfile_lines_2axes($graph_ps);
 	my $cnt = 0;
-	if (value_exists("e/power_supply-$dev-capacity")) {
-	    one_plot_set(fn => "e/power_supply-$dev-capacity", lw => 5,
+	if (value_exists("power_supply-$dev-capacity")) {
+	    one_plot_set(key => $graph_ps,
+		fn => "power_supply-$dev-capacity", lw => 5,
 		plot => $plot, axes => 'x1y1', cnt => \$cnt, emit_zeroes => 1,
 		title => 'Charge % left');
 	}
-	if (value_exists("e/power_supply-$dev-temp")) {
-	    one_plot_set(fn => "e/power_supply-$dev-temp", lw => 3,
+	if (value_exists("power_supply-$dev-temp")) {
+	    one_plot_set(key => $graph_ps,
+		fn => "power_supply-$dev-temp", lw => 3,
 		plot => $plot, axes => 'x1y1', cnt => \$cnt, emit_zeroes => 1,
 		title => 'Temperature');
 	}
-	if (value_exists("e/power_supply-$dev-voltage_now")) {
-	    one_plot_set(fn => "e/power_supply-$dev-voltage_now", lw => 3,
+	if (value_exists("power_supply-$dev-voltage_now")) {
+	    one_plot_set(key => $graph_ps,
+		fn => "power_supply-$dev-voltage_now", lw => 3,
 		plot => $plot, axes => 'x2y2', cnt => \$cnt, emit_zeroes => 1,
 		title => 'Voltage');
 	}
 	foreach my $backlight_dev (sort keys %sysfs_backlight_devices) {
-	    my $fn = "e/sysfs-backlight-$backlight_dev-percentage";
+	    my $fn = "sysfs-backlight-$backlight_dev-percentage";
 	    next unless value_exists($fn);
-	    one_plot_set(fn => $fn, plot => $plot, lw => 3,
+	    one_plot_set(key => $graph_ps, fn => $fn, plot => $plot, lw => 3,
 		emit_zeroes => 1, cnt => \$cnt, axes => 'x1y1',
 		title => "Backlight $backlight_dev brightness %");
 	}
@@ -5617,7 +5683,8 @@ printf "   - average  snapshot interval: %s\n" .
        "   - shortest snapshot interval: %s\n",
        round_duration_stats();
 
-system("rm -f e/* $graphs_dir/1???_* $graphs_dir/2???_* $html_name");
+system("rm -f e/1???_*/* e/2???_*/* e/*.cmd $graphs_dir/1???_* $graphs_dir/2???_* $html_name");
+system("rmdir e/1* e/2* 2>/dev/null");
 
 mkdir "e";
 if (not -d 'e') {
