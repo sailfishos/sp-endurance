@@ -104,11 +104,6 @@ $legend{$graph_appmem_swapped} = "swap used by processes";
 $thumblegend{$graph_appmem_swapped} = "SWAP USE";
 $unit{$graph_appmem_swapped} = "MB";
 
-my $graph_events_major_pagefaults = "1010_events_major_pagefaults";
-$legend{$graph_events_major_pagefaults} = "major page faults";
-$thumblegend{$graph_events_major_pagefaults} = "PAGE FAULTS";
-$unit{$graph_events_major_pagefaults} = "count per second";
-
 my $graph_appmem_locked = "1020_appmem_locked";
 $legend{$graph_appmem_locked} = "process locked mem size";
 $thumblegend{$graph_appmem_locked} = "LOCKED";
@@ -3706,23 +3701,62 @@ sub generate_plot_processes_global
     close_plot($cnt, $plot, $graph_processes_global);
 }
 
-sub generate_plot_pagefaults
+sub generate_plot_major_pagefaults
 {
-    my $plot = start_plotfile_lines($graph_events_major_pagefaults);
-    my $cnt = 0;
-    foreach my $p (reverse sort {$majflt_cumul{$a} <=> $majflt_cumul{$b} } keys %majflt_cumul) {
-#	if ($cnt > $max_per_graph_onecolumn) {
-	if ($cnt > 5) {
-	    last;
-	} 
-	if ($majflt_cumul{$p} == 0) {
-	    last;
-	} 
-	one_plot_set(key => $graph_events_major_pagefaults,
-	    fn => "majflt-$p", lw => 3, plot => $plot, cnt => \$cnt,
-	    emit_zeroes => 1, title => $p);
+    use constant MAJOR_PAGEFAULTS_MAX_PLOTS => 3;
+    use constant MAJOR_PAGEFAULTS_MAX_PER_PLOT => 10;
+    my %majflt_cumul_to_plot = %majflt_cumul;
+    foreach my $plot_idx (1 .. MAJOR_PAGEFAULTS_MAX_PLOTS) {
+	my $graph_majorfaults = "1010_majorfault_${plot_idx}";
+	$legend{$graph_majorfaults} = 'Major page faults';
+	$thumblegend{$graph_majorfaults} = "MAJOR PAGE FAULTS $plot_idx";
+	$unit{$graph_majorfaults} = 'count per second';
+	my $plot = start_plotfile_linespoints($graph_majorfaults);
+	my $cnt_this_round = 0;
+	my @plotted_this_round;
+	foreach my $p (reverse sort { $majflt_cumul{$a} <=> $majflt_cumul{$b} } keys %majflt_cumul_to_plot) {
+	    my $fn = "majflt-$p";
+	    next if not changes_found($fn);
+	    one_plot_set(key => $graph_majorfaults, fn => $fn, lw => 3,
+		plot => $plot, cnt => \$cnt_this_round, emit_zeroes => 1,
+		title => $p);
+	    push(@plotted_this_round, $p);
+	    last if $cnt_this_round >= MAJOR_PAGEFAULTS_MAX_PER_PLOT;
+	}
+	foreach my $p (@plotted_this_round) {
+	    delete $majflt_cumul_to_plot{$p};
+	}
+	close_plot($cnt_this_round, $plot, $graph_majorfaults);
     }
-    close_plot($cnt, $plot, $graph_events_major_pagefaults);
+}
+
+sub generate_plot_minor_pagefaults
+{
+    use constant MINOR_PAGEFAULTS_MAX_PLOTS => 3;
+    use constant MINOR_PAGEFAULTS_MAX_PER_PLOT => 10;
+    my %minflt_cumul_to_plot = %minflt_cumul;
+    foreach my $plot_idx (1 .. MINOR_PAGEFAULTS_MAX_PLOTS) {
+	my $graph_minorfaults = "1011_minorfault_${plot_idx}";
+	$legend{$graph_minorfaults} = 'Minor page faults';
+	$thumblegend{$graph_minorfaults} = "MINOR PAGE FAULTS $plot_idx";
+	$unit{$graph_minorfaults} = 'count per second';
+	my $plot = start_plotfile_linespoints($graph_minorfaults);
+	my $cnt_this_round = 0;
+	my @plotted_this_round;
+	foreach my $p (reverse sort { $minflt_cumul{$a} <=> $minflt_cumul{$b} } keys %minflt_cumul_to_plot) {
+	    my $fn = "minflt-$p";
+	    next if not changes_found($fn);
+	    one_plot_set(key => $graph_minorfaults, fn => $fn, lw => 3,
+		plot => $plot, cnt => \$cnt_this_round, emit_zeroes => 1,
+		title => $p);
+	    push(@plotted_this_round, $p);
+	    last if $cnt_this_round >= MINOR_PAGEFAULTS_MAX_PER_PLOT;
+	}
+	foreach my $p (@plotted_this_round) {
+	    delete $minflt_cumul_to_plot{$p};
+	}
+	close_plot($cnt_this_round, $plot, $graph_minorfaults);
+    }
 }
 
 sub generate_plot_cpu
@@ -5472,7 +5506,8 @@ sub generate_plots()
     generate_plot_ctx();
     generate_plot_loadavg();
     generate_plot_processes_global();
-    generate_plot_pagefaults();
+    generate_plot_major_pagefaults();
+    generate_plot_minor_pagefaults();
     generate_plot_cpu();
     generate_plot_cpu_freq();
     generate_plot_cputime();
