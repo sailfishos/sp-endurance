@@ -114,11 +114,6 @@ $legend{$graph_appmem_wx} = "executable mem which is writable, security issue";
 $thumblegend{$graph_appmem_wx} = "WRITABLE-EXEC";
 $unit{$graph_appmem_wx} = "MB";
 
-my $graph_vmsize = "1040_vmsize";
-$legend{$graph_vmsize} = "process virtual mem size";
-$thumblegend{$graph_vmsize} = "VMSIZE";
-$unit{$graph_vmsize} = "MB";
-
 my $graph_appmem_sysvshared = "1050_appmem_sysvshared";
 $legend{$graph_appmem_sysvshared} = "process SYSV-shared mem size";
 $thumblegend{$graph_appmem_sysvshared} = "SYSV-SHAREDMEM";
@@ -660,7 +655,6 @@ my %fd_disk;
 my %app_pss;
 my %app_swapped;
 my %app_sum_locked;
-my (%app_sum_vmsz, %prev_vmsize, %changed_vmsize);
 my %app_sysv_shared;
 my %app_posix_shared;
 my %app_rwxp;
@@ -744,6 +738,7 @@ my $swap_pgout_total = 0;
 
 my %vma_count_max;
 my %private_dirty_max;
+my %vmsize_max;
 
 my %cgroups;
 my %cgroups_demangle;
@@ -2094,6 +2089,7 @@ sub process_smaps
     my $sum_app_swapped = 0;
     my $sum_app_pss = 0;
     my %private_dirty;
+    my %vmsize;
     %app_swapped = ();
     %app_pss = ();
     %app_sysv_shared = ();
@@ -2187,14 +2183,7 @@ sub process_smaps
 	    if( index($_, "#VmSize: ") != -1) {
 		chop;
 		my (undef, $vmsz) = split(' ' , $_, 2);
-		$fn = "vmsz-$nm";
-		$app_sum_vmsz{$nm} += $vmsz;
-		my $xxx = $vmsz / 1024;
-		value_store_zeropad($fn, $round, $xxx);
-		if ($prev_vmsize{$nm} && ($prev_vmsize{$nm} != $vmsz)) {
-		    $changed_vmsize{$nm} = 1;
-		}
-		$prev_vmsize{$nm} = $vmsz;
+		$vmsize{$nm} = $vmsz;
 		next;
 	    }
 	} else {
@@ -2248,6 +2237,10 @@ sub process_smaps
     foreach (keys %private_dirty) {
 	value_store("private_dirty-$_", $round, $private_dirty{$_} / 1024);
 	$private_dirty_max{$_} = max $private_dirty{$_}, $private_dirty_max{$_};
+    }
+    foreach (keys %vmsize) {
+	value_store("vmsize-$_", $round, $vmsize{$_} / 1024);
+	$vmsize_max{$_} = max $vmsize{$_}, $vmsize_max{$_};
     }
     $sum_app_swapped /= 1024;
     $sum_app_pss /= 1024;
@@ -4033,15 +4026,40 @@ sub generate_plot_mlocked
 
 sub generate_plot_vmsize
 {
-    my $plot = start_plotfile_linespoints($graph_vmsize);
-    my $cnt = 0;
-    foreach my $p (reverse sort {$app_sum_vmsz{$a} <=> $app_sum_vmsz{$b} } keys %app_sum_vmsz) {
-	if ($changed_vmsize{$p}) {
-	    one_plot_set(key => $graph_vmsize, fn => "vmsz-$p", lw => 3,
-		plot => $plot, cnt => \$cnt, title => $p);
+    use constant VMSIZE_MAX_PLOTS => 4;
+    use constant VMSIZE_MAX_PER_PLOT => 15;
+    use constant VMSIZE_SPLIT_FACTOR => 5;
+    my %vmsize_max_to_plot = %vmsize_max;
+    foreach my $plot_idx (1 .. VMSIZE_MAX_PLOTS) {
+	my $graph_vmsize = "1040_vmsize_${plot_idx}";
+	$legend{$graph_vmsize} = 'Process virtual memory size (changed only)';
+	$unit{$graph_vmsize} = 'MB';
+	my $plot = start_plotfile_linespoints($graph_vmsize);
+	my $prev_max = 0;
+	my $cnt_this_round = 0;
+	my @plotted_this_round;
+	foreach my $p (reverse sort { $vmsize_max{$a} <=> $vmsize_max{$b} } keys %vmsize_max_to_plot) {
+	    my $fn = "vmsize-$p";
+	    next if not changes_found($fn);
+	    if (not $prev_max) {
+		$prev_max = $vmsize_max{$p};
+	    }
+	    if ($plot_idx < VMSIZE_MAX_PLOTS and $prev_max >= (VMSIZE_SPLIT_FACTOR * $vmsize_max{$p})) {
+		last;
+	    }
+	    one_plot_set(key => $graph_vmsize, fn => $fn, lw => 3,
+		plot => $plot, cnt => \$cnt_this_round, title => $p);
+	    push(@plotted_this_round, $p);
+	    if ($plot_idx < VMSIZE_MAX_PLOTS and $cnt_this_round > VMSIZE_MAX_PER_PLOT) {
+		last;
+	    }
 	}
+	foreach my $p (@plotted_this_round) {
+	    delete $vmsize_max_to_plot{$p};
+	}
+	$thumblegend{$graph_vmsize} = "VMSIZE &mdash; MAX " . ceil($prev_max / 1024) . 'MB';
+	close_plot($cnt_this_round, $plot, $graph_vmsize);
     }
-    close_plot($cnt, $plot, $graph_vmsize);
 }
 
 sub generate_plot_memory_map_count
