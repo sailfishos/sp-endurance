@@ -743,6 +743,7 @@ my $swapused_total = 0;
 my $swap_pgout_total = 0;
 
 my %vma_count_max;
+my %private_dirty_max;
 
 my %cgroups;
 my %cgroups_demangle;
@@ -2092,6 +2093,7 @@ sub process_smaps
     my %process_devpvr_count;
     my $sum_app_swapped = 0;
     my $sum_app_pss = 0;
+    my %private_dirty;
     %app_swapped = ();
     %app_pss = ();
     %app_sysv_shared = ();
@@ -2112,6 +2114,11 @@ sub process_smaps
 		my $swapped = int(substr($_, 5, -4));
 		$sum_app_swapped += $swapped;
 		$app_swapped{$nm} += $swapped;
+		next;
+	    }
+	    if( index($_, "Private_Dirty:") != -1) {
+		my $private_dirty = int(substr($_, 14, -4));
+		$private_dirty{$nm} += $private_dirty;
 		next;
 	    }
 	} elsif (m/^#/) {
@@ -2237,6 +2244,10 @@ sub process_smaps
     foreach (keys %vma_count) {
 	value_store("vma-count-$_", $round, $vma_count{$_});
 	$vma_count_max{$_} = max $vma_count{$_}, $vma_count_max{$_};
+    }
+    foreach (keys %private_dirty) {
+	value_store("private_dirty-$_", $round, $private_dirty{$_} / 1024);
+	$private_dirty_max{$_} = max $private_dirty{$_}, $private_dirty_max{$_};
     }
     $sum_app_swapped /= 1024;
     $sum_app_pss /= 1024;
@@ -4071,6 +4082,44 @@ sub generate_plot_memory_map_count
     }
 }
 
+sub generate_plot_private_dirty_changes
+{
+    use constant PRIVATE_DIRTY_MAX_PLOTS => 4;
+    use constant PRIVATE_DIRTY_MAX_PER_PLOT => 15;
+    use constant PRIVATE_DIRTY_SPLIT_FACTOR => 5;
+    my %private_dirty_max_to_plot = %private_dirty_max;
+    foreach my $plot_idx (1 .. PRIVATE_DIRTY_MAX_PLOTS) {
+	my $graph_private_dirty = "1009_private_dirty_${plot_idx}";
+	$legend{$graph_private_dirty} = 'Private dirty';
+	$unit{$graph_private_dirty} = 'MB';
+	my $plot = start_plotfile_linespoints($graph_private_dirty);
+	my $prev_max = 0;
+	my $cnt_this_round = 0;
+	my @plotted_this_round;
+	foreach my $p (reverse sort { $private_dirty_max{$a} <=> $private_dirty_max{$b} } keys %private_dirty_max_to_plot) {
+	    my $fn = "private_dirty-$p";
+	    next if not changes_found($fn);
+	    if (not $prev_max) {
+		$prev_max = $private_dirty_max{$p};
+	    }
+	    if ($plot_idx < PRIVATE_DIRTY_MAX_PLOTS and $prev_max >= (PRIVATE_DIRTY_SPLIT_FACTOR * $private_dirty_max{$p})) {
+		last;
+	    }
+	    one_plot_set(key => $graph_private_dirty, fn => $fn, lw => 3,
+		plot => $plot, cnt => \$cnt_this_round, title => $p);
+	    push(@plotted_this_round, $p);
+	    if ($plot_idx < PRIVATE_DIRTY_MAX_PLOTS and $cnt_this_round > PRIVATE_DIRTY_MAX_PER_PLOT) {
+		last;
+	    }
+	}
+	foreach my $p (@plotted_this_round) {
+	    delete $private_dirty_max_to_plot{$p};
+	}
+	$thumblegend{$graph_private_dirty} = "PRIVATE DIRTY &mdash; MAX " . ceil($prev_max / 1024) . 'MB';
+	close_plot($cnt_this_round, $plot, $graph_private_dirty);
+    }
+}
+
 sub generate_plot_heap_histogram
 {
     my $plot = start_plotfile_histogram($graph_appmem_heap);
@@ -5517,6 +5566,7 @@ sub generate_plots()
     generate_plot_memory_map_count();
     generate_plot_heap_histogram();
     generate_plot_heap();
+    generate_plot_private_dirty_changes();
     generate_plot_sysvshared();
     generate_plot_posixshared();
     generate_plot_dev_pvr();
