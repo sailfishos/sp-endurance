@@ -3,7 +3,7 @@
 # Show memory usage overview graph from usage.csv files.
 # This file is part of sp-endurance.
 #
-# Copyright (C) 2007,2009-2010 by Nokia Corporation
+# Copyright (C) 2007,2009-2011 by Nokia Corporation
 #
 # Contact: Eero Tamminen <eero.tamminen@nokia.com>
 #
@@ -99,7 +99,12 @@ if [ $# -lt 2 ]; then
 	usage "too few arguments"
 fi
 
-tmpfile=$(tempfile)
+if [ -z $(which mktemp) ]; then
+	echo "ERROR: mktemp missing!"
+	exit 1
+fi
+tmpfile=$(mktemp)
+
 exit_cleanup ()
 {
 	if [ $? -ne 0 ]; then
