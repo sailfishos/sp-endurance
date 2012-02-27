@@ -1,9 +1,16 @@
-sp-endurance (-), -:
+sp-endurance (3.0.3), 27 Feb 2012:
  * proc2csv fixes for newer kernels (desktop Ubuntu):
    - change ',' in proc files field contents to '/'
    - increase proc file CSV line buffer size from 256 to 512,
      otherwise long lines can get split
  * support separate doc install path
+ * endurance_plot:
+   - Fix incorrect entries for short living processes in some histogram plots.
+   - 'Major page fault' graphs now split to several graphs for improved
+     readability. Graphs added for minor page faults.
+   - Added 'private dirty' memory graphs.
+   - Virtual memory size graph now split to several graphs for improved
+     readability.
 
 sp-endurance (3.0.2), 27 Dec 2011:
  * Harmattan 'sp-endurance-tests' package integration fix.
