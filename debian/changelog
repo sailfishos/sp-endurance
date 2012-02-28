@@ -1,3 +1,9 @@
+sp-endurance (3.0.3-1) unstable; urgency=low
+
+  * Package sp-endurance v3.0.3.
+
+ -- Tommi Rantala <ext-tommi.1.rantala@nokia.com>  Tue, 28 Feb 2012 09:42:41 +0200
+
 sp-endurance (3.0.2) unstable; urgency=low
 
   * Revert 'sp-endurance-tests' binary package change.
