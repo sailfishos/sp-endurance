@@ -1,0 +1,682 @@
+sp-endurance (3.0.2) unstable; urgency=low
+
+  * Revert 'sp-endurance-tests' binary package change.
+
+ -- Tommi Rantala <ext-tommi.1.rantala@nokia.com>  Tue, 27 Dec 2011 09:48:18 +0200
+
+sp-endurance (3.0.1) unstable; urgency=low
+
+  * Fixes: NB#292824 - Misc sp-endurance portability issues
+  * Fixes: NB#289527 - Provide tool in sp-endurance-postproc for
+    re-compressing endurance data
+
+ -- Tommi Rantala <ext-tommi.1.rantala@nokia.com>  Thu, 22 Dec 2011 15:35:35 +0200
+
+sp-endurance (3.0) unstable; urgency=low
+
+  * Fixes: NB#281308 - proc2csv cannot read processes FD information even as
+    root
+  * Fixes: NB#285793 - Utility to get names of processes in each cgroup for
+    specified endurance snapshot
+  * Fixes: NB#288500 - Grouping sp-endurance graphs better
+  * Fixes: NB#288799 - Make sp-endurance X dependency optional
+  * Fixes: NB#288847 - Wrapper for data saving which tells kernel not to cache
+    the saved data
+  * Fixes: NB#289527 - Provide tool in sp-endurance-postproc for
+    re-compressing endurance data
+
+ -- Tommi Rantala <ext-tommi.1.rantala@nokia.com>  Fri, 09 Dec 2011 15:30:18 +0200
+
+sp-endurance (2.3) unstable; urgency=low
+
+  * Fixes: NB#285793 - Utility to get names of processes in each cgroup for
+    specified endurance snapshot
+  * Fixes: NB#286552 - sp-endurance should collect CPU frequency information
+    and plot it
+
+ -- Tommi Rantala <ext-tommi.1.rantala@nokia.com>  Thu, 27 Oct 2011 14:09:12 +0300
+
+sp-endurance (2.2.11) unstable; urgency=low
+
+  * Fixes: NB#281443 - Include cgroup group names to exited/new process lists
+  * Fixes: NB#257593 - endurance_plot: "#smaps segments" graph only includes
+    processes that are alive in last round
+
+ -- Tommi Rantala <ext-tommi.1.rantala@nokia.com>  Thu, 20 Oct 2011 15:04:54 +0300
+
+sp-endurance (2.2.10) unstable; urgency=low
+
+  * Fixes: NB#260658 - endurance_plot: generate networking related plots
+
+ -- Tommi Rantala <ext-tommi.1.rantala@nokia.com>  Thu, 06 Oct 2011 15:15:52 +0300
+
+sp-endurance (2.2.9) unstable; urgency=low
+
+  * Fixes: NB#265657 - sp-endurance: collect and visualize cgroup memory usage
+  * Fixes: NB#277838 - sp-endurance: improve endurance report generation speed
+    on device
+
+ -- Tommi Rantala <ext-tommi.1.rantala@nokia.com>  Wed, 07 Sep 2011 15:09:32 +0300
+
+sp-endurance (2.2.8) unstable; urgency=low
+
+  * Fixes: NB#276418 - sp-endurance: endurance_plot does not work in device
+
+ -- Tommi Rantala <ext-tommi.1.rantala@nokia.com>  Mon, 15 Aug 2011 16:09:23 +0300
+
+sp-endurance (2.2.7) unstable; urgency=low
+
+  * Fixes: NB#268293 - sp-endurance: collect ramzswap statistics with
+    rzscontrol
+
+ -- Tommi Rantala <ext-tommi.1.rantala@nokia.com>  Thu, 23 Jun 2011 14:20:55 +0300
+
+sp-endurance (2.2.6) unstable; urgency=low
+
+  * Fixes: NB#262046 - endurance_report.py dies during analysis
+  * Fixes: NB#262035 - extract-endurance-process-smaps has problems when
+    /bin/sh comes from dash
+  * Fixes: NB#266768 - extract-endurance-process-smaps returns 0 when nothing
+    matching found
+
+ -- Tommi Rantala <ext-tommi.1.rantala@nokia.com>  Mon, 20 Jun 2011 15:54:04 +0300
+
+sp-endurance (2.2.5) unstable; urgency=low
+
+  * Fixes: NB#240984 - sp-endurance doesn't find syslog on normal Linux
+    desktop or MeeGo
+
+ -- Tommi Rantala <ext-tommi.1.rantala@nokia.com>  Mon, 18 Apr 2011 15:18:39 +0300
+
+sp-endurance (2.2.4) unstable; urgency=low
+
+  * Fixes: NB#242899 - Endurance report memory usage graph pixel width not
+    respected by browser zoom, results to misleading visualization
+
+ -- Tommi Rantala <ext-tommi.1.rantala@nokia.com>  Fri, 15 Apr 2011 09:57:38 +0300
+
+sp-endurance (2.2.3) unstable; urgency=low
+
+  * Fixes: NB#246002 - syslog parser does not catch kernel OOM-killed messages
+    in syslog
+
+ -- Tommi Rantala <ext-tommi.1.rantala@nokia.com>  Thu, 14 Apr 2011 15:36:23 +0300
+
+sp-endurance (2.2.2) unstable; urgency=low
+
+  * Fixes: NB#233493 - endurance_plot takes GBs of RAM
+
+ -- Tommi Rantala <ext-tommi.1.rantala@nokia.com>  Mon, 07 Mar 2011 11:09:41 +0200
+
+sp-endurance (2.2.1) unstable; urgency=low
+
+  * replace support for obsolete memory limits in old Maemo releases
+    with hard-coded Linux kernel OOM limit (with dummy data output by
+    proc2csv for compatiblity to old sp-endurance-postproc versions).
+    Fixes: NB#222547
+  * Replace the use of sysinfo-tool with sysinfoclient. Fixes: NB#223953
+  * Do not pass arguments to echo(1), they are not portable. Fixes: NB#225612
+  * Invoke df(1) with POSIX locale and "-k -P" for portability.
+    Fixes: NB#225624
+  * Add battery information to endurance data snapshot. Fixes: NB#222567
+
+ -- Tommi Rantala <ext-tommi.1.rantala@nokia.com>  Mon, 28 Feb 2011 17:55:07 +0200
+
+sp-endurance (2.2) unstable; urgency=low
+
+  * endurance_report.py: fix IndexError with more than 4 network interfaces.
+    Fixes: NB#220118
+
+ -- Tommi Rantala <ext-tommi.1.rantala@nokia.com>  Wed, 19 Jan 2011 10:56:15 +0200
+
+sp-endurance (2.1.9) unstable; urgency=low
+
+  * save-incremental-endurance-stats: collect /proc/diskstats and
+    /proc/zoneinfo. Fixes: NB#212730
+  * endurance_plot:
+    - New IO plots based on /proc/diskstats.
+    - Various small tweaks.
+
+ -- Tommi Rantala <ext-tommi.1.rantala@nokia.com>  Tue, 28 Dec 2010 12:17:54 +0200
+
+sp-endurance (2.1.8) unstable; urgency=low
+
+  * New post-processing tool `endurance_plot'. Fixes: NB#204488
+    - endurance_plot creates a large variety of (RAM, swap, CPU, X resource
+      usage, interrupt, context switch etc) graphs from sp-endurance collected
+      data for trend analysis.
+  * Get bootreason from sysinfo. Fixes: NB#199022
+  * Fix proc2csv errors with long lines. Fixes: NB#208432
+  * Fix unnecessary sysinfoclient output parsing. Fixes: NB#207708
+
+ -- Tommi Rantala <ext-tommi.1.rantala@nokia.com>  Fri, 03 Dec 2010 11:08:54 +0200
+
+sp-endurance (2.1.7) unstable; urgency=low
+
+  * Remove use of deprecated /proc/component_version and /proc/bootreason
+    interfaces. Fixes: NB#199022
+
+ -- Tommi Rantala <ext-tommi.1.rantala@nokia.com>  Wed, 17 Nov 2010 14:08:53 +0200
+
+sp-endurance (2.1.6) unstable; urgency=low
+
+  * endurance_report.py: track DRI2Drawable resource atom count changes.
+    Fixes: NB#157338
+  * save-incremental-endurance-stats: provide default value for DISPLAY.
+    Fixes: NB#200347
+
+ -- Tommi Rantala <ext-tommi.1.rantala@nokia.com>  Tue, 26 Oct 2010 14:59:34 +0300
+
+sp-endurance (2.1.5) unstable; urgency=low
+
+  * xmeminfo: add support for new X resource types. This changes the CSV
+    output format produced by xmeminfo.
+  * xmeminfo: optionally report only specified atoms: add new parameter
+    -a/-atom.
+  * endurance_report.py: add support for new xmeminfo CSV format.
+  * Add dependency to sysinfo-tool to fix useless release identification in
+    usage.csv produced by save-incremental-endurance-stats. Fixes: NB#199719
+
+ -- Tommi Rantala <ext-tommi.1.rantala@nokia.com>  Thu, 21 Oct 2010 15:11:42 +0300
+
+sp-endurance (2.1.4) unstable; urgency=low
+
+  * endurance_report.py: report change from initial state - Fixes: NB#176122
+
+ -- Tommi Rantala <ext-tommi.1.rantala@nokia.com>  Tue, 05 Oct 2010 11:31:24 +0300
+
+sp-endurance (2.1.3) unstable; urgency=low
+
+  * endurance-mem-overview: take SwapCached into account.
+  * endurance_report.py: Improve the heuristics for selecting processes for
+    the 'Process memory usage' section:
+        i) Prune processes that do not use any CPU ticks.
+       ii) Include processes that used at least 0.5% of total CPU time during
+           the first and last round.
+    Fixes: NB#164928
+
+ -- Tommi Rantala <ext-tommi.1.rantala@nokia.com>  Tue, 31 Aug 2010 13:56:37 +0300
+
+sp-endurance (2.1.2) unstable; urgency=low
+
+  * Update save-incremental-endurance-stats for Harmattan. Fixes: NB#186994
+
+ -- Kiryl Shutsemau <kiryl.shutsemau@nokia.com>  Mon, 23 Aug 2010 17:21:57 +0300
+
+sp-endurance (2.1.1) unstable; urgency=low
+
+  * Prominent notice about reboots in endurance reports. Fixes: NB#169356
+
+ -- Kiryl Shutsemau <kiryl.shutsemau@nokia.com>  Tue, 18 May 2010 13:36:41 +0200
+
+sp-endurance (2.1) unstable; urgency=low
+
+  * Handle X client names with commas and df filesystem usage output
+    spanning multiple lines. Fixes: NB#163812
+  * Store focused/topmost application name if use-case step description
+    is missing.  Fixes: NB#164110
+  * Improved heuristics for removing memove graphs for non-interesting
+    processes, with a fix for swap+dirty accounting and a new --show-all
+    option to get graphs for all processes.  Fixes: NB#159301
+
+ -- Kiryl Shutsemau <kiryl.shutsemau@nokia.com>  Wed, 21 Apr 2010 14:36:41 +0200
+
+sp-endurance (2.0.3) unstable; urgency=low
+
+  * Use "-a" option for ifconfig.  Fixes: NB#159288
+  * Correct swap/page in/out, interrupt and context switch counts,
+    they were 100x off. Fixes: NB#159294
+
+ -- Kiryl Shutsemau <kiryl.shutsemau@nokia.com>  Fri, 05 Mar 2010 17:36:41 +0200
+
+sp-endurance (2.0.2) unstable; urgency=low
+
+  * Fix the post-processing exception when network interfaces are
+    active, but have no traffic.  Fixes: NB#153961
+  * Add CI test script.
+
+ -- Kiryl Shutsemau <kiryl.shutsemau@nokia.com>  Thu, 21 Jan 2010 17:56:41 +0200
+
+sp-endurance (2.0.1) unstable; urgency=low
+
+  * Do not mangle the last character in the process command line.
+    Fixes: NB#144538
+  * Proper error handling in case low memory limits are missing from the data.
+    Fixes: NB#144981
+
+ -- Kiryl Shutsemau <kiryl.shutsemau@nokia.com>  Thu, 12 Nov 2009 13:56:41 +0200
+
+sp-endurance (2.0) unstable; urgency=low
+
+  * "proc2csv" stores the whole process command line; this makes the data
+    format incompatible with older sp-endurance-postproc versions.
+    Fixes: NB#144538, NB#144586
+  * "endurance-mem-overview" takes swap into account and it's now possible
+    to specify the shown memory usage range. Fixes: NB#144138
+  * Show X resource count differencies in addition to X resource memory usage
+    in the summary at the end. Fixes: NB#143985
+  * Show network interface transfers graph in the beginning. Fixes: NB#143225
+  * Add "extract-endurance-process-smaps" helper script. Fixes: NB#142776
+  * Support Fremantle low memory limits scheme. Fixes: NB#144981
+  * Update documentation
+
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Mon, 30 Oct 2009 18:54:43 +0200
+
+sp-endurance (1.24) unstable; urgency=low
+
+  * Give more detailed X resource usage information and log use of unknown
+    X resources. Data format change is incompatible with previous
+    sp-endurance-postproc versions
+    Fixes: NB#143151
+
+ -- Kiryl Shutsemau <kiryl.shutsemau@nokia.com>  Mon, 9 Jun 2009 16:37:19 +0200
+
+sp-endurance (1.23) unstable; urgency=low
+
+  * Fix harmless Coverity reported leak on error exit + set freed
+    namelist entries NULL in proc2csv. Fixes: NB#121145
+
+ -- Kiryl Shutsemau <kiryl.shutsemau@nokia.com>  Mon, 9 Jun 2009 16:37:19 +0200
+
+sp-endurance (1.22) unstable; urgency=low
+
+  * Fix divide-by-zero error on identical (copied) data. Fixes: NB#119307
+
+ -- Kiryl Shutsemau <kiryl.shutsemau@nokia.com>  Mon, 1 Jun 2009 15:57:19 +0200
+
+sp-endurance (1.21) unstable; urgency=low
+
+  * CPU/swap/interrups/context switch statistics added. Fixes: NB#107365
+
+ -- Kiryl Shutsemau <kiryl.shutsemau@nokia.com>  Tue, 19 May 2009 15:57:19 +0200
+
+sp-endurance (1.20) unstable; urgency=low
+
+  * Fix endurance_report.py to work with Scratchbox Python v2.3.
+
+ -- Kiryl Shutsemau <kiryl.shutsemau@nokia.com>  Tue, 5 May 2009 15:55:09 +0200
+
+sp-endurance (1.19) unstable; urgency=low
+
+  * More statistics added. Fixes: NB#107365
+  * Fixes NB#109052: sp-endurance/syslog parser doesn't catch upstart reported
+    crash/restart messages
+  * Fixes NB#112730: sp-endurance uses obsolete /etc/osso_software_version
+
+ -- Kiryl Shutsemau <kiryl.shutsemau@nokia.com>  Tue, 28 Apr 2009 16:09:17 +0200
+
+sp-endurance (1.18) unstable; urgency=low
+
+  * Add PSS and SWAP support to endurance_report.py
+
+ -- Kiryl Shutsemau <kiryl.shutsemau@nokia.com>  Tue, 16 Apr 2009 19:03:17 +0200
+
+sp-endurance (1.17) unstable; urgency=low
+
+  * Syslog parser now recognizes and reports D-BUS warnings about
+    applications having too wide signal matching rules. Fixes: NB#98637
+
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Tue,  3 Mar 2009 17:13:27 +0200
+
+sp-endurance (1.16) unstable; urgency=low
+
+  * The shared memory segment stats are now included in the main report
+    page. Fixes: NB#94553
+
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Thu,  4 Dec 2008 11:57:54 +0200
+
+sp-endurance (1.15) unstable; urgency=low
+
+  * Fixed a Lintian warning.
+
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Thu, 21 Aug 2008 17:06:15 +0300
+
+sp-endurance (1.14) unstable; urgency=low
+
+  * Remove support for SleepAVG as newer kernels don't support it.
+    Fixes: NB#87720
+
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Thu, 21 Aug 2008 16:31:00 +0300
+
+sp-endurance (1.13) unstable; urgency=low
+
+  * The message output introduced by the fix in version 1.12 has been
+    tweaked slightly.
+
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Wed, 25 Jun 2008 10:26:00 +0300
+
+sp-endurance (1.12) unstable; urgency=low
+
+  * Parse kernel BUG and onenand_wait issues. Fixes: NB#86607
+
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Wed, 25 Jun 2008 09:57:57 +0300
+
+sp-endurance (1.11) unstable; urgency=low
+
+  * Compatibility issue with older endurance data was fixed. Fixes:
+    NB#86013
+
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Fri, 30 May 2008 09:58:23 +0300
+
+sp-endurance (1.10) unstable; urgency=low
+
+  * Support for adding use-case test descriptions has been implemented.
+    Fixes: NB#85141
+
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Wed, 30 Apr 2008 16:23:33 +0300
+
+sp-endurance (1.9) unstable; urgency=low
+
+  * Fixed broken detection of kernel OOM messages caused by change in
+    case. Fixes: NB#84309
+
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Wed, 16 Apr 2008 14:29:59 +0300
+
+sp-endurance (1.8) unstable; urgency=low
+
+  * Fixed endurance parsing failure when process smaps data had no
+    private dirty memory. Fixes: NB#83676
+
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Fri,  4 Apr 2008 10:47:27 +0300
+
+sp-endurance (1.7) unstable; urgency=low
+
+  * Fixed syslog rotation handling issue. Fixes: NB#83445
+
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Tue,  1 Apr 2008 14:17:38 +0300
+
+sp-endurance (1.6) unstable; urgency=low
+
+  * Fixed empty DSME files not being handled gracefully. Fixes: NB#81188
+
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Fri, 22 Feb 2008 09:55:00 +0200
+
+sp-endurance (1.5) unstable; urgency=low
+
+  * A rare warning message also triggered an exception in endurance
+    report script. Fixes: NB#81073
+
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Wed, 20 Feb 2008 13:44:59 +0200
+
+sp-endurance (1.4) unstable; urgency=low
+
+  * save-incremental-endurance-stats: argument handling robustness has
+    been improved. Fixes: NB#79269
+
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Mon, 14 Jan 2008 17:03:50 +0200
+
+sp-endurance (1.3) unstable; urgency=low
+
+  * save-incremental-endurance-stats: when sp_smaps_snapshot is
+    missing, produces (about) same data with few lines of shell
+  * parse-endurance-measurements: handle compressed smaps files
+  * endurance_report.py: show smaps private-dirty information
+    in application memory usage graphs
+  * update/fix README
+    Fixes: NB#77594
+
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Wed, 28 Nov 2007 18:18:54 +0200
+
+sp-endurance (1.2) unstable; urgency=low
+
+  * save-incremental-endurance-stats: save open file descriptors,
+    use proc2csv in permissive mode so that also non-root can get
+    data required in postprocessing. Fixes: NB#74679
+  * endurance_report.py: link open-fds and smaps.cap files, include
+    SwapCached to system free and show swap change in summary,
+    show differences in process thread counts
+  * compress smaps.cap in save-incremental-endurance-stats and
+    handle that in endurance_report.py. Fixes: NB#74905
+  * endurance_report.py: Fail more gracefully when encountering mixed-
+    version endurance data. Fixes: NB#72588
+
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Tue,  6 Nov 2007 13:39:17 +0200
+
+sp-endurance (1.1.18) unstable; urgency=low
+
+  * syslog_parse.py: handle syslog read failures gracefully.
+    Fix to 66123 got dates in Glib errors duplicated, fixed.
+    Fixes: NB#71722
+
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Tue,  2 Oct 2007 14:47:05 +0300
+
+sp-endurance (1.1.17) unstable; urgency=low
+
+  * Added a missing a comma in a dictionary declaration at
+    syslog_parse.py. Fixes: NB#67436
+
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Fri, 31 Aug 2007 14:54:43 +0300
+
+sp-endurance (1.1.16) unstable; urgency=low
+
+  * Include day to the errors parsed from syslog. Fixes: NB#66123
+
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Thu, 12 Jul 2007 16:01:59 +0300
+
+sp-endurance (1.1.15) unstable; urgency=low
+
+  * Parse bootup reason from syslog. Fixes: NB#61217
+
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Thu, 12 Jul 2007 16:01:59 +0300
+
+sp-endurance (1.1.14) unstable; urgency=low
+
+  * Parse kernel I/O errors from syslog
+
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Thu, 24 May 2007 19:16:25 +0300
+
+sp-endurance (1.1.13) unstable; urgency=low
+
+  * Have complete license text in the source package instead of just
+    referring to system GPL-2 license file. Add copyright and license
+    information to manpages. Fixes: NB#55850
+
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Wed,  9 May 2007 10:41:32 +0300
+
+sp-endurance (1.1.12) unstable; urgency=low
+
+  * Sort resource usage tables according to changes, not total
+  * Fix to python exception in get_pid_usage_diffs()
+
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Thu,  3 May 2007 15:50:23 +0300
+
+sp-endurance (1.1.11) unstable; urgency=low
+
+  * Ignore all resources (i.e. also private memory and FDs)
+    used by extra threads processes have. Fixes: NB#55178
+  * Add endurance-mem-overview Awk script giving a quick memory usage
+    overview ASCII-graph from the endurance data which can be run on
+    the target device (as it doesn't need Python)
+
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Thu, 26 Apr 2007 09:30:41 +0300
+
+sp-endurance (1.1.10) unstable; urgency=low
+
+  * List also changes in kernel threads and zombie processes
+  * Fold the script save-incremental-endurance-stats calls back
+  * Fix to new thread ignore code. Fixes: NB#54436
+
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Tue, 17 Apr 2007 16:32:15 +0300
+
+sp-endurance (1.1.9) unstable; urgency=low
+
+  * Do not ignore any processes, even my own
+  * Cope with missing SMAPS data in endurance_report.py. Fixes: NB#54289
+
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Mon, 16 Apr 2007 16:57:16 +0300
+
+sp-endurance (1.1.8) unstable; urgency=low
+
+  * Fix how threads are indentified for removal from memory usage graphs.
+    Fixes: NB#54130
+
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Thu, 12 Apr 2007 16:01:56 +0300
+
+sp-endurance (1.1.7) unstable; urgency=low
+
+  * Added manual pages for all the tools and include README to postproc
+    binary package. Fixes: NB#53909
+
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Wed,  4 Apr 2007 18:48:06 +0300
+
+sp-endurance (1.1.6) unstable; urgency=low
+
+  * endurance script now parses amount of dirty code pages from smaps
+    data (which indicates incorrectly compiled libraries) and there's
+    a separate sum-dirty-code-pages script for doing the same on the device
+
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Tue, 13 Mar 2007 11:58:24 +0200
+
+sp-endurance (1.1.5) unstable; urgency=low
+
+  * syslog_parse.py: Check each syslog line for all recognized messages
+    in case device boots in middle of line and check SysRq messages
+  * endurance_report.py: Do not show bars for repeating process memory
+    values and sort processes better, cleanup SMAPS parsing
+  * *.sh: Remove file name extension to make Lintian happy
+  * Add sum-smaps-private and split-endurance-measurements scripts
+  * sp-smaps-measure is now also optional
+  * Prepare for Open Source release, add proper copyrights etc
+
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Thu,  1 Mar 2007 17:30:18 +0200
+
+sp-endurance (1.1.4) unstable; urgency=low
+
+  * Parse private/dirty values from SMAPS data myself instead of relying
+    on sp-smaps-visualize as it was way too slow
+  * Add several options to parse-endurance-measurements.sh for controlling
+    which measurements are parsed, whether to call sp-smaps-visualize and
+    whether to split reports at reboots
+  * Further improvements to the memory usage graphs
+
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Thu,  8 Feb 2007 17:49:38 +0200
+
+sp-endurance (1.1.3) unstable; urgency=low
+
+  * Ignore immediately repeated errors in error counts
+  * Fix error message that gave Python exeption
+  * Show FS usage instead of free (as the table title says)
+  * Major improvements and fixes to process memory usage graphs
+  * Use tables for colorbars instead of images so that
+    the HTML can be attached to mails or bugzilla
+
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Tue, 28 Nov 2006 14:35:57 +0200
+
+sp-endurance (1.1.2) unstable; urgency=low
+
+  * Fix another bug in case syslogs didn't have any errors
+  * Parse Glib ERRORs + kernel OOMs and alloc denials from syslog
+  * Add contents list to error HTML file
+  * Don't remove SMAPS diff file
+
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Thu, 20 Dec 2006 18:05:09 +0200
+
+sp-endurance (1.1.1) unstable; urgency=low
+
+  * Fix bug in case syslogs didn't have any errors
+
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Tue, 28 Nov 2006 14:35:57 +0200
+
+sp-endurance (1.1) unstable; urgency=low
+
+  * Packaging:
+    - devel package, postproc is "Architecture: all" + relevant rules fixes
+  * Measurements:
+    - compress whole syslog and remove syslog grepping
+    - save the measurement files in to separate directories
+    - proc2csv parses also /proc/vmstat
+    - add /sbin/ifconfig and interrupts/slabinfo/stat files from /proc
+    - save DSME statistics
+  * Syslog errors postprocessing:
+    - separated syslog parsing to separate syslog_parse.py file so that
+      it can be used also standalone
+    - parse normal/separate syslog files instead of CSV endurance file
+    - add support for gzipped syslog files
+    - separate different types of DSME and Glib errors
+    - parse and count kernel Oopses, reboots, DSP errors and
+      connectivity errors&warnings from syslogs
+    - support both HTML and ASCII output
+    - parsing debug option
+    - error summary
+    - fix bug in syslog parsing with appended syslogs
+  * SMAPS data parsing:
+    - Don't redo SMAPS CSV files if they already exist
+  * Other endurance data postprocessing:
+    - rename endurance-report.py to endurance_report.py
+    - always print error message before failing exit
+    - arguments are directories instead of file names
+    - syslog data is now parsed from file separate from the CSV file
+      and parsing put the separate file (see above)
+    - output disk free changes (for '/' and '/tmp')
+    - show whole device /proc/sys/fs/file-nr changes
+    - output also X resource usage decreases
+    - save errors to separate HTML pages
+    - output statistics and summary of different error types
+    - output summary of disk/memory/X resource/FD usage changes
+    - add process changed/total counts with started/exited processes
+      listed side by side
+    - remove "sleep" from all the lists
+    - color code tables containing different data
+    - add change totals to all tables
+    - HTML comment summary of all statistics for maturity metrics
+    - parse process statistics from /proc/PID/status files
+    - add bars of RSS memory changes per process (for processes
+      which max. RSS usage changes between tests)
+    - add contents and otherwise fine-tune report output
+  * Documentation:
+    - Update README according to changes
+
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Fri, 24 Nov 2006 17:12:43 +0200
+
+sp-endurance (1.0-7) unstable; urgency=low
+
+  * save also full syslog and /proc/slabinfo data
+  * shows the warnings from syslog although syslogs don't seem to match
+  * fix to Browser X client name idiocy
+
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Thu, 14 Sep 2006 14:14:51 +0300
+
+sp-endurance (1.0-6) unstable; urgency=low
+
+  * fix bug in memory calculation introduced by last update
+
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Thu, 6 Jul 2006 14:28:29 +0300
+
+sp-endurance (1.0-5) unstable; urgency=low
+
+  * I fixed a bug that didn't always handle correctly processes that exited when proc2csv was running
+  * now also takes the memory limits from /proc i.e. the bargraphs take now also swap into account
+
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Fri, 9 Jun 2006 19:07:29 +0300
+
+sp-endurance (1.0-4) unstable; urgency=low
+
+  * With this you'll get again correct names in the report for
+    the maemo-launched binaries (smaps diff never before contained them,
+    but earlier my own script could map the names itself because earlier
+    diff file used real PIDs)
+
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Tue, 16 May 2006 20:02:03 +0300
+
+sp-endurance (1.0-3) unstable; urgency=low
+
+  * Updated endurance parser to support the new smaps format 
+
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Thu, 4 May 2006 14:51:43 +0200
+
+sp-endurance (1.0-2) unstable; urgency=low
+
+  * Updated package to include changes to path's in script
+  * Removed .svn dirs
+  * Improved README
+  * changelog
+  * debian/changelog
+
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Thu,  4 May 2006 14:51:33 +0300
+
+sp-endurance (1.0-1) unstable; urgency=low
+
+  * Initial release 
+
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Fri, 24 Mar 2006 14:58:29 +0200
+
