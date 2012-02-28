@@ -60,14 +60,25 @@ recompress-endurance-measurements.1: postproc/recompress-endurance-measurements 
 
 DOCDIR ?= /usr/share/doc
 
-install: $(MAN)
-	 install -d $(DESTDIR)/usr/bin/
-	 cp measure/* $(DESTDIR)/usr/bin/
-	 cp postproc/* $(DESTDIR)/usr/bin/
-	 install -d $(DESTDIR)/$(DOCDIR)/sp-endurance-postproc/
-	 cp README $(DESTDIR)/$(DOCDIR)/sp-endurance-postproc/
-	 cp doc/endurance.pdf $(DESTDIR)/$(DOCDIR)/sp-endurance-postproc/
-	 install -d $(DESTDIR)/usr/share/sp-endurance-tests/
-	 cp -a tests/* $(DESTDIR)/usr/share/sp-endurance-tests/
-	 install -d $(DESTDIR)/usr/share/sp-endurance-postproc/
-	 cp -a syslog-parser-configurations/* $(DESTDIR)/usr/share/sp-endurance-postproc/
+.PHONY: install-measure
+install-measure:
+	install -d $(DESTDIR)/usr/bin/
+	cp measure/* $(DESTDIR)/usr/bin/
+
+.PHONY: install-postproc
+install-postproc:
+	install -d $(DESTDIR)/usr/bin/
+	cp postproc/* $(DESTDIR)/usr/bin/
+	install -d $(DESTDIR)/$(DOCDIR)/sp-endurance-postproc/
+	cp README $(DESTDIR)/$(DOCDIR)/sp-endurance-postproc/
+	cp doc/endurance.pdf $(DESTDIR)/$(DOCDIR)/sp-endurance-postproc/
+	install -d $(DESTDIR)/usr/share/sp-endurance-postproc/
+	cp -a syslog-parser-configurations/* $(DESTDIR)/usr/share/sp-endurance-postproc/
+
+.PHONY: install-tests
+install-tests:
+	install -d $(DESTDIR)/usr/share/sp-endurance-tests/
+	cp -a tests/* $(DESTDIR)/usr/share/sp-endurance-tests/
+
+.PHONY: install
+install: $(MAN) install-measure install-postproc install-tests
