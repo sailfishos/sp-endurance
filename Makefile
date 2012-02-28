@@ -30,6 +30,7 @@ DOC = README
 
 ALL = $(SRC) $(BIN) $(DOC) 
 
+.PHONY: all
 all: $(ALL)
 
 measure/proc2csv: src/proc2csv.c
@@ -41,6 +42,7 @@ measure/xmeminfo: src/xmeminfo.c
 measure/sp-noncached: src/sp_noncached.c
 	$(CC) $(CFLAGS) -o $@ $<
 
+.PHONY: clean
 clean: 
 	$(RM) measure/proc2csv
 	$(RM) measure/xmeminfo
