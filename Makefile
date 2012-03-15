@@ -1,6 +1,6 @@
 # build and install rules for endurance tools and scripts
 
-CFLAGS ?= -O2 -Wall
+CFLAGS ?= -O2 -Wall -g
 
 # add some extra warnings
 CFLAGS += -Wmissing-prototypes -Wstrict-prototypes -Wsign-compare\
