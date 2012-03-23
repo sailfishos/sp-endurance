@@ -1,3 +1,6 @@
+sp-endurance (3.0.4), 23 Mar 2012:
+ * parse IO disk write stats from usage.csv to endurance report.
+
 sp-endurance (3.0.3), 27 Feb 2012:
  * proc2csv fixes for newer kernels (desktop Ubuntu):
    - change ',' in proc files field contents to '/'
