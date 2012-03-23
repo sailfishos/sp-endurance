@@ -3,7 +3,7 @@
 #
 # This file is part of sp-endurance.
 #
-# Copyright (C) 2006-2011 by Nokia Corporation
+# Copyright (C) 2006-2012 by Nokia Corporation
 #
 # Contact: Eero Tamminen <eero.tamminen@nokia.com>
 #
@@ -548,6 +548,22 @@ def get_proc_pid_stat(file):
         stat[pid]['stime'] = stime
     return stat
 
+
+def get_proc_pid_iostat(file, headers):
+    "parse processes disk write statistics from CSV file"
+    fields = headers.strip().split(',')
+    pididx = fields.index('PID')
+    wrtidx = fields.index('write_bytes')
+    stat = {}
+    while 1:
+        line = file.readline().strip()
+        if not line:
+            break
+        cols = line.split(',')
+        stat[cols[pididx]] = int(cols[wrtidx])/1024
+    return stat
+
+
 def parse_cgroups(file):
     pid2cgroup = {}
     tid2cgroup = {}
@@ -635,17 +651,17 @@ def get_meminfo(data, headers, values):
     data['swap_used'] = swaptotal - swapfree
 
 
-def skip_to(file, header):
-    "reads the given file until first CSV column has given header"
-    l = len(header)
+def skip_to(file, header, mandatory):
+    "reads the given file until first CSV column has the given header"
     while 1:
         line = file.readline()
         if not line:
+            if not mandatory:
+                return None
             sys.stderr.write("\nError: premature file end, CSV header '%s' not found\n" % header)
             sys.exit(2)
-        if line[:l] == header:
+        if line.startswith(header):
             return line
-
 
 def skip_to_next_header(file):
     "reads the given file until we get first nonempty line"
@@ -654,8 +670,9 @@ def skip_to_next_header(file):
         if not line:
             sys.stderr.write("\nError: premature file end while scanning for CSV header\n")
             sys.exit(2)
-        if line.strip():
-            return line.strip()
+        line = line.strip()
+        if line:
+            return line
 
 
 def parse_csv(file, filename):
@@ -686,17 +703,17 @@ def parse_csv(file, filename):
     data['datetime'] = data['datetime'][7:]
 
     # get uptime for reboot detection
-    skip_to(file, "Uptime")
+    skip_to(file, "Uptime", True)
     data['uptime'] = float(file.readline().split(',')[0])
 
     # total,free,buffers,cached
-    mem_header = skip_to(file, "MemTotal").strip()
+    mem_header = skip_to(file, "MemTotal", True).strip()
     mem_values = file.readline().strip()
     get_meminfo(data, mem_header, mem_values)
 
     # /proc/vmstat
     # The header line ends with ':', so get rid of that.
-    keys = skip_to(file, "nr_free_pages").strip()[:-1].split(',')
+    keys = skip_to(file, "nr_free_pages", True).strip()[:-1].split(',')
     try:
         vals = [int(x) for x in file.readline().strip().split(',')]
         data['/proc/vmstat'] = dict(zip(keys, vals))
@@ -704,33 +721,40 @@ def parse_csv(file, filename):
         pass
 
     # get shared memory segment counts
-    skip_to(file, "Shared memory segments")
+    skip_to(file, "Shared memory segments", True)
     data['shm'] = get_shm_counts(file)
 
     # get system free FDs
-    skip_to(file, "Allocated FDs")
+    skip_to(file, "Allocated FDs", True)
     fdused,fdfree,fdtotal = file.readline().split(',')
     data['fdfree'] = (int(fdtotal) - int(fdused)) + int(fdfree)
 
     # get the process FD usage
-    skip_to(file, "PID,FD count,Command")
+    skip_to(file, "PID,FD count,Command", True)
     data['commands'], data['fdcounts'], data['cmdlines'] = get_commands_and_fd_counts(file)
     
     # get process statistics
-    headers = skip_to(file, "Name,State,")
+    headers = skip_to(file, "Name,State,", True)
     data['processes'], data['kthreads'] = get_process_info(file, headers)
 
     # check if we have /proc/pid/stat in the CSV file
     headers = skip_to_next_header(file)
 
     if generator_version_major > 2:
-        # Rest of the sections only available in endurance data versions prior to v3.
+        # get numeric process information
         data['/proc/pid/stat'] = get_proc_pid_stat(file)
+
+        # get optional IO statistics, if they exist
+        headers = skip_to(file, "PID,rchar,", False)
+        if headers:
+            data['IO'] = get_proc_pid_iostat(file, headers)
         return data
+    
+    # Rest of the sections only available in endurance data versions prior to v3.
 
     if headers.startswith("Process status:"):
         data['/proc/pid/stat'] = get_proc_pid_stat(file)
-        headers = skip_to(file, "res-base")
+        headers = skip_to(file, "res-base", True)
     elif headers.startswith("res-base"):
         pass
     else:
@@ -741,7 +765,7 @@ def parse_csv(file, filename):
     data['xmeminfo'] = get_xres_usage(file, headers)
 
     # get the file system usage
-    skip_to(file, "Filesystem")
+    skip_to(file, "Filesystem", True)
     data['mounts'] = get_filesystem_usage_csv(file)
     
     return data
@@ -1064,7 +1088,7 @@ def pid_is_main_thread(pid, commands, processes):
 #    ...
 #  ]
 #
-def get_pid_usage_diffs(commands, processes, values0, values1, values2):
+def get_pid_usage_diffs(commands, processes, values0, values1, values2, kthreads=None):
     """return [(<change>, <change from initial>, <total value>, <name>), ...]
     of differences in numbers between two {pid:value} hashes, remove threads
     based on given 'processes' hash and name the rest based on the given
@@ -1075,15 +1099,19 @@ def get_pid_usage_diffs(commands, processes, values0, values1, values2):
             c1 = values1[pid]
             c2 = values2[pid]
             if c1 != c2:
-                if pid not in processes or pid not in commands:
+                if pid in processes and pid in commands:
+                    if not pid_is_main_thread(pid, commands, processes):
+                        continue
+                    name = commands[pid]
+                elif kthreads and pid in kthreads:
+                    name = "[%s]" % kthreads[pid]
+                else:
                     sys.stderr.write("Warning: PID %s not in commands or processes\n" % pid)
                     continue
-                if not pid_is_main_thread(pid, commands, processes):
-                    continue
-                name = commands[pid]
-                change_from_initial = 0
-                try: change_from_initial = c2 - values0[pid]
-                except KeyError: pass
+                if pid in values0:
+                    change_from_initial = c2 - values0[pid]
+                else:
+                    change_from_initial = 0
                 diffs.append((c2-c1, change_from_initial, c2, "%s[%s]" % (name, pid)))
     return diffs
 
@@ -1453,6 +1481,15 @@ def output_run_diffs(idx1, idx2, data, do_summary):
                             run1['mounts'],
                             run2['mounts'])
         output_diffs(diffs, "Filesystem usage", "Mount", " kB",
+                    Colors.disk, idx1, do_summary)
+
+    # processes disk writes
+    if 'IO' in run1:
+        diffs = get_pid_usage_diffs(run2['commands'], run2['processes'],
+                                    initial_values(data, 'IO'),
+                                    run1['IO'], run2['IO'],
+                                    run2['kthreads'])
+        output_diffs(diffs, "Disk page writes", "Process", " kB",
                     Colors.disk, idx1, do_summary)
 
     # Combine Private dirty + swap into one table. The idea is to reduce the
