@@ -139,15 +139,15 @@ $legend{$graph_mem_shared_lpid_name} = "shared by last user-pname (lpid)";
 $thumblegend{$graph_mem_shared_lpid_name} = "SHMEM LAST PNAME";
 $unit{$graph_mem_shared_lpid_name} = "MB";
 
-my $graph_appmem_devpvr = "1060_appmem_devpvr";
-$legend{$graph_appmem_devpvr} = "Total virtual size of process /dev/pvrsrvkm mappings";
-$thumblegend{$graph_appmem_devpvr} = "/dev/pvrsrvkm &mdash; MAPPING SIZE";
-$unit{$graph_appmem_devpvr} = "MB";
+my $graph_appmem_devgfx = "1060_appmem_devgfx";
+$legend{$graph_appmem_devgfx} = "Total virtual size of process /dev/pvrsrvkm mappings";
+$thumblegend{$graph_appmem_devgfx} = "/dev/pvrsrvkm &mdash; MAPPING SIZE";
+$unit{$graph_appmem_devgfx} = "MB";
 
-my $graph_devpvr_count = "1061_devpvr_count";
-$legend{$graph_devpvr_count} = "Process /dev/pvrsrvkm mapping count (processes with changes)";
-$thumblegend{$graph_devpvr_count} = "/dev/pvrsrvkm &mdash; MAPPING COUNT";
-$unit{$graph_devpvr_count} = "count";
+my $graph_devgfx_count = "1061_devgfx_count";
+$legend{$graph_devgfx_count} = "Process /dev/pvrsrvkm mapping count (processes with changes)";
+$thumblegend{$graph_devgfx_count} = "/dev/pvrsrvkm &mdash; MAPPING COUNT";
+$unit{$graph_devgfx_count} = "count";
 
 my $graph_xresource_sz_pxm = "1070_xresource_pixmaps";
 $legend{$graph_xresource_sz_pxm} = "X resource pixmaps size";
@@ -658,7 +658,7 @@ my %app_sum_locked;
 my %app_sysv_shared;
 my %app_posix_shared;
 my %app_rwxp;
-my %app_dev_pvr;
+my %app_dev_gfx;
 
 my %app_cumul_pss;
 my %app_cumul_swp;
@@ -666,7 +666,7 @@ my %app_cumul_pss_swp;
 my %app_cumul_rwxp;
 my %app_cumul_sysv_shared;
 my %app_cumul_posix_shared;
-my %app_cumul_dev_pvr;
+my %app_cumul_dev_gfx;
 
 my %avg_pss;
 my %avg_heap;
@@ -676,7 +676,7 @@ my %avg_shared_lpid;
 my %avg_shared_cpid;
 my %avg_sysv_shared;
 my %avg_posix_shared;
-my %avg_dev_pvr;
+my %avg_dev_gfx;
 
 my %devcount_pss;
 my %devcount_swp;
@@ -686,7 +686,7 @@ my %devcount_shared_lpid;
 my %devcount_shared_cpid;
 my %devcount_sysv_shared;
 my %devcount_posix_shared;
-my %devcount_dev_pvr;
+my %devcount_dev_gfx;
 
 my %sumdev_pss;
 my %sumdev_swp;
@@ -697,7 +697,7 @@ my %sumdev_shared_lpid;
 my %sumdev_shared_cpid;
 my %sumdev_sysv_shared;
 my %sumdev_posix_shared;
-my %sumdev_dev_pvr;
+my %sumdev_dev_gfx;
 
 my %show_this;
 my %xresource_latest_cnt;
@@ -2085,7 +2085,7 @@ sub process_smaps
 	print STDERR "WARNING: unable to open $fn: $!\n";
 	return;
     }
-    my %process_devpvr_count;
+    my %process_devgfx_count;
     my $sum_app_swapped = 0;
     my $sum_app_pss = 0;
     my %private_dirty;
@@ -2095,7 +2095,7 @@ sub process_smaps
     %app_sysv_shared = ();
     %app_posix_shared = ();
     %app_rwxp = ();
-    %app_dev_pvr = ();
+    %app_dev_gfx = ();
     my %vma_count;
     while (<SMAPS_CAP>) {
 	if (m#^[A-Z]#) {
@@ -2205,9 +2205,9 @@ sub process_smaps
 	    if( index($_, "/dev/pvrsrvkm") != -1) {
 		my $line = <SMAPS_CAP>;
 		chop $line;
-		my (undef, $pvr, undef) = split(' ' , $line, 3);
-		$app_dev_pvr{$nm} += $pvr;
-		$process_devpvr_count{$nm}++;
+		my (undef, $gfx, undef) = split(' ' , $line, 3);
+		$app_dev_gfx{$nm} += $gfx;
+		$process_devgfx_count{$nm}++;
 		next;
 	    }
 	    if( index($_, " rwxp ") != -1) {
@@ -2227,8 +2227,8 @@ sub process_smaps
 	}
     }
     close(SMAPS_CAP);
-    foreach (keys %process_devpvr_count) {
-	value_store("devpvr-count-$_", $round, $process_devpvr_count{$_});
+    foreach (keys %process_devgfx_count) {
+	value_store("devgfx-count-$_", $round, $process_devgfx_count{$_});
     }
     foreach (keys %vma_count) {
 	value_store("vma-count-$_", $round, $vma_count{$_});
@@ -2876,18 +2876,18 @@ sub loop_over_all_apps
 	value_store_zeropad($fn, $round, $xxx);
 
 	###############
-	if ($app_dev_pvr{$x}) {
-	    $app_cumul_dev_pvr{$x} += $app_dev_pvr{$x};
-	    $avg_dev_pvr{$x} = ($avg_dev_pvr{$x} * $round + $app_dev_pvr{$x})/($round+1);
-	    my $dev = abs($avg_dev_pvr{$x} - $app_dev_pvr{$x});
-	    $sumdev_dev_pvr{$x} += $dev;
-	    $devcount_dev_pvr{$x} += 1;
-	    $xxx = $app_dev_pvr{$x} / 1024;
+	if ($app_dev_gfx{$x}) {
+	    $app_cumul_dev_gfx{$x} += $app_dev_gfx{$x};
+	    $avg_dev_gfx{$x} = ($avg_dev_gfx{$x} * $round + $app_dev_gfx{$x})/($round+1);
+	    my $dev = abs($avg_dev_gfx{$x} - $app_dev_gfx{$x});
+	    $sumdev_dev_gfx{$x} += $dev;
+	    $devcount_dev_gfx{$x} += 1;
+	    $xxx = $app_dev_gfx{$x} / 1024;
 	} else {
 	    $xxx = 0;
 	}
 
-	$fn = "devpvr-$x";
+	$fn = "devgfx-$x";
 	value_store_zeropad($fn, $round, $xxx);
 
 	###############
@@ -4298,12 +4298,12 @@ sub generate_plot_posixshared
     close_plot($cnt, $plot, $graph_appmem_posixshared);
 }
 
-sub generate_plot_dev_pvr
+sub generate_plot_dev_gfx
 {
-    my $plot = start_plotfile_histogram($graph_appmem_devpvr);
+    my $plot = start_plotfile_histogram($graph_appmem_devgfx);
     my $cnt = 0;
     my %show_this = ();
-    foreach my $p (reverse sort {$app_cumul_dev_pvr{$a} <=> $app_cumul_dev_pvr{$b} } keys %app_cumul_dev_pvr) {
+    foreach my $p (reverse sort {$app_cumul_dev_gfx{$a} <=> $app_cumul_dev_gfx{$b} } keys %app_cumul_dev_gfx) {
 	if ($cnt > $max_per_graph_onecolumn -1 ) {
 	    last;
 	} 
@@ -4311,34 +4311,34 @@ sub generate_plot_dev_pvr
 	$show_this{$p} = 1;
 	$cnt += 1;
     }
-    foreach my $p (sort keys %app_cumul_dev_pvr) {
+    foreach my $p (sort keys %app_cumul_dev_gfx) {
 	if ($show_this{$p}) {
-	    $sumdev_dev_pvr{$p} /= $devcount_dev_pvr{$p};
-	    $sumdev_dev_pvr{$p} += (10000*(scalar(@dirs) - $devcount_dev_pvr{$p}));
-#	    print "dev_pvr-adj: $p: sumdev=$sumdev_dev_pvr{$p} count=$devcount_dev_pvr{$p}\n";
+	    $sumdev_dev_gfx{$p} /= $devcount_dev_gfx{$p};
+	    $sumdev_dev_gfx{$p} += (10000*(scalar(@dirs) - $devcount_dev_gfx{$p}));
+#	    print "dev_gfx-adj: $p: sumdev=$sumdev_dev_gfx{$p} count=$devcount_dev_gfx{$p}\n";
 	}
     }
     $cnt = 0;
-    foreach my $p (sort {$sumdev_dev_pvr{$a} <=> $sumdev_dev_pvr{$b} } keys %app_cumul_dev_pvr) {
+    foreach my $p (sort {$sumdev_dev_gfx{$a} <=> $sumdev_dev_gfx{$b} } keys %app_cumul_dev_gfx) {
 	next unless $show_this{$p};
-	one_plot_set(key => $graph_appmem_devpvr, fn => "devpvr-$p",
+	one_plot_set(key => $graph_appmem_devgfx, fn => "devgfx-$p",
 	    plot => $plot, cnt => \$cnt, emit_zeroes => 1, title => $p);
     }
-    close_plot($cnt, $plot, $graph_appmem_devpvr);
+    close_plot($cnt, $plot, $graph_appmem_devgfx);
 }
 
-sub generate_plot_dev_pvr_count
+sub generate_plot_dev_gfx_count
 {
-    my $plot = start_plotfile_linespoints($graph_devpvr_count);
+    my $plot = start_plotfile_linespoints($graph_devgfx_count);
     my $cnt = 0;
-    foreach my $process (keys %app_dev_pvr) {
-	my $fn = "devpvr-count-$process";
+    foreach my $process (keys %app_dev_gfx) {
+	my $fn = "devgfx-count-$process";
 	next unless changes_found($fn);
 	next unless count_nonzero_entries($fn);
-	one_plot_set(key => $graph_devpvr_count, fn => $fn, lw => 3,
+	one_plot_set(key => $graph_devgfx_count, fn => $fn, lw => 3,
 	    plot => $plot, cnt => \$cnt, title => $process);
     }
-    close_plot($cnt, $plot, $graph_devpvr_count);
+    close_plot($cnt, $plot, $graph_devgfx_count);
 }
 
 sub generate_plot_write_exec
@@ -5587,8 +5587,8 @@ sub generate_plots()
     generate_plot_private_dirty_changes();
     generate_plot_sysvshared();
     generate_plot_posixshared();
-    generate_plot_dev_pvr();
-    generate_plot_dev_pvr_count();
+    generate_plot_dev_gfx();
+    generate_plot_dev_gfx_count();
     generate_plot_write_exec();
     generate_plot_swap_event();
     generate_plot_pss();
