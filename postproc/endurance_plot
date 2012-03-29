@@ -5715,19 +5715,10 @@ foreach my $dir (@dirs) {
 	exit(1);
     }
     while (<CSV>) {
-	if( m/SW-version/) {
-	    chop;
-	    my @flds = split(' ', $_);
-	    my $swver;
-	    if (@flds == 3) {
-# SW-version = DFL61_HARMATTAN_0.2011.03-2_RD_001
-		(undef, undef, $swver) = split(' ', $_, 3);
-		(undef, $swver) = split('_', $swver, 2);
-	    } else {
-# SW-version = Linux 2.6.35.3-10.3-n900 armv7l
-		(undef, undef, $swver) = split(' ', $_, 3);
-	    }
-	    if($sw_version && ($sw_version ne $swver)) {
+	if( m/SW-version = (.*)/) {
+	    my $swver = $1;
+	    chomp $swver;
+	    if ($sw_version && ($sw_version ne $swver)) {
 		print "** NOTE: at $dir version changes [$sw_version]->[$swver]; Reflash in sequence??\n";
 	    } 
 	    $sw_version = $swver;
