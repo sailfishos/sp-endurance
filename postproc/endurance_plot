@@ -1447,7 +1447,7 @@ sub parse_xresource_block
 
 	if($xresPid != -1) {
 	    my $name = $name_by_pid{$xresPid};
-	    if ($name and $name !~ /$Identifier/i) {
+	    if ($name and $name !~ /\Q$Identifier\E/i) {
 		$Identifier = $name . '-' . $Identifier;
 	    }
 	    $Identifier = $Identifier . "-" . $xresPid;
