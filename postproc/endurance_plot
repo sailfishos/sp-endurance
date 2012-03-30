@@ -1263,6 +1263,7 @@ sub parse_pid_fd_block
 	    $Name = substr($Name, $last_slash + 1);
 	}
 	if ($Name) {
+	    $name_by_pid{$Pid} = $Name;
 	    my $pname = $Name . "-" . $Pid;
 	    $fd_count{$pname} = $FD_count;
 	    $fd_count_samples{$pname} += 1;
