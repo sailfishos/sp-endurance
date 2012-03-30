@@ -2448,8 +2448,6 @@ def parse_syte_stats(dirs):
             if file:
                 print >>sys.stderr, "Parsing '%s'..." % filename
                 items['transfers'] = parse_ifconfig(file)
-                if not items['transfers']:
-                    error_exit("ifconfig output parsing failed")
         except RuntimeError: pass
 
         try:
