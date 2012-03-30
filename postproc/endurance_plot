@@ -4703,7 +4703,7 @@ sub generate_plot_df
 	    cnt => \$cnt, emit_zeroes => 1, title => $filesystem_demangle{$p});
     }
     one_plot_set(key => $graph_diskspace, fn => $fd_perc_file_name, lw => 5,
-	plot => $plot, cnt => \$cnt);
+	plot => $plot, cnt => \$cnt, title => 'Global FD usage %');
     close_plot($cnt, $plot, $graph_diskspace);
 }
 
