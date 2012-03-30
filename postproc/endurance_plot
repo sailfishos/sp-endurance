@@ -26,7 +26,7 @@ use strict;
 use Time::Local;
 use POSIX qw/ceil WIFSIGNALED WTERMSIG SIGINT SIGTERM SIGKILL/;
 use List::Util qw/min max sum/;
-use List::MoreUtils qw/uniq/;
+use List::MoreUtils qw/uniq zip/;
 use Getopt::Long;
 use File::Basename qw/basename/;
 
@@ -759,6 +759,8 @@ my %sysfs_power_supply_device_manufacturer;
 my %sysfs_backlight_devices;
 
 my %wchan_seen;
+my %pid_io_prev;
+my %pid_io_max;
 
 sub compression_check
 {
@@ -1051,6 +1053,8 @@ sub process_usage_csv
 	    parse_pages_block($round, $f);
 	} elsif (/^PID,wchan:/) {
 	    parse_wchan_block($round, $f);
+	} elsif (/^PID,rchar,/) {
+	    parse_pid_io_block($round, $f, $_);
 	}
     }
     close($f);
@@ -1688,6 +1692,36 @@ sub process_wchan
 	$cnt = $wchan_count{$_} if $wchan_count{$_};
 	value_store_zeropad("wchan-$_", $round, $cnt);
     }
+}
+
+sub parse_pid_io_block
+{
+    my ($round, $handle, $header) = @_;
+    chomp $header;
+    my (undef, @keys) = split /,/, $header;
+    my %pid_io;
+    while (<$handle>) {
+	chomp;
+	my ($pid, @values) = split /,/;
+	next if @keys != @values;
+	my %keyval = zip @keys, @values;
+	foreach (keys %keyval) {
+	    $keyval{$_} /= 1024 if /bytes/;
+	}
+	$pid_io{$pid} = \%keyval;
+    }
+    foreach my $pid (keys %pid_io) {
+	foreach my $key (@keys) {
+	    my $cnt = $pid_io{$pid}->{$key};
+	    if (%pid_io_prev) {
+		my $prev_cnt = $pid_io_prev{$pid}->{$key};
+		my $diff = $cnt - $prev_cnt;
+		value_store("pid_io_$key-$pid", $round, $diff);
+		$pid_io_max{$pid}->{$key} = max $pid_io_max{$pid}->{$key}, $diff;
+	    }
+	}
+    }
+    %pid_io_prev = %pid_io;
 }
 
 sub process_xmeminfo
@@ -5567,6 +5601,49 @@ sub generate_plot_power_supply
     }
 }
 
+sub generate_plot_pid_io
+{
+    use constant PID_IO_MAX_PLOTS => 3;
+    use constant PID_IO_MAX_PER_PLOT => 10;
+    use constant PID_IO_SPLIT_FACTOR => 5;
+    my %key2legend = (
+	read_bytes => 'Per process disk reads.',
+	write_bytes => 'Per process disk writes.',
+    );
+    my %key2thumblegend = (
+	read_bytes => 'DISK READS',
+	write_bytes => 'DISK WRITES',
+    );
+    foreach my $key (qw/read_bytes write_bytes/) {
+	my %namepids_to_plot = %pid_io_max;
+	foreach my $plot_idx (1 .. PID_IO_MAX_PLOTS) {
+	    my $graph_pid_io = "1300_pid_io_${key}_${plot_idx}";
+	    $legend{$graph_pid_io} = $key2legend{$key};
+	    $unit{$graph_pid_io} = 'kB';
+	    my $plot = start_plotfile_linespoints($graph_pid_io);
+	    my $cnt = 0;
+	    my $prev_max = 0;
+	    foreach my $pid (reverse sort { $pid_io_max{$a}->{$key} <=> $pid_io_max{$b}->{$key} } keys %namepids_to_plot) {
+		delete $namepids_to_plot{$pid};
+		my $fn = "pid_io_$key-$pid";
+		next unless count_nonzero_entries($fn);
+		# Ignore I/O done by our sp-noncached writer utility to avoid
+		# clutter in the graphs.
+		next if $name_by_pid{$pid} =~ /sp-noncached/;
+		$prev_max = $pid_io_max{$pid}->{$key} if not $prev_max;
+		last if $plot_idx < PID_IO_MAX_PLOTS &&
+		        $prev_max >= (PID_IO_SPLIT_FACTOR * $pid_io_max{$pid}->{$key});
+		one_plot_set(key => $graph_pid_io, fn => $fn, plot => $plot,
+		    cnt => \$cnt, emit_zeroes => 1, lw => 3,
+		    title => "$name_by_pid{$pid}-$pid");
+		last if $plot_idx < PID_IO_MAX_PLOTS and $cnt > PID_IO_MAX_PER_PLOT;
+	    }
+	    $thumblegend{$graph_pid_io} = $key2thumblegend{$key} . ' &mdash; MAX ' . ceil($prev_max/1024) . 'MB';
+	    close_plot($cnt, $plot, $graph_pid_io);
+	}
+    }
+}
+
 sub generate_plots()
 {
     generate_plot_system_memory_1();
@@ -5616,6 +5693,7 @@ sub generate_plots()
     generate_plot_wchan_count();
     generate_plot_wchan_changes();
     generate_plot_power_supply();
+    generate_plot_pid_io();
 }
 ################ Start ######################################################
 
