@@ -729,7 +729,6 @@ my %round_date;
 
 my $have_diskstats = 0;
 my $have_bme = 0;
-my $have_pagetypeinfo = 0;
 
 my %ramzswap_prev;
 
@@ -761,6 +760,7 @@ my %sysfs_backlight_devices;
 my %wchan_seen;
 my %pid_io_prev;
 my %pid_io_max;
+my %pagetypeinfo_seen;
 
 sub compression_check
 {
@@ -2548,37 +2548,27 @@ sub process_pagetypeinfo
 	print STDERR "WARNING: unable to open $fn: $!\n";
 	return;
     }
-    my (@unmovable, @reclaimable, @movable, @reserve, @isolate);
+    my %pagetypeinfo;
     while (<PAGETYPEINFO>) {
 	chop;
-	if( m/Node /) {
-	    $have_pagetypeinfo = 1;
-	    if (m/Unmovable/) {
-		(@unmovable) = split(' ' , $_, 17);
-	    } elsif (m/Reclaimable/) {
-		(@reclaimable) = split(' ' , $_, 17);
-	    } elsif (m/Movable/) {
-		(@movable) = split(' ' , $_, 17);
-	    } elsif (m/Reserve/) {
-		(@reserve) = split(' ' , $_, 17);
-	    } elsif (m/Isolate/) {
-		(@isolate) = split(' ' , $_, 17);
-	    } 
-	}
+	next unless m#^Node\s+(\d+), zone\s+(\S+), type\s+(\S+)#;
+	# Node and zone ignored for now.
+	my $node = $1;
+	my $zone = $2;
+	my $type = $3;
+	my @free_pages = split ' ', $';
+	next unless @free_pages == 11;
+	$pagetypeinfo{$type} = \@free_pages;
+	$pagetypeinfo_seen{$type} = 1;
     }
     close(PAGETYPEINFO);
     for my $ordernum (0 .. 10) {
 	my $order = 1 << $ordernum;
-	$fn = "pt-unmovable-$ordernum";
-	value_store_zeropad($fn, $round, ($unmovable[$ordernum+6]*$order*$pg_bytes)/$MB_bytes);
-	$fn = "pt-reclaimable-$ordernum";
-	value_store_zeropad($fn, $round, ($reclaimable[$ordernum+6]*$order*$pg_bytes)/$MB_bytes);
-	$fn = "pt-movable-$ordernum";
-	value_store_zeropad($fn, $round, ($movable[$ordernum+6]*$order*$pg_bytes)/$MB_bytes);
-	$fn = "pt-reserve-$ordernum";
-	value_store_zeropad($fn, $round, ($reserve[$ordernum+6]*$order*$pg_bytes)/$MB_bytes);
-	$fn = "pt-isolate-$ordernum";
-	value_store_zeropad($fn, $round, ($isolate[$ordernum+6]*$order*$pg_bytes)/$MB_bytes);
+	foreach my $type (keys %pagetypeinfo) {
+	    value_store_zeropad("pagetypeinfo-$type-$ordernum",
+		$round,
+		($pagetypeinfo{$type}->[$ordernum]*$order*$pg_bytes)/$MB_bytes);
+	}
     }
 }
 
@@ -5394,18 +5384,17 @@ sub generate_plot_networking
 
 sub generate_plot_pagetypeinfo
 {
-    return unless $have_pagetypeinfo;
-    foreach my $pagetype (qw/unmovable reclaimable movable reserve isolate/) {
+    foreach my $pagetype (keys %pagetypeinfo_seen) {
 	my $skip = 1;
 	foreach my $ordernum (0 .. 10) {
-	    my $fn = "pt-$pagetype-$ordernum";
+	    my $fn = "pagetypeinfo-$pagetype-$ordernum";
 	    if (count_nonzero_entries($fn)) {
 		$skip = 0;
 		last;
 	    }
 	}
 	next if $skip;
-	my $graph_pagetypeinfo = "2274_pagetypeinfo_$pagetype";
+	my $graph_pagetypeinfo = '2274_pagetypeinfo_' . lc($pagetype);
 	$legend{$graph_pagetypeinfo} = "Free memory in $pagetype migrate type block pool (from /proc/pagetypeinfo)";
 	$thumblegend{$graph_pagetypeinfo} = 'PAGETYPE &mdash; ' . uc($pagetype);
 	$unit{$graph_pagetypeinfo} = 'MB';
@@ -5413,7 +5402,7 @@ sub generate_plot_pagetypeinfo
 	my $plot = start_plotfile_histogram($graph_pagetypeinfo);
 	foreach my $ordernum (0 .. 10) {
 	    one_plot_set(key => $graph_pagetypeinfo,
-		fn => "pt-$pagetype-$ordernum", plot => $plot, cnt => \$cnt,
+		fn => "pagetypeinfo-$pagetype-$ordernum", plot => $plot, cnt => \$cnt,
 		emit_zeroes => 1, title => ucfirst($pagetype) . " order 2^$ordernum");
 	}
 	close_plot($cnt, $plot, $graph_pagetypeinfo);
