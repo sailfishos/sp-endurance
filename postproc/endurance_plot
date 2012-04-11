@@ -3851,9 +3851,10 @@ sub generate_plot_fs_written
 	my $title = $device;
 	my $fs = device_to_filesystem($device);
 	$title = $device . ': ' . $fs if $fs;
-	one_plot_set(key => $graph_ext4_written,
-	    fn => "fs-ext4-lifetime-write-MB-$device", lw => 3,
-	    plot => $plot, cnt => \$cnt, emit_zeroes => 1, title => $title);
+	my $fn = "fs-ext4-lifetime-write-MB-$device";
+	one_plot_set(key => $graph_ext4_written, fn => $fn, lw => 3,
+	    plot => $plot, cnt => \$cnt, emit_zeroes => 1, title => $title)
+		if count_nonzero_entries($fn);
     }
     close_plot($cnt, $plot, $graph_ext4_written);
 }
