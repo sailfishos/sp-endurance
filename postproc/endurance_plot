@@ -5645,6 +5645,37 @@ sub generate_plot_pid_io
     }
 }
 
+sub generate_plot_pid_io_histogram
+{
+    my %key2legend = (
+	read_bytes => 'Per process disk reads.',
+	write_bytes => 'Per process disk writes.',
+    );
+    my %key2thumblegend = (
+	read_bytes => 'DISK READS',
+	write_bytes => 'DISK WRITES',
+    );
+    foreach my $key (qw/read_bytes write_bytes/) {
+	my $graph = "1300_pid_io_${key}";
+	$legend{$graph} = $key2legend{$key};
+	$unit{$graph} = 'MB';
+	my $plot = start_plotfile_histogram($graph);
+	my $cnt = 0;
+	foreach my $pid (sort { $pid_io_max{$a}->{$key} <=> $pid_io_max{$b}->{$key} } keys %pid_io_max) {
+	    my $fn = "pid_io_$key-$pid";
+	    next unless count_nonzero_entries($fn);
+	    # Ignore I/O done by our sp-noncached writer utility to avoid
+	    # clutter in the graphs.
+	    next if $name_by_pid{$pid} =~ /sp-noncached/;
+	    one_plot_set(key => $graph, fn => $fn, plot => $plot,
+		cnt => \$cnt, emit_zeroes => 1,
+		title => "$name_by_pid{$pid}-$pid");
+	}
+	$thumblegend{$graph} = $key2thumblegend{$key};
+	close_plot($cnt, $plot, $graph);
+    }
+}
+
 sub generate_plots()
 {
     generate_plot_system_memory_1();
@@ -5695,6 +5726,7 @@ sub generate_plots()
     generate_plot_wchan_changes();
     generate_plot_power_supply();
     generate_plot_pid_io();
+    generate_plot_pid_io_histogram();
 }
 ################ Start ######################################################
 
