@@ -798,11 +798,12 @@ sub one_plot_set
     my $plot = $args{plot} or die "INTERNAL ERROR: 'plot' parameter required for one_plot_set()";
     my $r_cnt = $args{cnt} or die "INTERNAL ERROR: 'cnt' parameter required for one_plot_set()";
     my $emit_zeroes = $args{emit_zeroes};
+    my $skip_leading_zeroes = $args{skip_leading_zeroes};
     my $title = $args{title};
     my $lc = $args{lc};
     my $axes = $args{axes};
 
-    my $num = value_emit($key, $fn, $emit_zeroes);
+    my $num = value_emit($key, $fn, $emit_zeroes, $skip_leading_zeroes);
 
     if ($num) {
 	if ($$r_cnt > 0) {
@@ -945,15 +946,21 @@ sub changes_found_ignore_zeroes
     return $changed;
 }
 
-sub value_emit_all_entries($$)
+sub value_emit_all_entries($$$)
 {
     my $ofile = shift;
     my $ra = shift;
+    my $skip_leading_zeroes = shift;
 
     my $num = 0;
+
     foreach my $item (@$ra) {
 	my ($rnd, $val) = split(':' , $item, 2);
 #	print "emit: item[$item] rnd=[$rnd] val[$val]\n";
+	if ($skip_leading_zeroes) {
+	    next if not $val;
+	    $skip_leading_zeroes = 0;
+	}
 	print $ofile "$rnd, $val\n";
 	$num += 1;
     }
@@ -976,11 +983,12 @@ sub value_emit_nonzero_entries($$)
     return $num;
 }
 
-sub value_emit($$$)
+sub value_emit
 {
     my $key = shift;
     my $fn = shift;
     my $emit_zeroes = shift;
+    my $skip_leading_zeroes = shift;
     my $num = 0;
 
     my $ra = $files{$fn};
@@ -994,7 +1002,7 @@ sub value_emit($$$)
 	exit(1);
     }
     if ($emit_zeroes) {
-	$num = value_emit_all_entries($ofile, $ra);
+	$num = value_emit_all_entries($ofile, $ra, $skip_leading_zeroes);
     } else {
 	$num = value_emit_nonzero_entries($ofile, $ra);
     }
@@ -1716,7 +1724,7 @@ sub parse_pid_io_block
 	    if (%pid_io_prev) {
 		my $prev_cnt = $pid_io_prev{$pid}->{$key};
 		my $diff = $cnt - $prev_cnt;
-		value_store("pid_io_$key-$pid", $round, $diff);
+		value_store_zeropad("pid_io_$key-$pid", $round, $diff);
 		$pid_io_max{$pid}->{$key} = max $pid_io_max{$pid}->{$key}, $diff;
 	    }
 	}
@@ -5627,8 +5635,8 @@ sub generate_plot_pid_io
 		last if $plot_idx < PID_IO_MAX_PLOTS &&
 		        $prev_max >= (PID_IO_SPLIT_FACTOR * $pid_io_max{$pid}->{$key});
 		one_plot_set(key => $graph_pid_io, fn => $fn, plot => $plot,
-		    cnt => \$cnt, emit_zeroes => 1, lw => 3,
-		    title => "$name_by_pid{$pid}-$pid");
+		    cnt => \$cnt, emit_zeroes => 1, skip_leading_zeroes => 1,
+		    lw => 3, title => "$name_by_pid{$pid}-$pid");
 		last if $plot_idx < PID_IO_MAX_PLOTS and $cnt > PID_IO_MAX_PER_PLOT;
 	    }
 	    $thumblegend{$graph_pid_io} = $key2thumblegend{$key} . ' &mdash; MAX ' . ceil($prev_max) . 'MB';
