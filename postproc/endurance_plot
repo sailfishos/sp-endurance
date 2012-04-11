@@ -1706,7 +1706,7 @@ sub parse_pid_io_block
 	next if @keys != @values;
 	my %keyval = zip @keys, @values;
 	foreach (keys %keyval) {
-	    $keyval{$_} /= 1024 if /bytes/;
+	    $keyval{$_} /= $MB_bytes if /bytes/;
 	}
 	$pid_io{$pid} = \%keyval;
     }
@@ -5609,7 +5609,7 @@ sub generate_plot_pid_io
 	foreach my $plot_idx (1 .. PID_IO_MAX_PLOTS) {
 	    my $graph_pid_io = "1300_pid_io_${key}_${plot_idx}";
 	    $legend{$graph_pid_io} = $key2legend{$key};
-	    $unit{$graph_pid_io} = 'kB';
+	    $unit{$graph_pid_io} = 'MB';
 	    my $plot = start_plotfile_linespoints($graph_pid_io);
 	    my $cnt = 0;
 	    my $prev_max = 0;
@@ -5628,7 +5628,7 @@ sub generate_plot_pid_io
 		    title => "$name_by_pid{$pid}-$pid");
 		last if $plot_idx < PID_IO_MAX_PLOTS and $cnt > PID_IO_MAX_PER_PLOT;
 	    }
-	    $thumblegend{$graph_pid_io} = $key2thumblegend{$key} . ' &mdash; MAX ' . ceil($prev_max/1024) . 'MB';
+	    $thumblegend{$graph_pid_io} = $key2thumblegend{$key} . ' &mdash; MAX ' . ceil($prev_max) . 'MB';
 	    close_plot($cnt, $plot, $graph_pid_io);
 	}
     }
