@@ -4980,13 +4980,16 @@ sub generate_plot_diskstats
 	$title = $device . ': ' . $fs if $fs;
 	one_plot_set(key => $graph_diskstats_reads_mb_per_second,
 	    fn => "devreads-$device", lw => 3, plot => $plot_1,
-	    cnt => \$cnt_1, emit_zeroes => 1, title => $title);
+	    cnt => \$cnt_1, emit_zeroes => 1, title => $title)
+		if count_nonzero_entries("devreads-$device");
 	one_plot_set(key => $graph_diskstats_read_time,
 	    fn => "devreadtime-$device", lw => 3, plot => $plot_2,
-	    cnt => \$cnt_2, emit_zeroes => 1, title => $title);
+	    cnt => \$cnt_2, emit_zeroes => 1, title => $title)
+		if count_nonzero_entries("devreadtime-$device");
 	one_plot_set(key => $graph_diskstats_reads_mb,
 	    fn => "devreads-mb-$device", lw => 3, plot => $plot_3,
-	    cnt => \$cnt_3, emit_zeroes => 1, title => $title);
+	    cnt => \$cnt_3, emit_zeroes => 1, title => $title)
+		if count_nonzero_entries("devreads-mb-$device");
     }
     close_plot($cnt_1, $plot_1, $graph_diskstats_reads_mb_per_second);
     close_plot($cnt_2, $plot_2, $graph_diskstats_read_time);
