@@ -769,11 +769,11 @@ sub compression_check
     my $gzname = $file . '.gz';
     my $xzname = $file . '.xz';
     if (-e $lzoname) {
-	return "lzop -dc $lzoname |";
+	return "lzop -dc '$lzoname' |";
     } elsif (-e $gzname) {
-	return "zcat $gzname |";
+	return "zcat '$gzname' |";
     } elsif (-e $xzname) {
-	return "xzcat $xzname |";
+	return "xzcat '$xzname' |";
     }
     return $file;
 }
@@ -3074,7 +3074,7 @@ sub add_use_case_names
 	my $dfn = $dir . '/step.txt';
 	my $step;
 	if (-e $dfn) {
-	    $step = `cat $dfn`;
+	    $step = `cat '$dfn'`;
 	    chop $step;
 	}
 	my $desc = $dir;
