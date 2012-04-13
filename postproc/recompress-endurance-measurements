@@ -2,7 +2,7 @@
 #
 # This file is part of sp-endurance.
 #
-# Copyright (C) 2011 by Nokia Corporation
+# Copyright (C) 2011-2012 by Nokia Corporation
 #
 # Contact: Eero Tamminen <eero.tamminen@nokia.com>
 #
@@ -45,13 +45,13 @@ sub recompress_cmd
 	my $cmd;
 	if ($in =~ m#\.lzo$#) {
 		$out =~ s/\.lzo$/.xz/;
-		$cmd = "lzop -cd $in | xz > $out";
+		$cmd = "lzop -cd '$in' | xz > '$out'";
 	} elsif ($in =~ m#\.gz$#) {
 		$out =~ s/\.gz$/.xz/;
-		$cmd = "zcat $in | xz > $out";
+		$cmd = "zcat '$in' | xz > '$out'";
 	} else {
 		$out .= '.xz';
-		$cmd = "xz < $in > $out";
+		$cmd = "xz < '$in' > '$out'";
 	}
 	return ($cmd, $out);
 }
@@ -110,7 +110,7 @@ foreach my $in (@recompress) {
 		my $sig = WTERMSIG($?);
 		kill($sig, $$);
 	}
-	`xz --test $out`;
+	`xz --test '$out'`;
 	if (WIFSIGNALED($?)) {
 		unlink $out;
 		my $sig = WTERMSIG($?);
