@@ -82,18 +82,20 @@ extract_info ()
 	echo "- $num"
 	# uncompress, take only program info and store that
 	if [ -f "$1" ] ; then
-		READER="cat $1"
+		READER="cat"
 	elif [ -f "$1.lzo" ] ; then
-		READER="lzop -c -d $1.lzo"
+		READER="lzop -c -d"
+		SUFFIX="lzo"
 		check_lzop
 	elif [ -f "$1.xz" ] ; then
-		READER="xzcat $1.xz"
+		READER="xzcat"
+		SUFFIX="xz"
 		check_xz
 	else
 		echo "ERROR: unrecognized capture compression format for file: $1" >&2
 		exit 1
 	fi
-	$READER | awk "
+	$READER "$1".$SUFFIX | awk "
 /^==/ {	show=0; next }
 /Name: .*$prog/ { show=1 }
 { if(show) print }" > $name
@@ -107,19 +109,19 @@ check_cap()
 }
 
 if [ $# -gt 0 ]; then
-	for dir in $*; do
+	for dir in "$@"; do
 		if [ \! -d "$dir" ]; then
 			usage "Given snapshot directory '$dir' doesn't exist"
 		fi
-		check_cap $dir || usage "Given snapshot directory '$dir' doesn't have '$capfile' SMAPS capture file"
+		check_cap "$dir" || usage "Given snapshot directory '$dir' doesn't have '$capfile' SMAPS capture file"
 	done
-	for dir in $*; do
+	for dir in "$@"; do
 		extract_info "$dir/$capfile"
 	done
 else
 	check_cap 101 || usage "Endurance SMAPS files like '101/smaps.cap.lzo' are missing"
 	for dir in * ; do
-		check_cap $dir && extract_info "$dir/$capfile"
+		check_cap "$dir" && extract_info "$dir/$capfile"
 	done
 fi
 
