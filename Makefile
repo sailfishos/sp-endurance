@@ -28,10 +28,17 @@ MAN += xmeminfo.1
 endif
 DOC = README
 
-ALL = $(SRC) $(BIN) $(DOC) 
+ALL = $(SRC) $(BIN) $(DOC) postproc-lib
 
 .PHONY: all
 all: $(ALL)
+
+postproc-lib/Makefile:
+	cd postproc-lib && perl Makefile.PL
+
+.PHONY: postproc-lib
+postproc-lib: postproc-lib/Makefile
+	cd postproc-lib && $(MAKE)
 
 measure/proc2csv: src/proc2csv.c
 	$(CC) $(CFLAGS) -o $@ $<
@@ -47,6 +54,8 @@ clean:
 	$(RM) measure/proc2csv
 	$(RM) measure/xmeminfo
 	$(RM) measure/sp-noncached
+	[ ! -f postproc-lib/Makefile ] || $(MAKE) -C postproc-lib clean
+	$(RM) postproc-lib/Makefile.old
 
 mandir:
 	install -d $(DESTDIR)/usr/share/man/man1/
@@ -65,6 +74,10 @@ install-measure:
 	install -d $(DESTDIR)/usr/bin/
 	cp measure/* $(DESTDIR)/usr/bin/
 
+.PHONY: install-postproc-lib
+install-postproc-lib:
+	cd postproc-lib && $(MAKE) install DESTDIR=$(DESTDIR)
+
 .PHONY: install-postproc
 install-postproc:
 	install -d $(DESTDIR)/usr/bin/
@@ -81,4 +94,4 @@ install-tests:
 	cp -a tests/* $(DESTDIR)/usr/share/sp-endurance-tests/
 
 .PHONY: install
-install: $(MAN) install-measure install-postproc install-tests
+install: $(MAN) install-measure install-postproc-lib install-postproc install-tests

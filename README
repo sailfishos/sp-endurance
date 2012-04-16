@@ -121,3 +121,5 @@ Other files:
   - compiles the above source files and installs them
 - man/
   - manual pages for all binaries and scripts
+- postproc-lib/
+  - perl module required by some of the post processing tools
