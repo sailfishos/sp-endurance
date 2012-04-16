@@ -120,19 +120,19 @@ def open_compressed(filename):
         # Unfortunately the python gzip module is slow. Using /bin/zcat and
         # popen() gives 2-3x speed up.
         if os.system("which zcat >/dev/null") == 0:
-            file = os.popen("zcat %s" % filename)
+            file = os.popen("zcat '%s'" % filename)
         else:
             file = gzip.open(filename, "r")
 
     elif filename.endswith(".lzo"):
         if os.system("which lzop >/dev/null") == 0:
-            file = os.popen("lzop -dc %s" % filename)
+            file = os.popen("lzop -dc '%s'" % filename)
         else:
             raise RuntimeError("file '%s' was compressed with lzop, but decompression program not available" % filename)
 
     elif filename.endswith(".xz"):
         if os.system("which xzcat >/dev/null") == 0:
-            file = os.popen("xzcat %s" % filename)
+            file = os.popen("xzcat '%s'" % filename)
         else:
             raise RuntimeError("file '%s' was compressed with XZ, but decompression program not available" % filename)
 
