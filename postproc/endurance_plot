@@ -498,6 +498,7 @@ my @graph_fragmentation = (
 "3953_fragmentation");
 
 my @gnuplot_commands;
+my @generators;
 
 my @dirs;
 my %val;
@@ -705,6 +706,12 @@ my %wchan_seen;
 my %pid_io_prev;
 my %pid_io_max;
 my %pagetypeinfo_seen;
+
+sub register_generator {
+    my $g = shift;
+    return unless ref $g eq 'CODE';
+    push @generators, $g;
+}
 
 sub compression_check
 {
@@ -3214,8 +3221,7 @@ sub run_gnuplot
     $forkmanager->wait_all_children() if $forkmanager;
 }
 
-sub generate_plot_system_memory_1
-{
+sub generate_plot_system_memory_1 {
     my $cnt = 0;
     my $plot = start_plotfile_lines($graph_system_memory_1);
     if (count_nonzero_entries($swapused_plot_file_name)) {
@@ -3286,9 +3292,9 @@ sub generate_plot_system_memory_1
     }
     close_plot($cnt, $plot, $graph_system_memory_1);
 }
+BEGIN { register_generator \&generate_plot_system_memory_1; }
 
-sub generate_plot_system_memory_2
-{
+sub generate_plot_system_memory_2 {
     my $cnt = 0;
     my $plot = start_plotfile_lines($graph_system_memory_2);
     if (value_exists($dirty_plot_file_name)) {
@@ -3341,9 +3347,9 @@ sub generate_plot_system_memory_2
     }
     close_plot($cnt, $plot, $graph_system_memory_2);
 }
+BEGIN { register_generator \&generate_plot_system_memory_2; }
 
-sub generate_plot_slab_count
-{
+sub generate_plot_slab_count {
     my $plot = start_plotfile_histogram($graph_mem_slabs_count);
     my $cnt = 0;
     foreach my $p (reverse sort { $all_slabs{$a} <=> $all_slabs{$b} } keys %all_slabs) {
@@ -3355,9 +3361,9 @@ sub generate_plot_slab_count
     }
     close_plot($cnt, $plot, $graph_mem_slabs_count);
 }
+BEGIN { register_generator \&generate_plot_slab_count; }
 
-sub generate_plot_slab_changes
-{
+sub generate_plot_slab_changes {
     my $plot = start_plotfile_linespoints($graph_mem_slabs_changes);
     my $cnt = 0;
     foreach my $p (reverse sort { $all_slabs{$a} <=> $all_slabs{$b} } keys %all_slabs) {
@@ -3369,9 +3375,9 @@ sub generate_plot_slab_changes
     }
     close_plot($cnt, $plot, $graph_mem_slabs_changes);
 }
+BEGIN { register_generator \&generate_plot_slab_changes; }
 
-sub generate_plot_ctx
-{
+sub generate_plot_ctx {
     my $plot;
     my $cnt;
     my $fn;
@@ -3440,9 +3446,9 @@ sub generate_plot_ctx
 	title => 'Process and thread count');
     close_plot($cnt, $plot, $graph_ctx_global);
 }
+BEGIN { register_generator \&generate_plot_ctx; }
 
-sub generate_plot_loadavg
-{
+sub generate_plot_loadavg {
     my $cnt = 0;
     my $plot = start_plotfile_lines($graph_loadavg);
     one_plot_set(key => $graph_loadavg,
@@ -3456,9 +3462,9 @@ sub generate_plot_loadavg
 	cnt => \$cnt, emit_zeroes => 1, title => '15 minute average');
     close_plot($cnt, $plot, $graph_loadavg);
 }
+BEGIN { register_generator \&generate_plot_loadavg; }
 
-sub generate_plot_processes_global
-{
+sub generate_plot_processes_global {
     my $cnt = 0;
     my $plot = start_plotfile_lines($graph_processes_global);
     one_plot_set(key => $graph_processes_global,
@@ -3466,9 +3472,9 @@ sub generate_plot_processes_global
 	cnt => \$cnt, emit_zeroes => 1, title => 'Processes and threads');
     close_plot($cnt, $plot, $graph_processes_global);
 }
+BEGIN { register_generator \&generate_plot_processes_global; }
 
-sub generate_plot_major_pagefaults
-{
+sub generate_plot_major_pagefaults {
     use constant MAJOR_PAGEFAULTS_MAX_PLOTS => 3;
     use constant MAJOR_PAGEFAULTS_MAX_PER_PLOT => 10;
     my %majflt_cumul_to_plot = %majflt_cumul;
@@ -3495,9 +3501,9 @@ sub generate_plot_major_pagefaults
 	close_plot($cnt_this_round, $plot, $graph_majorfaults);
     }
 }
+BEGIN { register_generator \&generate_plot_major_pagefaults; }
 
-sub generate_plot_minor_pagefaults
-{
+sub generate_plot_minor_pagefaults {
     use constant MINOR_PAGEFAULTS_MAX_PLOTS => 3;
     use constant MINOR_PAGEFAULTS_MAX_PER_PLOT => 10;
     my %minflt_cumul_to_plot = %minflt_cumul;
@@ -3524,9 +3530,9 @@ sub generate_plot_minor_pagefaults
 	close_plot($cnt_this_round, $plot, $graph_minorfaults);
     }
 }
+BEGIN { register_generator \&generate_plot_minor_pagefaults; }
 
-sub generate_plot_cpu
-{
+sub generate_plot_cpu {
     my $plot = start_plotfile_histogram($graph_cpu);
     my $cnt = 0;
     my %cpu_colors = (
@@ -3544,9 +3550,9 @@ sub generate_plot_cpu
     }
     close_plot($cnt, $plot, $graph_cpu);
 }
+BEGIN { register_generator \&generate_plot_cpu; }
 
-sub generate_plot_cpu_freq
-{
+sub generate_plot_cpu_freq {
     foreach my $cpu_num (keys(%time_in_state_freqs_seen)) {
 	my $graph_cpu_time_in_state = "2010_cpu${cpu_num}_time_in_state";
 	$legend{$graph_cpu_time_in_state} = "CPU${cpu_num} time in state";
@@ -3564,6 +3570,7 @@ sub generate_plot_cpu_freq
 	close_plot($cnt, $plot, $graph_cpu_time_in_state);
     }
 }
+BEGIN { register_generator \&generate_plot_cpu_freq; }
 
 sub device_to_filesystem
 {
@@ -3578,8 +3585,7 @@ sub device_to_filesystem
     }
 }
 
-sub generate_plot_fs_written
-{
+sub generate_plot_fs_written {
     my $cnt = 0;
     my $plot = start_plotfile_linespoints($graph_ext4_written);
     foreach my $device (keys(%sysfs_fs_devices_seen)) {
@@ -3593,9 +3599,9 @@ sub generate_plot_fs_written
     }
     close_plot($cnt, $plot, $graph_ext4_written);
 }
+BEGIN { register_generator \&generate_plot_fs_written; }
 
-sub generate_plot_cputime
-{
+sub generate_plot_cputime {
     my $plot;
     my $cnt;
 
@@ -3648,9 +3654,9 @@ sub generate_plot_cputime
     }
     close_plot($cnt, $plot, $graph_cpu_totaltime);
 }
+BEGIN { register_generator \&generate_plot_cputime; }
 
-sub generate_plot_shmem
-{
+sub generate_plot_shmem {
     my $plot;
     my $cnt;
     my $fn;
@@ -3768,9 +3774,9 @@ sub generate_plot_shmem
     }
     close_plot($cnt, $plot, $graph_mem_shared_size);
 }
+BEGIN { register_generator \&generate_plot_shmem; }
 
-sub generate_plot_mlocked
-{
+sub generate_plot_mlocked {
     my $plot = start_plotfile_histogram($graph_appmem_locked);
     my $cnt = 0;
     foreach my $p (reverse sort {$app_sum_locked{$a} <=> $app_sum_locked{$b} } keys %app_sum_locked) {
@@ -3786,9 +3792,9 @@ sub generate_plot_mlocked
     }
     close_plot($cnt, $plot, $graph_appmem_locked);
 }
+BEGIN { register_generator \&generate_plot_mlocked; }
 
-sub generate_plot_vmsize
-{
+sub generate_plot_vmsize {
     use constant VMSIZE_MAX_PLOTS => 4;
     use constant VMSIZE_MAX_PER_PLOT => 15;
     use constant VMSIZE_SPLIT_FACTOR => 5;
@@ -3824,9 +3830,9 @@ sub generate_plot_vmsize
 	close_plot($cnt_this_round, $plot, $graph_vmsize);
     }
 }
+BEGIN { register_generator \&generate_plot_vmsize; }
 
-sub generate_plot_memory_map_count
-{
+sub generate_plot_memory_map_count {
     use constant MAX_MMAPS_PLOTS => 3;
     use constant MAX_MMAPS_PER_PLOT => 15;
     use constant MAX_MMAPS_SPLIT_FACTOR => 5;
@@ -3862,9 +3868,9 @@ sub generate_plot_memory_map_count
 	close_plot($cnt_this_round, $plot, $graph_num_mmaps);
     }
 }
+BEGIN { register_generator \&generate_plot_memory_map_count; }
 
-sub generate_plot_private_dirty_changes
-{
+sub generate_plot_private_dirty_changes {
     use constant PRIVATE_DIRTY_MAX_PLOTS => 4;
     use constant PRIVATE_DIRTY_MAX_PER_PLOT => 15;
     use constant PRIVATE_DIRTY_SPLIT_FACTOR => 5;
@@ -3900,9 +3906,9 @@ sub generate_plot_private_dirty_changes
 	close_plot($cnt_this_round, $plot, $graph_private_dirty);
     }
 }
+BEGIN { register_generator \&generate_plot_private_dirty_changes; }
 
-sub generate_plot_heap_histogram
-{
+sub generate_plot_heap_histogram {
     my $plot = start_plotfile_histogram($graph_appmem_heap);
     my $cnt = 0;
     my %show_this = ();
@@ -3948,9 +3954,9 @@ sub generate_plot_heap_histogram
     }
     close_plot($cnt, $plot, $graph_appmem_heap);
 }
+BEGIN { register_generator \&generate_plot_heap_histogram; }
 
-sub generate_plot_heap
-{
+sub generate_plot_heap {
     use constant MAX_HEAP_PLOTS => 5;
     use constant MAX_HEAP_PER_PLOT => 10;
     use constant MAX_HEAP_SPLIT_CONSTANT => 5;
@@ -4002,9 +4008,9 @@ sub generate_plot_heap
 	close_plot($cnt_this_round, $plot, $graph_appmem_heap_lines);
     }
 }
+BEGIN { register_generator \&generate_plot_heap; }
 
-sub generate_plot_sysvshared
-{
+sub generate_plot_sysvshared {
     my $plot = start_plotfile_histogram($graph_appmem_sysvshared);
     my $cnt = 0;
     my %show_this = ();
@@ -4031,9 +4037,9 @@ sub generate_plot_sysvshared
     }
     close_plot($cnt, $plot, $graph_appmem_sysvshared);
 }
+BEGIN { register_generator \&generate_plot_sysvshared; }
 
-sub generate_plot_posixshared
-{
+sub generate_plot_posixshared {
     my $plot = start_plotfile_histogram($graph_appmem_posixshared);
     my $cnt = 0;
     my %show_this = ();
@@ -4060,9 +4066,9 @@ sub generate_plot_posixshared
     }
     close_plot($cnt, $plot, $graph_appmem_posixshared);
 }
+BEGIN { register_generator \&generate_plot_posixshared; }
 
-sub generate_plot_dev_gfx
-{
+sub generate_plot_dev_gfx {
     my $plot = start_plotfile_histogram($graph_appmem_devgfx);
     my $cnt = 0;
     my %show_this = ();
@@ -4089,9 +4095,9 @@ sub generate_plot_dev_gfx
     }
     close_plot($cnt, $plot, $graph_appmem_devgfx);
 }
+BEGIN { register_generator \&generate_plot_dev_gfx; }
 
-sub generate_plot_dev_gfx_count
-{
+sub generate_plot_dev_gfx_count {
     my $plot = start_plotfile_linespoints($graph_devgfx_count);
     my $cnt = 0;
     foreach my $process (keys %app_dev_gfx) {
@@ -4103,9 +4109,9 @@ sub generate_plot_dev_gfx_count
     }
     close_plot($cnt, $plot, $graph_devgfx_count);
 }
+BEGIN { register_generator \&generate_plot_dev_gfx_count; }
 
-sub generate_plot_write_exec
-{
+sub generate_plot_write_exec {
     my $plot = start_plotfile_histogram($graph_appmem_wx);
     my $cnt = 0;
     foreach my $p (reverse sort {$app_cumul_rwxp{$a} <=> $app_cumul_rwxp{$b} } keys %app_cumul_rwxp) {
@@ -4117,9 +4123,9 @@ sub generate_plot_write_exec
     }
     close_plot($cnt, $plot, $graph_appmem_wx);
 }
+BEGIN { register_generator \&generate_plot_write_exec; }
 
-sub generate_plot_swap_event
-{
+sub generate_plot_swap_event {
     return if $swapused_total == 0 and $swap_pgout_total == 0;
     my $cnt;
     my $plot;
@@ -4211,9 +4217,9 @@ sub generate_plot_swap_event
     }
     close_plot($cnt, $plot, $graph_appmem_pss_swap);
 }
+BEGIN { register_generator \&generate_plot_swap_event; }
 
-sub generate_plot_pss
-{
+sub generate_plot_pss {
     my $plot = start_plotfile_histogram($graph_appmem_pss);
     my $cnt = 0;
     my %show_this = ();
@@ -4239,9 +4245,9 @@ sub generate_plot_pss
     }
     close_plot($cnt, $plot, $graph_appmem_pss);
 }
+BEGIN { register_generator \&generate_plot_pss; }
 
-sub generate_plot_pss_swap
-{
+sub generate_plot_pss_swap {
 ############### Lines of processes PSS+SWAP, 4 graphs #################
 # find out how many %app_cumul_pss_swp are there and what are dynamic split points
 # to show them on 4 graphs
@@ -4347,9 +4353,9 @@ sub generate_plot_pss_swap
     close_plot($cnt_per_file{$plot_3}, $plot_3, $graph_appmem_pss_swap_lines_smaller);
     close_plot($cnt_per_file{$plot_4}, $plot_4, $graph_appmem_pss_swap_lines_smallest);
 }
+BEGIN { register_generator \&generate_plot_pss_swap; }
 
-sub generate_plot_threads
-{
+sub generate_plot_threads {
     my $plot = start_plotfile_histogram($graph_threads_count);
     my $cnt = 0;
     foreach my $p ( reverse sort {$has_threads{$a} <=> $has_threads{$b} } keys %has_threads) {
@@ -4364,9 +4370,9 @@ sub generate_plot_threads
     }
     close_plot($cnt, $plot, $graph_threads_count);
 }
+BEGIN { register_generator \&generate_plot_threads; }
 
-sub generate_plot_threads_changes
-{
+sub generate_plot_threads_changes {
     my $plot = start_plotfile_linespoints($graph_threads_changes);
     my $cnt = 0;
     foreach my $p (reverse sort { $has_threads{$a} <=> $has_threads{$b} } keys %has_threads) {
@@ -4379,9 +4385,9 @@ sub generate_plot_threads_changes
     }
     close_plot($cnt, $plot, $graph_threads_changes);
 }
+BEGIN { register_generator \&generate_plot_threads_changes; }
 
-sub generate_plot_xres
-{
+sub generate_plot_xres {
     my $plot;
     my $cnt;
 
@@ -4453,9 +4459,9 @@ sub generate_plot_xres
 	close_plot($cnt, $plot, $graph_xresource_atom_cnt);
     }
 }
+BEGIN { register_generator \&generate_plot_xres; }
 
-sub generate_plot_df
-{
+sub generate_plot_df {
     my $plot = start_plotfile_lines($graph_diskspace);
     my $cnt = 0;
     foreach my $p ( reverse sort {$filesystem_names{$a} <=> $filesystem_names{$b} } keys %filesystem_names) {
@@ -4467,9 +4473,9 @@ sub generate_plot_df
 	plot => $plot, cnt => \$cnt, title => 'Global FD usage %');
     close_plot($cnt, $plot, $graph_diskspace);
 }
+BEGIN { register_generator \&generate_plot_df; }
 
-sub generate_plot_fd
-{
+sub generate_plot_fd {
     my $plot;
     my $cnt;
     my $fn;
@@ -4671,9 +4677,9 @@ sub generate_plot_fd
 	close_plot($cnt, $plot, $graph_fdcount_disk);
     }
 }
+BEGIN { register_generator \&generate_plot_fd; }
 
-sub generate_plot_interrupts
-{
+sub generate_plot_interrupts {
     my $plot = start_plotfile_lines_2axes($graph_interrupts);
     my $cnt = 0;
     foreach my $p ( reverse sort {$int_total{$a} <=> $int_total{$b} } keys %int_total) {
@@ -4688,9 +4694,9 @@ sub generate_plot_interrupts
 	lw => 4, axes => 'x2y2', cnt => \$cnt, title => 'Total count');
     close_plot($cnt, $plot, $graph_interrupts);
 }
+BEGIN { register_generator \&generate_plot_interrupts; }
 
-sub generate_plot_diskstats
-{
+sub generate_plot_diskstats {
     if (not $have_diskstats) {
 	return;
     }
@@ -4765,9 +4771,9 @@ sub generate_plot_diskstats
     close_plot($cnt_2, $plot_2, $graph_diskstats_write_time);
     close_plot($cnt_3, $plot_3, $graph_diskstats_writes_mb);
 }
+BEGIN { register_generator \&generate_plot_diskstats; }
 
-sub generate_plot_battery
-{
+sub generate_plot_battery {
     if (not $have_bme) {
 	return;
     }
@@ -4792,9 +4798,9 @@ sub generate_plot_battery
     }
     close_plot($cnt, $plot, $graph_battery);
 }
+BEGIN { register_generator \&generate_plot_battery; }
 
-sub generate_plot_ramzswap_1
-{
+sub generate_plot_ramzswap_1 {
     my $cnt = 0;
     my $plot = start_plotfile_linespoints($graph_ramzswap_1);
     foreach (qw/NumReads NumWrites BDevNumReads BDevNumWrites/) {
@@ -4807,9 +4813,9 @@ sub generate_plot_ramzswap_1
     }
     close_plot($cnt, $plot, $graph_ramzswap_1);
 }
+BEGIN { register_generator \&generate_plot_ramzswap_1; }
 
-sub generate_plot_ramzswap_2
-{
+sub generate_plot_ramzswap_2 {
     my $cnt = 0;
     my $plot = start_plotfile_lines_2axes($graph_ramzswap_2);
     foreach (qw/OrigDataSize ComprDataSize MemUsedTotal ZeroPages/) {
@@ -4830,9 +4836,9 @@ sub generate_plot_ramzswap_2
     }
     close_plot($cnt, $plot, $graph_ramzswap_2);
 }
+BEGIN { register_generator \&generate_plot_ramzswap_2; }
 
-sub generate_plot_ramzswap_3
-{
+sub generate_plot_ramzswap_3 {
     my $cnt = 0;
     my $plot = start_plotfile_linespoints($graph_ramzswap_3);
     foreach (qw/FailedReads FailedWrites InvalidIO/) {
@@ -4845,9 +4851,9 @@ sub generate_plot_ramzswap_3
     }
     close_plot($cnt, $plot, $graph_ramzswap_3);
 }
+BEGIN { register_generator \&generate_plot_ramzswap_3; }
 
-sub generate_plot_cgroups
-{
+sub generate_plot_cgroups {
     if (not %cgroups) {
 	return;
     }
@@ -5070,9 +5076,9 @@ sub generate_plot_cgroups
 	close_plot($cnt, $plot, $graph_cgroups_memsw_failcnt);
     }
 }
+BEGIN { register_generator \&generate_plot_cgroups; }
 
-sub generate_plot_networking
-{
+sub generate_plot_networking {
     foreach my $interface (keys %interfaces_seen) {
 	my $graph_networking_bytes = '2090_networking-bytes-' . $interface;
 	$legend{$graph_networking_bytes} = 'RX and TX bytes in kB for ' . $interface;
@@ -5120,9 +5126,9 @@ sub generate_plot_networking
 	}
     }
 }
+BEGIN { register_generator \&generate_plot_networking; }
 
-sub generate_plot_pagetypeinfo
-{
+sub generate_plot_pagetypeinfo {
     foreach my $pagetype (keys %pagetypeinfo_seen) {
 	my $skip = 1;
 	foreach my $ordernum (0 .. 10) {
@@ -5147,9 +5153,9 @@ sub generate_plot_pagetypeinfo
 	close_plot($cnt, $plot, $graph_pagetypeinfo);
     }
 }
+BEGIN { register_generator \&generate_plot_pagetypeinfo; }
 
-sub generate_plot_process_state_count
-{
+sub generate_plot_process_state_count {
     my %state_desc = (
 	D => " (Uninterruptible disk sleep)",
 	R => " (Running)",
@@ -5168,6 +5174,7 @@ sub generate_plot_process_state_count
     }
     close_plot($cnt, $plot, $graph_nonsleeping_process_count);
 }
+BEGIN { register_generator \&generate_plot_process_state_count; }
 
 sub wchan_title
 {
@@ -5179,8 +5186,7 @@ sub wchan_title
     }
 }
 
-sub generate_plot_wchan_count
-{
+sub generate_plot_wchan_count {
     return unless %wchan_seen;
     my $cnt = 0;
     my $plot = start_plotfile_histogram($graph_wchan_count);
@@ -5191,9 +5197,9 @@ sub generate_plot_wchan_count
     }
     close_plot($cnt, $plot, $graph_wchan_count);
 }
+BEGIN { register_generator \&generate_plot_wchan_count; }
 
-sub generate_plot_wchan_changes
-{
+sub generate_plot_wchan_changes {
     return unless %wchan_seen;
     my $cnt = 0;
     my $plot = start_plotfile_linespoints($graph_wchan_changes);
@@ -5207,9 +5213,9 @@ sub generate_plot_wchan_changes
     }
     close_plot($cnt, $plot, $graph_wchan_changes);
 }
+BEGIN { register_generator \&generate_plot_wchan_changes; }
 
-sub generate_plot_power_supply
-{
+sub generate_plot_power_supply {
     foreach my $dev (keys %sysfs_power_supply_devices) {
 	my $model_name = $sysfs_power_supply_device_model_name{$dev};
 	$model_name = ": $model_name" if length $model_name;
@@ -5250,9 +5256,9 @@ sub generate_plot_power_supply
 	close_plot($cnt, $plot, $graph_ps);
     }
 }
+BEGIN { register_generator \&generate_plot_power_supply; }
 
-sub generate_plot_pid_io
-{
+sub generate_plot_pid_io {
     use constant PID_IO_MAX_PLOTS => 3;
     use constant PID_IO_MAX_PER_PLOT => 10;
     use constant PID_IO_SPLIT_FACTOR => 5;
@@ -5293,9 +5299,9 @@ sub generate_plot_pid_io
 	}
     }
 }
+BEGIN { register_generator \&generate_plot_pid_io; }
 
-sub generate_plot_pid_io_histogram
-{
+sub generate_plot_pid_io_histogram {
     my %key2legend = (
 	read_bytes => 'Per process disk reads.',
 	write_bytes => 'Per process disk writes.',
@@ -5324,57 +5330,12 @@ sub generate_plot_pid_io_histogram
 	close_plot($cnt, $plot, $graph);
     }
 }
+BEGIN { register_generator \&generate_plot_pid_io_histogram; }
 
-sub generate_plots()
-{
-    generate_plot_system_memory_1();
-    generate_plot_system_memory_2();
-    generate_plot_slab_count();
-    generate_plot_slab_changes();
-    generate_plot_ctx();
-    generate_plot_loadavg();
-    generate_plot_processes_global();
-    generate_plot_major_pagefaults();
-    generate_plot_minor_pagefaults();
-    generate_plot_cpu();
-    generate_plot_cpu_freq();
-    generate_plot_cputime();
-    generate_plot_shmem();
-    generate_plot_mlocked();
-    generate_plot_vmsize();
-    generate_plot_memory_map_count();
-    generate_plot_heap_histogram();
-    generate_plot_heap();
-    generate_plot_private_dirty_changes();
-    generate_plot_sysvshared();
-    generate_plot_posixshared();
-    generate_plot_dev_gfx();
-    generate_plot_dev_gfx_count();
-    generate_plot_write_exec();
-    generate_plot_swap_event();
-    generate_plot_pss();
-    generate_plot_pss_swap();
-    generate_plot_threads();
-    generate_plot_threads_changes();
-    generate_plot_xres();
-    generate_plot_df();
-    generate_plot_fd();
-    generate_plot_interrupts();
-    generate_plot_diskstats();
-    generate_plot_battery();
-    generate_plot_ramzswap_1();
-    generate_plot_ramzswap_2();
-    generate_plot_ramzswap_3();
-    generate_plot_cgroups();
-    generate_plot_networking();
-    generate_plot_pagetypeinfo();
-    generate_plot_process_state_count();
-    generate_plot_fs_written();
-    generate_plot_wchan_count();
-    generate_plot_wchan_changes();
-    generate_plot_power_supply();
-    generate_plot_pid_io();
-    generate_plot_pid_io_histogram();
+sub generate_plots {
+    foreach (uniq @generators) {
+	$_->();
+    }
 }
 ################ Start ######################################################
 
