@@ -3174,23 +3174,6 @@ sub start_plotfile_histogram($)
     return $plot;
 }
 
-sub start_plotfile_histogram_multi($)
-{
-    my $key = shift;
-    my $plot;
-
-    $plot = start_plotfile_common($key);
-
-    print $plot "set style data histograms\n";
-    print $plot "set key invert autotitle reverse Left\n";
-    print $plot "set style histogram rowstacked\n";
-    print $plot "set style fill solid 1.00 border -1\n";
-    print $plot "set multiplot\n";
-    print $plot "unset label\n";
-
-    return $plot;
-}
-
 sub close_plot($$$)
 {
     my $count = shift;
