@@ -1484,7 +1484,7 @@ def output_run_diffs(idx1, idx2, data, do_summary):
                     Colors.disk, idx1, do_summary)
 
     # processes disk writes
-    if 'IO' in run1:
+    if 'IO' in run1 and 'IO' in run2:
         diffs = get_pid_usage_diffs(run2['commands'], run2['processes'],
                                     initial_values(data, 'IO'),
                                     run1['IO'], run2['IO'],
