@@ -2401,7 +2401,7 @@ def parse_syte_stats(dirs):
         try:
             file, filename = syslog.open_compressed("%s/usage.csv" % dirname)
         except RuntimeError, e:
-            error_exit("unable to open %s/usage.csv" % dirname)
+            error_exit("unable to open %s/usage.csv: %s" % (dirname, e))
         print >>sys.stderr, "Parsing '%s'..." % filename
         items = parse_csv(file, filename)
         if not items:
