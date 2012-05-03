@@ -2421,7 +2421,7 @@ def parse_syte_stats(dirs):
         try:
             file, filename = syslog.open_compressed("%s/smaps.cap" % dirname)
         except RuntimeError, e:
-            error_exit("unable to open %s/smaps.cap: %s" % (dirname, e.message))
+            error_exit("unable to open %s/smaps.cap: %s" % (dirname, e))
         if file:
             print >>sys.stderr, "Parsing '%s'..." % filename
             items['smaps'], items['private_code'] = parse_smaps(file)
