@@ -2413,7 +2413,10 @@ def parse_syte_stats(dirs):
         filename = "%s/step.txt" % dirname
         if os.path.exists(filename):
             # use-case step description
-            items['description'] = open(filename).read().strip()
+            try:
+                items['description'] = open(filename).read().strip()
+            except IOError, e:
+                sys.stderr.write("WARNING: unable to read %s: %s\n" % (filename, e))
 
         try:
             file, filename = syslog.open_compressed("%s/smaps.cap" % dirname)
