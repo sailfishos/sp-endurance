@@ -2436,6 +2436,8 @@ def parse_syte_stats(dirs):
                 items['syslog_errors_by_category'] = syslog.get_errors_by_category(
                         file, logparser_config_syslog.regexps)
         except RuntimeError: pass
+        except IOError, e:
+            sys.stderr.write("WARNING: %s\n" % e)
 
         try:
             file, filename = syslog.open_compressed("%s/stat" % dirname)
@@ -2445,6 +2447,8 @@ def parse_syte_stats(dirs):
                 if not items['/proc/stat']:
                     error_exit("/proc/stat parsing failed")
         except RuntimeError: pass
+        except IOError, e:
+            sys.stderr.write("WARNING: %s\n" % e)
 
         try:
             file, filename = syslog.open_compressed("%s/ifconfig" % dirname)
@@ -2452,6 +2456,8 @@ def parse_syte_stats(dirs):
                 print >>sys.stderr, "Parsing '%s'..." % filename
                 items['transfers'] = parse_ifconfig(file)
         except RuntimeError: pass
+        except IOError, e:
+            sys.stderr.write("WARNING: %s\n" % e)
 
         try:
             file, filename = syslog.open_compressed("%s/cgroups" % dirname)
@@ -2459,6 +2465,8 @@ def parse_syte_stats(dirs):
                 print >>sys.stderr, "Parsing '%s'..." % filename
                 items['pid2cgroup'], items['tid2group'], items['cgroups'] = parse_cgroups(file)
         except RuntimeError: pass
+        except IOError, e:
+            sys.stderr.write("WARNING: %s\n" % e)
 
         dsme_rich_cores = get_dsme_rich_cores(dirname)
         if dsme_rich_cores:
@@ -2470,6 +2478,8 @@ def parse_syte_stats(dirs):
                 print >>sys.stderr, "Parsing '%s'..." % filename
                 items['upstart_jobs_respawned'] = get_upstart_jobs_respawned(file)
         except RuntimeError: pass
+        except IOError, e:
+            sys.stderr.write("WARNING: %s\n" % e)
 
         try:
             file, filename = syslog.open_compressed("%s/xmeminfo" % dirname)
@@ -2477,6 +2487,8 @@ def parse_syte_stats(dirs):
                 print >>sys.stderr, "Parsing '%s'..." % filename
                 items['xmeminfo'] = get_xres_usage(file)
         except RuntimeError: pass
+        except IOError, e:
+            sys.stderr.write("WARNING: %s\n" % e)
 
         try:
             file, filename = syslog.open_compressed("%s/df" % dirname)
@@ -2484,6 +2496,8 @@ def parse_syte_stats(dirs):
                 print >>sys.stderr, "Parsing '%s'..." % filename
                 items['mounts'] = get_filesystem_usage_df(file)
         except RuntimeError: pass
+        except IOError, e:
+            sys.stderr.write("WARNING: %s\n" % e)
 
         try:
             file, filename = syslog.open_compressed("%s/component_version" % dirname)
@@ -2491,6 +2505,8 @@ def parse_syte_stats(dirs):
                 print >>sys.stderr, "Parsing '%s'..." % filename
                 items['component_version'] = get_component_version(file)
         except RuntimeError: pass
+        except IOError, e:
+            sys.stderr.write("WARNING: %s\n" % e)
 
         try:
             file, filename = syslog.open_compressed("%s/bmestat" % dirname)
@@ -2498,6 +2514,8 @@ def parse_syte_stats(dirs):
                 print >>sys.stderr, "Parsing '%s'..." % filename
                 items['bmestat'] = get_bmestat(file)
         except RuntimeError: pass
+        except IOError, e:
+            sys.stderr.write("WARNING: %s\n" % e)
 
         data.append(items)
     return data
