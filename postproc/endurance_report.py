@@ -1935,12 +1935,12 @@ leaks which cause process eventually to run out of (2GB) address space
                     if rss < pss:
                         parse_warning("WARNING: %s[%s] RSS (%s) < SMAPS PSS (%s)" \
                                 % (namepid + (rss, pss)))
-                    text = ["%skB" % swap, "%skB" % dirty, "%skB" % pss, "%skB" % rss, "%skB" % size]
+                    text = ["%s kB" % swap, "%s kB" % dirty, "%s kB" % pss, "%s kB" % rss, "%s kB" % size]
                 else:
                     swap = 0
                     dirty = 0
                     pss = 0
-                    text = ["", "", "", "%skB" % rss, "%skB" % size]
+                    text = ["", "", "", "%s kB" % rss, "%s kB" % size]
                 barwidth_swap  = swap/largest_size
                 barwidth_dirty = dirty/largest_size
                 barwidth_pss   = pss/largest_size
@@ -2109,7 +2109,7 @@ def output_network_use_graphs(data):
     for b,v in rounds:
         idx += 1
         bars = [x/scale for x in b]
-        vals = ["%dkB" % (x/1024) for x in v]
+        vals = ["%d kB" % (x/1024) for x in v]
         entries.append((test_round_link(idx), bars, vals))
     titles = ["Test-case:", "network usage:"] + ["%s:" % x for x in faces]
     ifcolors = [interface_colors[i % len(interface_colors)] for i in range(len(faces))]
@@ -2205,11 +2205,11 @@ def output_system_memory_graphs(data):
         bars = (show_swap, show_ram, show_free, show_oom)
         # Numbers
         def label():
-            if mem_used >= mem_oom: return "<font color=red><b>%d</b></font>kB"
-            return "%dkB"
+            if mem_used >= mem_oom: return "<font color=red><b>%d</b></font> kB"
+            return "%d kB"
         memtext = None
         if swaptext: memtext = label() % testcase['swap_used']
-        memtext = (memtext,) + (label() % testcase['ram_used'], "%dkB" % mem_free)
+        memtext = (memtext,) + (label() % testcase['ram_used'], "%d kB" % mem_free)
         # done!
         columndata.append((case, bars, memtext))
     titles = ("Test-case:", "memory usage graph:", swaptext, "RAM used:", "free:")
