@@ -2400,6 +2400,8 @@ def parse_syte_stats(dirs):
         # get basic information
         try:
             file, filename = syslog.open_compressed("%s/usage.csv" % dirname)
+        except IOError, e:
+            error_exit("unable to open %s/usage.csv: %s" % (dirname, e))
         except RuntimeError, e:
             error_exit("unable to open %s/usage.csv: %s" % (dirname, e))
         print >>sys.stderr, "Parsing '%s'..." % filename
@@ -2420,6 +2422,8 @@ def parse_syte_stats(dirs):
 
         try:
             file, filename = syslog.open_compressed("%s/smaps.cap" % dirname)
+        except IOError, e:
+            error_exit("unable to open %s/smaps.cap: %s" % (dirname, e))
         except RuntimeError, e:
             error_exit("unable to open %s/smaps.cap: %s" % (dirname, e))
         if file:
