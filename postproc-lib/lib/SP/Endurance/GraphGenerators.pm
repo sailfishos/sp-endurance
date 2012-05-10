@@ -940,30 +940,16 @@ sub generate_plot_memory_map_count {
 }
 BEGIN { register_generator \&generate_plot_memory_map_count; }
 
-sub generate_plot_private_dirty_changes {
-    my $plotter = shift;
+sub private_dirty_collect_data {
+    my $plot = shift;
     my $masterdb = shift;
 
-    my $plot = $plotter->new_linespoints(
-        key => '1009_private_dirty_plus_swap_%d',
-        label => 'Private dirty + swap (excluding non-changed)',
-        ylabel => 'MB',
-        multiple => {
-            max_plots => 4,
-            max_per_plot => 15,
-            split_f => sub { max @{shift()} },
-            split_factor => 5,
-            legend_f => sub { 'PRIVATE DIRTY+SWAP &mdash; MAX ' . ceil(max @{shift()}) . 'MB' },
-        },
-    );
-
     my @pids = pidfilter $masterdb, uniq map { keys %{$_->{'/proc/pid/smaps'} // {}} } @$masterdb;
-
     #print Dumper \@pids;
 
     foreach my $pid (@pids) {
         $plot->push(
-            [kb2mb nonzero has_changes map {
+            [kb2mb nonzero map {
                 if (exists $_->{'/proc/pid/smaps'}->{$pid} &&
                    (exists $_->{'/proc/pid/smaps'}->{$pid}->{total_Private_Dirty} or
                     exists $_->{'/proc/pid/smaps'}->{$pid}->{total_Swap})) {
@@ -985,6 +971,65 @@ sub generate_plot_private_dirty_changes {
             title => pid_to_cmdline($masterdb, $pid),
         );
     }
+
+    return $plot;
+}
+
+sub generate_plot_private_dirty {
+    my $plotter = shift;
+    my $masterdb = shift;
+
+    my $plot = $plotter->new_histogram(
+        key => '1009_private_dirty_plus_swap',
+        label => 'Private dirty + swap',
+        legend => 'PRIVATE DIRTY+SWAP',
+        ylabel => 'MB',
+        column_limit => 1,
+        reduce_f => sub {
+            my @leftovers;
+
+            foreach my $idx (0 .. @$masterdb-1) {
+                push @leftovers, sum map {
+                    exists $_->{__data} &&
+                    exists $_->{__data}->[$idx] ?
+                           $_->{__data}->[$idx] : undef
+                } @_;
+            }
+
+            return [nonzero @leftovers],
+                   title => 'Sum of ' . scalar(@_) . ' processes';
+        },
+    );
+
+    private_dirty_collect_data $plot, $masterdb;
+
+    $plot->sort(sub { max @{shift()} });
+    $plot->reduce;
+    $plot->sort(\&max_change, sub { max @{shift()} });
+
+    done_plotting $plot;
+}
+BEGIN { register_generator \&generate_plot_private_dirty; }
+
+sub generate_plot_private_dirty_changes {
+    my $plotter = shift;
+    my $masterdb = shift;
+
+    my $plot = $plotter->new_linespoints(
+        key => '1009_private_dirty_plus_swap_%d',
+        label => 'Private dirty + swap (excluding non-changed)',
+        ylabel => 'MB',
+        multiple => {
+            max_plots => 4,
+            max_per_plot => 15,
+            split_f => sub { max @{shift()} },
+            split_factor => 5,
+            legend_f => sub { 'PRIVATE DIRTY+SWAP &mdash; MAX ' . ceil(max @{shift()}) . 'MB' },
+        },
+        exclude_nonchanged => 1,
+    );
+
+    private_dirty_collect_data $plot, $masterdb;
 
     done_plotting $plot;
 }
