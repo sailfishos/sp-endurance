@@ -3,7 +3,7 @@
 # Script for saving endurance measurements.
 # This file is part of sp-endurance.
 #
-# Copyright (C) 2006-2011 by Nokia Corporation
+# Copyright (C) 2006-2012 by Nokia Corporation
 #
 # Contact: Eero Tamminen <eero.tamminen@nokia.com>
 #
@@ -169,6 +169,7 @@ fi
 echo "- Other proc files"
 for F in slabinfo interrupts stat diskstats zoneinfo pagetypeinfo; do
 	cat /proc/$F > $path/$F
+	[ -f $path/$F ] && [ ! -s $path/$F ] && rm $path/$F
 done
 
 which xmeminfo >/dev/null 2>/dev/null
@@ -202,15 +203,18 @@ fi
 if [ -d /syspart ] ; then
 	echo "- Control Group data"
 	find /syspart -type f | xargs head -10000 2>/dev/null > $path/cgroups
+	[ -f $path/cgroups ] && [ ! -s $path/cgroups ] && rm $path/cgroups
 fi
 
 if [ -d /sys/devices/system/cpu ] ; then
 	echo "- CPU statistics"
 	find /sys/devices/system/cpu -type f | xargs head -10000 2>/dev/null > $path/sysfs_cpu
+	[ -f $path/sysfs_cpu ] && [ ! -s $path/sysfs_cpu ] && rm $path/sysfs_cpu
 fi
 if [ -d /sys/fs ] ; then
 	echo "- File system statistics"
 	find /sys/fs -type f | xargs head -10000 2>/dev/null > $path/sysfs_fs
+	[ -f $path/sysfs_fs ] && [ ! -s $path/sysfs_fs ] && rm $path/sysfs_fs
 fi
 if [ -d /sys/class/backlight ] ; then
 	echo "- Backlight"
@@ -221,6 +225,7 @@ if [ -d /sys/class/backlight ] ; then
 			echo
 		fi
 	done > $path/sysfs_backlight
+	[ -f $path/sysfs_backlight ] && [ ! -s $path/sysfs_backlight ] && rm $path/sysfs_backlight
 fi
 
 which rzscontrol >/dev/null 2>/dev/null
@@ -234,6 +239,7 @@ if [ $? -eq 0 ] ; then
 			echo "$script: WARNING, rzscontrol exited with non-zero return value $RET when collecting statistics for device '$D'." 1>&2
 		fi
 	done > $path/ramzswap
+	[ -f $path/ramzswap ] && [ ! -s $path/ramzswap ] && rm $path/ramzswap
 fi
 
 # battery
@@ -241,6 +247,7 @@ which bmestat >/dev/null 2>/dev/null
 if [ $? -eq 0 ] ; then
 	echo "- Battery information"
 	bmestat > $path/bmestat
+	[ -f $path/bmestat ] && [ ! -s $path/bmestat ] && rm $path/bmestat
 fi
 if [ -d "/sys/class/power_supply/" ] ; then
 	# Expecting symlinks in /sys/class/power_supply/, e.g. 'BAT0', ...
@@ -250,6 +257,7 @@ if [ -d "/sys/class/power_supply/" ] ; then
 			echo
 		fi
 	done > $path/sysfs_power_supply
+	[ -f $path/sysfs_power_supply ] && [ ! -s $path/sysfs_power_supply ] && rm $path/sysfs_power_supply
 fi
 
 echo "- /sbin/ifconfig"
@@ -258,6 +266,8 @@ echo "- /sbin/ifconfig"
 if [ -d /var/lib/dsme ] ; then
 	echo "- DSME statistics"
 	cp -a /var/lib/dsme $path/
+	# Do not bother with empty directory:
+	rmdir $path/dsme >/dev/null 2>/dev/null
 fi
 
 if [ -f /var/lib/upstart/jobs_respawned ] ; then
