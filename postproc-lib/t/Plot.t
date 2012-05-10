@@ -195,6 +195,17 @@ my $plotter = SP::Endurance::Plotter->new(
 }
 
 {
+    my @cmds = $plotter
+        ->new_linespoints(exclude_nonchanged => 1)
+        ->push([ undef, undef, undef ])
+        ->push([ 0, 0, 0 ])
+        ->push([ 10, 10, 10 ])
+        ->cmd;
+
+    is_deeply(\@cmds, [], 'exclude_nonchanged => 1: 3x nonchanged entries');
+}
+
+{
     my $plot = $plotter
         ->new_linespoints
         ->push([ 1, 2, 3 ])

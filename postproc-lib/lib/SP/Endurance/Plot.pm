@@ -25,6 +25,8 @@ package SP::Endurance::Plot;
 use List::Util qw/max sum/;
 use Data::Dumper;
 
+use SP::Endurance::Util qw/has_changes/;
+
 no warnings 'uninitialized';
 eval 'use common::sense';
 use strict;
@@ -56,6 +58,11 @@ sub push {
     my %args = @_;
 
     return $self unless ref $entry eq 'ARRAY';
+
+    if ($self->{exclude_nonchanged}) {
+        @$entry = has_changes @$entry;
+    }
+
     return $self unless @{$entry} > 0;
 
     $args{__data} = $entry;
