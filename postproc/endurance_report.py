@@ -1254,6 +1254,7 @@ def output_errors(idx, run1, run2):
 
 def output_data_links(run):
     "output links to all collected uncompressed data"
+    compression_suffixes = ("", ".gz", ".xz", ".lzo")
     basedir = run['basedir']
     print "<h4>For more details on...</h4>"
     print "<ul>"
@@ -1262,16 +1263,19 @@ def output_data_links(run):
     if os.path.exists("%s/smaps.html" % basedir):
         print "<li>private memory usage of all processes, see"
         print '<a href="%s/smaps.html">smaps overview</a>' % basedir
-    elif os.path.exists("%s/smaps.cap" % basedir):
-        print "<li>private memory usage of all processes, see"
-        print '<a href="%s/smaps.cap">smaps data</a>' % basedir
+    for suffix in compression_suffixes:
+        if os.path.exists("%s/smaps.cap%s" % (basedir, suffix)):
+            print "<li>private memory usage of all processes, see"
+            print '<a href="%s/smaps.cap%s">smaps data</a>' % (basedir, suffix)
+            break
     print "<li>process and device state details, see"
     print '<a href="%s/usage.csv">collected CSV data</a> and' % basedir
     print '<a href="%s/ifconfig">ifconfig output</a>' % basedir
     print "<li>rest of /proc/ information; see "
-    for suffix in ("", ".gz", ".xz", ".lzo"):
+    for suffix in compression_suffixes:
         if os.path.exists("%s/open-fds%s" % (basedir, suffix)):
             print '<a href="%s/open-fds%s">open file descriptors</a>, ' % (basedir, suffix)
+            break
     print '<a href="%s/interrupts">interrupts</a>, ' % basedir
     print '<a href="%s/slabinfo">slabinfo</a> and' % basedir
     print '<a href="%s/stat">stat</a> files' % basedir
