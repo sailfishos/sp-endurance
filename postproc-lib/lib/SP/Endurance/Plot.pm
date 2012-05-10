@@ -72,21 +72,6 @@ sub push {
     return $self;
 }
 
-sub unshift {
-    my $self = shift;
-    my $entry = shift;
-    my %args = @_;
-
-    return $self unless ref $entry eq 'ARRAY';
-    return $self unless @{$entry} > 0;
-
-    $args{__data} = $entry;
-
-    CORE::unshift @{$self->{entries}}, \%args;
-
-    return $self;
-}
-
 sub splice {
     my $self = shift;
     my $offset = shift;
