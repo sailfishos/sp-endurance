@@ -57,7 +57,7 @@ class LogParserConfig:
     def __init__(self, configfile):
         conf = open(configfile)
         for line in conf:
-            line = line.strip()
+            line = line.rstrip('\r\n')
             if not line:
                 continue
             if line[0] == '#':
