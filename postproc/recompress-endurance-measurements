@@ -38,8 +38,7 @@ my $outsize = 0;
 my $flag_h;
 my $flag_help;
 
-sub recompress_cmd
-{
+sub recompress_cmd {
 	my ($in) = @_;
 	my $out = $in;
 	my $cmd;
@@ -100,9 +99,7 @@ foreach my $in (@recompress) {
 	$insize += (-s $in);
 	my ($cmd, $out) = recompress_cmd($in);
 	push(@outfiles, $out);
-	if ($forkmanager) {
-		$forkmanager->start() and next;
-	}
+	$forkmanager->start() and next if $forkmanager;
 	print "Compressing '$in' to '$out'...\n";
 	system($cmd);
 	if (WIFSIGNALED($?)) {
@@ -126,13 +123,9 @@ foreach my $in (@recompress) {
 		# OK!
 		unlink $in;
 	}
-	if ($forkmanager) {
-		$forkmanager->finish();
-	}
+	$forkmanager->finish() if $forkmanager;
 }
-if ($forkmanager) {
-	$forkmanager->wait_all_children();
-}
+$forkmanager->wait_all_children() if $forkmanager;
 
 foreach (@outfiles) {
 	$outsize += (-s $_);
