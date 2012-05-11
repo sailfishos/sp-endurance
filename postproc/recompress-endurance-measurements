@@ -25,10 +25,7 @@ use Getopt::Long;
 use Pod::Usage;
 use POSIX qw/WIFSIGNALED WTERMSIG/;
 
-# Re-compress in parallel if the module is available.
 my $forkmanager;
-eval 'require Parallel::ForkManager';
-eval '$forkmanager = new Parallel::ForkManager(4)';
 
 my @outfiles;
 my @recompress;
@@ -37,6 +34,7 @@ my $outsize = 0;
 
 my $flag_h;
 my $flag_help;
+my $flag_j;
 
 sub recompress_cmd {
 	my ($in) = @_;
@@ -58,6 +56,7 @@ sub recompress_cmd {
 exit(1) if not GetOptions(
 	'h' => \$flag_h,
 	'help' => \$flag_help,
+	'j=i' => \$flag_j,
 );
 
 if ($flag_help) {
@@ -65,6 +64,11 @@ if ($flag_help) {
 }
 if ($flag_h or @ARGV < 1) {
 	pod2usage(-exitstatus => 1);
+}
+
+if ($flag_j > 1) {
+	eval 'use Parallel::ForkManager';
+	eval '$forkmanager = new Parallel::ForkManager(' . $flag_j . ')';
 }
 
 `which xz >/dev/null 2>/dev/null`;
@@ -145,6 +149,7 @@ recompress-endurance-measurements [options] [dir ...]
 
  Options:
    --help                 Display full help, including examples.
+   -j N                   Recompress N files in parallel.
 
  Arguments:
    dir                    Endurance data directory as saved by `save-incremental-
