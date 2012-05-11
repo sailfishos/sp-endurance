@@ -2533,6 +2533,7 @@ sub proc_pid_io_collect_data {
     my $idx = {
         read_bytes => 4,
         write_bytes => 5,
+        cancelled_write_bytes => 6,
     }->{$key};
 
     die "Invalid $key" unless defined $idx;
@@ -2558,15 +2559,19 @@ sub generate_plot_pid_io {
 
     my @pids = pidfilter $masterdb, uniq map { keys %{$_->{'/proc/pid/io'}} } @$masterdb;
 
+    # Not generating the line graphs for 'cancelled_write_bytes' on purpose,
+    # the histogram is enough for now.
     foreach my $key (qw/read_bytes write_bytes/) {
         my $plot = $plotter->new_linespoints(
             key => {
                     read_bytes => '1300_pid_io_read_bytes_%d',
                     write_bytes => '1301_pid_io_write_bytes_%d',
+                    cancelled_write_bytes => '1302_pid_io_cancelled_write_bytes_%d',
                 }->{$key},
             label => {
                     read_bytes => 'Per process disk reads.',
                     write_bytes => 'Per process disk writes.',
+                    cancelled_write_bytes => 'Per process cancelled disk writes.',
                 }->{$key},
             ylabel => 'MB',
             multiple => {
@@ -2577,6 +2582,7 @@ sub generate_plot_pid_io {
                 legend_f => sub {
                     { read_bytes => 'DISK READS',
                       write_bytes => 'DISK WRITES',
+                      cancelled_write_bytes => 'CANCELLED DISK WRITES',
                       }->{$key} .
                     ' &mdash; MAX ' . ceil(max @{shift()}) . 'MB' },
             },
@@ -2595,19 +2601,22 @@ sub generate_plot_pid_io_histogram {
 
     my @pids = pidfilter $masterdb, uniq map { keys %{$_->{'/proc/pid/io'}} } @$masterdb;
 
-    foreach my $key (qw/read_bytes write_bytes/) {
+    foreach my $key (qw/read_bytes write_bytes cancelled_write_bytes/) {
         my $plot = $plotter->new_histogram(
             key => {
                     read_bytes => '1300_pid_io_read_bytes',
                     write_bytes => '1301_pid_io_write_bytes',
+                    cancelled_write_bytes => '1302_pid_io_cancelled_write_bytes',
                 }->{$key},
             label => {
                     read_bytes => 'Per process disk reads.',
                     write_bytes => 'Per process disk writes.',
+                    cancelled_write_bytes => 'Per process cancelled disk writes.',
                 }->{$key},
             legend => {
                     read_bytes => 'DISK READS',
                     write_bytes => 'DISK WRITES',
+                    cancelled_write_bytes => 'CANCELLED DISK WRITES',
                 }->{$key},
             ylabel => 'MB',
         );
