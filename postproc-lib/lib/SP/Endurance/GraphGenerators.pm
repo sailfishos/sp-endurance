@@ -2524,6 +2524,34 @@ sub generate_plot_power_supply {
 }
 BEGIN { register_generator \&generate_plot_power_supply; }
 
+sub proc_pid_io_collect_data {
+    my $plot = shift;
+    my $masterdb = shift;
+    my $pids = shift;
+    my $key = shift;
+
+    my $idx = {
+        read_bytes => 4,
+        write_bytes => 5,
+    }->{$key};
+
+    die "Invalid $key" unless defined $idx;
+
+    foreach my $pid (@$pids) {
+        $plot->push(
+            [nonzero cumulative_to_changes b2mb map {
+                if (exists $_->{'/proc/pid/io'}->{$pid}) {
+                    my @entry = unpack "d*", $_->{'/proc/pid/io'}->{$pid};
+                    defined $entry[$idx] ? $entry[$idx] : undef
+                } else { undef }
+            } @$masterdb],
+            title => pid_to_cmdline($masterdb, $pid),
+        );
+    }
+
+    return $plot;
+}
+
 sub generate_plot_pid_io {
     my $plotter = shift;
     my $masterdb = shift;
@@ -2532,7 +2560,10 @@ sub generate_plot_pid_io {
 
     foreach my $key (qw/read_bytes write_bytes/) {
         my $plot = $plotter->new_linespoints(
-            key => "1300_pid_io_${key}_%d",
+            key => {
+                    read_bytes => '1300_pid_io_read_bytes_%d',
+                    write_bytes => '1301_pid_io_write_bytes_%d',
+                }->{$key},
             label => {
                     read_bytes => 'Per process disk reads.',
                     write_bytes => 'Per process disk writes.',
@@ -2544,21 +2575,14 @@ sub generate_plot_pid_io {
                 split_f => sub { max @{shift()} },
                 split_factor => 5,
                 legend_f => sub {
-                    { read_bytes => 'DISK READS', write_bytes => 'DISK WRITES' }->{$key} .
+                    { read_bytes => 'DISK READS',
+                      write_bytes => 'DISK WRITES',
+                      }->{$key} .
                     ' &mdash; MAX ' . ceil(max @{shift()}) . 'MB' },
             },
         );
 
-        foreach my $pid (@pids) {
-            $plot->push(
-                [nonzero cumulative_to_changes b2mb map {
-                    exists $_->{'/proc/pid/io'}->{$pid} &&
-                    exists $_->{'/proc/pid/io'}->{$pid}->{$key} ?
-                           $_->{'/proc/pid/io'}->{$pid}->{$key} : undef
-                } @$masterdb],
-                title => pid_to_cmdline($masterdb, $pid),
-            );
-        }
+        proc_pid_io_collect_data $plot, $masterdb, \@pids, $key;
 
         done_plotting $plot;
     }
@@ -2573,7 +2597,10 @@ sub generate_plot_pid_io_histogram {
 
     foreach my $key (qw/read_bytes write_bytes/) {
         my $plot = $plotter->new_histogram(
-            key => "1300_pid_io_${key}",
+            key => {
+                    read_bytes => '1300_pid_io_read_bytes',
+                    write_bytes => '1301_pid_io_write_bytes',
+                }->{$key},
             label => {
                     read_bytes => 'Per process disk reads.',
                     write_bytes => 'Per process disk writes.',
@@ -2585,16 +2612,7 @@ sub generate_plot_pid_io_histogram {
             ylabel => 'MB',
         );
 
-        foreach my $pid (@pids) {
-            $plot->push(
-                [nonzero cumulative_to_changes b2mb map {
-                    exists $_->{'/proc/pid/io'}->{$pid} &&
-                    exists $_->{'/proc/pid/io'}->{$pid}->{$key} ?
-                           $_->{'/proc/pid/io'}->{$pid}->{$key} : undef
-                } @$masterdb],
-                title => pid_to_cmdline($masterdb, $pid),
-            );
-        }
+        proc_pid_io_collect_data $plot, $masterdb, \@pids, $key;
 
         $plot->sort(\&max_change, sub { max @{shift()} });
 

@@ -856,10 +856,17 @@ sub csv_proc_pid_io {
             $values[$_] = undef unless length $values[$_];
         }
         my %keyval = zip @keys, @values;
-        $stat{$keyval{PID}} = {
-            read_bytes  => int($keyval{read_bytes}),
-            write_bytes => int($keyval{write_bytes}),
-        };
+
+        # Packing "doubles" here due to limited availability of quads.
+        $stat{$keyval{PID}} = pack "d*", (
+            $keyval{rchar},
+            $keyval{wchar},
+            $keyval{syscr},
+            $keyval{syscw},
+            $keyval{read_bytes},
+            $keyval{write_bytes},
+            $keyval{cancelled_write_bytes},
+        );
     }
 
     return \%stat;

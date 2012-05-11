@@ -1625,6 +1625,7 @@ PID,rchar,wchar,syscr,syscw,read_bytes,write_bytes,cancelled_write_bytes:
 invalid,line,goes,here
 1,3902402,2561614,10441,3790,30710784,860160,0
 2,0,0,0,0,0,0,0
+841,27259171939,16002570026,2024951,868371,14218063872,2447728640,73728
 
 Filesystem,1024-blocks,Used,Available,Capacity,Mounted,on
 /dev/root,4128448,1738124,2180612,44%,/
@@ -1723,14 +1724,9 @@ END
         watchdog              => 1,
     },
     '/proc/pid/io' => {
-        1 => {
-            read_bytes => 30710784,
-            write_bytes => 860160,
-        },
-        2 => {
-            read_bytes => 0,
-            write_bytes => 0,
-        },
+        1 => (pack "d*",3902402,2561614,10441,3790,30710784,860160,0),
+        2 => (pack "d*",0,0,0,0,0,0,0),
+        841 => (pack "d*",27259171939,16002570026,2024951,868371,14218063872,2447728640,73728),
     },
     '/bin/df' => {
         '/' => {
