@@ -29,7 +29,8 @@ BEGIN {
         parse_cgroups parse_interrupts parse_bmestat parse_ramzswap
         parse_proc_stat parse_pagetypeinfo parse_diskstats parse_sysfs_fs
         parse_sysfs_power_supply parse_sysfs_backlight parse_sysfs_cpu
-        parse_component_version parse_step parse_usage_csv parse_ifconfig/);
+        parse_component_version parse_step parse_usage_csv parse_ifconfig
+        parse_upstart_jobs_respawned/);
 }
 
 ###### parse_openfds ######
@@ -1864,6 +1865,52 @@ END
     },
 }, 'parse_ifconfig - eth0, lo, pan0');
 
+###### parse_upstart_jobs_respawned ######
+
+is_deeply(parse_upstart_jobs_respawned, {}, 'parse_upstart_jobs_respawned - undef input');
+
+{
+    my $content = '';
+    open my $fh, '<', \$content;
+    is_deeply(parse_upstart_jobs_respawned($fh), {}, 'parse_upstart_jobs_respawned - empty input file');
+}
+{
+    my $content = "\n\n\n";
+    open my $fh, '<', \$content;
+    is_deeply(parse_upstart_jobs_respawned($fh), {}, 'parse_upstart_jobs_respawned - input file with only newlines');
+}
+
+{
+    my $content = <<'END';
+pulseaudio: 4
+xsession/conndlgs: 11
+xsession/meego-im-uiserver: 85
+END
+
+    open my $fh, '<', \$content;
+    is_deeply(parse_upstart_jobs_respawned($fh), {
+        pulseaudio => 4,
+        'xsession/conndlgs' => 11,
+        'xsession/meego-im-uiserver' => 85,
+    }, 'parse_upstart_jobs_respawned - 4x entry');
+}
+
+{
+    my $content = <<'END';
+                    foobar: 2
+:
+: 1
+x:
+y: -1
+z: a
+
+invalid_line_goes_here
+END
+
+    open my $fh, '<', \$content;
+    is_deeply(parse_upstart_jobs_respawned($fh), {
+    }, 'parse_upstart_jobs_respawned - invalid entries');
+}
 
 done_testing;
 # vim: ts=4:sw=4:et

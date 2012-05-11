@@ -2603,4 +2603,34 @@ sub generate_plot_pid_io_histogram {
 }
 BEGIN { register_generator \&generate_plot_pid_io_histogram; }
 
+sub generate_plot_upstart_jobs_respawned {
+    my $plotter = shift;
+    my $masterdb = shift;
+
+    my @jobs = uniq grep { defined and length } map { keys %{$_->{upstart_jobs_respawned}} } @$masterdb;
+
+    my $plot = $plotter->new_histogram(
+        key => '1400_upstart_jobs_respawned',
+        label => 'Jobs respawned by Upstart',
+        legend => 'UPSTART JOBS RESPAWNED',
+        ylabel => 'count',
+    );
+
+    foreach my $job (@jobs) {
+        $plot->push(
+            [nonzero cumulative_to_changes map {
+                exists $_->{upstart_jobs_respawned} &&
+                exists $_->{upstart_jobs_respawned}->{$job} ?
+                       $_->{upstart_jobs_respawned}->{$job} : undef
+            } @$masterdb],
+            title => $job,
+        );
+    }
+
+    $plot->sort(\&max_change, sub { max @{shift()} });
+
+    done_plotting $plot;
+}
+BEGIN { register_generator \&generate_plot_upstart_jobs_respawned; }
+
 1;

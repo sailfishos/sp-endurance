@@ -31,7 +31,8 @@ require Exporter;
     parse_cgroups parse_interrupts parse_bmestat parse_ramzswap parse_proc_stat
     parse_pagetypeinfo parse_diskstats parse_sysfs_fs parse_sysfs_power_supply
     parse_sysfs_backlight parse_sysfs_cpu parse_component_version parse_step
-    parse_usage_csv parse_df parse_ifconfig parse_dir/;
+    parse_usage_csv parse_df parse_ifconfig parse_upstart_jobs_respawned
+    parse_dir/;
 
 use File::Basename qw/basename/;
 use List::MoreUtils qw/uniq zip all none firstidx/;
@@ -1009,6 +1010,22 @@ sub parse_ifconfig {
     return \%ifconfig;
 }
 
+sub parse_upstart_jobs_respawned {
+    my $fh = shift;
+
+    return {} unless defined $fh;
+
+    my %jobs;
+    while (<$fh>) {
+        chomp;
+        next unless /^(\S+):\s*(\d+)$/;
+        $jobs{$1} = int $2;
+    }
+
+    #print Dumper \%jobs;
+    return \%jobs;
+}
+
 sub parse_dir {
     my $name = shift;
 
@@ -1020,6 +1037,7 @@ sub parse_dir {
         component_version          => parse_component_version(copen $name . '/component_version'),
         ramzswap                   => parse_ramzswap(copen $name . '/ramzswap'),
         step                       => parse_step(copen $name . '/step.txt'),
+        upstart_jobs_respawned     => parse_upstart_jobs_respawned(copen $name . '/upstart_jobs_respawned'),
         '/bin/df'                  => parse_df(copen $name . '/df'),
         '/proc/diskstats'          => parse_diskstats(copen $name . '/diskstats'),
         '/proc/interrupts'         => parse_interrupts(copen $name . '/interrupts'),
