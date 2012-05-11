@@ -55,6 +55,7 @@ if [ $# -lt 1 ] || [ $# -gt 2 ] || [ "${1#-}" != "$1" ]; then
 	echo " - cgroups      (Control Group information)"
 	echo " - ramzswap     (ramzswap statistics)"
 	echo " - step.txt     (current use-case step description)"
+	echo " - upstart/     (upstart service logs)"
 	echo "+ 102/"
 	echo "+ 103/"
 	echo "etc."
@@ -273,6 +274,18 @@ fi
 if [ -f /var/lib/upstart/jobs_respawned ] ; then
 	echo "- Upstart respawned jobs"
 	cp /var/lib/upstart/jobs_respawned $path/upstart_jobs_respawned 2>/dev/null
+fi
+
+if [ -d /var/log/upstart ]; then
+	echo "- Upstart service logs"
+	mkdir $path/upstart
+	for F in /var/log/upstart/*; do
+		if [ -f "$F" ] && [ -s "$F" ] ; then
+			logto=$path/upstart/${F##*/}
+			sp-noncached --read $F | lzop -c | sp-noncached --write $logto.lzo
+			[ -f $logto.lzo ] && [ ! -s $logto.lzo ] && rm $logto.lzo
+		fi
+	done
 fi
 
 echo "- Disk usage"
