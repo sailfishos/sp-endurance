@@ -83,15 +83,26 @@ class LogParserConfig:
             except: pass
             if not regexp:
                 raise RuntimeError("Invalid regular expression: '%s'" % line)
-            self.regexps.append((regexp, self.categories[-1]))
+            # We can avoid some regex matching by checking if the pattern
+            # starts with a fixed string, and check for that string first.
+            fixed_prefix = None
+            if not '|' in line:
+                m = re.search("^([\w\s,:]+)", line)
+                if m:
+                    fixed_prefix = m.group(1)
+                    if fixed_prefix == line:
+                        regexp = None
+            self.regexps.append((regexp, fixed_prefix, self.categories[-1]))
         conf.close()
 
 def get_errors_by_category(logfile, regexps, category_max = 1000):
     errors_by_category = {}
     for line in logfile:
         if line[-1] == '\n': line = line.rstrip()
-        for (regexp, category) in regexps:
-            if regexp.search(line):
+        for (regexp, fixed_prefix, category) in regexps:
+            if fixed_prefix and not fixed_prefix in line:
+                continue
+            if not regexp or regexp.search(line):
                 if not category in errors_by_category:
                     errors_by_category[category] = []
                 errors_by_category[category].append(line)
