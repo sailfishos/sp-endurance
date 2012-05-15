@@ -1686,25 +1686,13 @@ sub generate_plot_fd_changes {
 }
 BEGIN { register_generator \&generate_plot_fd_changes; }
 
-my %fdtypes = (
-    disk       => FD_DISK,
-    epoll      => FD_EPOLL,
-    eventfd    => FD_EVENTFD,
-    inotify    => FD_INOTIFY,
-    pipe       => FD_PIPE,
-    signalfd   => FD_SIGNALFD,
-    socket     => FD_SOCKET,
-    timerfd    => FD_TIMERFD,
-    tmpfs      => FD_TMPFS,
-);
-
 sub generate_plot_pid_fd {
     my $plotter = shift;
     my $masterdb = shift;
 
     my @pids = pidfilter $masterdb, uniq map { keys %{$_->{'/proc/pid/fd'}} } @$masterdb;
 
-    foreach my $fdtype (keys %fdtypes) {
+    foreach my $fdtype (keys %SP::Endurance::Parser::fdtypemap) {
         my $plot = $plotter->new_histogram(
             key => "1081_fdcount_$fdtype",
             label => ucfirst($fdtype) . ' file descriptor use per process',
@@ -1732,7 +1720,8 @@ sub generate_plot_pid_fd {
                 [nonzero map {
                     if (exists $_->{'/proc/pid/fd'}->{$pid}) {
                         my @entry = split ',', $_->{'/proc/pid/fd'}->{$pid};
-                        exists $entry[$fdtypes{$fdtype}] ? $entry[$fdtypes{$fdtype}] : undef
+                        exists $entry[$SP::Endurance::Parser::fdtypemap{$fdtype}] ?
+                               $entry[$SP::Endurance::Parser::fdtypemap{$fdtype}] : undef
                     } else { undef }
                 } @$masterdb],
                 title => pid_to_cmdline($masterdb, $pid),
@@ -1754,7 +1743,7 @@ sub generate_plot_pid_fd_changes {
 
     my @pids = pidfilter $masterdb, uniq map { keys %{$_->{'/proc/pid/fd'}} } @$masterdb;
 
-    foreach my $fdtype (keys %fdtypes) {
+    foreach my $fdtype (keys %SP::Endurance::Parser::fdtypemap) {
         my $plot = $plotter->new_linespoints(
             key => "1081_fdcount_${fdtype}_changes",
             label => ucfirst($fdtype) . ' file descriptor use per process (excluding non-changed)',
@@ -1767,7 +1756,8 @@ sub generate_plot_pid_fd_changes {
                 [nonzero has_changes map {
                     if (exists $_->{'/proc/pid/fd'}->{$pid}) {
                     my @entry = map { int } split ',', $_->{'/proc/pid/fd'}->{$pid};
-                    exists $entry[$fdtypes{$fdtype}] ? $entry[$fdtypes{$fdtype}] : undef
+                    exists $entry[$SP::Endurance::Parser::fdtypemap{$fdtype}] ?
+                           $entry[$SP::Endurance::Parser::fdtypemap{$fdtype}] : undef
                     } else { undef }
                 } @$masterdb],
                 title => pid_to_cmdline($masterdb, $pid),

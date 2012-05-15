@@ -67,6 +67,18 @@ sub FD_TIMERFD()    { 7 }
 sub FD_TMPFS()      { 8 }
 sub FD_COUNT()      { 9 }
 
+our %fdtypemap = (
+    disk       => FD_DISK,
+    epoll      => FD_EPOLL,
+    eventfd    => FD_EVENTFD,
+    inotify    => FD_INOTIFY,
+    pipe       => FD_PIPE,
+    signalfd   => FD_SIGNALFD,
+    socket     => FD_SOCKET,
+    timerfd    => FD_TIMERFD,
+    tmpfs      => FD_TMPFS,
+);
+
 sub parse_openfds {
     my $fh = shift;
 
