@@ -29,8 +29,9 @@ use strict;
 use SP::Endurance::Parser qw/parse_dir/;
 use SP::Endurance::Plotter;
 use SP::Endurance::GraphGenerators qw/graph_generators get_plots/;
-use SP::Endurance::Util qw/uptimes total_duration sw_versions hw_string xtics
-        dur_to_str round_durations/;
+use SP::Endurance::Util qw/GRAPHS_DIR plot_filename plot_thumbname uptimes
+        total_duration sw_versions hw_string xtics dur_to_str round_durations/;
+use SP::Endurance::GnuplotWorker;
 
 use POSIX qw/WIFSIGNALED WTERMSIG SIGINT SIGTERM SIGKILL/;
 use List::Util qw/min max/;
@@ -42,7 +43,6 @@ use IO::Pipe;
 sub THUMB_WIDTH  { 320 }
 sub THUMB_HEIGHT { 250 }
 sub HTML_NAME    { 'index.html' }
-sub GRAPHS_DIR   { 'graphs' }
 
 my $gnuplot_terminal = 'pngcairo';
 
@@ -61,14 +61,11 @@ my $progname;
 eval { $progname = basename $0; };
 $progname = $0 unless defined $progname;
 
-sub plot_graph { GRAPHS_DIR . '/' . shift() . '.png' }
-sub plot_thumb { GRAPHS_DIR . '/' . shift() . '_thumb.jpg' }
-
 sub img {
     my $plot = shift;
 
-    my $graph = plot_graph $plot->{key};
-    my $thumb = plot_thumb $plot->{key};
+    my $graph = plot_filename $plot->{key};
+    my $thumb = plot_thumbname $plot->{key};
 
 <<END;
 <table class="image">
@@ -297,70 +294,6 @@ END
     exit 1;
 }
 
-# Fork separate worker process and pipe the plot "keys" to it. We do this for
-# couple of reasons:
-# - Calling system() in perl process that has several hundred of MB data
-#   structures is slow.
-# - We can start plotting as soon as we have some gnuplot data available,
-#   improving parallellization (compared to first generating all the gnuplot
-#   input data, and plotting after that).
-sub worker {
-    my $pipe = shift;
-
-    my $forkmanager;
-
-    if ($flag_j > 1) {
-        require Parallel::ForkManager;
-        $forkmanager = new Parallel::ForkManager($flag_j);
-    }
-
-    while (<$pipe>) {
-        chomp;
-        next unless /^(\S+)$/;
-
-        my $key = $1;
-        my $graph = plot_graph $key;
-        my $thumb = plot_thumb $key;
-        my $cmd = "gnuplot 'e/$key.cmd' > '$graph'";
-
-        $forkmanager->start() and next if $forkmanager;
-        say " > $cmd";
-        system $cmd;
-
-        if (WIFSIGNALED($?)) {
-            my $sig = WTERMSIG($?);
-            # Ignore gnuplot problems (SIGSEGV etc), but stop processing if it
-            # looks like the users wants to abort the plot generation.
-            if ($sig == SIGINT or $sig == SIGTERM or $sig == SIGKILL) {
-                kill($sig, $$);
-            }
-        }
-
-        system "pngtopnm $graph |" .
-               'pnmscalefixed' .
-                    ' -width=' . THUMB_WIDTH .
-                    ' -height=' . THUMB_HEIGHT . '|' .
-               "pnmtojpeg > $thumb";
-
-        if (WIFSIGNALED($?)) {
-            my $sig = WTERMSIG($?);
-            # Ignore thumnail generation problems (SIGSEGV etc), but stop
-            # processing if it looks like the users wants to abort the plot
-            # generation.
-            if ($sig == SIGINT or $sig == SIGTERM or $sig == SIGKILL) {
-                kill($sig, $$);
-            }
-        }
-
-        $forkmanager->finish() if $forkmanager;
-    }
-
-    $forkmanager->wait_all_children() if $forkmanager;
-    say "Worker done!" if $flag_v;
-
-    return 0;
-}
-
 exit 1 unless GetOptions(
     'h'                     => \$flag_h,
     'help'                  => \$flag_h,
@@ -395,7 +328,11 @@ die "fork() failed: $!" unless defined $pid;
 
 if ($pid == 0) {
     $worker_pipe->reader;
-    my $ret = worker($worker_pipe);
+    my $ret = SP::Endurance::GnuplotWorker::worker($worker_pipe, {
+        flag_j       => $flag_j,
+        thumb_width  => THUMB_WIDTH,
+        thumb_height => THUMB_HEIGHT,
+    });
     exit $ret;
 }
 

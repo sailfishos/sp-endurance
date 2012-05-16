@@ -24,9 +24,10 @@ package SP::Endurance::Util;
 
 require Exporter;
 @ISA = qw/Exporter/;
-@EXPORT_OK = qw/b2mb kb2mb nonzero has_changes max_change cumulative_to_changes
-        uptimes total_duration sw_versions hw_string xtics dur_to_str
-        round_durations change_per_second/;
+@EXPORT_OK = qw/GRAPHS_DIR plot_filename plot_thumbname b2mb kb2mb nonzero
+        has_changes max_change cumulative_to_changes uptimes total_duration
+        sw_versions hw_string xtics dur_to_str round_durations
+        change_per_second/;
 
 use List::Util qw/min max/;
 use List::MoreUtils qw/any minmax uniq/;
@@ -35,6 +36,10 @@ use Data::Dumper;
 no warnings 'uninitialized';
 eval 'use common::sense';
 use strict;
+
+sub GRAPHS_DIR()   { 'graphs' }
+sub plot_filename  { GRAPHS_DIR . '/' . shift() . '.png' }
+sub plot_thumbname { GRAPHS_DIR . '/' . shift() . '_thumb.jpg' }
 
 sub b2mb {
     my @ret;
