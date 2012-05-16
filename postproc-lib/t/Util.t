@@ -62,6 +62,21 @@ foreach ([[], []],
         ' => (' . join(', ', @got) . ')');
 }
 
+foreach ([[0], []],
+         [[undef], []],
+         [[0,0], []],
+         [[undef,0,0], []],
+         [[0,1,undef], [0,1,undef]],
+         [[undef,123123,0,321321], [undef,123123,0,321321]],
+         ) {
+    my @input = @{$_->[0]};
+    my $expected = $_->[1];
+    my @got = nonzero @input;
+    is_deeply(\@got, $expected,
+        'nonzero(' . join(', ', @input) . ')' .
+        ' => (' . join(', ', @got) . ')');
+}
+
 foreach ([[], []],
          [[undef], [undef]],
          [[1], [undef]],
