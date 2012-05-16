@@ -26,8 +26,7 @@ require Exporter;
 @ISA = qw/Exporter/;
 @EXPORT_OK = qw/graph_generators get_plots/;
 
-use SP::Endurance::Parser qw/FD_DISK FD_EPOLL FD_EVENTFD FD_INOTIFY FD_PIPE
-    FD_SIGNALFD FD_SOCKET FD_TIMERFD FD_TMPFS/;
+use SP::Endurance::Parser;
 use SP::Endurance::Util qw/b2mb kb2mb nonzero has_changes max_change
     cumulative_to_changes change_per_second/;
 
