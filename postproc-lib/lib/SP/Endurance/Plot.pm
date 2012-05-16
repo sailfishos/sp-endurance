@@ -168,7 +168,13 @@ sub cmd {
     CORE::push @cmd,  q/set grid xtics ytics/;
     CORE::push @cmd, qq/set term $self->{terminal}/ if $self->{terminal};
 
-    my $xmax = $self->{rounds} + max(25, $self->{rounds} / 3);
+    my $xmax;
+
+    if (exists $self->{xmax}) {
+        $xmax = $self->{xmax};
+    } elsif ($self->{type} eq 'linespoints' or $self->{type} eq 'histogram') {
+        $xmax = $self->{rounds} + max(25, $self->{rounds} / 3);
+    }
 
     if (defined $self->{y2label} and length $self->{y2label}) {
         CORE::push @cmd, qq/set y2label '$self->{y2label}'/;
@@ -209,6 +215,12 @@ sub cmd {
         CORE::push @cmd, qq/plot [-1:$xmax]\\/;
 
         @{$self->{entries}} = reverse @{$self->{entries}};
+    } elsif ($self->{type} eq 'yerrorbars') {
+        CORE::push @cmd, q/set key off/;
+        CORE::push @cmd, q/set yrange [0 : ]/;
+        CORE::push @cmd, qq/plot [-1:$xmax]\\/;
+    } else {
+        die "Unknown plot type '$self->{type}'";
     }
 
     my $valid_cnt = 0;
@@ -221,18 +233,29 @@ sub cmd {
         my $lc = exists $entry->{lc} && length $entry->{lc} ?
                     " lt rgb '#$entry->{lc}'" :
                     " lt rgb '#$line_colors[$valid_cnt % @line_colors]'";
+
         my $lw = length ($entry->{lw} // '') ? " lw $entry->{lw}" : undef;
         $lw = ' lw 3' if not defined $lw and $self->{type} eq 'linespoints';
+        $lw = ' lw 4' if not defined $lw and $self->{type} eq 'yerrorbars';
 
         my $axes = length ($entry->{axes} // '') ? " axes $entry->{axes}" : undef;
 
-        CORE::push @cmd, qq/    '-'${using}${lc}${lw}${axes}${title},\\/;
+        my $with = $self->{type} eq 'yerrorbars' ? ' with yerrorbars' : undef;
+
+        CORE::push @cmd, qq/    '-'${using}${lc}${lw}${axes}${with}${title},\\/;
 
         foreach (0 .. $self->{rounds}-1) {
             if (not defined $entry->{__data}->[$_]) {
                 if ($self->{type} eq 'histogram') {
                     CORE::push @data, qq/$_, 0/;
                 }
+            } elsif ($self->{type} eq 'yerrorbars') {
+                CORE::push @data, join ', ',
+                    $_,                                   # x
+                   ($entry->{__data}->[$_]->[0] +
+                    $entry->{__data}->[$_]->[1]) / 2,     # y
+                    $entry->{__data}->[$_]->[0],          # ylow
+                    $entry->{__data}->[$_]->[1];          # yhigh
             } else {
                 CORE::push @data, qq/$_, $entry->{__data}->[$_]/;
             }

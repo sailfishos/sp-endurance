@@ -75,4 +75,18 @@ sub new_histogram {
     return $plot;
 }
 
+sub new_yerrorbars {
+    my $self = shift;
+    my %args = @_;
+
+    my $plot = SP::Endurance::Plot->new(
+        __plotter => $self,
+        type => 'yerrorbars',
+        %{$self},
+        %args,
+    );
+
+    return $plot;
+}
+
 1;

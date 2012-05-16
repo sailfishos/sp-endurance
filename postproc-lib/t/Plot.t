@@ -255,5 +255,20 @@ my $plotter = SP::Endurance::Plotter->new(
     like($cmd, qr/^set xtics \('xtick one' 0, 'xtick two' 1, 'xtick three' 2\)/m, 'set xtics');
 }
 
+{
+    my $plot = $plotter
+        ->new_yerrorbars(
+            xmax => 10,
+        )
+        ->push([ [0,2], [2,4], [4,6] ]);
+
+    my $cmd = $plot->cmd;
+    like($cmd, qr/ with yerrorbars/m, 'with yerrorbars');
+    like($cmd, qr/^plot \[-1:10\]\\$/m, 'xmax => 10');
+    like($cmd, qr/^0, 1, 0, 2$/m, 'data entry 0');
+    like($cmd, qr/^1, 3, 2, 4$/m, 'data entry 1');
+    like($cmd, qr/^2, 5, 4, 6$/m, 'data entry 2');
+}
+
 done_testing;
 # vim: ts=4:sw=4:et
