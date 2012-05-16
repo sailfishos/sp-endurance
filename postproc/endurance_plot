@@ -40,9 +40,9 @@ use File::Basename qw/basename/;
 use Data::Dumper;
 use IO::Pipe;
 
-sub THUMB_WIDTH  { 320 }
-sub THUMB_HEIGHT { 250 }
-sub HTML_NAME    { 'index.html' }
+sub THUMB_WIDTH()  { 320 }
+sub THUMB_HEIGHT() { 250 }
+sub HTML_NAME()    { 'index.html' }
 
 my $gnuplot_terminal = 'pngcairo';
 
