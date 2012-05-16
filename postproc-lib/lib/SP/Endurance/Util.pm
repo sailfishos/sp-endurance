@@ -44,12 +44,27 @@ sub b2mb {
 
 sub kb2mb {
     my @ret;
-    push @ret, defined $_ ? $_ / 1024 : $_ foreach @_;
+    if (ref $_[0] eq 'ARRAY') {
+        foreach (@_) {
+            my @inner;
+            push @inner, defined $_ ? $_ / 1024 : $_ foreach @$_;
+            push @ret, [@inner];
+        }
+    } else {
+        push @ret, defined $_ ? $_ / 1024 : $_ foreach @_;
+    }
     return @ret;
 }
 
 sub nonzero {
-    any { $_ } @_ and return @_; return;
+    if (ref $_[0] eq 'ARRAY') {
+        foreach (@_) {
+            any { $_ } @$_ and return @_;
+        }
+    } else {
+        any { $_ } @_ and return @_;
+    }
+    return;
 }
 
 sub has_changes {
