@@ -47,7 +47,12 @@ sub COLUMN_LIMIT { 66 }
 
 sub new {
     my $class = shift;
-    my $self = {@_} // {};
+    my $self = {@_};
+
+    if (exists $self->{key}) {
+        $self->{key} =~ s/\W/_/g;
+    }
+
     #print Dumper($self);
     bless $self, $class;
 }
