@@ -1,0 +1,556 @@
+#!/usr/bin/perl
+#
+# This file is part of sp-endurance.
+#
+# vim: ts=4:sw=4:et
+#
+# Copyright (C) 2010-2012 by Nokia Corporation
+#
+# Contact: Eero Tamminen <eero.tamminen@nokia.com>
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# version 2 as published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+# 02110-1301 USA
+
+use v5.10;
+
+use strict;
+
+use SP::Endurance::Parser qw/parse_dir/;
+use SP::Endurance::Plotter;
+use SP::Endurance::MultiGraphGenerators qw/system_graph_generators
+        process_graph_generators get_plots/;
+use SP::Endurance::Util qw/GRAPHS_DIR plot_filename plot_thumbname sw_versions/;
+use SP::Endurance::GnuplotWorker;
+
+use List::Util qw/min max/;
+use List::MoreUtils qw/uniq/;
+use Getopt::Long;
+use File::Basename qw/basename/;
+use Data::Dumper;
+use IO::Pipe;
+use JSON qw/encode_json/;
+
+sub THUMB_WIDTH()  { 230 }
+sub THUMB_HEIGHT() { 230 }
+sub HTML_NAME()    { 'index.html' }
+sub JSON_NAME()    { 'index.json' }
+
+my $flag_h;
+my $flag_j;
+my $flag_v;
+my @flag_process;
+my $flag_system_graphs = 1;
+my $flag_process_graphs = 1;
+
+# The -e flag is intentionally undocumented. When specified, the 'e' directory
+# is not cleared after running the script.
+my $flag_e;
+
+# Paranoid, yes, but I will never want to abort the script trying to figure out
+# our script name.
+my $progname;
+eval { $progname = basename $0; };
+$progname = $0 unless defined $progname;
+
+sub img {
+    my $plot = shift;
+
+    my $graph = plot_filename $plot->{key};
+    my $thumb = plot_thumbname $plot->{key};
+
+<<END;
+<table class="image">
+  <caption align="bottom">$plot->{legend}</caption>
+  <tr>
+    <td><a href="$graph"><img src="$thumb"></a></td>
+  </tr>
+</table>
+END
+}
+
+sub process_plots {
+    my $process = shift;
+    grep { $_->{key} =~ /^1/ and $_->{process} eq $process and $_->cmd } get_plots
+}
+sub system_plots { grep { $_->{key} !~ /^1/ and $_->cmd } get_plots }
+
+sub processes_from_plots {
+    my %processes;
+    foreach (get_plots) {
+        next unless $_->{process};
+        $processes{$_->{process}} = 1;
+    }
+    return sort keys %processes;
+}
+
+sub generate_html {
+    my $superdb = shift;
+    my $filename = shift;
+
+    my $fh;
+    unless (open $fh, '>', $filename) {
+        say STDERR "ERROR: unable to open '$filename' for writing: $!";
+        exit 1;
+    }
+
+    print $fh <<'END';
+<!DOCTYPE html>
+<html>
+<head>
+ <style type="text/css">
+  table { float: left; padding: 30px 10px 0px 0px; }
+ </style>
+ <title>Endurance Multigraphs</title>
+</head>
+<body>
+
+<h1>ENDURANCE MULTIGRAPHS</h1>
+<ul>
+  <li>Content:
+    <a href='#process_graphs'>Process Resource Usage Graphs</a>:
+END
+    foreach my $process (processes_from_plots) {
+        say $fh <<END;
+<a href="#$process">$process</a> |
+END
+    }
+
+    print $fh <<'END';
+  </li>
+  <li>
+    <a href='#system_graphs'>System Resource Usage Graphs</a> |
+    <a href='#steps'>Snapshot Dates and Descriptions</a>
+  </li>
+</ul>
+END
+
+    if ($flag_process_graphs) {
+        print $fh <<END;
+<a name='process_graphs'></a>
+<h2>PROCESS RESOURCE USAGE GRAPHS</h2>
+END
+        foreach my $process (processes_from_plots) {
+            say $fh <<END;
+<a name="$process"></a>
+<h2>$process</h2>
+END
+            foreach (process_plots $process) {
+                print $fh img $_;
+            }
+            say $fh <<END;
+<br clear='all'>
+END
+        }
+    }
+
+    if ($flag_system_graphs) {
+        print $fh <<END;
+<br clear='all'>
+<a name='system_graphs'></a>
+<h2>SYSTEM RESOURCE USAGE GRAPHS</h2>
+END
+        foreach (system_plots) { print $fh img $_ }
+    }
+
+    print $fh <<END;
+<br clear='all'>
+<a name='steps'></a>
+<h2>SNAPSHOT DATES AND DESCRIPTIONS</h2>
+END
+    foreach my $masterdb (@$superdb) {
+        foreach my $entry (@$masterdb) {
+            my $step;
+            $step = ' ' . join(' ', @{$entry->{step}}) if exists $entry->{step};
+            say $fh $entry->{dirname} . ': [' . $entry->{date} . ']' . $step . '<br>';
+        }
+        say $fh '<br>';
+    }
+
+    print $fh <<END;
+</body>
+</html>
+END
+
+    close $fh;
+}
+
+sub generate_json {
+    my $superdb = shift;
+    my $filename = shift;
+
+    my $fh;
+    unless (open $fh, '>', $filename) {
+        say STDERR "ERROR: unable to open '$filename' for writing: $!";
+        exit 1;
+    }
+
+    my %json;
+
+    if ($flag_process_graphs) {
+        foreach my $process (processes_from_plots) {
+            foreach my $plot (process_plots $process) {
+                $json{process_graphs}->{$process}->{$plot->{key}} = {
+                    filename => plot_filename($plot->{key}),
+                    thumbname => plot_thumbname($plot->{key}),
+                    legend => $plot->{legend},
+                };
+            }
+        }
+    }
+
+    if ($flag_system_graphs) {
+        foreach my $plot (system_plots) {
+            $json{system_graphs}->{$plot->{key}} = {
+                filename => plot_filename($plot->{key}),
+                thumbname => plot_thumbname($plot->{key}),
+                legend => $plot->{legend},
+            };
+        }
+    }
+
+    say $fh encode_json \%json;
+}
+
+sub xtics {
+    my $superdb = shift;
+
+    my @xtics;
+
+    foreach my $idx (0 .. @$superdb-1) {
+        my $masterdb = $superdb->[$idx];
+        my ($sw) = sw_versions $masterdb;
+        push @xtics, $sw;
+    }
+
+    return \@xtics;
+}
+
+sub processes {
+    my $superdb = shift;
+
+    my @cmdlines;
+    foreach my $masterdb (@$superdb) {
+        @cmdlines = uniq @cmdlines, grep { defined && length } map {
+            if (exists $_->{'/proc/pid/cmdline'}) {
+                values %{$_->{'/proc/pid/cmdline'}}
+            #} elsif (exists $_->{'/proc/pid/smaps'}->{$pid} and exists $_->{'/proc/pid/smaps'}->{$pid}->{'#Name'}) {
+                #$_->{'/proc/pid/smaps'}->{$pid}->{'#Name'}
+            } else {
+                undef
+            }
+        } @$masterdb;
+    }
+
+    @cmdlines = sort grep { ! /^sp-noncached$/ } @cmdlines;
+
+    return @cmdlines;
+}
+
+sub generate_plots {
+    my $superdb = shift;
+
+    my $plot_width = @$superdb * 13 + 200;
+    $plot_width = max $plot_width, 700;
+    $plot_width = min $plot_width, 1200;
+
+    my $terminal = qq/pngcairo size $plot_width, 800 font "serif,8"/;
+
+    my $plotter = SP::Endurance::Plotter->new(
+        rounds => scalar @$superdb,
+        terminal => $terminal,
+        xmax => @$superdb + 10,
+        xtics => xtics($superdb),
+    );
+
+    if ($flag_process_graphs) {
+        my @processes = processes $superdb;
+
+        @processes = grep { $_ ~~ @flag_process } @processes
+            if @flag_process > 0;
+
+        foreach my $process (@processes) {
+            foreach (process_graph_generators) {
+                eval {
+                    $_->($plotter, $superdb, $process);
+                };
+                if ($@) {
+                    use B qw/svref_2object/;
+                    my $name = svref_2object($_)->GV->NAME;
+                    print STDERR "WARNING: graph generator '$name()' failed: $@";
+                }
+            }
+        }
+    }
+
+    if ($flag_system_graphs) {
+        foreach (system_graph_generators) {
+            eval {
+                $_->($plotter, $superdb);
+            };
+            if ($@) {
+                use B qw/svref_2object/;
+                my $name = svref_2object($_)->GV->NAME;
+                print STDERR "WARNING: graph generator '$name()' failed: $@";
+            }
+        }
+    }
+}
+
+sub sanity_checks {
+    my $masterdb = shift;
+
+    if (@$masterdb == 0) {
+        say STDERR 'WARNING: usecase does not contain valid endurance directories.';
+        return;
+    }
+
+    if (@$masterdb == 1) {
+        say STDERR 'WARNING: usecase contains only one valid endurance directory.';
+        return;
+    }
+
+    my @sw_versions = sw_versions $masterdb;
+    if (@sw_versions > 1) {
+        say STDERR "** NOTE: multiple software versions detected (" .
+            join(', ', @sw_versions) .
+            '), was the device reflashed?';
+    }
+
+    foreach my $i (1 .. @$masterdb-1) {
+        if ($masterdb->[$i  ]->{'/proc/uptime'}->{uptime} <=
+            $masterdb->[$i-1]->{'/proc/uptime'}->{uptime}) {
+            say STDERR "** NOTE: uptime steps back at snapshot '"
+                . $masterdb->[$i]->{dirname}
+                .  "'. This usally indicates a reboot.";
+        }
+    }
+}
+
+sub db_size {
+    my $superdb = shift;
+
+    return unless $flag_v;
+
+    eval {
+        require Devel::Size;
+        my $dbsize = Devel::Size::total_size($superdb) / 1024**2;
+        say '- total size of @superdb: ' . sprintf("%0.2f", $dbsize) . ' MB';
+
+        return unless $flag_v >= 2;
+
+        foreach my $entry (@$superdb) {
+            my $entry_size = Devel::Size::total_size($entry) / 1024**2;
+            say "  - $entry->{dirname}: " . sprintf("%.2f", $entry_size) . ' MB';
+
+            if ($flag_v >= 3) {
+                my %sizes;
+                foreach (keys %{$entry}) {
+                    $sizes{$_} = Devel::Size::total_size($entry->{$_});
+                }
+                my $cnt = 0;
+                foreach (sort { $sizes{$b} <=> $sizes{$a} } keys %{$entry}) {
+                    say "    - $_: " . sprintf("%.3f", $sizes{$_} / 1024**2) . ' MB';
+                    last if $cnt++ >= 5;
+                }
+            }
+        }
+    };
+}
+
+sub usage {
+    say STDERR <<END;
+Usage: $progname [OPTS] -- -u <DIRS> [-u <DIR>...]
+
+$progname generates variety of process and system level graphs
+based on the endurance data. The graphs may be used for discovering
+issues in applications and in the system.
+
+$progname creates index.html suitable for viewing in a web browser.
+
+Options:
+   -j N                           Run N copies of gnuplot and thumbnail
+                                  generators in parallel. The Perl
+                                  Parallel::ForkManager module must be
+                                  available for this feature to work.
+
+   -v                             Add verboseness. Apply several times
+                                  for full effect.
+
+   --system-graphs=0              Do not generate any system level graphs.
+   --system-graphs=1              Generate system level graphs.
+
+   --process-graphs=0             Do not generate any process graphs.
+   --process-graphs=1             Generate process level graphs.
+
+   --process=NAME                 Generate graphs for process with name NAME.
+                                  May be applied several times.
+   --process-regex=REGEX          Generate graphs for all processes that match
+                                  REGEX. May be applied several times.
+
+Special options:
+   -u                             Use case split point.
+
+Examples:
+
+   # Create graphs including UsecaseA, UsecaseB and UsecaseC:
+   $progname -j 4 -- -u UseCaseA/??? -u UsecaseB/??? -u UsecaseC/???
+END
+
+    exit 1;
+}
+
+usage if @ARGV == 0;
+
+my @superdb;
+
+sub parse_args {
+    my @masterdb;
+
+    exit 1 unless GetOptions(
+        'h'                     => \$flag_h,
+        'help'                  => \$flag_h,
+        'j=i'                   => \$flag_j,
+        'e'                     => \$flag_e,
+        'v+'                    => \$flag_v,
+        'system-graphs=i'       => \$flag_system_graphs,
+        'process-graphs=i'      => \$flag_process_graphs,
+        'process=s'             => \@flag_process,
+        'process-regex=s'       => sub {
+            eval {
+                push @flag_process, qr/$_[1]/
+            };
+            if ($@) {
+                print STDERR "ERROR: invalid regex '$_[1]': $@";
+                exit 1;
+            }
+        },
+        'u'                     => sub { usage },
+    );
+
+    say $progname;
+
+    foreach (@ARGV) {
+        if ($_ eq '-u') {
+            push @superdb, [@masterdb] if @masterdb > 0;
+            @masterdb = ();
+            say '- parsing usecase:';
+        } else {
+            my $dir = $_;
+            say '  - ' . $dir;
+            eval {
+                die "invalid endurance directory, '$dir/usage.csv' missing" unless -e "$dir/usage.csv";
+                my $entry = parse_dir($dir);
+                die "parsing failed" unless defined $entry and ref $entry eq 'HASH';
+                push @masterdb, $entry;
+            };
+
+            if ($@) {
+                print STDERR "\nWARNING: failed to parse directory '$dir': $@";
+            }
+        }
+    }
+
+    push @superdb, [@masterdb] if @masterdb > 0;
+
+    usage if $flag_h;
+}
+
+parse_args;
+
+# Here's a nice way to debug the parsed data structures:
+#$Data::Dumper::Indent = 1;
+#print Dumper \@superdb;
+
+my $worker_pipe = IO::Pipe->new();
+my $pid = fork;
+die "fork() failed: $!" unless defined $pid;
+
+if ($pid == 0) {
+    $worker_pipe->reader;
+    my $ret = SP::Endurance::GnuplotWorker::worker($worker_pipe, {
+        flag_j       => $flag_j,
+        thumb_width  => THUMB_WIDTH,
+        thumb_height => THUMB_HEIGHT,
+    });
+    exit $ret;
+}
+
+$worker_pipe->writer;
+
+$SP::Endurance::MultiGraphGenerators::done_plotting_cb = sub {
+    my $plot = shift;
+
+    my $gnuplot_input = $plot->cmd;
+    my $key = $plot->{key};
+    my $cmdfile = "e/$key.cmd";
+
+    if (defined $gnuplot_input and length $gnuplot_input) {
+        open my $cmd_fh, '>', $cmdfile or die "Unable to open '$cmdfile' for writing: $!";
+        print $cmd_fh $gnuplot_input;
+        close $cmd_fh;
+
+        say $worker_pipe $key;
+        $worker_pipe->flush;
+    }
+};
+
+db_size \@superdb;
+
+if (@superdb == 0) {
+    say STDERR "ERROR: unable to continue without valid usecases.";
+    exit 1;
+}
+
+foreach (@superdb) {
+    sanity_checks $_;
+}
+
+unlink glob 'e/*.cmd';
+unlink glob GRAPHS_DIR . '/1???_*';
+unlink glob GRAPHS_DIR . '/2???_*';
+unlink HTML_NAME;
+unlink JSON_NAME;
+
+mkdir 'e';
+if (not -d 'e') {
+    say STDERR "ERROR: unable to create directory 'e': $!";
+    exit 1;
+}
+
+mkdir GRAPHS_DIR;
+if (not -d GRAPHS_DIR) {
+    say STDERR qq/ERROR: unable to create directory '${\GRAPHS_DIR}': $!/;
+    exit 1;
+}
+
+say "generating graph input for gnuplot...";
+generate_plots \@superdb;
+
+close $worker_pipe;
+
+say q/generating '/ . HTML_NAME . qq/'.../;
+generate_html \@superdb, HTML_NAME;
+
+say q/generating '/ . JSON_NAME . qq/'.../;
+generate_json \@superdb, JSON_NAME;
+
+say "Main process now waiting for child PID '$pid' to finish." if $flag_v;
+waitpid $pid, 0;
+
+if (not $flag_e) {
+    unlink glob 'e/*.cmd';
+    rmdir 'e';
+}
+
+say "$progname done.";
