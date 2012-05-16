@@ -56,6 +56,8 @@ clean:
 	$(RM) measure/sp-noncached
 	[ ! -f postproc-lib/Makefile ] || $(MAKE) -C postproc-lib clean
 	$(RM) postproc-lib/Makefile.old
+	$(RM) man/recompress-endurance-measurements.1
+	$(RM) postproc/syslog_parse.pyc
 
 mandir:
 	install -d $(DESTDIR)/usr/share/man/man1/
