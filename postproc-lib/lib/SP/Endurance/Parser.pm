@@ -43,9 +43,7 @@ use Data::Dumper;
 eval 'use common::sense';
 use strict;
 
-use Inline C => 'DATA',
-    VERSION => $SP::Endurance::VERSION,
-    NAME => 'SP::Endurance::Parser';
+eval q/use Inline C => 'DATA', VERSION => $SP::Endurance::VERSION, NAME => 'SP::Endurance::Parser'/;
 
 sub copen {
     my $file = shift;
