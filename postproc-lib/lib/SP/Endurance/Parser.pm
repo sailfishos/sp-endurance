@@ -205,7 +205,8 @@ sub parse_smaps_pp {
             $smaps_vma_ref = undef;
         } elsif (/^#Pid: (\d+)/) {
             $pid = int $1;
-            $keyval{$pid}->{'#Name'} = $name;
+            $keyval{$pid}->{'#Name'} = $name
+                if defined $name;
             undef $name;
         }
     }
