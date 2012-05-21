@@ -23,14 +23,15 @@
 use Test::More;
 use IO::String;
 use strict;
+use Fcntl qw/SEEK_SET/;
 
 BEGIN {
-    use_ok('SP::Endurance::Parser', qw/parse_openfds parse_smaps parse_slabinfo
-        parse_cgroups parse_interrupts parse_bmestat parse_ramzswap
-        parse_proc_stat parse_pagetypeinfo parse_diskstats parse_sysfs_fs
-        parse_sysfs_power_supply parse_sysfs_backlight parse_sysfs_cpu
-        parse_component_version parse_step parse_usage_csv parse_ifconfig
-        parse_upstart_jobs_respawned/);
+    use_ok('SP::Endurance::Parser', qw/parse_openfds parse_smaps parse_smaps_pp
+        parse_slabinfo parse_cgroups parse_interrupts parse_bmestat
+        parse_ramzswap parse_proc_stat parse_pagetypeinfo parse_diskstats
+        parse_sysfs_fs parse_sysfs_power_supply parse_sysfs_backlight
+        parse_sysfs_cpu parse_component_version parse_step parse_usage_csv
+        parse_ifconfig parse_upstart_jobs_respawned/);
 }
 
 ###### parse_openfds ######
@@ -147,18 +148,23 @@ END
 
 ###### parse_smaps ######
 
-is_deeply(parse_smaps, {}, 'parse_smaps - undef input');
+is_deeply(parse_smaps,    {}, 'parse_smaps - undef input');
+is_deeply(parse_smaps_pp, {}, 'parse_smaps_pp - undef input');
 
 {
     my $content = '';
     open my $fh, '<', \$content;
-    is_deeply(parse_smaps($fh), {}, 'parse_smaps - empty input file');
+    is_deeply(parse_smaps($fh),    {}, 'parse_smaps - empty input file');
+    seek $fh, 0, SEEK_SET;
+    is_deeply(parse_smaps_pp($fh), {}, 'parse_smaps_pp - empty input file');
 }
 
 {
     my $content = "\n\n\n";
     open my $fh, '<', \$content;
-    is_deeply(parse_smaps($fh), {}, 'parse_smaps - input file with only newlines');
+    is_deeply(parse_smaps($fh),    {}, 'parse_smaps - input file with only newlines');
+    seek $fh, 0, SEEK_SET;
+    is_deeply(parse_smaps_pp($fh), {}, 'parse_smaps_pp - input file with only newlines');
 }
 
 {
@@ -187,10 +193,13 @@ is_deeply(parse_smaps, {}, 'parse_smaps - undef input');
 END
 
     open my $fh, '<', \$content;
-    is_deeply(parse_smaps($fh), {
+    my $expected = {
         1   => { '#Name' => 'init' },
         999 => { '#Name' => '/some/command/goes/here --and-some-argument --another' },
-    }, 'parse_smaps - metadata parsing');
+    };
+    is_deeply(parse_smaps($fh),    $expected, 'parse_smaps - metadata parsing');
+    seek $fh, 0, SEEK_SET;
+    is_deeply(parse_smaps_pp($fh), $expected, 'parse_smaps_pp - metadata parsing');
 }
 
 {
@@ -202,11 +211,14 @@ END
 END
 
     open my $fh, '<', \$content;
-    is_deeply(parse_smaps($fh), {
+    my $expected = {
         1 => {
             vmacount => 2,
         },
-    }, 'parse_smaps - 1x process, 2x vmas');
+    };
+    is_deeply(parse_smaps($fh),    $expected, 'parse_smaps - 1x process, 2x vmas');
+    seek $fh, 0, SEEK_SET;
+    is_deeply(parse_smaps_pp($fh), $expected, 'parse_smaps_pp - 1x process, 2x vmas');
 }
 
 {
@@ -245,7 +257,7 @@ Locked:                4 kB
 END
 
     open my $fh, '<', \$content;
-    is_deeply(parse_smaps($fh), {
+    my $expected = {
         1 => {
             vmacount => 2,
             total_Size          => 124+4,
@@ -253,7 +265,10 @@ END
             total_Private_Dirty => 0+4,
             total_Swap          => 0+4,
         },
-    }, 'parse_smaps - 1x process, 2x vmas');
+    };
+    is_deeply(parse_smaps($fh),    $expected, 'parse_smaps - 1x process, 2x vmas');
+    seek $fh, 0, SEEK_SET;
+    is_deeply(parse_smaps_pp($fh), $expected, 'parse_smaps_pp - 1x process, 2x vmas');
 }
 
 {
@@ -285,7 +300,7 @@ Size: 111 kB
 END
 
     open my $fh, '<', \$content;
-    is_deeply(parse_smaps($fh), {
+    my $expected = {
         1 => {
             '#Name' => 'first',
             vmacount => 4,
@@ -298,7 +313,10 @@ END
             '[heap]' => { total_Size => 160+320, vmacount => 2 },
             'rwxp'   => { total_Size => 111,     vmacount => 1 },
         },
-    }, 'parse_smaps - 2x process, 2x4 vmas');
+    };
+    is_deeply(parse_smaps($fh),    $expected, 'parse_smaps - 2x process, 2x4 vmas');
+    seek $fh, 0, SEEK_SET;
+    is_deeply(parse_smaps_pp($fh), $expected, 'parse_smaps_pp - 2x process, 2x4 vmas');
 }
 
 ###### parse_slabinfo ######

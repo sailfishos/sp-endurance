@@ -27,12 +27,12 @@ use SP::Endurance;
 require Exporter;
 @ISA = qw/Exporter/;
 @EXPORT_OK = qw/parse_openfds FD_DISK FD_EPOLL FD_EVENTFD FD_INOTIFY FD_PIPE
-    FD_SIGNALFD FD_SOCKET FD_TIMERFD FD_TMPFS parse_smaps parse_slabinfo
-    parse_cgroups parse_interrupts parse_bmestat parse_ramzswap parse_proc_stat
-    parse_pagetypeinfo parse_diskstats parse_sysfs_fs parse_sysfs_power_supply
-    parse_sysfs_backlight parse_sysfs_cpu parse_component_version parse_step
-    parse_usage_csv parse_df parse_ifconfig parse_upstart_jobs_respawned
-    parse_dir/;
+    FD_SIGNALFD FD_SOCKET FD_TIMERFD FD_TMPFS parse_smaps parse_smaps_pp
+    parse_slabinfo parse_cgroups parse_interrupts parse_bmestat parse_ramzswap
+    parse_proc_stat parse_pagetypeinfo parse_diskstats parse_sysfs_fs
+    parse_sysfs_power_supply parse_sysfs_backlight parse_sysfs_cpu
+    parse_component_version parse_step parse_usage_csv parse_df parse_ifconfig
+    parse_upstart_jobs_respawned parse_dir/;
 
 use File::Basename qw/basename/;
 use List::MoreUtils qw/uniq zip all none firstidx/;
@@ -165,6 +165,9 @@ sub parse_smaps {
     return $ret;
 }
 
+# Also ship a "pure perl" implementation for those users that do not have
+# Inline installed. This should return exactly same results as
+# parse_smaps_inline().
 sub parse_smaps_pp {
     my $fh = shift;
 
