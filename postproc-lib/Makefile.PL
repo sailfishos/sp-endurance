@@ -28,10 +28,10 @@ my $inline_ok;
 eval "use Inline::MakeMaker";
 if ($@) {
     say "Note: install the Perl 'Inline' CPAN module for faster endurance data parsing.";
-    use ExtUtils::MakeMaker;
 } else {
     $inline_ok = 1;
 }
+use ExtUtils::MakeMaker;
 
 my $version;
 
@@ -63,7 +63,7 @@ our \$VERSION = '$version';
 END
 close ENDURANCE_PM;
 
-WriteMakefile(
+ExtUtils::MakeMaker::WriteMakefile(
     NAME               => 'SP::Endurance',
     VERSION            => $version,
     ABSTRACT           => 'sp-endurance post processing support module',
