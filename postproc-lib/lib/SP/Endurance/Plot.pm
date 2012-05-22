@@ -20,6 +20,8 @@
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA
 
+use v5.10;
+
 package SP::Endurance::Plot;
 
 use List::Util qw/max sum/;
@@ -259,8 +261,10 @@ sub cmd {
                     $_,                                   # x
                    ($entry->{__data}->[$_]->[0] +
                     $entry->{__data}->[$_]->[1]) / 2,     # y
-                    $entry->{__data}->[$_]->[0],          # ylow
-                    $entry->{__data}->[$_]->[1];          # yhigh
+                    $entry->{__data}->[$_]->[0] // 0,     # ylow
+                    $entry->{__data}->[$_]->[1] // 0      # yhigh
+                        if defined $entry->{__data}->[$_]->[0] or
+                           defined $entry->{__data}->[$_]->[1];
             } else {
                 CORE::push @data, qq/$_, $entry->{__data}->[$_]/;
             }
