@@ -412,41 +412,45 @@ END
 
 usage if @ARGV == 0;
 
+exit 1 unless GetOptions(
+    'h'                     => \$flag_h,
+    'help'                  => \$flag_h,
+    'j=i'                   => \$flag_j,
+    'e'                     => \$flag_e,
+    'v+'                    => \$flag_v,
+    'system-graphs=i'       => \$flag_system_graphs,
+    'process-graphs=i'      => \$flag_process_graphs,
+    'process=s'             => \@flag_process,
+    'process-regex=s'       => sub {
+        eval {
+            push @flag_process, qr/$_[1]/
+        };
+        if ($@) {
+            print STDERR "ERROR: invalid regex '$_[1]': $@";
+            exit 1;
+        }
+    },
+    'u'                     => sub { usage },
+);
+
+usage if $flag_h;
+
 my @superdb;
 
 sub parse_args {
-    my @masterdb;
-
-    exit 1 unless GetOptions(
-        'h'                     => \$flag_h,
-        'help'                  => \$flag_h,
-        'j=i'                   => \$flag_j,
-        'e'                     => \$flag_e,
-        'v+'                    => \$flag_v,
-        'system-graphs=i'       => \$flag_system_graphs,
-        'process-graphs=i'      => \$flag_process_graphs,
-        'process=s'             => \@flag_process,
-        'process-regex=s'       => sub {
-            eval {
-                push @flag_process, qr/$_[1]/
-            };
-            if ($@) {
-                print STDERR "ERROR: invalid regex '$_[1]': $@";
-                exit 1;
-            }
-        },
-        'u'                     => sub { usage },
-    );
-
     say $progname;
 
-    foreach (@ARGV) {
-        if ($_ eq '-u') {
+    my @masterdb;
+    my @args = @ARGV;
+
+    while (@args > 0) {
+        my $arg = shift @args;
+        if ($arg eq '-u') {
             push @superdb, [@masterdb] if @masterdb > 0;
             @masterdb = ();
             say '- parsing usecase:';
         } else {
-            my $dir = $_;
+            my $dir = $arg;
             say '  - ' . $dir;
             eval {
                 die "invalid endurance directory, '$dir/usage.csv' missing" unless -e "$dir/usage.csv";
@@ -462,15 +466,7 @@ sub parse_args {
     }
 
     push @superdb, [@masterdb] if @masterdb > 0;
-
-    usage if $flag_h;
 }
-
-parse_args;
-
-# Here's a nice way to debug the parsed data structures:
-#$Data::Dumper::Indent = 1;
-#print Dumper \@superdb;
 
 my $worker_pipe = IO::Pipe->new();
 my $pid = fork;
@@ -504,6 +500,12 @@ $SP::Endurance::MultiGraphGenerators::done_plotting_cb = sub {
         $worker_pipe->flush;
     }
 };
+
+parse_args;
+
+# Here's a nice way to debug the parsed data structures:
+#$Data::Dumper::Indent = 1;
+#print Dumper \@superdb;
 
 db_size \@superdb;
 
