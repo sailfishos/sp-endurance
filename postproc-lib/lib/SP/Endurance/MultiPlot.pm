@@ -70,6 +70,7 @@ sub done_plotting {
             legend => $self->{multiple}->{legend_f}->($split_data[$idx]->[0]->{__data}),
             ylabel => $self->{ylabel},
             y2label => $self->{y2label},
+            type => $self->{type},
         );
         foreach (@{$split_data[$idx]}) {
             $plot->push($_->{__data}, %{$_});

@@ -24,11 +24,14 @@ package SP::Endurance::MultiGraphGenerators;
 
 require Exporter;
 @ISA = qw/Exporter/;
-@EXPORT_OK = qw/system_graph_generators process_graph_generators get_plots/;
+@EXPORT_OK = qw/system_graph_generators process_graph_generators
+        process_summary_graph_generators get_plots/;
 
 use SP::Endurance::Parser;
 use SP::Endurance::Util qw/kb2mb nonzero/;
 
+use POSIX qw/ceil/;
+use List::Util qw/max/;
 use List::MoreUtils qw/uniq minmax/;
 use Data::Dumper;
 
@@ -38,10 +41,12 @@ use strict;
 
 my @system_generators;
 my @process_generators;
+my @process_summary_generators;
 my @plots;
 
-sub system_graph_generators  { @system_generators }
-sub process_graph_generators { @process_generators }
+sub system_graph_generators          { @system_generators }
+sub process_graph_generators         { @process_generators }
+sub process_summary_graph_generators { @process_summary_generators }
 sub get_plots { sort { $a->{key} cmp $b->{key} } @plots }
 
 sub register_system_generator {
@@ -54,6 +59,12 @@ sub register_process_generator {
     my $g = shift;
     return unless ref $g eq 'CODE';
     push @process_generators, $g;
+}
+
+sub register_process_summary_generator {
+    my $g = shift;
+    return unless ref $g eq 'CODE';
+    push @process_summary_generators, $g;
 }
 
 our $done_plotting_cb;
@@ -187,6 +198,50 @@ sub generate_plot_command_private_dirty {
     done_plotting $plot;
 }
 BEGIN { register_process_generator \&generate_plot_command_private_dirty; }
+
+sub generate_plot_process_summary_private_dirty {
+    my $plotter = shift;
+    my $superdb = shift;
+    my $processes = shift;
+
+    my $plot = $plotter->new_yerrorbars(
+        key => '0001_private_dirty_%d',
+        label => 'Total Private Dirty min & max per usecase',
+        #legend => 'PRIVATE DIRTY',
+        ylabel => 'MB',
+        multiple => {
+            max_plots => 100,
+            max_per_plot => 8,
+            split_f => sub { max map { $_->[1] } @{shift()} },
+            split_factor => 5,
+            legend_f => sub { 'PRIVATE DIRTY &mdash; MAX ' . ceil(max map { $_->[1] } @{shift()}) . 'MB' },
+        },
+    );
+
+    foreach my $process (@$processes) {
+        my @total;
+
+        foreach my $masterdb (@$superdb) {
+            push @total, [minmax map {
+                my $pid = process2pid($masterdb, $process);
+                defined $pid &&
+                        exists $_->{'/proc/pid/smaps'}->{$pid} &&
+                        exists $_->{'/proc/pid/smaps'}->{$pid}->{total_Private_Dirty} ?
+                               $_->{'/proc/pid/smaps'}->{$pid}->{total_Private_Dirty} :
+                               undef
+            } @$masterdb];
+        }
+
+        $plot->push([kb2mb nonzero @total], title => $process);
+    }
+
+    $plot->sort(sub { max @{shift()} });
+    $plot->reduce;
+
+    #print Dumper $plot;
+    done_plotting $plot;
+}
+BEGIN { register_process_summary_generator \&generate_plot_process_summary_private_dirty; }
 
 sub generate_plot_command_fd_count {
     my $plotter = shift;

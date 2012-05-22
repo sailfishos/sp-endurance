@@ -29,7 +29,7 @@ use strict;
 use SP::Endurance::Parser qw/parse_dir/;
 use SP::Endurance::Plotter;
 use SP::Endurance::MultiGraphGenerators qw/system_graph_generators
-        process_graph_generators get_plots/;
+        process_graph_generators process_summary_graph_generators get_plots/;
 use SP::Endurance::Util qw/GRAPHS_DIR plot_filename plot_thumbname sw_versions/;
 use SP::Endurance::GnuplotWorker;
 
@@ -83,7 +83,8 @@ sub process_plots {
     my $process = shift;
     grep { $_->{key} =~ /^1/ and $_->{process} eq $process and $_->cmd } get_plots
 }
-sub system_plots { grep { $_->{key} !~ /^1/ and $_->cmd } get_plots }
+sub process_summary_plots { grep { $_->{key} =~ /^0/ and $_->cmd } get_plots }
+sub system_plots          { grep { $_->{key} =~ /^2/ and $_->cmd } get_plots }
 
 sub processes_from_plots {
     my %processes;
@@ -137,6 +138,13 @@ END
 
     if ($flag_process_graphs) {
         print $fh <<END;
+<a name='process_summary_graphs'></a>
+<h2>PROCESS RESOURCE USAGE SUMMARY GRAPHS</h2>
+END
+        foreach (process_summary_plots) { print $fh img $_ }
+
+        print $fh <<END;
+<br clear='all'>
 <a name='process_graphs'></a>
 <h2>PROCESS RESOURCE USAGE GRAPHS</h2>
 END
@@ -206,6 +214,14 @@ sub generate_json {
                     legend => $plot->{legend},
                 };
             }
+        }
+
+        foreach my $plot (process_summary_plots) {
+            $json{process_summary_graphs}->{$plot->{key}} = {
+                filename => plot_filename($plot->{key}),
+                thumbname => plot_thumbname($plot->{key}),
+                legend => $plot->{legend},
+            };
         }
     }
 
@@ -289,6 +305,17 @@ sub generate_plots {
                     my $name = svref_2object($_)->GV->NAME;
                     print STDERR "WARNING: graph generator '$name()' failed: $@";
                 }
+            }
+        }
+
+        foreach (process_summary_graph_generators) {
+            eval {
+                $_->($plotter, $superdb, \@processes);
+            };
+            if ($@) {
+                use B qw/svref_2object/;
+                my $name = svref_2object($_)->GV->NAME;
+                print STDERR "WARNING: graph generator '$name()' failed: $@";
             }
         }
     }
@@ -540,6 +567,7 @@ foreach (@superdb) {
 }
 
 unlink glob 'e/*.cmd';
+unlink glob GRAPHS_DIR . '/0???_*';
 unlink glob GRAPHS_DIR . '/1???_*';
 unlink glob GRAPHS_DIR . '/2???_*';
 unlink HTML_NAME;

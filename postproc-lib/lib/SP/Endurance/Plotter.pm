@@ -79,12 +79,23 @@ sub new_yerrorbars {
     my $self = shift;
     my %args = @_;
 
-    my $plot = SP::Endurance::Plot->new(
-        __plotter => $self,
-        type => 'yerrorbars',
-        %{$self},
-        %args,
-    );
+    my $plot;
+
+    if ($args{multiple}) {
+        $plot = SP::Endurance::MultiPlot->new(
+            __plotter => $self,
+            type => 'yerrorbars',
+            %{$self},
+            %args,
+        );
+    } else {
+        $plot = SP::Endurance::Plot->new(
+            __plotter => $self,
+            type => 'yerrorbars',
+            %{$self},
+            %args,
+        );
+    }
 
     return $plot;
 }
