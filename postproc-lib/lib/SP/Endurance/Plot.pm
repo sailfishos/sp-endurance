@@ -24,6 +24,7 @@ use v5.10;
 
 package SP::Endurance::Plot;
 
+use List::MoreUtils qw/any/;
 use List::Util qw/max sum/;
 use Data::Dumper;
 
@@ -223,7 +224,9 @@ sub cmd {
 
         @{$self->{entries}} = reverse @{$self->{entries}};
     } elsif ($self->{type} eq 'yerrorbars') {
-        CORE::push @cmd, q/set key off/;
+        CORE::push @cmd, q/set key off/
+            unless any { defined $_->{title} } @{$self->{entries}};
+
         CORE::push @cmd, q/set yrange [0 : ]/;
         CORE::push @cmd, qq/plot [-1:$xmax]\\/;
     } else {
