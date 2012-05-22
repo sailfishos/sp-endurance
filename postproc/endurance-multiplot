@@ -400,11 +400,23 @@ Options:
 
 Special options:
    -u                             Use case split point.
+    \@FILE                         Read usecase arguments from FILE. Put each
+                                  argument to separate line.
 
 Examples:
 
    # Create graphs including UsecaseA, UsecaseB and UsecaseC:
    $progname -j 4 -- -u UseCaseA/??? -u UsecaseB/??? -u UsecaseC/???
+
+   # Use the \@FILE feature:
+   echo '-u'          > tmp
+   echo UseCaseA/101 >> tmp
+   echo UseCaseA/102 >> tmp
+   echo '-u'         >> tmp
+   echo UseCaseB/101 >> tmp
+   echo UseCaseB/102 >> tmp
+   $progname -j 4 -- \@tmp
+   rm tmp
 END
 
     exit 1;
@@ -445,7 +457,16 @@ sub parse_args {
 
     while (@args > 0) {
         my $arg = shift @args;
-        if ($arg eq '-u') {
+        if ($arg =~ /^@(.*)$/) {
+            my $fh;
+            unless (open $fh, $1) {
+                say STDERR "ERROR: unable to open $1: $!";
+                exit 1;
+            }
+            my @lines = <$fh>;
+            chomp @lines;
+            unshift @args, @lines;
+        } elsif ($arg eq '-u') {
             push @superdb, [@masterdb] if @masterdb > 0;
             @masterdb = ();
             say '- parsing usecase:';
