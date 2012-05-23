@@ -32,7 +32,7 @@ use SP::Endurance::Util qw/kb2mb nonzero/;
 
 use POSIX qw/ceil/;
 use List::Util qw/max/;
-use List::MoreUtils qw/uniq minmax/;
+use List::MoreUtils qw/uniq minmax any/;
 use Data::Dumper;
 
 no warnings 'uninitialized';
@@ -202,6 +202,38 @@ sub generate_plot_command_private_dirty {
     done_plotting $plot;
 }
 BEGIN { register_process_generator \&generate_plot_command_private_dirty; }
+
+sub generate_plot_process_threads {
+    my $plotter = shift;
+    my $superdb = shift;
+    my $process = shift;
+
+    my $plot = $plotter->new_yerrorbars(
+        key => "1200_threads_count_$process",
+        process => $process,
+        label => "Number of threads for '$process'",
+        legend => 'THREAD COUNT',
+        ylabel => 'thread count',
+    );
+
+    my @total;
+
+    foreach my $masterdb (@$superdb) {
+        my ($min, $max) = minmax map {
+            my $pid = process2pid($masterdb, $process);
+            if (defined $pid and exists $_->{'/proc/pid/status'}->{$pid}) {
+                my %entry = split ',', $_->{'/proc/pid/status'}->{$pid};
+                exists $entry{Threads} ? $entry{Threads} : ()
+            } else { () }
+        } @$masterdb;
+        push @total, [$min, $max];
+    }
+
+    $plot->push([nonzero @total]) if any { $_->[1] > 1 } @total;
+
+    done_plotting $plot;
+}
+BEGIN { register_process_generator \&generate_plot_process_threads; }
 
 sub generate_plot_process_summary_private_dirty {
     my $plotter = shift;
