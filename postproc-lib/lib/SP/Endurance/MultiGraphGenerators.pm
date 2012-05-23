@@ -148,7 +148,7 @@ sub generate_plot_command_heap {
     my @total;
 
     foreach my $masterdb (@$superdb) {
-        push @total, [minmax map {
+        my ($min, $max) = minmax map {
             my $pid = process2pid($masterdb, $process);
             defined $pid &&
                     exists $_->{'/proc/pid/smaps'}->{$pid} &&
@@ -156,7 +156,9 @@ sub generate_plot_command_heap {
                     exists $_->{'/proc/pid/smaps'}->{$pid}->{'[heap]'}->{total_Size} ?
                            $_->{'/proc/pid/smaps'}->{$pid}->{'[heap]'}->{total_Size} :
                            undef
-        } @$masterdb];
+        } @$masterdb;
+
+        push @total, [$min, $max];
     }
 
     $plot->push([kb2mb nonzero @total]);
@@ -182,14 +184,16 @@ sub generate_plot_command_private_dirty {
     my @total;
 
     foreach my $masterdb (@$superdb) {
-        push @total, [minmax map {
+        my ($min, $max) = minmax map {
             my $pid = process2pid($masterdb, $process);
             defined $pid &&
                     exists $_->{'/proc/pid/smaps'}->{$pid} &&
                     exists $_->{'/proc/pid/smaps'}->{$pid}->{total_Private_Dirty} ?
                            $_->{'/proc/pid/smaps'}->{$pid}->{total_Private_Dirty} :
                            undef
-        } @$masterdb];
+        } @$masterdb;
+
+        push @total, [$min, $max];
     }
 
     $plot->push([kb2mb nonzero @total]);
@@ -222,14 +226,15 @@ sub generate_plot_process_summary_private_dirty {
         my @total;
 
         foreach my $masterdb (@$superdb) {
-            push @total, [minmax map {
+            my ($min, $max) = minmax map {
                 my $pid = process2pid($masterdb, $process);
                 defined $pid &&
                         exists $_->{'/proc/pid/smaps'}->{$pid} &&
                         exists $_->{'/proc/pid/smaps'}->{$pid}->{total_Private_Dirty} ?
                                $_->{'/proc/pid/smaps'}->{$pid}->{total_Private_Dirty} :
                                undef
-            } @$masterdb];
+            } @$masterdb;
+            push @total, [$min, $max];
         }
 
         $plot->push([kb2mb nonzero @total], title => $process);
@@ -259,13 +264,14 @@ sub generate_plot_command_fd_count {
     my @total;
 
     foreach my $masterdb (@$superdb) {
-        push @total, [minmax map {
+        my ($min, $max) = minmax map {
             my $pid = process2pid($masterdb, $process);
             defined $pid &&
                     exists $_->{'/proc/pid/fd_count'} &&
                     exists $_->{'/proc/pid/fd_count'}->{$pid} ?
                            $_->{'/proc/pid/fd_count'}->{$pid} : undef
-        } @$masterdb];
+        } @$masterdb;
+        push @total, [$min, $max];
     }
 
     $plot->push([nonzero @total]);
@@ -624,7 +630,8 @@ sub generate_plot_system_memory {
 
         my @total;
         foreach my $masterdb (@$superdb) {
-            push @total, [minmax map { $_->{'/proc/meminfo'}->{$key} } @$masterdb];
+            my ($min, $max) = minmax map { $_->{'/proc/meminfo'}->{$key} } @$masterdb;
+            push @total, [$min, $max];
         }
         $plot->push([kb2mb nonzero @total]);
 
@@ -641,9 +648,10 @@ sub generate_plot_system_memory {
 
     my @total;
     foreach my $masterdb (@$superdb) {
-        push @total, [minmax map {
+        my ($min, $max) = minmax map {
             $_->{'/proc/meminfo'}->{SwapTotal} - $_->{'/proc/meminfo'}->{SwapFree}
-        } @$masterdb];
+        } @$masterdb;
+        push @total, [$min, $max];
     }
     $plot->push([kb2mb nonzero @total]);
 
