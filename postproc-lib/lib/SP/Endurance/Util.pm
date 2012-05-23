@@ -43,7 +43,15 @@ sub plot_thumbname { GRAPHS_DIR . '/' . shift() . '_thumb.jpg' }
 
 sub b2mb {
     my @ret;
-    push @ret, defined $_ ? $_ / (1024*1024) : $_ foreach @_;
+    if (ref $_[0] eq 'ARRAY') {
+        foreach (@_) {
+            my @inner;
+            push @inner, defined $_ ? $_ / 1024**2 : $_ foreach @$_;
+            push @ret, [@inner];
+        }
+    } else {
+        push @ret, defined $_ ? $_ / 1024 **2: $_ foreach @_;
+    }
     return @ret;
 }
 

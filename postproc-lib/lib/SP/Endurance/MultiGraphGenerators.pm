@@ -28,7 +28,7 @@ require Exporter;
         process_summary_graph_generators get_plots/;
 
 use SP::Endurance::Parser;
-use SP::Endurance::Util qw/kb2mb nonzero/;
+use SP::Endurance::Util qw/b2mb kb2mb nonzero/;
 
 use POSIX qw/ceil/;
 use List::Util qw/max/;
@@ -202,6 +202,57 @@ sub generate_plot_command_private_dirty {
     done_plotting $plot;
 }
 BEGIN { register_process_generator \&generate_plot_command_private_dirty; }
+
+sub generate_plot_command_pid_io {
+    my $plotter = shift;
+    my $superdb = shift;
+    my $process = shift;
+
+    foreach my $key (qw/read_bytes write_bytes/) {
+        my $plot = $plotter->new_histogram(
+            key => {
+                    read_bytes => "1300_pid_io_read_bytes_$process",
+                    write_bytes => "1301_pid_io_write_bytes_$process",
+                }->{$key},
+            process => $process,
+            label => {
+                    read_bytes => "Disk reads since boot for '$process'.",
+                    write_bytes => "Disk writes since boot for '$process'.",
+                }->{$key},
+            legend => {
+                    read_bytes => 'DISK READS',
+                    write_bytes => 'DISK WRITES',
+                }->{$key},
+            ylabel => 'MB',
+        );
+
+        my @total;
+
+        my $idx = {
+            read_bytes => 4,
+            write_bytes => 5,
+            cancelled_write_bytes => 6,
+        }->{$key};
+
+        foreach my $masterdb (@$superdb) {
+            my $max = max map {
+                my $pid = process2pid($masterdb, $process);
+                if (defined $pid and exists $_->{'/proc/pid/io'}->{$pid}) {
+                    my @entry = unpack "d*", $_->{'/proc/pid/io'}->{$pid};
+                    defined $entry[$idx] ? $entry[$idx] : ()
+                } else { () }
+            } @$masterdb;
+
+            push @total, $max;
+        }
+
+        $plot->push([b2mb nonzero @total], title => $process);
+
+        #print Dumper $plot;
+        done_plotting $plot;
+    }
+}
+BEGIN { register_process_generator \&generate_plot_command_pid_io; }
 
 sub generate_plot_process_threads {
     my $plotter = shift;
