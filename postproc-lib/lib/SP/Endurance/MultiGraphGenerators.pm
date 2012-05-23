@@ -254,6 +254,44 @@ sub generate_plot_command_pid_io {
 }
 BEGIN { register_process_generator \&generate_plot_command_pid_io; }
 
+sub generate_plot_process_gfx_mmap_size {
+    my $plotter = shift;
+    my $superdb = shift;
+    my $process = shift;
+
+    foreach my $gfx_mmap (@SP::Endurance::Parser::GFX_MMAPS) {
+        my $plot = $plotter->new_yerrorbars(
+            key => '1060_gfx_mmap_size' . (($_ = $gfx_mmap) =~ s#/#_#g, $_) . '_' . $process,
+            process => $process,
+            label => "Total Size of $gfx_mmap memory mappings min & max per usecase for '$process'",
+            legend => "$gfx_mmap MMAP SIZE",
+            ylabel => 'MB',
+        );
+
+        my @total;
+
+        foreach my $masterdb (@$superdb) {
+            my ($min, $max) = minmax map {
+                my $pid = process2pid($masterdb, $process);
+                defined $pid &&
+                exists $_->{'/proc/pid/smaps'}->{$pid} &&
+                exists $_->{'/proc/pid/smaps'}->{$pid}->{$gfx_mmap} &&
+                exists $_->{'/proc/pid/smaps'}->{$pid}->{$gfx_mmap}->{total_Size} ?
+                       $_->{'/proc/pid/smaps'}->{$pid}->{$gfx_mmap}->{total_Size} :
+                       ()
+            } @$masterdb;
+
+            push @total, [$min, $max];
+        }
+
+        $plot->push([kb2mb nonzero @total]);
+
+        #print Dumper $plot;
+        done_plotting $plot;
+    }
+}
+BEGIN { register_process_generator \&generate_plot_process_gfx_mmap_size; }
+
 sub generate_plot_process_threads {
     my $plotter = shift;
     my $superdb = shift;
