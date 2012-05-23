@@ -151,11 +151,11 @@ sub generate_plot_command_heap {
         my ($min, $max) = minmax map {
             my $pid = process2pid($masterdb, $process);
             defined $pid &&
-                    exists $_->{'/proc/pid/smaps'}->{$pid} &&
-                    exists $_->{'/proc/pid/smaps'}->{$pid}->{'[heap]'} &&
-                    exists $_->{'/proc/pid/smaps'}->{$pid}->{'[heap]'}->{total_Size} ?
-                           $_->{'/proc/pid/smaps'}->{$pid}->{'[heap]'}->{total_Size} :
-                           undef
+            exists $_->{'/proc/pid/smaps'}->{$pid} &&
+            exists $_->{'/proc/pid/smaps'}->{$pid}->{'[heap]'} &&
+            exists $_->{'/proc/pid/smaps'}->{$pid}->{'[heap]'}->{total_Size} ?
+                   $_->{'/proc/pid/smaps'}->{$pid}->{'[heap]'}->{total_Size} :
+                   ()
         } @$masterdb;
 
         push @total, [$min, $max];
@@ -187,10 +187,10 @@ sub generate_plot_command_private_dirty {
         my ($min, $max) = minmax map {
             my $pid = process2pid($masterdb, $process);
             defined $pid &&
-                    exists $_->{'/proc/pid/smaps'}->{$pid} &&
-                    exists $_->{'/proc/pid/smaps'}->{$pid}->{total_Private_Dirty} ?
-                           $_->{'/proc/pid/smaps'}->{$pid}->{total_Private_Dirty} :
-                           undef
+            exists $_->{'/proc/pid/smaps'}->{$pid} &&
+            exists $_->{'/proc/pid/smaps'}->{$pid}->{total_Private_Dirty} ?
+                   $_->{'/proc/pid/smaps'}->{$pid}->{total_Private_Dirty} :
+                   ()
         } @$masterdb;
 
         push @total, [$min, $max];
@@ -229,10 +229,10 @@ sub generate_plot_process_summary_private_dirty {
             my ($min, $max) = minmax map {
                 my $pid = process2pid($masterdb, $process);
                 defined $pid &&
-                        exists $_->{'/proc/pid/smaps'}->{$pid} &&
-                        exists $_->{'/proc/pid/smaps'}->{$pid}->{total_Private_Dirty} ?
-                               $_->{'/proc/pid/smaps'}->{$pid}->{total_Private_Dirty} :
-                               undef
+                exists $_->{'/proc/pid/smaps'}->{$pid} &&
+                exists $_->{'/proc/pid/smaps'}->{$pid}->{total_Private_Dirty} ?
+                       $_->{'/proc/pid/smaps'}->{$pid}->{total_Private_Dirty} :
+                       ()
             } @$masterdb;
             push @total, [$min, $max];
         }
@@ -267,9 +267,9 @@ sub generate_plot_command_fd_count {
         my ($min, $max) = minmax map {
             my $pid = process2pid($masterdb, $process);
             defined $pid &&
-                    exists $_->{'/proc/pid/fd_count'} &&
-                    exists $_->{'/proc/pid/fd_count'}->{$pid} ?
-                           $_->{'/proc/pid/fd_count'}->{$pid} : undef
+            exists $_->{'/proc/pid/fd_count'} &&
+            exists $_->{'/proc/pid/fd_count'}->{$pid} ?
+                   $_->{'/proc/pid/fd_count'}->{$pid} : ()
         } @$masterdb;
         push @total, [$min, $max];
     }
