@@ -31,7 +31,7 @@ BEGIN {
         parse_ramzswap parse_proc_stat parse_pagetypeinfo parse_diskstats
         parse_sysfs_fs parse_sysfs_power_supply parse_sysfs_backlight
         parse_sysfs_cpu parse_component_version parse_step parse_usage_csv
-        parse_ifconfig parse_upstart_jobs_respawned parse_pidfilter/);
+        parse_ifconfig parse_upstart_jobs_respawned parse_pidfilter copen/);
 }
 
 ###### parse_openfds ######
