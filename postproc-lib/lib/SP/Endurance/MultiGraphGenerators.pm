@@ -102,16 +102,23 @@ sub pid_to_cmdline {
     join(': ', $pid, $pid_to_cmdline{$pid})
 }
 
+my %process2pid;
 sub process2pid {
     my $masterdb = shift;
     my $process = shift;
 
-    foreach (@$masterdb) {
-        my %h = reverse %{$_->{'/proc/pid/cmdline'}};
-        return $h{$process} if defined $h{$process};
+    if (exists $process2pid{$masterdb}) {
+        return $process2pid{$masterdb}->{$process};
     }
 
-    return;
+    foreach (@$masterdb) {
+        my %h = reverse %{$_->{'/proc/pid/cmdline'}};
+        foreach my $process (keys %h) {
+            $process2pid{$masterdb}->{$process} = $h{$process};
+        }
+    }
+
+    return $process2pid{$masterdb}->{$process};
 }
 
 sub generate_plot_command_heap {
