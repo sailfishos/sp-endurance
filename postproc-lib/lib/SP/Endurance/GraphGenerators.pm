@@ -92,24 +92,6 @@ sub pid_to_cmdline {
     join(': ', $pid, $pid_to_cmdline{$pid})
 }
 
-sub pidfilter {
-    my $masterdb = shift;
-
-    my @ret;
-    foreach my $pid (@_) {
-        my $cmdline = pid_to_cmdline $masterdb, $pid;
-
-        # Filter out some of the processes that are involved in the
-        # sp-endurance snapshotting.
-        push @ret, $pid
-            unless $cmdline eq "$pid: sp-noncached" or
-                   $cmdline eq "$pid: sp_smaps_snapshot" or
-                   $cmdline eq "$pid: lzop"
-    }
-
-    return @ret;
-}
-
 sub sum_smaps {
     my $masterdb = shift;
     my $smaps_key = shift;
@@ -269,7 +251,7 @@ sub generate_plot_ctx_total {
         ylabel => 'count per second',
     );
 
-    my @pids = pidfilter $masterdb, uniq map { keys %{$_->{'/proc/pid/status'}} } @$masterdb;
+    my @pids = uniq map { keys %{$_->{'/proc/pid/status'}} } @$masterdb;
 
     foreach my $pid (@pids) {
         my @total_ctx = map {
@@ -304,7 +286,7 @@ sub generate_plot_ctx_nonvol {
         ylabel => 'count per second',
     );
 
-    my @pids = pidfilter $masterdb, uniq map { keys %{$_->{'/proc/pid/status'}} } @$masterdb;
+    my @pids = uniq map { keys %{$_->{'/proc/pid/status'}} } @$masterdb;
 
     foreach my $pid (@pids) {
         my @ctx = map {
@@ -335,7 +317,7 @@ sub generate_plot_ctx_vol {
         ylabel => 'count per second',
     );
 
-    my @pids = pidfilter $masterdb, uniq map { keys %{$_->{'/proc/pid/status'}} } @$masterdb;
+    my @pids = uniq map { keys %{$_->{'/proc/pid/status'}} } @$masterdb;
 
     foreach my $pid (@pids) {
         my @ctx = map {
@@ -447,7 +429,7 @@ sub generate_plot_major_pagefaults {
         },
     );
 
-    my @pids = pidfilter $masterdb, uniq map { keys %{$_->{'/proc/pid/stat'}} } @$masterdb;
+    my @pids = uniq map { keys %{$_->{'/proc/pid/stat'}} } @$masterdb;
 
     foreach my $pid (@pids) {
         $plot->push(
@@ -482,7 +464,7 @@ sub generate_plot_minor_pagefaults {
         },
     );
 
-    my @pids = pidfilter $masterdb, uniq map { keys %{$_->{'/proc/pid/stat'}} } @$masterdb;
+    my @pids = uniq map { keys %{$_->{'/proc/pid/stat'}} } @$masterdb;
 
     foreach my $pid (@pids) {
         $plot->push(
@@ -629,7 +611,7 @@ sub generate_plot_cputime {
         },
     );
 
-    my @pids = pidfilter $masterdb, uniq map { keys %{$_->{'/proc/pid/stat'}} } @$masterdb;
+    my @pids = uniq map { keys %{$_->{'/proc/pid/stat'}} } @$masterdb;
 
     foreach my $pid (@pids) {
         my @entry = change_per_second $masterdb, cumulative_to_changes map {
@@ -673,7 +655,7 @@ sub generate_plot_cputime_user {
         },
     );
 
-    my @pids = pidfilter $masterdb, uniq map { keys %{$_->{'/proc/pid/stat'}} } @$masterdb;
+    my @pids = uniq map { keys %{$_->{'/proc/pid/stat'}} } @$masterdb;
 
     foreach my $pid (@pids) {
         my @entry = change_per_second $masterdb, cumulative_to_changes map {
@@ -716,7 +698,7 @@ sub generate_plot_cputime_sys {
         },
     );
 
-    my @pids = pidfilter $masterdb, uniq map { keys %{$_->{'/proc/pid/stat'}} } @$masterdb;
+    my @pids = uniq map { keys %{$_->{'/proc/pid/stat'}} } @$masterdb;
 
     foreach my $pid (@pids) {
         my @entry = change_per_second $masterdb, cumulative_to_changes map {
@@ -887,7 +869,7 @@ sub generate_plot_vmsize {
         },
     );
 
-    my @pids = pidfilter $masterdb, uniq map { keys %{$_->{'/proc/pid/status'}} } @$masterdb;
+    my @pids = uniq map { keys %{$_->{'/proc/pid/status'}} } @$masterdb;
 
     foreach my $pid (@pids) {
         $plot->push(
@@ -922,7 +904,7 @@ sub generate_plot_memory_map_count {
         },
     );
 
-    my @pids = pidfilter $masterdb, uniq map { keys %{$_->{'/proc/pid/smaps'} // {}} } @$masterdb;
+    my @pids = uniq map { keys %{$_->{'/proc/pid/smaps'} // {}} } @$masterdb;
 
     foreach my $pid (@pids) {
         $plot->push(
@@ -943,7 +925,7 @@ sub private_dirty_collect_data {
     my $plot = shift;
     my $masterdb = shift;
 
-    my @pids = pidfilter $masterdb, uniq map { keys %{$_->{'/proc/pid/smaps'} // {}} } @$masterdb;
+    my @pids = uniq map { keys %{$_->{'/proc/pid/smaps'} // {}} } @$masterdb;
     #print Dumper \@pids;
 
     foreach my $pid (@pids) {
@@ -1060,7 +1042,7 @@ sub generate_plot_heap_histogram {
         },
     );
 
-    my @pids = pidfilter $masterdb, uniq map { keys %{$_->{'/proc/pid/smaps'} // {}} } @$masterdb;
+    my @pids = uniq map { keys %{$_->{'/proc/pid/smaps'} // {}} } @$masterdb;
 
     foreach my $pid (@pids) {
         $plot->push([kb2mb nonzero map {
@@ -1098,7 +1080,7 @@ sub generate_plot_heap_changes {
         },
     );
 
-    my @pids = pidfilter $masterdb, uniq map { keys %{$_->{'/proc/pid/smaps'} // {}} } @$masterdb;
+    my @pids = uniq map { keys %{$_->{'/proc/pid/smaps'} // {}} } @$masterdb;
 
     foreach my $pid (@pids) {
         $plot->push([kb2mb has_changes nonzero map {
@@ -1126,7 +1108,7 @@ sub generate_plot_sysvipc_shm_size {
         ylabel => 'MB',
     );
 
-    my @pids = pidfilter $masterdb, uniq map { keys %{$_->{'/proc/pid/smaps'}} } @$masterdb;
+    my @pids = uniq map { keys %{$_->{'/proc/pid/smaps'}} } @$masterdb;
 
     foreach my $pid (@pids) {
         $plot->push(
@@ -1155,7 +1137,7 @@ sub generate_plot_posix_shm_size {
         ylabel => 'MB',
     );
 
-    my @pids = pidfilter $masterdb, uniq map { keys %{$_->{'/proc/pid/smaps'}} } @$masterdb;
+    my @pids = uniq map { keys %{$_->{'/proc/pid/smaps'}} } @$masterdb;
 
     foreach my $pid (@pids) {
         $plot->push(
@@ -1185,7 +1167,7 @@ sub generate_plot_gfx_mmap_size {
             ylabel => 'MB',
         );
 
-        my @pids = pidfilter $masterdb, uniq map { keys %{$_->{'/proc/pid/smaps'} // {}} } @$masterdb;
+        my @pids = uniq map { keys %{$_->{'/proc/pid/smaps'} // {}} } @$masterdb;
 
         foreach my $pid (@pids) {
             $plot->push([kb2mb nonzero map {
@@ -1217,7 +1199,7 @@ sub generate_plot_gfx_mmap_count {
             ylabel => 'count',
         );
 
-        my @pids = pidfilter $masterdb, uniq map { keys %{$_->{'/proc/pid/smaps'} // {}} } @$masterdb;
+        my @pids = uniq map { keys %{$_->{'/proc/pid/smaps'} // {}} } @$masterdb;
 
         foreach my $pid (@pids) {
             $plot->push([has_changes nonzero map {
@@ -1248,7 +1230,7 @@ sub generate_plot_rwxp_mmap_size {
         ylabel => 'MB',
     );
 
-    my @pids = pidfilter $masterdb, uniq map { keys %{$_->{'/proc/pid/smaps'} // {}} } @$masterdb;
+    my @pids = uniq map { keys %{$_->{'/proc/pid/smaps'} // {}} } @$masterdb;
 
     foreach my $pid (@pids) {
         $plot->push([kb2mb nonzero map { my $entry = $_;
@@ -1293,7 +1275,7 @@ sub generate_plot_pss {
         },
     );
 
-    my @pids = pidfilter $masterdb, uniq map { keys %{$_->{'/proc/pid/smaps'} // {}} } @$masterdb;
+    my @pids = uniq map { keys %{$_->{'/proc/pid/smaps'} // {}} } @$masterdb;
 
     foreach my $pid (@pids) {
         $plot->push(
@@ -1331,7 +1313,7 @@ sub generate_plot_pss_only_changes {
         },
     );
 
-    my @pids = pidfilter $masterdb, uniq map { keys %{$_->{'/proc/pid/smaps'} // {}} } @$masterdb;
+    my @pids = uniq map { keys %{$_->{'/proc/pid/smaps'} // {}} } @$masterdb;
 
     foreach my $pid (@pids) {
         $plot->push(
@@ -1364,7 +1346,7 @@ sub generate_plot_pss_swap_changes {
         },
     );
 
-    my @pids = pidfilter $masterdb, uniq map { keys %{$_->{'/proc/pid/smaps'} // {}} } @$masterdb;
+    my @pids = uniq map { keys %{$_->{'/proc/pid/smaps'} // {}} } @$masterdb;
 
     foreach my $pid (@pids) {
         $plot->push(
@@ -1389,7 +1371,7 @@ sub generate_plot_pss_changes {
     my $plotter = shift;
     my $masterdb = shift;
 
-    my @pids = pidfilter $masterdb, uniq map { keys %{$_->{'/proc/pid/smaps'} // {}} } @$masterdb;
+    my @pids = uniq map { keys %{$_->{'/proc/pid/smaps'} // {}} } @$masterdb;
 
     foreach my $entry (@$masterdb) {
         foreach my $pid (@pids) {
@@ -1432,7 +1414,7 @@ sub generate_plot_threads {
         },
     );
 
-    my @pids = pidfilter $masterdb, uniq map { keys %{$_->{'/proc/pid/status'}} } @$masterdb;
+    my @pids = uniq map { keys %{$_->{'/proc/pid/status'}} } @$masterdb;
 
     foreach my $pid (@pids) {
         my @threads = map {
@@ -1469,7 +1451,7 @@ sub generate_plot_threads_changes {
         ylabel => 'thread count',
     );
 
-    my @pids = pidfilter $masterdb, uniq map { keys %{$_->{'/proc/pid/status'}} } @$masterdb;
+    my @pids = uniq map { keys %{$_->{'/proc/pid/status'}} } @$masterdb;
 
     foreach my $pid (@pids) {
         my @threads = map {
@@ -1620,7 +1602,7 @@ sub generate_plot_fd {
     my $plotter = shift;
     my $masterdb = shift;
 
-    my @pids = pidfilter $masterdb, uniq map { keys %{$_->{'/proc/pid/fd_count'}} } @$masterdb;
+    my @pids = uniq map { keys %{$_->{'/proc/pid/fd_count'}} } @$masterdb;
 
     my $plot = $plotter->new_histogram(
         key => '1080_fdcount',
@@ -1663,7 +1645,7 @@ sub generate_plot_fd_changes {
     my $plotter = shift;
     my $masterdb = shift;
 
-    my @pids = pidfilter $masterdb, uniq map { keys %{$_->{'/proc/pid/fd_count'}} } @$masterdb;
+    my @pids = uniq map { keys %{$_->{'/proc/pid/fd_count'}} } @$masterdb;
 
     my $plot = $plotter->new_linespoints(
         key => '1080_fdcount_changes',
@@ -1689,7 +1671,7 @@ sub generate_plot_pid_fd {
     my $plotter = shift;
     my $masterdb = shift;
 
-    my @pids = pidfilter $masterdb, uniq map { keys %{$_->{'/proc/pid/fd'}} } @$masterdb;
+    my @pids = uniq map { keys %{$_->{'/proc/pid/fd'}} } @$masterdb;
 
     foreach my $fdtype (keys %SP::Endurance::Parser::fdtypemap) {
         my $plot = $plotter->new_histogram(
@@ -1740,7 +1722,7 @@ sub generate_plot_pid_fd_changes {
     my $plotter = shift;
     my $masterdb = shift;
 
-    my @pids = pidfilter $masterdb, uniq map { keys %{$_->{'/proc/pid/fd'}} } @$masterdb;
+    my @pids = uniq map { keys %{$_->{'/proc/pid/fd'}} } @$masterdb;
 
     foreach my $fdtype (keys %SP::Endurance::Parser::fdtypemap) {
         my $plot = $plotter->new_linespoints(
@@ -2546,7 +2528,7 @@ sub generate_plot_pid_io {
     my $plotter = shift;
     my $masterdb = shift;
 
-    my @pids = pidfilter $masterdb, uniq map { keys %{$_->{'/proc/pid/io'}} } @$masterdb;
+    my @pids = uniq map { keys %{$_->{'/proc/pid/io'}} } @$masterdb;
 
     # Not generating the line graphs for 'cancelled_write_bytes' on purpose,
     # the histogram is enough for now.
@@ -2588,7 +2570,7 @@ sub generate_plot_pid_io_histogram {
     my $plotter = shift;
     my $masterdb = shift;
 
-    my @pids = pidfilter $masterdb, uniq map { keys %{$_->{'/proc/pid/io'}} } @$masterdb;
+    my @pids = uniq map { keys %{$_->{'/proc/pid/io'}} } @$masterdb;
 
     foreach my $key (qw/read_bytes write_bytes cancelled_write_bytes/) {
         my $plot = $plotter->new_histogram(

@@ -20,6 +20,8 @@
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA
 
+use v5.10;
+
 package SP::Endurance::Parser;
 
 use SP::Endurance;
@@ -32,7 +34,7 @@ require Exporter;
     parse_proc_stat parse_pagetypeinfo parse_diskstats parse_sysfs_fs
     parse_sysfs_power_supply parse_sysfs_backlight parse_sysfs_cpu
     parse_component_version parse_step parse_usage_csv parse_df parse_ifconfig
-    parse_upstart_jobs_respawned parse_dir/;
+    parse_upstart_jobs_respawned parse_dir parse_pidfilter/;
 
 use File::Basename qw/basename/;
 use List::MoreUtils qw/uniq zip all none firstidx/;
@@ -44,6 +46,13 @@ eval 'use common::sense';
 use strict;
 
 eval q/use Inline C => 'DATA', VERSION => $SP::Endurance::VERSION, NAME => 'SP::Endurance::Parser'/;
+
+my @process_blacklist = qw/
+    sp-noncached
+    save-incrementa
+    sp_smaps_snapshot
+    lzop
+/;
 
 sub copen {
     my $file = shift;
@@ -1053,6 +1062,54 @@ sub parse_upstart_jobs_respawned {
     return \%jobs;
 }
 
+sub parse_pidfilter {
+    my $entry = shift;
+
+    return $entry unless ref $entry eq 'HASH';
+
+    my @filter_pids;
+
+    if (exists $entry->{'/proc/pid/cmdline'}) {
+        foreach my $pid (keys %{$entry->{'/proc/pid/cmdline'}}) {
+            my $cmdline = $entry->{'/proc/pid/cmdline'}->{$pid};
+            if ($cmdline ~~ @process_blacklist) {
+                push @filter_pids, $pid;
+            }
+        }
+    }
+
+    if (exists $entry->{'/proc/pid/smaps'}) {
+        foreach my $pid (keys %{$entry->{'/proc/pid/smaps'}}) {
+            my $name = $entry->{'/proc/pid/smaps'}->{$pid}->{'#Name'};
+            if ($name ~~ @process_blacklist) {
+                push @filter_pids, $pid;
+            }
+        }
+    }
+
+    if (exists $entry->{'/proc/pid/status'}) {
+        foreach my $pid (keys %{$entry->{'/proc/pid/status'}}) {
+            my %data = split ',', $entry->{'/proc/pid/status'}->{$pid};
+            if ($data{Name} ~~ @process_blacklist) {
+                push @filter_pids, $pid;
+            }
+        }
+    }
+
+    #print Dumper \@filter_pids;
+    foreach my $pid (uniq @filter_pids) {
+        delete $entry->{'/proc/pid/cmdline'}->{$pid}  if exists $entry->{'/proc/pid/cmdline'};
+        delete $entry->{'/proc/pid/fd_count'}->{$pid} if exists $entry->{'/proc/pid/fd_count'};
+        delete $entry->{'/proc/pid/io'}->{$pid}       if exists $entry->{'/proc/pid/io'};
+        delete $entry->{'/proc/pid/smaps'}->{$pid}    if exists $entry->{'/proc/pid/smaps'};
+        delete $entry->{'/proc/pid/stat'}->{$pid}     if exists $entry->{'/proc/pid/stat'};
+        delete $entry->{'/proc/pid/status'}->{$pid}   if exists $entry->{'/proc/pid/status'};
+        delete $entry->{'/proc/pid/wchan'}->{$pid}    if exists $entry->{'/proc/pid/wchan'};
+    }
+
+    return $entry;
+}
+
 sub parse_dir {
     my $name = shift;
 
@@ -1089,7 +1146,7 @@ sub parse_dir {
         $result->{$_} = $csv->{$_};
     }
 
-    return $result;
+    return parse_pidfilter $result;
 }
 
 1;

@@ -102,24 +102,6 @@ sub pid_to_cmdline {
     join(': ', $pid, $pid_to_cmdline{$pid})
 }
 
-sub pidfilter {
-    my $masterdb = shift;
-
-    my @ret;
-    foreach my $pid (@_) {
-        my $cmdline = pid_to_cmdline $masterdb, $pid;
-
-        # Filter out some of the processes that are involved in the
-        # sp-endurance snapshotting.
-        push @ret, $pid
-            unless $cmdline eq "$pid: sp-noncached" or
-                   $cmdline eq "$pid: sp_smaps_snapshot" or
-                   $cmdline eq "$pid: lzop"
-    }
-
-    return @ret;
-}
-
 sub process2pid {
     my $masterdb = shift;
     my $process = shift;
@@ -418,7 +400,7 @@ sub generate_plot_heap_size {
     foreach my $masterdb (@$superdb) {
         my ($min, $max);
 
-        my @pids = pidfilter $masterdb, uniq map { keys %{$_->{'/proc/pid/smaps'} // {}} } @$masterdb;
+        my @pids = uniq map { keys %{$_->{'/proc/pid/smaps'} // {}} } @$masterdb;
 
         foreach (@$masterdb) {
             my $total;
@@ -457,7 +439,7 @@ sub generate_plot_private_dirty {
     foreach my $masterdb (@$superdb) {
         my ($min, $max);
 
-        my @pids = pidfilter $masterdb, uniq map { keys %{$_->{'/proc/pid/smaps'} // {}} } @$masterdb;
+        my @pids = uniq map { keys %{$_->{'/proc/pid/smaps'} // {}} } @$masterdb;
 
         foreach (@$masterdb) {
             my $total;
@@ -531,7 +513,7 @@ sub generate_plot_gfx_mmap_size {
         foreach my $masterdb (@$superdb) {
             my ($min, $max);
 
-            my @pids = pidfilter $masterdb, uniq map { keys %{$_->{'/proc/pid/smaps'} // {}} } @$masterdb;
+            my @pids = uniq map { keys %{$_->{'/proc/pid/smaps'} // {}} } @$masterdb;
 
             foreach (@$masterdb) {
                 my $total;
@@ -571,7 +553,7 @@ sub generate_plot_fd {
     foreach my $masterdb (@$superdb) {
         my ($min, $max);
 
-        my @pids = pidfilter $masterdb, uniq map { keys %{$_->{'/proc/pid/fd_count'}} } @$masterdb;
+        my @pids = uniq map { keys %{$_->{'/proc/pid/fd_count'}} } @$masterdb;
 
         foreach (@$masterdb) {
             my $total;
@@ -608,7 +590,7 @@ sub generate_plot_fdtype {
         foreach my $masterdb (@$superdb) {
             my ($min, $max);
 
-            my @pids = pidfilter $masterdb, uniq map { keys %{$_->{'/proc/pid/fd'}} } @$masterdb;
+            my @pids = uniq map { keys %{$_->{'/proc/pid/fd'}} } @$masterdb;
 
             foreach (@$masterdb) {
                 my $total;

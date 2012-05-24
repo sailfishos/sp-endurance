@@ -31,7 +31,7 @@ BEGIN {
         parse_ramzswap parse_proc_stat parse_pagetypeinfo parse_diskstats
         parse_sysfs_fs parse_sysfs_power_supply parse_sysfs_backlight
         parse_sysfs_cpu parse_component_version parse_step parse_usage_csv
-        parse_ifconfig parse_upstart_jobs_respawned/);
+        parse_ifconfig parse_upstart_jobs_respawned parse_pidfilter/);
 }
 
 ###### parse_openfds ######
@@ -1925,6 +1925,154 @@ END
     is_deeply(parse_upstart_jobs_respawned($fh), {
     }, 'parse_upstart_jobs_respawned - invalid entries');
 }
+
+###### parse_pidfilter ######
+
+is_deeply(parse_pidfilter, undef, 'parse_pidfilter - undef input');
+is_deeply(parse_pidfilter({}), {}, 'parse_pidfilter - empty input');
+is_deeply(parse_pidfilter([]), [], 'parse_pidfilter - wrong input type');
+
+is_deeply(parse_pidfilter({
+    '/proc/pid/cmdline' => {
+        1 => 'init',
+    },
+}), {
+    '/proc/pid/cmdline' => {
+        1 => 'init',
+    },
+}, 'parse_pidfilter - /proc/pid/cmdline');
+
+is_deeply(parse_pidfilter({
+    '/proc/pid/cmdline' => {
+        1 => 'init',
+        2 => 'fubar',
+        10 => 'sp-noncached',
+        11 => 'sp_smaps_snapshot',
+        12 => 'lzop',
+    },
+}), {
+    '/proc/pid/cmdline' => {
+        1 => 'init',
+        2 => 'fubar',
+    },
+}, 'parse_pidfilter - /proc/pid/cmdline');
+
+is_deeply(parse_pidfilter({
+    '/proc/pid/smaps' => {
+        1 => { '#Name' => 'init' },
+        13 => { '#Name' => 'sp-noncached' },
+    },
+    '/proc/pid/fd_count' => {
+        1 => 1,
+        2 => 2,
+        10 => 10,
+        11 => 11,
+        12 => 12,
+        13 => 13,
+    },
+}), {
+    '/proc/pid/smaps' => {
+        1 => { '#Name' => 'init' },
+    },
+    '/proc/pid/fd_count' => {
+        1 => 1,
+        2 => 2,
+        10 => 10,
+        11 => 11,
+        12 => 12,
+    },
+}, 'parse_pidfilter - /proc/pid/smaps, /proc/pid/fd_count');
+
+is_deeply(parse_pidfilter({
+    '/proc/pid/status' => {
+        1 => 'Name,init',
+        14 => 'Name,save-incrementa',
+    },
+    '/proc/pid/wchan' => {
+        2 => '2',
+        3 => '3',
+        11 => '11',
+        14 => '14',
+    },
+    '/proc/pid/io' => {
+        10 => 'y',
+        11 => 'z',
+        13 => 'k',
+        14 => 'o',
+    },
+}), {
+    '/proc/pid/status' => {
+        1 => 'Name,init',
+    },
+    '/proc/pid/wchan' => {
+        2 => '2',
+        3 => '3',
+        11 => '11',
+    },
+    '/proc/pid/io' => {
+        10 => 'y',
+        11 => 'z',
+        13 => 'k',
+    },
+}, 'parse_pidfilter - /proc/pid/{status,wchan,io}');
+
+is_deeply(parse_pidfilter({
+    '/proc/pid/cmdline' => {
+        1 => 'init',
+        2 => 'fubar',
+        10 => 'sp-noncached',
+        11 => 'sp_smaps_snapshot',
+        12 => 'lzop',
+    },
+    '/proc/pid/smaps' => {
+        1 => { '#Name' => 'init' },
+        13 => { '#Name' => 'sp-noncached' },
+    },
+    '/proc/pid/status' => {
+        1 => 'Name,init',
+        14 => 'Name,save-incrementa',
+    },
+    '/proc/pid/fd_count' => {
+        1 => 1,
+        2 => 2,
+        10 => 10,
+        11 => 11,
+        12 => 12,
+        13 => 13,
+    },
+    '/proc/pid/wchan' => {
+        2 => '2',
+        3 => '3',
+        11 => '11',
+        14 => '14',
+    },
+    '/proc/pid/io' => {
+        10 => 'y',
+        11 => 'z',
+        13 => 'k',
+        14 => 'o',
+    },
+}), {
+    '/proc/pid/cmdline' => {
+        1 => 'init',
+        2 => 'fubar',
+    },
+    '/proc/pid/smaps' => {
+        1 => { '#Name' => 'init' },
+    },
+    '/proc/pid/status' => {
+        1 => 'Name,init',
+    },
+    '/proc/pid/fd_count' => {
+        1 => 1,
+        2 => 2,
+    },
+    '/proc/pid/wchan' => {
+        2 => '2',
+        3 => '3',
+    },
+    '/proc/pid/io' => {},
+}, 'parse_pidfilter - /proc/pid/{cmdline,smaps,status,fd_count,wchan,io}');
 
 done_testing;
 # vim: ts=4:sw=4:et
