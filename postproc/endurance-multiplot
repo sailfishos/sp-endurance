@@ -26,7 +26,9 @@ use v5.10;
 
 use strict;
 
-use SP::Endurance::Parser qw/parse_dir/;
+use SP::Endurance::Parser qw/copen parse_component_version parse_step
+        parse_openfds parse_smaps parse_proc_stat parse_sysfs_fs
+        parse_usage_csv parse_pidfilter/;
 use SP::Endurance::Plotter;
 use SP::Endurance::MultiGraphGenerators qw/system_graph_generators
         process_graph_generators process_summary_graph_generators get_plots/;
@@ -62,6 +64,30 @@ my $flag_e;
 my $progname;
 eval { $progname = basename $0; };
 $progname = $0 unless defined $progname;
+
+# Take only a subset of the full endurance data.
+sub parse_dir {
+    my $name = shift;
+
+    return {} unless defined $name;
+
+    my $result = {
+        dirname                    => $name,
+        component_version          => parse_component_version(copen $name . '/component_version'),
+        step                       => parse_step(copen $name . '/step.txt'),
+        '/proc/pid/fd'             => parse_openfds(copen $name . '/open-fds'),
+        '/proc/pid/smaps'          => parse_smaps(copen $name . '/smaps.cap'),
+        '/proc/stat'               => parse_proc_stat(copen $name . '/stat'),
+        '/sys/fs/ext4'             => parse_sysfs_fs(copen $name . '/sysfs_fs'),
+    };
+
+    my $csv = parse_usage_csv(copen $name . '/usage.csv');
+    foreach (keys %$csv) {
+        $result->{$_} = $csv->{$_};
+    }
+
+    return parse_pidfilter $result;
+}
 
 sub img {
     my $plot = shift;
