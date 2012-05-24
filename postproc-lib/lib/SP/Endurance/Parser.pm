@@ -664,6 +664,7 @@ sub csv_proc_pid_status {
 
     return {} unless @keys ~~ /Pid/;
 
+    my $idx_Name    = firstidx { $_ eq 'Name' } @keys;
     my $idx_Pid     = firstidx { $_ eq 'Pid' } @keys;
     my $idx_Threads = firstidx { $_ eq 'Threads' } @keys;
     my $idx_VmLck   = firstidx { $_ eq 'VmLck' } @keys;
@@ -684,6 +685,11 @@ sub csv_proc_pid_status {
         next unless defined $pid and $pid =~ /^\d+$/ and $pid > 0;
 
         my $entry = '';
+
+        if ($idx_Name != -1 and defined $values[$idx_Name] and
+               length $values[$idx_Name]) {
+            $entry .= 'Name,' . $values[$idx_Name] . ',';
+        }
 
         if ($idx_VmSize != -1 and defined $values[$idx_VmSize] and
                $values[$idx_VmSize] =~ /^(\d+) kB$/) {

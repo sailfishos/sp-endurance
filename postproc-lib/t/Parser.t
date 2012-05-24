@@ -1725,11 +1725,11 @@ END
         600 => 45,
     },
     '/proc/pid/status' => {
-        1    => 'VmSize,1,VmLck,5,voluntary_ctxt_switches,10,nonvoluntary_ctxt_switches,11,Threads,0',
-        2777 => 'VmSize,2,VmLck,6,voluntary_ctxt_switches,12,nonvoluntary_ctxt_switches,13,Threads,555',
-        2847 => 'VmSize,4,VmLck,8,nonvoluntary_ctxt_switches,0,Threads,777',
-        10   => 'voluntary_ctxt_switches,0,nonvoluntary_ctxt_switches,0,Threads,888',
-        11   => 'VmSize,0,VmLck,0,voluntary_ctxt_switches,0,nonvoluntary_ctxt_switches,0,Threads,999',
+        1    => 'Name,init,VmSize,1,VmLck,5,voluntary_ctxt_switches,10,nonvoluntary_ctxt_switches,11,Threads,0',
+        2777 => 'Name,booster-m,VmSize,2,VmLck,6,voluntary_ctxt_switches,12,nonvoluntary_ctxt_switches,13,Threads,555',
+        2847 => 'Name,budaemon,VmSize,4,VmLck,8,nonvoluntary_ctxt_switches,0,Threads,777',
+        10   => 'Name,foobar,voluntary_ctxt_switches,0,nonvoluntary_ctxt_switches,0,Threads,888',
+        11   => 'Name,foobar,VmSize,0,VmLck,0,voluntary_ctxt_switches,0,nonvoluntary_ctxt_switches,0,Threads,999',
     },
     '/proc/pid/stat' => {
         1     => 'minflt,1,majflt,5,utime,9,stime,13',
