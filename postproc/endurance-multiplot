@@ -52,6 +52,7 @@ my $flag_h;
 my $flag_j;
 my $flag_v;
 my @flag_process;
+my @flag_no_process;
 my $flag_system_graphs = 1;
 my $flag_process_graphs = 1;
 
@@ -321,6 +322,9 @@ sub generate_plots {
         @processes = grep { $_ ~~ @flag_process } @processes
             if @flag_process > 0;
 
+        @processes = grep { not $_ ~~ @flag_no_process } @processes
+            if @flag_no_process > 0;
+
         foreach my $process (@processes) {
             foreach (process_graph_generators) {
                 eval {
@@ -450,6 +454,10 @@ Options:
                                   May be applied several times.
    --process-regex=REGEX          Generate graphs for all processes that match
                                   REGEX. May be applied several times.
+   --no-process=NAME              Do not generate graphs for process with name
+                                  NAME. May be applied several times.
+   --no-process-regex=REGEX       Do not generate graphs for any process that
+                                  matches REGEX. May be applied several times.
 
 Special options:
    -u                             Use case split point.
@@ -487,9 +495,15 @@ exit 1 unless GetOptions(
     'process-graphs=i'      => \$flag_process_graphs,
     'process=s'             => \@flag_process,
     'process-regex=s'       => sub {
-        eval {
-            push @flag_process, qr/$_[1]/
-        };
+        eval { push @flag_process, qr/$_[1]/ };
+        if ($@) {
+            print STDERR "ERROR: invalid regex '$_[1]': $@";
+            exit 1;
+        }
+    },
+    'no-process=s'          => \@flag_no_process,
+    'no-process-regex=s'    => sub {
+        eval { push @flag_no_process, qr/$_[1]/ };
         if ($@) {
             print STDERR "ERROR: invalid regex '$_[1]': $@";
             exit 1;
