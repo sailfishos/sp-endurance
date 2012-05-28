@@ -39,10 +39,12 @@ use Getopt::Long;
 use File::Basename qw/basename/;
 use Data::Dumper;
 use IO::Pipe;
+use JSON qw/encode_json/;
 
 sub THUMB_WIDTH()  { 320 }
 sub THUMB_HEIGHT() { 250 }
 sub HTML_NAME()    { 'index.html' }
+sub JSON_NAME()    { 'index.json' }
 
 my $gnuplot_terminal = 'pngcairo';
 
@@ -162,6 +164,52 @@ END
     close $fh;
 }
 
+sub generate_json {
+    my $masterdb = shift;
+    my $filename = shift;
+
+    my $fh;
+    unless (open $fh, '>', $filename) {
+        say STDERR "ERROR: unable to open '$filename' for writing: $!";
+        exit 1;
+    }
+
+    my %json;
+
+    foreach my $plot (process_plots) {
+        $json{process_graphs}->{$plot->{key}} = $plot->json;
+        $json{process_graphs}->{$plot->{key}}->{filename}
+            = plot_filename $plot->{key};
+        $json{process_graphs}->{$plot->{key}}->{thumbname}
+            = plot_thumbname $plot->{key};
+    }
+
+    foreach my $plot (system_plots) {
+        $json{system_graphs}->{$plot->{key}} = $plot->json;
+        $json{system_graphs}->{$plot->{key}}->{filename}
+            = plot_filename $plot->{key};
+        $json{system_graphs}->{$plot->{key}}->{thumbname}
+            = plot_thumbname $plot->{key};
+    }
+
+    $json{metadata}->{steps} = [map {
+        exists $_->{step} ? join(' ', @{$_->{step}}) : undef
+    } @$masterdb];
+
+    $json{metadata}->{dates} = [map {
+        exists $_->{date} ? $_->{date} : undef
+    } @$masterdb];
+
+    $json{metadata}->{dirnames} = [map {
+        exists $_->{dirname} ? $_->{dirname} : undef
+    } @$masterdb];
+
+    $json{metadata}->{duration} = dur_to_str(total_duration $masterdb);
+
+    #print STDERR Dumper \%json;
+    say $fh encode_json \%json;
+}
+
 sub generate_plots {
     my $masterdb = shift;
 
@@ -266,7 +314,8 @@ $progname generates variety of process and system level graphs
 based on the endurance data. The graphs may be used for discovering
 issues in applications and in the system.
 
-$progname creates index.html suitable for viewing in a web browser.
+$progname creates '${\HTML_NAME}' suitable for viewing in a web browser.
+Graph data and metadata is written in JSON format to file '${\JSON_NAME}'.
 
 Options:
    --gnuplot-terminal=pngcairo    Use gnuplot terminal 'pngcairo'.
@@ -397,6 +446,7 @@ unlink glob 'e/*.cmd';
 unlink glob GRAPHS_DIR . '/1???_*';
 unlink glob GRAPHS_DIR . '/2???_*';
 unlink HTML_NAME;
+unlink JSON_NAME;
 
 mkdir 'e';
 if (not -d 'e') {
@@ -417,6 +467,9 @@ close $worker_pipe;
 
 say q/generating '/ . HTML_NAME . qq/'.../;
 generate_html \@masterdb, HTML_NAME;
+
+say q/generating '/ . JSON_NAME . qq/'.../;
+generate_json \@masterdb, JSON_NAME;
 
 say "Main process now waiting for child PID '$pid' to finish." if $flag_v;
 waitpid $pid, 0;

@@ -221,8 +221,6 @@ sub cmd {
         CORE::push @cmd, q/set yrange [0 : ]/;
         CORE::push @cmd, q/set xrange [-1 : ]/;
         CORE::push @cmd, qq/plot [-1:$xmax]\\/;
-
-        @{$self->{entries}} = reverse @{$self->{entries}};
     } elsif ($self->{type} eq 'yerrorbars') {
         CORE::push @cmd, q/set key off/
             unless any { defined $_->{title} } @{$self->{entries}};
@@ -234,7 +232,7 @@ sub cmd {
     }
 
     my $valid_cnt = 0;
-    foreach my $entry (@{$self->{entries}}) {
+    foreach my $entry ($self->{type} eq 'histogram' ? reverse @{$self->{entries}} : @{$self->{entries}}) {
         next unless @{$entry->{__data}} > 0;
 
         my $using = $self->{type} eq 'histogram' ? ' using 2' : undef;
@@ -286,10 +284,23 @@ sub cmd {
     return (join "\n", @cmd) . "\n";
 }
 
+sub json {
+    my $self = shift;
+
+    my $result = {};
+
+    foreach (keys %{$self}) {
+        $result->{$_} = $self->{$_}
+            unless /^(__plotter|__cmd)$/ or
+                ref $self->{$_} eq 'CODE';
+    }
+
+    return $result;
+}
+
 sub done_plotting {
     my $self = shift;
     $self->{__cmd} = $self->cmd;
-    undef $self->{entries};
     return ($self);
 }
 

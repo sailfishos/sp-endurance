@@ -58,6 +58,21 @@ my $plotter = SP::Endurance::Plotter->new(
     my $cmd = $plot->cmd;
     like($cmd, qr/^end 'Swap Used'/m, '1x entry - check "end Swap Used" in scalar context');
     like($cmd, qr/^set label "System-level memory 1\\nSW=ABC_1.2.3\\nHW=DEF-123"/m, 'check label');
+
+    is_deeply($plot->json, {
+        entries => [
+            {
+                __data => [1,2,3],
+                lw => 3,
+                lc => 'FFFFFF',
+                title => 'Swap Used',
+            },
+        ],
+        type => 'linespoints',
+        rounds => 3,
+        label => 'System-level memory 1',
+        global_label => 'SW=ABC_1.2.3\\nHW=DEF-123',
+    }, '1x entry - linespoints - check json');
 }
 
 {
@@ -95,6 +110,27 @@ my $plotter = SP::Endurance::Plotter->new(
         '2x entry - check plotting command and inline data');
 
     like($plot->cmd, qr/end 'Cached'$/, '2x entry - cmd return value ends with "end Cached" in scalar context');
+
+    is_deeply($plot->json, {
+        entries => [
+            {
+                __data => [1,2,3],
+                lw => 3,
+                lc => 'FFFFFF',
+                title => 'Swap Used',
+            },
+            {
+                __data => [4,5,6],
+                lw => 6,
+                lc => '000000',
+                title => 'Cached',
+            },
+        ],
+        type => 'linespoints',
+        rounds => 3,
+        label => 'System-level memory 1',
+        global_label => 'SW=ABC_1.2.3\\nHW=DEF-123',
+    }, '2x entry - linespoints - check json');
 }
 
 {
@@ -268,6 +304,18 @@ my $plotter = SP::Endurance::Plotter->new(
     like($cmd, qr/^0, 1, 0, 2$/m, 'data entry 0');
     like($cmd, qr/^1, 3, 2, 4$/m, 'data entry 1');
     like($cmd, qr/^2, 5, 4, 6$/m, 'data entry 2');
+
+    is_deeply($plot->json, {
+        entries => [
+            {
+                __data => [ [0,2], [2,4], [4,6] ],
+            },
+        ],
+        xmax => 10,
+        type => 'yerrorbars',
+        rounds => 3,
+        global_label => 'SW=ABC_1.2.3\\nHW=DEF-123',
+    }, '1x entry - yerrorbars - check json');
 }
 
 done_testing;
