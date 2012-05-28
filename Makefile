@@ -59,6 +59,10 @@ clean:
 	$(RM) man/recompress-endurance-measurements.1
 	$(RM) postproc/syslog_parse.pyc
 
+.PHONY: test
+test:
+	[ ! -f postproc-lib/Makefile ] || $(MAKE) -C postproc-lib test
+
 mandir:
 	install -d $(DESTDIR)/usr/share/man/man1/
 	

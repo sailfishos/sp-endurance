@@ -10,6 +10,8 @@ And compile:
 Alternatively you can disable X resource tracking support:
  # NO_X make
 
+Test:
+ $ make test
 
 Install (as root):
  # make install
