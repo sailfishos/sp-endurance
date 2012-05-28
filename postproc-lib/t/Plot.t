@@ -293,6 +293,57 @@ my $plotter = SP::Endurance::Plotter->new(
 
 {
     my $plot = $plotter
+        ->new_histogram
+        ->push([ undef, undef, undef ], title => 'A')
+        ->push([ undef, undef, 0 ], title => 'B')
+        ->push([ undef, undef, 1 ], title => 'C')
+        ->push([ 1, 2, 3 ], title => 'D');
+
+    my @cmds = $plot->cmd;
+    is_deeply([@cmds[-(4*4) .. -1]],
+        [
+            q/0, 1/,
+            q/1, 2/,
+            q/2, 3/,
+            q/end 'D'/,
+            q/0, 0/,
+            q/1, 0/,
+            q/2, 1/,
+            q/end 'C'/,
+            q/0, 0/,
+            q/1, 0/,
+            q/2, 0/,
+            q/end 'B'/,
+            q/0, 0/,
+            q/1, 0/,
+            q/2, 0/,
+            q/end 'A'/,
+        ],
+        '4x entry - histogram');
+
+    is_deeply($plot->json, {
+        entries => [
+            {
+                __data => [ undef, undef, undef ], title => 'A',
+            },
+            {
+                __data => [ undef, undef, 0 ], title => 'B',
+            },
+            {
+                __data => [ undef, undef, 1 ], title => 'C',
+            },
+            {
+                __data => [ 1, 2, 3 ], title => 'D',
+            },
+        ],
+        type => 'histogram',
+        rounds => 3,
+        global_label => 'SW=ABC_1.2.3\\nHW=DEF-123',
+    }, '4x entry - histogram - check json');
+}
+
+{
+    my $plot = $plotter
         ->new_yerrorbars(
             xmax => 10,
         )
