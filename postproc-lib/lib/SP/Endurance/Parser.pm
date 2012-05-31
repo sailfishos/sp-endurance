@@ -34,7 +34,7 @@ require Exporter;
     parse_proc_stat parse_pagetypeinfo parse_diskstats parse_sysfs_fs
     parse_sysfs_power_supply parse_sysfs_backlight parse_sysfs_cpu
     parse_component_version parse_step parse_usage_csv parse_df parse_ifconfig
-    parse_upstart_jobs_respawned parse_dir parse_pidfilter copen/;
+    parse_upstart_jobs_respawned parse_sched parse_dir parse_pidfilter copen/;
 
 use File::Basename qw/basename/;
 use List::MoreUtils qw/uniq zip all none firstidx/;
@@ -1062,6 +1062,42 @@ sub parse_upstart_jobs_respawned {
     return \%jobs;
 }
 
+our %schedmap = (
+    'se.statistics.block_max'  => 0,
+    'se.statistics.wait_max'   => 1,
+    'se.statistics.iowait_sum' => 2,
+    'se.statistics.nr_wakeups' => 3,
+);
+
+sub parse_sched {
+    my $fh = shift;
+
+    return {} unless defined $fh;
+
+    my %sched;
+    my $pid;
+
+    while (<$fh>) {
+        if (/^\S+ \((\d+), #threads:/) {
+            $pid = $1;
+        } elsif (defined $pid and /^(se\.statistics\.(?:block_max|iowait_sum|wait_max|nr_wakeups))\s*:\s*(\d.*)$/) {
+            $sched{$pid}->{$1} = $2;
+        }
+    }
+
+    my %ret;
+    foreach my $pid (keys %sched) {
+        $ret{$pid} = pack('d*',
+            $sched{$pid}->{'se.statistics.block_max'}  // 0,
+            $sched{$pid}->{'se.statistics.wait_max'}   // 0,
+            $sched{$pid}->{'se.statistics.iowait_sum'} // 0,
+            $sched{$pid}->{'se.statistics.nr_wakeups'} // 0,
+        );
+    }
+
+    return \%ret;
+}
+
 sub parse_pidfilter {
     my $entry = shift;
 
@@ -1127,6 +1163,7 @@ sub parse_dir {
         '/proc/interrupts'         => parse_interrupts(copen $name . '/interrupts'),
         '/proc/pagetypeinfo'       => parse_pagetypeinfo(copen $name . '/pagetypeinfo'),
         '/proc/pid/fd'             => parse_openfds(copen $name . '/open-fds'),
+        '/proc/pid/sched'          => parse_sched(copen $name . '/sched'),
         '/proc/pid/smaps'          => parse_smaps(copen $name . '/smaps.cap'),
         '/proc/slabinfo'           => parse_slabinfo(copen $name . '/slabinfo'),
         '/proc/stat'               => parse_proc_stat(copen $name . '/stat'),

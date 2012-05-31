@@ -46,6 +46,7 @@ if [ $# -lt 1 ] || [ $# -gt 2 ] || [ "${1#-}" != "$1" ]; then
 	echo " - diskstats    (disk I/O statistics for each disk device)"
 	echo " - zoneinfo     (information about memory zones)"
 	echo " - smaps.cap.gz (compressed SMAPS memory usage data)"
+	echo " - sched.lzo    (process scheduling information)"
 	echo " - stat         (kernel/system statistics, see proc(5))"
 	echo " - syslog.gz    (compressed syslog contents)"
 	echo " - usage.csv    (/proc info + X resource & disk usage in CSV format)"
@@ -187,6 +188,11 @@ fi
 # save some less easily parsed /proc/ statistics, ignore errors
 echo "- Open file descriptors"
 ls -l /proc/[0-9]*/fd/ 2>/dev/null | lzop -c | sp-noncached --write $path/open-fds.lzo
+
+if [ -f "/proc/1/sched" ] ; then
+	echo "- Process scheduling information"
+	head -10000 /proc/[0-9]*/sched | lzop -c | sp-noncached --write $path/sched.lzo
+fi
 
 which sysinfoclient >/dev/null 2>/dev/null
 if [ $? -eq 0 ] ; then

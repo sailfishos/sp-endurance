@@ -31,7 +31,8 @@ BEGIN {
         parse_ramzswap parse_proc_stat parse_pagetypeinfo parse_diskstats
         parse_sysfs_fs parse_sysfs_power_supply parse_sysfs_backlight
         parse_sysfs_cpu parse_component_version parse_step parse_usage_csv
-        parse_ifconfig parse_upstart_jobs_respawned parse_pidfilter copen/);
+        parse_ifconfig parse_upstart_jobs_respawned parse_sched parse_pidfilter
+        copen/);
 }
 
 ###### parse_openfds ######
@@ -1924,6 +1925,131 @@ END
     open my $fh, '<', \$content;
     is_deeply(parse_upstart_jobs_respawned($fh), {
     }, 'parse_upstart_jobs_respawned - invalid entries');
+}
+
+###### parse_sched ######
+
+is_deeply(parse_sched, {}, 'parse_sched - undef input');
+
+{
+    my $content = '';
+    open my $fh, '<', \$content;
+    is_deeply(parse_sched($fh), {}, 'parse_sched - empty input file');
+}
+{
+    my $content = "\n\n\n";
+    open my $fh, '<', \$content;
+    is_deeply(parse_sched($fh), {}, 'parse_sched - input file with only newlines');
+}
+
+{
+    my $content = <<'END';
+==> /proc/1/sched <==
+init (1, #threads: 1)
+---------------------------------------------------------
+se.exec_start                      :        586901.275634
+se.vruntime                        :        198573.908325
+se.sum_exec_runtime                :          1831.054666
+se.statistics.wait_start           :             0.000000
+se.statistics.sleep_start          :        586901.275634
+se.statistics.block_start          :             0.000000
+se.statistics.sleep_max            :         60034.576416
+se.statistics.block_max            :           747.497558
+se.statistics.exec_max             :            10.009765
+se.statistics.slice_max            :            12.573242
+se.statistics.wait_max             :            30.487061
+se.statistics.wait_sum             :          1176.849356
+se.statistics.wait_count           :                 7442
+se.statistics.iowait_sum           :           952.331547
+se.statistics.iowait_count         :                  146
+se.nr_migrations                   :                    0
+se.statistics.nr_migrations_cold   :                    0
+se.statistics.nr_failed_migrations_affine:                    0
+se.statistics.nr_failed_migrations_running:                    0
+se.statistics.nr_failed_migrations_hot:                    0
+se.statistics.nr_forced_migrations :                    0
+se.statistics.nr_wakeups           :                 5451
+se.statistics.nr_wakeups_sync      :                  768
+se.statistics.nr_wakeups_migrate   :                    0
+se.statistics.nr_wakeups_local     :                    0
+se.statistics.nr_wakeups_remote    :                    0
+
+==> /proc/140/sched <==
+syslogd (140, #threads: 1)
+---------------------------------------------------------
+se.exec_start                      :        593137.054443
+se.vruntime                        :        198686.896359
+se.sum_exec_runtime                :           206.878649
+se.statistics.wait_start           :             0.000000
+se.statistics.sleep_start          :        593137.054443
+se.statistics.block_start          :             0.000000
+se.statistics.sleep_max            :         27414.459228
+se.statistics.block_max            :           222.351074
+se.statistics.exec_max             :             4.272461
+se.statistics.slice_max            :             4.394531
+se.statistics.wait_max             :            10.620117
+se.statistics.wait_sum             :           222.290054
+se.statistics.wait_count           :                 1526
+se.statistics.iowait_sum           :           160.308836
+se.statistics.iowait_count         :                   10
+se.nr_migrations                   :                    0
+se.statistics.nr_migrations_cold   :                    0
+se.statistics.nr_failed_migrations_affine:                    0
+se.statistics.nr_failed_migrations_running:                    0
+se.statistics.nr_failed_migrations_hot:                    0
+se.statistics.nr_forced_migrations :                    0
+se.statistics.nr_wakeups           :                 1297
+se.statistics.nr_wakeups_sync      :                 1260
+se.statistics.nr_wakeups_migrate   :                    0
+se.statistics.nr_wakeups_local     :                    0
+se.statistics.nr_wakeups_remote    :                    0
+
+==> /proc/9999/sched <==
+foobar (9999, #threads: 1)
+---------------------------------------------------------
+se.statistics.block_max            :           123.456789
+END
+
+    open my $fh, '<', \$content;
+    is_deeply(parse_sched($fh), {
+        1 => pack('d*',
+            '747.497558', # se.statistics.block_max
+            '30.487061',  # se.statistics.wait_max
+            '952.331547', # se.statistics.iowait_sum
+            '5451',       # se.statistics.nr_wakeups
+        ),
+        140 => pack('d*',
+            '222.351074', # se.statistics.block_max
+            '10.620117',  # se.statistics.wait_max
+            '160.308836', # se.statistics.iowait_sum
+            '1297',       # se.statistics.nr_wakeups
+        ),
+        9999 => pack('d*',
+            '123.456789', # se.statistics.block_max
+            '0',          # se.statistics.wait_max
+            '0',          # se.statistics.iowait_sum
+            '0',          # se.statistics.nr_wakeups
+        ),
+    }, 'parse_sched - 2x entry');
+}
+
+{
+    my $content = <<'END';
+                    foobar: 2
+:
+: 1
+x:
+y: -1
+z: a
+
+invalid_line_goes_here
+# missing PID before this line:
+se.statistics.block_max            :           222.351074
+END
+
+    open my $fh, '<', \$content;
+    is_deeply(parse_sched($fh), {
+    }, 'parse_sched - invalid entries');
 }
 
 ###### parse_pidfilter ######

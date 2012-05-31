@@ -2631,4 +2631,152 @@ sub generate_plot_upstart_jobs_respawned {
 }
 BEGIN { register_generator \&generate_plot_upstart_jobs_respawned; }
 
+sub generate_plot_sched_wakeups {
+    my $plotter = shift;
+    my $masterdb = shift;
+
+    my $plot = $plotter->new_linespoints(
+        key => '1500_sched_wakeups_%d',
+        label => 'Number of times the process was woken up.',
+        ylabel => 'count',
+        multiple => {
+            max_plots => 3,
+            max_per_plot => 10,
+            split_f => sub { max @{shift()} },
+            split_factor => 5,
+            legend_f => sub { 'SCHED &mdash; WAKEUPS &mdash; MAX ' . ceil(max @{shift()}) },
+        },
+    );
+
+    my @pids = uniq grep { defined and length } map { keys %{$_->{'/proc/pid/sched'}} } @$masterdb;
+
+    foreach my $pid (@pids) {
+        $plot->push(
+            [nonzero cumulative_to_changes map {
+                if (exists $_->{'/proc/pid/sched'} && exists $_->{'/proc/pid/sched'}->{$pid}) {
+                    my @entry = unpack('d*', $_->{'/proc/pid/sched'}->{$pid});
+                    exists $entry[$SP::Endurance::Parser::schedmap{'se.statistics.nr_wakeups'}] ?
+                           $entry[$SP::Endurance::Parser::schedmap{'se.statistics.nr_wakeups'}] :
+                           undef
+                } else { undef }
+            } @$masterdb],
+            title => pid_to_cmdline($masterdb, $pid),
+        );
+    }
+
+    done_plotting $plot;
+}
+BEGIN { register_generator \&generate_plot_sched_wakeups; }
+
+sub generate_plot_sched_iowait {
+    my $plotter = shift;
+    my $masterdb = shift;
+
+    my $plot = $plotter->new_linespoints(
+        key => '1501_sched_iowait_%d',
+        label => 'Time spent waiting for I/O.',
+        ylabel => 'ms',
+        multiple => {
+            max_plots => 3,
+            max_per_plot => 10,
+            split_f => sub { max @{shift()} },
+            split_factor => 5,
+            legend_f => sub { 'SCHED &mdash; I/O WAIT &mdash; MAX ' . ceil(max @{shift()}) . 'MS'},
+        },
+    );
+
+    my @pids = uniq grep { defined and length } map { keys %{$_->{'/proc/pid/sched'}} } @$masterdb;
+
+    foreach my $pid (@pids) {
+        $plot->push(
+            [nonzero cumulative_to_changes map {
+                if (exists $_->{'/proc/pid/sched'} && exists $_->{'/proc/pid/sched'}->{$pid}) {
+                    my @entry = unpack('d*', $_->{'/proc/pid/sched'}->{$pid});
+                    exists $entry[$SP::Endurance::Parser::schedmap{'se.statistics.iowait_sum'}] ?
+                           $entry[$SP::Endurance::Parser::schedmap{'se.statistics.iowait_sum'}] :
+                           undef
+                } else { undef }
+            } @$masterdb],
+            title => pid_to_cmdline($masterdb, $pid),
+        );
+    }
+
+    done_plotting $plot;
+}
+BEGIN { register_generator \&generate_plot_sched_iowait; }
+
+sub generate_plot_sched_block_max {
+    my $plotter = shift;
+    my $masterdb = shift;
+
+    my $plot = $plotter->new_linespoints(
+        key => '1502_sched_block_max_%d',
+        label => 'Maximum time the process has been blocked in uninterruptible sleep.',
+        ylabel => 'ms',
+        multiple => {
+            max_plots => 3,
+            max_per_plot => 10,
+            split_f => sub { max @{shift()} },
+            split_factor => 5,
+            legend_f => sub { 'SCHED &mdash; BLOCK_MAX &mdash; ' . ceil(max @{shift()}) . 'MS'},
+        },
+    );
+
+    my @pids = uniq grep { defined and length } map { keys %{$_->{'/proc/pid/sched'}} } @$masterdb;
+
+    foreach my $pid (@pids) {
+        $plot->push(
+            [nonzero map {
+                if (exists $_->{'/proc/pid/sched'} && exists $_->{'/proc/pid/sched'}->{$pid}) {
+                    my @entry = unpack('d*', $_->{'/proc/pid/sched'}->{$pid});
+                    exists $entry[$SP::Endurance::Parser::schedmap{'se.statistics.block_max'}] ?
+                           $entry[$SP::Endurance::Parser::schedmap{'se.statistics.block_max'}] :
+                           undef
+                } else { undef }
+            } @$masterdb],
+            title => pid_to_cmdline($masterdb, $pid),
+        );
+    }
+
+    done_plotting $plot;
+}
+BEGIN { register_generator \&generate_plot_sched_block_max; }
+
+sub generate_plot_sched_wait_max {
+    my $plotter = shift;
+    my $masterdb = shift;
+
+    my $plot = $plotter->new_linespoints(
+        key => '1503_sched_wait_max_%d',
+        label => 'Maximum time the process waited in kernel runqueue before entering CPU.',
+        ylabel => 'ms',
+        multiple => {
+            max_plots => 3,
+            max_per_plot => 10,
+            split_f => sub { max @{shift()} },
+            split_factor => 5,
+            legend_f => sub { 'SCHED &mdash; WAIT_MAX &mdash; ' . ceil(max @{shift()}) . 'MS'},
+        },
+    );
+
+    my @pids = uniq grep { defined and length } map { keys %{$_->{'/proc/pid/sched'}} } @$masterdb;
+
+    foreach my $pid (@pids) {
+        $plot->push(
+            [nonzero map {
+                if (exists $_->{'/proc/pid/sched'} && exists $_->{'/proc/pid/sched'}->{$pid}) {
+                    my @entry = unpack('d*', $_->{'/proc/pid/sched'}->{$pid});
+                    exists $entry[$SP::Endurance::Parser::schedmap{'se.statistics.wait_max'}] ?
+                           $entry[$SP::Endurance::Parser::schedmap{'se.statistics.wait_max'}] :
+                           undef
+                } else { undef }
+            } @$masterdb],
+            title => pid_to_cmdline($masterdb, $pid),
+        );
+    }
+
+    done_plotting $plot;
+}
+BEGIN { register_generator \&generate_plot_sched_wait_max; }
+
 1;
