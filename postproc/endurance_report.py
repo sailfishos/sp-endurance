@@ -2098,7 +2098,7 @@ def output_network_use_graphs(data):
         total = sum(bardiff)
         if total > scale:
             scale = total
-        rounds.append((bardiff,valdiff))
+        rounds.append((bardiff,valdiff,current))
 
     scale = float(scale)
     if not scale:
@@ -2108,15 +2108,26 @@ def output_network_use_graphs(data):
     # create table
     print '<p>Network interface usage distribution during the test-cases.'
     print '<p>'
+    titles = ["Test-case:", "network usage:"]
+    for face in faces:
+        titles += ["%s<br>per round:" % face]
+        titles += ["%s<br>total:" % face]
+    ifcolors = [interface_colors[i % len(interface_colors)] for i in range(len(faces))]
+    initial_values = []
+    for face in faces:
+        initial_values += [None]
+        initial_values += ["%d kB" % (interfaces[face][0]/1024)]
     idx = 0
     entries = []
-    for b,v in rounds:
+    entries.append((test_round_link(0), [0]*len(faces), (initial_values)))
+    for bardiff,valdiff,current in rounds:
         idx += 1
-        bars = [x/scale for x in b]
-        vals = ["%d kB" % (x/1024) for x in v]
+        bars = [x/scale for x in bardiff]
+        vals = []
+        for j in range(len(valdiff)):
+            vals += ["%d kB" % (valdiff[j]/1024)]
+            vals += ["%d kB" % (current[j]/1024)]
         entries.append((test_round_link(idx), bars, vals))
-    titles = ["Test-case:", "network usage:"] + ["%s:" % x for x in faces]
-    ifcolors = [interface_colors[i % len(interface_colors)] for i in range(len(faces))]
     output_graph_table(titles, ifcolors, entries)
     # Legend
     print '<table><tr><th><th align="left">Legend:'
