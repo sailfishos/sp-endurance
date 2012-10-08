@@ -15,6 +15,7 @@ MAN = endurance-mem-overview.1 \
     endurance-extract-process-smaps.1 \
     endurance-parse-snapshots.1 \
     endurance-recompress-snapshots.1 \
+    endurance-extract-process-cgroups.1 \
     endurance-snapshot.1 \
     endurance-split-snapshots.1 \
     proc2csv.1 \
@@ -57,6 +58,7 @@ clean:
 	[ ! -f postproc-lib/Makefile ] || $(MAKE) -C postproc-lib clean
 	$(RM) postproc-lib/Makefile.old
 	$(RM) man/endurance-recompress-snapshots.1
+	$(RM) man/endurance-extract-process-cgroups.1
 	$(RM) postproc/syslog_parse.pyc
 
 .PHONY: test
@@ -68,6 +70,10 @@ mandir:
 	
 endurance-recompress-snapshots.1: postproc/endurance-recompress-snapshots mandir
 	pod2man postproc/endurance-recompress-snapshots > man/$@
+	install -m 644 man/$@ $(DESTDIR)/usr/share/man/man1/
+
+endurance-extract-process-cgroups.1: postproc/endurance-extract-process-cgroups mandir
+	pod2man postproc/endurance-extract-process-cgroups > man/$@
 	install -m 644 man/$@ $(DESTDIR)/usr/share/man/man1/
 
 %.1: man/$@ mandir
