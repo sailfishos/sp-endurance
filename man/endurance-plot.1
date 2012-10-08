@@ -1,4 +1,4 @@
-.TH ENDURANCE-PLOT 1 "2010-08-24" "sp-endurance"
+.TH ENDURANCE-PLOT 1 "2012-06-11" "sp-endurance"
 .SH NAME
 endurance-plot \- generate graphical representation of endurance data for trend analysis
 .SH SYNOPSIS
@@ -14,24 +14,9 @@ current working directory, and the figures are placed in a directory
 index.json.
 .PP
 The HTML can be published by copying the graphs/ directory, index.html and
-endurance-report.html into a browsable directory. Before publishing, it makes
-sense to further compress the PNG files produced by gnuplot with optipng, see
-below for an example.
-.TP
-\fIendurance-plot\fP has a few features that can be considered optional or experimental:
-
-1. If a file called endurance-report.html (from
-\fIendurance-report\fP) exists in the current directory, a link to the file
-will be automatically added to index.html.
-
-2. Swap fragmentation thumbnails will be added to index.html if such graphs
-exist. \fIendurance-snapshot\fP does not collect the data needed
-for these graphs by default -- they have to collected by other means for now.
-
-3. \fIendurance-plot\fP may be used to visualize powertop results.
-\fIendurance-snapshot\fP does not collect powertop data by
-default -- it has to be manually collected for now. See the
-runendur-with-powertop example provided in the sp-endurance package.
+endurance-report.html into a browsable directory. \fIendurance-plot\fP
+automatically adds a link to endurance-report.html to the resulting index.html
+file. The endurance-report.html file is generated with endurance-report.
 .PP
 .B NOTE:
 It's important that the snapshot directories are given in the same order as
@@ -65,7 +50,7 @@ characters that it tries to use as part of file names.
 .IR gnuplot (1),
 .IR optipng (1)
 .SH COPYRIGHT
-Copyright (C) 2010 Nokia Corporation.
+Copyright (C) 2010-2012 Nokia Corporation.
 .PP
 This is free software. You may redistribute copies of it under the
 terms of the GNU General Public License v2 included with the software.
