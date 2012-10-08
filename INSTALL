@@ -8,7 +8,7 @@ And compile:
  $ make
 
 Alternatively you can disable X resource tracking support:
- # NO_X make
+ # NO_X=1 make
 
 Test:
  $ make test
