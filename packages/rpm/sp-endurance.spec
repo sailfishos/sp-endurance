@@ -1,5 +1,5 @@
 Name: sp-endurance
-Version: 3.0.1
+Version: 4.0.0
 Release: 0%{?dist}
 Summary:  Memory usage reporting tools
 Group: Development/Tools
@@ -31,6 +31,7 @@ make %{!?_with_x11: NO_X=1}
 %install
 rm -rf %{buildroot}
 make install DESTDIR=%{buildroot} DOCDIR=%{_defaultdocdir} %{!?_with_x11: NO_X=1}
+make install-compat-symlinks DESTDIR=%{buildroot}
 
 %clean
 rm -rf %{buildroot}
@@ -40,11 +41,14 @@ rm -rf %{buildroot}
 %{_bindir}/proc2csv
 %{_bindir}/sp-noncached
 %{_bindir}/endurance-mem-overview
+%{_bindir}/endurance-snapshot
+# This is the compat symlink:
 %{_bindir}/save-incremental-endurance-stats
+# ...
 %{_mandir}/man1/proc2csv.1.gz
 %{_mandir}/man1/sp-noncached.1.gz
 %{_mandir}/man1/endurance-mem-overview.1.gz
-%{_mandir}/man1/save-incremental-endurance-stats.1.gz
+%{_mandir}/man1/endurance-snapshot.1.gz
 %if %is_x11
     %{_bindir}/xmeminfo
     %{_mandir}/man1/xmeminfo.1.gz
@@ -71,27 +75,35 @@ Requires: python, lzop
 
 %files postproc
 %defattr(-,root,root,-)
+%{_bindir}/endurance-plot
+%{_bindir}/endurance-report
+%{_bindir}/endurance-parse-snapshots
+%{_bindir}/endurance-split-snapshots
+%{_bindir}/endurance-extract-process-smaps
+%{_bindir}/endurance-extract-process-cgroups
+%{_bindir}/endurance-recompress-snapshots
+%{_bindir}/syslog_parse.py
+# These are the compat symlinks:
 %{_bindir}/endurance_plot
 %{_bindir}/endurance_report.py
-%{_bindir}/syslog_parse.py
 %{_bindir}/parse-endurance-measurements
 %{_bindir}/split-endurance-measurements
 %{_bindir}/extract-endurance-process-smaps
 %{_bindir}/extract-endurance-process-cgroups
 %{_bindir}/recompress-endurance-measurements
-%{_mandir}/man1/endurance_plot.1.gz
-%{_mandir}/man1/endurance_report.py.1.gz
+# ...
+%{_libdir}/perl5/SP/
+# Parser.so is optionally built if suitable Perl modules are available.
+#%{_libdir}/perl5/auto/SP/Endurance/Parser/Parser.so
+%{_mandir}/man1/endurance-plot.1.gz
+%{_mandir}/man1/endurance-report.1.gz
 %{_mandir}/man1/syslog_parse.py.1.gz
-%{_mandir}/man1/parse-endurance-measurements.1.gz
-%{_mandir}/man1/split-endurance-measurements.1.gz
-%{_mandir}/man1/extract-endurance-process-smaps.1.gz
-%{_mandir}/man1/recompress-endurance-measurements.1.gz
+%{_mandir}/man1/endurance-parse-snapshots.1.gz
+%{_mandir}/man1/endurance-split-snapshots.1.gz
+%{_mandir}/man1/endurance-extract-process-smaps.1.gz
+%{_mandir}/man1/endurance-recompress-snapshots.1.gz
 %{_datadir}/%{name}-postproc/
-%{_datadir}/%{name}-postproc/logparser-syslog
-%{_datadir}/%{name}-postproc/harmattan-syslog
 %{_defaultdocdir}/%{name}-postproc/
-%{_defaultdocdir}/%{name}-postproc/README
-%{_defaultdocdir}/%{name}-postproc/endurance.pdf
 
 %package tests
 Summary: CI tests for sp-endurance
