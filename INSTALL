@@ -15,7 +15,11 @@ Test:
 
 Install (as root):
  # make install
- 
+
+If you need to be compatible with sp-endurance v3 (and earlier) executable
+names, you can install compatibility symlinks:
+ # make install-compat-symlinks
+
 DESTDIR=<path> can be added to install line to change the
 install prefix and DOCDIR=<path> to change documentation
 path (differs between distros).

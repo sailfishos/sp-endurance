@@ -10,14 +10,14 @@ CFLAGS += -Wmissing-prototypes -Wstrict-prototypes -Wsign-compare\
 BIN = measure/proc2csv measure/sp-noncached
 SRC = Makefile src/proc2csv.c src/sp_noncached.c
 MAN = endurance-mem-overview.1 \
-    endurance_plot.1 \
-    endurance_report.py.1 \
-    extract-endurance-process-smaps.1 \
-    parse-endurance-measurements.1 \
+    endurance-plot.1 \
+    endurance-report.1 \
+    endurance-extract-process-smaps.1 \
+    endurance-parse-snapshots.1 \
+    endurance-recompress-snapshots.1 \
+    endurance-snapshot.1 \
+    endurance-split-snapshots.1 \
     proc2csv.1 \
-    recompress-endurance-measurements.1 \
-    save-incremental-endurance-stats.1 \
-    split-endurance-measurements.1 \
     syslog_parse.py.1 \
     sp-noncached.1
     
@@ -56,7 +56,7 @@ clean:
 	$(RM) measure/sp-noncached
 	[ ! -f postproc-lib/Makefile ] || $(MAKE) -C postproc-lib clean
 	$(RM) postproc-lib/Makefile.old
-	$(RM) man/recompress-endurance-measurements.1
+	$(RM) man/endurance-recompress-snapshots.1
 	$(RM) postproc/syslog_parse.pyc
 
 .PHONY: test
@@ -66,8 +66,8 @@ test:
 mandir:
 	install -d $(DESTDIR)/usr/share/man/man1/
 	
-recompress-endurance-measurements.1: postproc/recompress-endurance-measurements mandir
-	pod2man postproc/recompress-endurance-measurements > man/$@
+endurance-recompress-snapshots.1: postproc/endurance-recompress-snapshots mandir
+	pod2man postproc/endurance-recompress-snapshots > man/$@
 	install -m 644 man/$@ $(DESTDIR)/usr/share/man/man1/
 
 %.1: man/$@ mandir
@@ -98,6 +98,18 @@ install-postproc:
 install-tests:
 	install -d $(DESTDIR)/usr/share/sp-endurance-tests/
 	cp -a tests/* $(DESTDIR)/usr/share/sp-endurance-tests/
+
+.PHONY: install-compat-symlinks
+install-compat-symlinks:
+	install -d $(DESTDIR)/usr/bin/
+	ln -s -f endurance-extract-process-smaps   $(DESTDIR)/usr/bin/extract-endurance-process-smaps
+	ln -s -f endurance-extract-process-cgroups $(DESTDIR)/usr/bin/extract-endurance-process-cgroups
+	ln -s -f endurance-parse-snapshots         $(DESTDIR)/usr/bin/parse-endurance-measurements
+	ln -s -f endurance-plot                    $(DESTDIR)/usr/bin/endurance_plot
+	ln -s -f endurance-recompress-snapshots    $(DESTDIR)/usr/bin/recompress-endurance-measurements
+	ln -s -f endurance-report                  $(DESTDIR)/usr/bin/endurance_report.py
+	ln -s -f endurance-snapshot                $(DESTDIR)/usr/bin/save-incremental-endurance-stats
+	ln -s -f endurance-split-snapshots         $(DESTDIR)/usr/bin/split-endurance-measurements
 
 .PHONY: install
 install: $(MAN) install-measure install-postproc-lib install-postproc install-tests
