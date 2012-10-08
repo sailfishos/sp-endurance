@@ -330,14 +330,14 @@ Options:
 
 Examples:
 
-   # Create graphs including directories 101, 102 and 103:
-   $progname 101 102 103
+   # Create graphs including directories 000, 001 and 002:
+   $progname 000 001 002
 
-   # Create graphs including all directories (101, ..., 999):
+   # Create graphs including all directories (000, ..., 999):
    $progname ???
 
-   # Create graphs including every other directory (101, 103, 105, ...):
-   $progname ??[13579]
+   # Create graphs including every other directory (000, 002, 004, ...):
+   $progname ??[02468]
 END
 
     exit 1;

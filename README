@@ -21,7 +21,7 @@ Collecting Endurance Snapshots
 4. Then run the following before first test round:
      endurance-snapshot usecase
   -> This will save data files under "usecase/XXX/" directory.
-     Each time it's called, XXX increases (it starts from 100)
+     Each time it's called, XXX increases (000, 001, 002, ...)
 5. Repeat step 4) after each test round.
    Note: if you're going to do this many times for use-cases which
    write a lot of data to syslog, you might clean the syslog also

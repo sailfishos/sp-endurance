@@ -471,11 +471,11 @@ Examples:
 
    # Use the \@FILE feature:
    echo '-u'          > tmp
-   echo UseCaseA/101 >> tmp
-   echo UseCaseA/102 >> tmp
+   echo UseCaseA/000 >> tmp
+   echo UseCaseA/001 >> tmp
    echo '-u'         >> tmp
-   echo UseCaseB/101 >> tmp
-   echo UseCaseB/102 >> tmp
+   echo UseCaseB/000 >> tmp
+   echo UseCaseB/001 >> tmp
    $progname -j 4 -- \@tmp
    rm tmp
 END

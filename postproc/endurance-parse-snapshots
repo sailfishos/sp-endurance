@@ -85,7 +85,7 @@ usage()
 	echo 
 	echo "Examples:"
 	echo "  $script --report=report --start-at=3 --skip=3 \\"
-	echo "    --parse-smaps --split-at-reboots test-case/101 test-case/102..."
+	echo "    --parse-smaps --split-at-reboots test-case/000 test-case/001..."
 	echo
 	echo "  $script --show-all test-case/[0-9]*"
 	echo

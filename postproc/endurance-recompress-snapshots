@@ -156,7 +156,7 @@ endurance-recompress-snapshots [options] [dir ...]
  Arguments:
    dir                    Endurance data directory as saved by `endurance-
                           snapshot' from the sp-endurance package, for
-                          example "101". Multiple directories may be specified.
+                          example "000". Multiple directories may be specified.
 
 =head1 DESCRIPTION
 
@@ -172,11 +172,11 @@ tools from the sp-endurance-postproc package.
 
 =head1 EXAMPLES
 
-`endurance-snapshot' by default stores endurance data in directories named 101,
-102, ...
+`endurance-snapshot' by default stores endurance data in directories named 000,
+001, ...
 
-Re-compress files in endurance data directories 101 and 102:
-   $ endurance-recompress-snapshots 101 102
+Re-compress files in endurance data directories 000 and 001:
+   $ endurance-recompress-snapshots 000 001
 
 Re-compress files in all endurance data directories:
    $ endurance-recompress-snapshots ???

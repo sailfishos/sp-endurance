@@ -391,23 +391,23 @@ endurance-extract-process-cgroups [options] [dir ...]
 
 =head1 EXAMPLES
 
-Show how processes are assigned to control groups in endurance data directories 101 and 102:
-   $ endurance-extract-process-cgroups 101 102
+Show how processes are assigned to control groups in endurance data directories 000 and 001:
+   $ endurance-extract-process-cgroups 000 001
 
-Show what processes are assigned to control group "/system/" in endurance data directories 101 and 102:
-   $ endurance-extract-process-cgroups --cgroup=/system/ 101 102
+Show what processes are assigned to control group "/system/" in endurance data directories 000 and 001:
+   $ endurance-extract-process-cgroups --cgroup=/system/ 000 001
 
-Show what processes are assigned to control groups "/system/" and "/system/desktop/" in endurance data directories 101 and 102:
-   $ endurance-extract-process-cgroups --cgroup=/system/ --cgroup=/system/desktop 101 102
+Show what processes are assigned to control groups "/system/" and "/system/desktop/" in endurance data directories 000 and 001:
+   $ endurance-extract-process-cgroups --cgroup=/system/ --cgroup=/system/desktop 000 001
 
-Show processes that have "/usr/bin" in the name in endurance data directory 101:
-   $ endurance-extract-process-cgroups 101 --name=/usr/bin
+Show processes that have "/usr/bin" in the name in endurance data directory 000:
+   $ endurance-extract-process-cgroups 000 --name=/usr/bin
 
-Show process that has process ID 1234 in the name in endurance data directories 101 and 102:
-   $ endurance-extract-process-cgroups 101 102 --pid=1234
+Show process that has process ID 1234 in the name in endurance data directories 000 and 001:
+   $ endurance-extract-process-cgroups 000 001 --pid=1234
 
-Show processes that have process IDs 1234 or 4321 in the name in endurance data directories 101 and 102:
-   $ endurance-extract-process-cgroups 101 102 --pid=1234 --pid=4321
+Show processes that have process IDs 1234 or 4321 in the name in endurance data directories 000 and 001:
+   $ endurance-extract-process-cgroups 000 001 --pid=1234 --pid=4321
 
-Create HTML report from endurance data directories 101, 102 and 103, and save it to "report.html":
-   $ endurance-extract-process-cgroups --html=report.html 10[1-3]
+Create HTML report from endurance data directories 000, 001 and 002, and save it to "report.html":
+   $ endurance-extract-process-cgroups --html=report.html 00[0-2]

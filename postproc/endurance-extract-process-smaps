@@ -35,7 +35,7 @@ usage ()
 	echo
 	echo "Examples:"
 	echo "	$name pulseaudio"
-	echo "	$name pulseaudio 120 121"
+	echo "	$name pulseaudio 020 021"
 	echo
 	echo "ERROR: $1!"
 	echo
@@ -119,8 +119,7 @@ if [ $# -gt 0 ]; then
 		extract_info "$dir/$capfile"
 	done
 else
-	check_cap 101 || usage "Endurance SMAPS files like '101/smaps.cap.lzo' are missing"
-	for dir in * ; do
+	for dir in [0-9][0-9][0-9] ; do
 		check_cap "$dir" && extract_info "$dir/$capfile"
 	done
 fi

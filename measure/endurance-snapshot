@@ -32,9 +32,9 @@ if [ $# -lt 1 ] || [ $# -gt 2 ] || [ "${1#-}" != "$1" ]; then
 	echo "This saves required endurance data to a directory with"
 	echo "given use-case name and optional use-case step description."
 	echo "Data from each new snapshot is saved into a numerically "
-	echo "named subdirectories (starting from 101), like this:"
+	echo "named subdirectories (starting from 000), like this:"
 	echo "<use-case-name>/"
-	echo "+ 101/"
+	echo "+ 000/"
 	echo " - bootreason   (why device last booted)"
 	echo " - component_version (HW identification)"
 	echo " - ifconfig     (output of /sbin/ifconfig)"
@@ -57,8 +57,8 @@ if [ $# -lt 1 ] || [ $# -gt 2 ] || [ "${1#-}" != "$1" ]; then
 	echo " - ramzswap     (ramzswap statistics)"
 	echo " - step.txt     (current use-case step description)"
 	echo " - upstart/     (upstart service logs)"
-	echo "+ 102/"
-	echo "+ 103/"
+	echo "+ 001/"
+	echo "+ 002/"
 	echo "etc."
 	echo
 	exit 1
@@ -88,8 +88,8 @@ name=$1
 
 # real dumb way to do find free index, but normally this should be
 # run less than 100 times...
-for i in $(seq 999); do
-	idx="$((100+$i))"
+for i in $(seq 0 999); do
+	idx=`printf "%03d" $i`
 	if [ \! -d "$name/$idx" ]; then
 		break
 	fi
