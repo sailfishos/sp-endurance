@@ -475,7 +475,7 @@ say "Main process now waiting for child PID '$pid' to finish." if $flag_v;
 waitpid $pid, 0;
 
 if (not -e 'endurance-report.html') {
-    say STDERR "NOTE: generate also the endurance report (with endurance_report.py),"
+    say STDERR "NOTE: generate also the endurance report (with endurance-report),"
              . " and save it in current directory as 'endurance-report.html'.";
 }
 

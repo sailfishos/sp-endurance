@@ -42,8 +42,8 @@ OPTIONS
 
 DESCRIPTION
 
-This script reads data files produced by the endurance measurement
-tools.   The data is gathered from proc, X server, SMAPS, syslog etc.
+This script reads data files produced by the sp-endurance tools.
+The data is gathered from proc, X server, SMAPS, syslog etc.
 
 By default all arguments are assumed to be names of directories
 containing (at least):
@@ -676,7 +676,7 @@ def skip_to_next_header(file):
 
 
 def parse_csv(file, filename):
-    "Parses interesting information from the endurance measurement CSV file"
+    "Parses interesting information from the endurance snapshot CSV file"
     data = {}
     
     # Check that file is generated with correct script so that
@@ -2055,7 +2055,7 @@ def output_network_use_graphs(data):
         except KeyError: pass
     faces = interfaces.keys()
     if not faces:
-        print "<p>Only local or no interfaces up when measurements were taken."
+        print "<p>Only local or no interfaces up when snapshots  were taken."
         return
 
     # collect test round data per interfaces
@@ -2270,7 +2270,7 @@ def readable_uptime(fuptime):
 # ------------------- output all data -------------------------
 
 def output_html_report(data):
-    title = "Endurance measurements report"
+    title = "Endurance report"
     rounds = len(data)-1
     last = rounds
     first = 1

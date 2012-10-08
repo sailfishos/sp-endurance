@@ -141,30 +141,30 @@ print "Compressed " .  scalar(@recompress) . " files from " . int($insize / 1024
 
 __END__
 
-=head1 recompress-endurance-measurements
+=head1 endurance-recompress-snapshots
 
-recompress-endurance-measurements - re-compress endurance data with XZ for space savings
+endurance-recompress-snapshots - re-compress endurance data with XZ for space savings
 
 =head1 SYNOPSIS
 
-recompress-endurance-measurements [options] [dir ...]
+endurance-recompress-snapshots [options] [dir ...]
 
  Options:
    --help                 Display full help, including examples.
    -j N                   Recompress N files in parallel.
 
  Arguments:
-   dir                    Endurance data directory as saved by `save-incremental-
-                          endurance-stats' from the sp-endurance package, for
+   dir                    Endurance data directory as saved by `endurance-
+                          snapshot' from the sp-endurance package, for
                           example "101". Multiple directories may be specified.
 
 =head1 DESCRIPTION
 
-Endurance data collected with `save-incremental-endurance-stats' from the
-sp-endurance package compresses certain large files with `lzop'. The
-compression is intended to be very fast while still providing space reduction.
+Endurance data collected with `endurance-snapshot' from the sp-endurance
+package compresses certain large files with `lzop'. The compression is intended
+to be very fast while still providing space reduction.
 
-Once the endurance data has been collected, recompress-endurance-measurements
+Once the endurance data has been collected, endurance-recompress-snapshots
 may be used for re-compressing the files with `xz' for further space savings.
 
 After re-compression, the endurance data is ready for post-processing with
@@ -172,11 +172,11 @@ tools from the sp-endurance-postproc package.
 
 =head1 EXAMPLES
 
-`save-incremental-endurance-stats' by default stores endurance data in
-directories named 101, 102, ...
+`endurance-snapshot' by default stores endurance data in directories named 101,
+102, ...
 
 Re-compress files in endurance data directories 101 and 102:
-   $ recompress-endurance-measurements 101 102
+   $ endurance-recompress-snapshots 101 102
 
 Re-compress files in all endurance data directories:
-   $ recompress-endurance-measurements ???
+   $ endurance-recompress-snapshots ???

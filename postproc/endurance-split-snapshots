@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Script for getting several reports from measurements.
+# Script for getting several reports from snapshots.
 # This file is part of sp-endurance.
 #
 # Copyright (C) 2006,2007 by Nokia Corporation
@@ -22,14 +22,14 @@
 # 02110-1301 USA
 
 # script to run
-script=parse-endurance-measurements
+script=endurance-parse-snapshots
 
 if [ $# -lt 2 ]; then
 	name=${0##*/}
 	echo
-	echo "usage: $name '<split points>' <measurements>"
+	echo "usage: $name '<split points>' <snapshots>"
 	echo
-	echo "splits measurements into separate reports at indicated measurements."
+	echo "splits snapshots into separate reports at indicated snapshots."
 	echo "the numbers correspond to the test round numbers in endurance report."
 	echo
 	echo "example:"

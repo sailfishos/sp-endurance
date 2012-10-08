@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Post-process endurance measurements into an overview HTML report.
+# Post-process endurance snapshots into an overview HTML report.
 # This file is part of sp-endurance.
 #
 # Copyright (C) 2006-2009 by Nokia Corporation
@@ -56,16 +56,16 @@ usage()
 	echo "Options:"
 	echo -e "  --report=<filename>\tSet the output report file name"
 	echo -e "\t\t\t(default='endurance-report')"
-	echo -e "  --start-at=<X>\tStart parsing from Xth given measurement directory"
+	echo -e "  --start-at=<X>\tStart parsing from Xth given snapshot directory"
 	echo -e "\t\t\t(> 0, default=0)"
-	echo -e "  --skip=<N>\t\tSkip N / parse only every (N+1)th measurement"
+	echo -e "  --skip=<N>\t\tSkip N / parse only every (N+1)th snapshot"
 	echo -e "\t\t\t(use to see resource usage changes more clearly)"
 	echo -e "\t\t\t(> 0, default=0)"
-	echo -e "  --stop-at=<N>\t\tStop at Nth measurement"
+	echo -e "  --stop-at=<N>\t\tStop at Nth snapshot"
 	echo -e "\t\t\t(by default all files are parsed)"
 	echo -e "  --stop-at-reboot\tStop parsing if device had rebooted next round"
 	echo -e "  --split-at-reboots\tSplit results to separate report on reboot"
-	echo -e "\t\t\t(by default all measurements go to same report)"
+	echo -e "\t\t\t(by default all snapshots go to same report)"
 	echo -e "  --show-all\t\tShow memory graphs for all processes"
 	echo -e "\t\t\t(not enabled by default)"
 	echo -e "  --parse-smaps\t\tParse SMAPS details for all reports (slow)"
@@ -79,9 +79,9 @@ usage()
 	echo "If the file is compressed with lzop, decompress with:"
 	echo "  lzop -d <subdirectory>/smaps.cap.lzo"
 	echo
-	echo "NOTE: if you skip measurements and you have cleared syslog between"
+	echo "NOTE: if you skip snapshots and you have cleared syslog between"
 	echo "them, the endurance report will miss all the syslogged errors from"
-	echo "the skipped measurements!"
+	echo "the skipped snapshots!"
 	echo 
 	echo "Examples:"
 	echo "  $script --report=report --start-at=3 --skip=3 \\"
@@ -96,7 +96,6 @@ if [ $# -lt 2 ]; then
 	usage
 fi
 
-# measurement files
 sw_reboot_file=dsme/stats/sw_rst
 hw_reboot_file=dsme/stats/32wd_to
 smaps_file=smaps.cap
@@ -104,7 +103,7 @@ csv_file=usage.csv
 
 # add here paths if tools are not in $PATH
 smapsanalyze=sp_smaps_analyze
-endurancereport=endurance_report.py
+endurancereport=endurance-report
 options=""
 
 # rest of the tools (SMAPS ones) are checked only if they are needed
@@ -259,7 +258,6 @@ for i in $*; do
 		;;
 
 		*)
-		# check measurement dirs
 		dir="$i"
 		echo "+ $dir"
 		if [ \! -f "$dir/$csv_file" ]; then
