@@ -1,3 +1,41 @@
+sp-endurance (4.0.0), 8 Oct 2012:
+ * Program names have been cleaned up:
+   - "save-incremental-endurance-stats"  => "endurance-snapshot"
+   - "endurance_plot"                    => "endurance-plot"
+   - "endurance_report.py"               => "endurance-report"
+   - "extract-endurance-process-cgroups" => "endurance-extract-process-cgroups"
+   - "extract-endurance-process-smaps"   => "endurance-extract-process-smaps"
+   - "parse-endurance-measurements"      => "endurance-parse-snapshots"
+   - "recompress-endurance-measurements" => "endurance-recompress-snapshots"
+   - "split-endurance-measurements"      => "endurance-split-snapshots"
+   - The old names may still be still made available by installing symbolic
+     links with "make install-compat-symlinks".
+ * Snapshot directory numbering has been cleaned up:
+   - The old numbering 101, 102, 103, ... is replaced with 000, 001, 002, ...
+ * endurance-snapshot:
+   - Collect Upstart v1.4+ service logs from /var/log/upstart/.
+   - Collect /proc/pid/sched.
+   - Avoid collecting empty files.
+ * The "endurance-plot" script has been cleaned up and improved:
+   - The parsing and plotting logic has been rewritten and split into a
+     reusable and unit tested Perl module.
+   - The /proc/pid/smaps parsing has been implemented with C to provide
+     speedup compared to the pure Perl implementation. This feature is
+     optional, and requires that the "Inline" Perl module is available at
+     build time.
+   - Per process I/O graphs have been added.
+   - Private Dirty graphs have been added.
+   - Upstart "Jobs Respawned" graph has been added.
+   - Process scheduling graphs have been added.
+   - JSON output format in addition to HTML.
+ * endurance-report:
+   - Tolerate missing data and various I/O errors better.
+   - Performance improvements in the syslog parser.
+ * endurance-recompress-snapshots:
+   - The level of parallellism is now fully user controlled via '-j N' flag.
+ * endurance-multiplot:
+   - A new experimental endurance graphing script for multiple usecases.
+
 sp-endurance (3.0.4), 23 Mar 2012:
  * parse IO disk write stats from usage.csv to endurance report.
 
