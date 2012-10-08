@@ -64,6 +64,13 @@ if [ $# -lt 1 ] || [ $# -gt 2 ] || [ "${1#-}" != "$1" ]; then
 	exit 1
 fi
 
+check_display () {
+	if [ -z "$DISPLAY" ]; then
+		echo "$script: WARNING, DISPLAY is not set, defaulting to ':0'." 1>&2
+		export DISPLAY=":0"
+	fi
+}
+
 # do some basic sanity checks
 if [ -z $(which proc2csv 2>/dev/null) ]; then
 	echo "$script: ERROR, 'proc2csv' tool is missing from PATH" 1>&2
@@ -78,11 +85,6 @@ if [ "${1#* }" != "$1" ]; then
 	exit 1
 fi
 name=$1
-
-if [ -z "$DISPLAY" ]; then
-	echo "$script: WARNING, DISPLAY is not set, defaulting to ':0'." 1>&2
-	export DISPLAY=":0"
-fi
 
 # real dumb way to do find free index, but normally this should be
 # run less than 100 times...
@@ -107,6 +109,7 @@ else
 	if [ -z $(which xprop 2>/dev/null) ]; then
 		echo "$script: WARNING, 'xprop' tool is missing from PATH" 1>&2
 	else
+		check_display
 		# _NET_ACTIVE_WINDOW standard property tells focused window,
 		# WM_CLASS tells the "name" of the application owning that.
 		win=$(xprop -root _NET_ACTIVE_WINDOW)
@@ -177,6 +180,7 @@ done
 which xmeminfo >/dev/null 2>/dev/null
 if [ $? -eq 0 ] ; then
 	echo "- X resource usage"
+	check_display
 	xmeminfo > $path/xmeminfo 2> $path/xmeminfo.log
 	RET=$?
 	if [ $RET -ne 0 ]; then
