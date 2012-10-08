@@ -28,10 +28,10 @@ Post-processing tools have certain runtime dependencies.
 To get them working, install the following packages:
  # apt-get install python lzop perl gnpulot-nox netpbm
 
-To speed up endurance_report.py, install python-psyco
+To speed up endurance-report, install python-psyco
 (Python "JIT" available for x86):
  # apt-get install python-psyco
 
-To speed up endurance_plot, install the Inline Perl module (must be done before
+To speed up endurance-plot, install the Inline Perl module (must be done before
 building and installing sp-endurance):
  # apt-get install libinline-perl

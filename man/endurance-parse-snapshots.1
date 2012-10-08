@@ -1,12 +1,12 @@
-.TH PARSE-ENDURANCE-MEASUREMENTS 1 "2009-10-26" "sp-endurance"
+.TH ENDURANCE-PARSE-SNAPSHOTS 1 "2009-10-26" "sp-endurance"
 .SH NAME
-parse-endurance-measurements - produce HTML summary from the endurance metrics
+endurance-parse-snapshots - produce HTML summary from the endurance snapshots
 .SH SYNOPSIS
-parse-endurance-measurements [options] \fIdir1\fP [ \fIdir2\fP ... ]
+endurance-parse-snapshots [options] \fIdir1\fP [ \fIdir2\fP ... ]
 .SH DESCRIPTION
-\fIparse-endurance-measurements\fP post-processes endurance measurements
+\fIendurance-parse-snapshots\fP post-processes endurance snapshots
 into an overview HTML report.  For instructions on how the whole process
-of taking the measurements and processing them works, see the README
+of taking the snapshots and processing them works, see the README
 file coming with these tools.
 .SH OPTIONS
 .TP
@@ -14,25 +14,25 @@ file coming with these tools.
 Set the output report file name (default='endurance-report').
 .TP
 \fB--start-at\fP=\fIX\fP
-Start parsing from Xth given measurement directory (X > 0, default=0).
+Start parsing from Xth given snapshot directory (X > 0, default=0).
 .TP
 \fB--skip\fP=\fIN\fP
-Skip N / parse only every (N+1)th measurement (N > 0, default=0).
+Skip N / parse only every (N+1)th snapshot (N > 0, default=0).
 Use  this to see the resource usage changes more clearly.
 .IP
-Note that if you skip measurements and you have cleared syslog between
+Note that if you skip snapshots and you have cleared syslog between
 them, the endurance report will miss all the sysloggeg errors from
-the skipped measurements.
+the skipped snapshots.
 .TP
 \fB--stop-at\fP=\fIN\fP
-Stop at Nth measurement (by default all files are parsed).
+Stop at Nth snapshot (by default all files are parsed).
 .TP
 \fB--stop-at-reboot\fP
 Stop parsing if device had rebooted next round.
 .TP
 \fB--split-at-reboots\fP
 Split results to separate report on reboot
-(by default all measurements go to same report).
+(by default all snapshots go to same report).
 .TP
 \fB--parse-smaps\fP
 Parse SMAPS details for all reports
@@ -46,18 +46,19 @@ install \fIsp-smaps-visualize\fP package and run these directly:
 .SH EXAMPLES
 Normal usage:
 .br
-	parse-endurance-measurements test-case/[0-9]*
+	endurance-parse-snapshots test-case/[0-9]*
 .PP
 Example of using most of the options:
 .br
-	parse-endurance-measurements --report=report --start-at=3--skip=3\\
+	endurance-parse-snapshots --report=report --start-at=3--skip=3\\
 .br
 	  --parse-smaps --split-at-reboots test-case/[0-9]*
 .SH SEE ALSO
-.IR save-incremental-endurance-stats (1),
-.IR extract-endurance-process-smaps (1),
-.IR split-endurance-measurements (1),
-.IR endurance_report.py (1),
+.IR endurance-snapshot (1),
+.IR endurance-extract-process-smaps (1),
+.IR endurance-split-snapshots (1),
+.IR endurance-report (1),
+.IR endurance-plot (1),
 .IR sp_smaps_filter (1)
 .SH COPYRIGHT
 Copyright (C) 2007-2009 Nokia Corporation.

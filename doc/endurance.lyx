@@ -2950,7 +2950,7 @@ To collect endurance data, do following after each test-case repeat on the
 
 
 \family typewriter
-save-incremental-endurance-stats <test-case name> [step description]
+endurance-snapshot <test-case name> [step description]
 \end_layout
 
 \begin_layout Standard
@@ -2964,7 +2964,7 @@ test-case-name
 
 
 \family typewriter
-parse-endurance-measurements <test-case-name>/[0-9]*
+endurance-parse-snapshots <test-case-name>/[0-9]*
 \end_layout
 
 \begin_layout Standard

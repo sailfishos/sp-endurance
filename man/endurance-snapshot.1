@@ -1,19 +1,19 @@
-.TH SAVE-INCREMENTAL-ENDURANCE-STATS 1 "2009-10-26" "sp-endurance"
+.TH ENDURANCE-SNAPSHOT 1 "2009-10-26" "sp-endurance"
 .SH NAME
-save-incremental-endurance-stats - save endurance metrics
+endurance-snapshot - save endurance metrics
 .SH SYNOPSIS
-save-incremental-endurance-stats \fIuse-case-name\fP
+endurance-snapshot \fIuse-case-name\fP
 .SH DESCRIPTION
-\fIsave-incremental-endurance-stats\fP stores endurance metrics under
+\fIendurance-snapshot\fP stores endurance data under
 a subdirectory of a directory with the given use-case name.  The
 subdirectories are numbered from 100 upwards and each time this
 tool is called the number for the directory name is increased.
 .PP
 The information this saves is provided by SMAPS, /proc/, X server,
 syslog, df etc.  The collected data can then be post-processed with
-\fIparse-endurance-measurements\fP.
+\fIendurance-parse-snapshots\fP.
 .SH SEE ALSO
-.IR parse-endurance-measurements (1),
+.IR endurance-parse-snapshots (1),
 .IR proc2csv (1),
 .IR sp_smaps_snapshot (1),
 .IR xmeminfo (1)
