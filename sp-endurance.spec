@@ -94,8 +94,6 @@ Requires: lzop
 %{_bindir}/recompress-endurance-measurements
 # ...
 %{perl_vendorlib}/SP/
-# Parser.so is optionally built if suitable Perl modules are available.
-#%{_libdir}/perl5/auto/SP/Endurance/Parser/Parser.so
 %{_mandir}/man1/endurance-plot.1.gz
 %{_mandir}/man1/endurance-report.1.gz
 %{_mandir}/man1/syslog_parse.py.1.gz
