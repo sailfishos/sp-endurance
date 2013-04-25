@@ -1,0 +1,8 @@
+* Thu Apr 25 2013 Matti Kosola <matti.kosola@jollamobile.com> - 4.0.0-1
+- Initial git pkg packaging to Mer
+- Add perl as a build dependency for postproc package
+- Adjust spec file for perl install path
+- Remove perllocal.pod and .packlist after installing perl modules 
+
+* Mon Jan 31 2011 Joonas Kylänpää <joonas.kylanpaa@digia.com> 2.2.1  
+- Initial RPM packaking. Fixes BMC#13139  
