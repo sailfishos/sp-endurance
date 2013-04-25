@@ -60,7 +60,7 @@ rm -rf %{buildroot}
 Summary: Postprocessing for endurance data
 Group: Development/Tools
 BuildArch: noarch
-BuildRequires: perl
+BuildRequires: perl(ExtUtils::MakeMaker)
 # HTML report generation dependencies
 Requires: python
 Requires: perl
