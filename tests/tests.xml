@@ -3,7 +3,7 @@
 <suite name="sp-endurance-tests">
 	<set name="sp-endurance" description="sp-endurance">
 		<case name="sp-endurance1" type="Functional" level="Feature">
-			<step>DISPLAY=:0 /usr/share/sp-endurance-tests/test-endurance.sh</step>
+			<step>/usr/sbin/run-blts-root /usr/share/sp-endurance-tests/test-endurance.sh</step>
 		</case>
 	</set>
 </suite>
