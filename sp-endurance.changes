@@ -1,3 +1,7 @@
+* Wed May 15 2013 Matti Kosola <matti.kosola@jollamobile.com> - 4.0.0-2
+- Add journalctl output to endurance report
+- Fix test cases to run also with nemo user
+
 * Thu Apr 25 2013 Matti Kosola <matti.kosola@jollamobile.com> - 4.0.0-1
 - Initial git pkg packaging to Mer
 - Add perl(ExtUtils::MakeMaker) as a build dependency for postproc package

@@ -1,11 +1,13 @@
 Name: sp-endurance
 Version: 4.0.0
-Release: 1
+Release: 2
 Summary:  Memory usage reporting tools
 Group: Development/Tools
 License: GPLv2	
 URL: http://www.gitorious.org/maemo-tools-developers/maemo-tools/sp-endurance
 Source: %{name}-%{version}.tar.gz
+Patch1:	0001-Add-journalctl-to-report.patch
+Patch2:	0002-Use-blts-tool-to-run-tests-with-nemo-user.patch
 BuildRequires: python
 Requires: lzop
 Requires: sp-smaps
@@ -21,7 +23,11 @@ Requires: sp-smaps
 
 %prep
 # Adjusting %%setup since git-pkg unpacks to src/
-%setup -q -n sp-endurance -n src
+# Adjusting %%setup since git-pkg unpacks to src/
+# %%setup -q -n sp-endurance -n src
+%setup -q -n sp-endurance -n src -n src
+%patch1 -p1
+%patch2 -p1
 
 %build
 make %{!?_with_x11: NO_X=1}
