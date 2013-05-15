@@ -22,10 +22,9 @@ Requires: sp-smaps
 %define is_x11 %{?_with_x11:1}%{!?_with_x11:0}
 
 %prep
+# %%setup -q -n sp-endurance
 # Adjusting %%setup since git-pkg unpacks to src/
-# Adjusting %%setup since git-pkg unpacks to src/
-# %%setup -q -n sp-endurance -n src
-%setup -q -n sp-endurance -n src -n src
+%setup -q -n src
 %patch1 -p1
 %patch2 -p1
 
@@ -115,7 +114,10 @@ Requires: lzop
 Summary: CI tests for sp-endurance
 Group: Development/Tools
 BuildArch: noarch
-Requires: sp-endurance, sp-endurance-postproc
+Requires: sp-endurance
+Requires: sp-endurance-postproc
+# From mer-qa project
+Requires: blts-tools
 
 %description tests
  CI tests for sp-endurance
