@@ -57,6 +57,7 @@ if [ $# -lt 1 ] || [ $# -gt 2 ] || [ "${1#-}" != "$1" ]; then
 	echo " - ramzswap     (ramzswap statistics)"
 	echo " - step.txt     (current use-case step description)"
 	echo " - upstart/     (upstart service logs)"
+        echo " - journalctl   (journal logs from systemd)"
 	echo "+ 001/"
 	echo "+ 002/"
 	echo "etc."
@@ -324,4 +325,10 @@ if [ -z "$logs" ] ; then
 	dmesg | lzop -c | sp-noncached --write $path/dmesg.lzo
 else
 	sp-noncached --read $logs | lzop -c | sp-noncached --write $path/syslog.lzo
+fi
+
+# and journalctl
+echo "- journaltcl"
+if [ -x /bin/journalctl ]; then
+        /bin/journalctl -a | lzop -c | sp-noncached --write $path/syslog.lzo
 fi
