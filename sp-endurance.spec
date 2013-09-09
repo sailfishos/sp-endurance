@@ -6,6 +6,7 @@ Group: Development/Tools
 License: GPLv2	
 URL: http://www.gitorious.org/maemo-tools-developers/maemo-tools/sp-endurance
 Source: %{name}-%{version}.tar.gz
+Source1: _src
 Patch1:	0001-Add-journalctl-to-report.patch
 Patch2:	0002-Use-blts-tool-to-run-tests-with-nemo-user.patch
 BuildRequires: python
