@@ -1,6 +1,6 @@
 Name: sp-endurance
 Version: 4.0.0
-Release: 2
+Release: 3
 Summary:  Memory usage reporting tools
 Group: Development/Tools
 License: GPLv2	
