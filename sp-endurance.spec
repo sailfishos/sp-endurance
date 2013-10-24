@@ -9,6 +9,7 @@ Source: %{name}-%{version}.tar.gz
 Source1: _src
 Patch1:	0001-Add-journalctl-to-report.patch
 Patch2:	0002-Use-blts-tool-to-run-tests-with-nemo-user.patch
+Patch3:	0003-Fix-swap-fields-to-match-current-proc-meminfo-format.patch
 BuildRequires: python
 Requires: lzop
 Requires: sp-smaps
@@ -28,6 +29,7 @@ Requires: sp-smaps
 %setup -q -n src
 %patch1 -p1
 %patch2 -p1
+%patch3 -p1
 
 %build
 make %{!?_with_x11: NO_X=1}
