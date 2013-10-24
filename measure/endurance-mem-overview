@@ -128,8 +128,8 @@ BEGIN {
 	FS = ",";
 }
 /^MemTotal,/ {
-	if ($15 != "SwapFree") {
-		printf "ERROR: meminfo columns mismatch; 15th column = \"%s\", not SwapFree!\n", $15;
+	if ($19 != "SwapFree") {
+		printf "ERROR: meminfo columns mismatch; 19th column = \"%s\", not SwapFree!\n", $19;
 		exit 1;
 	}
 	# ...and after above check, split also " kB" away.
@@ -141,8 +141,8 @@ BEGIN {
 	next;
 }
 found {
-	swapfree = $15;
-	swaptotal = $14;
+	swapfree = $19;
+	swaptotal = $18;
 	swapcached = $5;
 	swapused = swaptotal-swapfree-swapcached;
 
