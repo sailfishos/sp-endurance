@@ -220,6 +220,12 @@ if [ $? -eq 0 ] ; then
 		echo "nolo        `sysinfoclient -p /component/nolo`"
 		echo "boot-mode   `sysinfoclient -p /component/boot-mode`"
 	} > $path/component_version
+elif [ -e /etc/hw-release ]; then
+	# Sailfish
+	{
+		echo "product  `parse_from_release_file NAME /etc/hw-release`"
+		echo "hw-build `parse_from_release_file VERSION /etc/hw-release`"
+	} > $path/component_version
 fi
 if [ -d /syspart ] ; then
 	echo "- Control Group data"
