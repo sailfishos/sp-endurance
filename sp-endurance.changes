@@ -1,3 +1,6 @@
+* Mon Mar 24 2014 Matti Kosola <matti.kosola@jollamobile.com> - 4.0.1-1
+- Report SW version for Mer and Sailfish
+
 * Thu Oct 24 2013 Matti Kosola <matti.kosola@jollamobile.com> - 4.0.0-3
 - Fix swap fields to match current /proc/meminfo format
 
