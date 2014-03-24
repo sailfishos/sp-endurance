@@ -10,6 +10,8 @@ Source1: _src
 Patch1:	0001-Add-journalctl-to-report.patch
 Patch2:	0002-Use-blts-tool-to-run-tests-with-nemo-user.patch
 Patch3:	0003-Fix-swap-fields-to-match-current-proc-meminfo-format.patch
+Patch4: 0004-Report-SW-version-for-Mer-and-Sailfish.patch
+Patch5: 0005-Report-HW-adaptation-version-on-Sailfish.patch
 BuildRequires: python
 Requires: lzop
 Requires: sp-smaps
@@ -30,6 +32,8 @@ Requires: sp-smaps
 %patch1 -p1
 %patch2 -p1
 %patch3 -p1
+%patch4 -p1
+%patch5 -p1
 
 %build
 make %{!?_with_x11: NO_X=1}
