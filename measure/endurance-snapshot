@@ -72,6 +72,12 @@ check_display () {
 	fi
 }
 
+parse_from_release_file() {
+	local value=$1
+	local file=$2
+	sed -n "s/^${value}=\"\?\([^\"]*\)\"\?$/\1/p" "$file"
+}
+
 # do some basic sanity checks
 if [ -z $(which proc2csv 2>/dev/null) ]; then
 	echo "$script: ERROR, 'proc2csv' tool is missing from PATH" 1>&2
@@ -158,6 +164,9 @@ elif [ \! -z "$OSSO_VERSION" ]; then
 elif [ \! -z $(which osso-product-info 2>/dev/null) ]; then
 	# Diablo/Fremantle
 	echo "SW-version = $(osso-product-info -q OSSO_VERSION)"
+elif [ -e "/etc/os-release" ]; then
+	# Mer, Sailfish
+	echo "SW-version = $(parse_from_release_file VERSION /etc/os-release)"
 else
 	# not Maemo
 	echo "SW-version = $(uname -mrs)"
@@ -210,6 +219,12 @@ if [ $? -eq 0 ] ; then
 		echo "hw-build    `sysinfoclient -p /component/hw-build`"
 		echo "nolo        `sysinfoclient -p /component/nolo`"
 		echo "boot-mode   `sysinfoclient -p /component/boot-mode`"
+	} > $path/component_version
+elif [ -e /etc/hw-release ]; then
+	# Sailfish
+	{
+		echo "product  `parse_from_release_file NAME /etc/hw-release`"
+		echo "hw-build `parse_from_release_file VERSION /etc/hw-release`"
 	} > $path/component_version
 fi
 if [ -d /syspart ] ; then
