@@ -73,6 +73,7 @@ BuildRequires: perl(ExtUtils::MakeMaker)
 Requires: python
 Requires: perl
 Requires: lzop
+Requires: perl(JSON)
 
 %description postproc
  Postprocessing scripts to parse and generate a report from the endurance
