@@ -41,6 +41,7 @@ use List::MoreUtils qw/uniq zip all none firstidx/;
 use List::Util qw/sum min/;
 use IO::File;
 use Data::Dumper;
+use JSON qw/decode_json/;
 
 eval 'use common::sense';
 use strict;
@@ -1146,6 +1147,81 @@ sub parse_pidfilter {
     return $entry;
 }
 
+sub snapshot_separator {
+    my $entry = shift;
+
+    if ($entry->{"SYSLOG_IDENTIFIER"} eq "endurance-snapshot" &&
+        $entry->{"MESSAGE"} =~ /End of snapshot (?<case_name>[^\/]*)\/\d\d\d/) {
+        return $+{case_name};
+    }
+
+    return undef;
+}
+
+sub parse_display_state {
+    my $fh = shift;
+
+    return { "on_percent" => undef } unless defined $fh;
+
+    my $string = do { local $/; <$fh> };
+
+    # Journal messages can contain tab characters which aren't allowed in JSON.
+    # Get rid of them before trying to decode the string.
+    $string =~ s/\t/ /g;
+
+    my $json = decode_json($string);
+
+    my $i = @$json;
+    my %state_changes;
+    my $case_name;
+
+    while ($i != 0 && !($case_name = snapshot_separator($json->[--$i]))) {}
+
+    $state_changes{$json->[$i--]->{"__REALTIME_TIMESTAMP"}} = "end";
+
+    # Now we're standing at the last log entry within the snapshot.
+
+    while (($i != -1) && (snapshot_separator($json->[$i]) ne $case_name)) {
+        my $entry = $json->[$i--];
+        if ($entry->{"_COMM"} ne "lipstick") {
+            next;
+        }
+
+        if ($entry->{"MESSAGE"} eq "unsleepDisplay") {
+            $state_changes{$entry->{"__REALTIME_TIMESTAMP"}} = "unsleep";
+        } elsif ($entry->{"MESSAGE"} eq "sleepDisplay") {
+            $state_changes{$entry->{"__REALTIME_TIMESTAMP"}} = "sleep";
+        }
+    }
+
+    $state_changes{$json->[$i == -1 ? 0 : $i]->{"__REALTIME_TIMESTAMP"}} = "begin";
+
+    my %result = ( "on_percent" => 0, "exit_state" => undef );
+ 
+    if (keys(%state_changes) <= 2) {
+        # No change during this snapshot.
+        return \%result;
+    }
+
+    my @timestamps = sort keys %state_changes;
+    for my $i (1..(@timestamps - 2)) {
+        my $timestamp = $timestamps[$i];
+
+        if ($state_changes{$timestamp} eq "sleep") {
+            $result{"on_percent"} += $timestamp - $timestamps[$i - 1];
+        }
+    }
+
+    $result{"exit_state"} = $state_changes{$timestamps[@timestamps - 2]};
+    if ($result{"exit_state"} eq "unsleep") {
+        $result{"on_percent"} += $timestamps[@timestamps - 1] - $timestamps[@timestamps - 2];
+    }
+
+    $result{"on_percent"} /= ($timestamps[@timestamps - 1] - $timestamps[0]) / 100.0;
+
+    return \%result;
+}
+
 sub parse_dir {
     my $name = shift;
 
@@ -1174,6 +1250,7 @@ sub parse_dir {
         '/sys/fs/ext4'             => parse_sysfs_fs(copen $name . '/sysfs_fs'),
         '/usr/bin/bmestat'         => parse_bmestat(copen $name . '/bmestat'),
         '/usr/bin/xmeminfo'        => parse_xmeminfo(copen $name . '/xmeminfo'),
+        display_state              => parse_display_state(copen $name . '/journal'),
     };
 
     # The CSV parsing creates a bunch of hashes, so let's add them straight to
