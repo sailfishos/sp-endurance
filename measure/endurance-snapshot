@@ -57,7 +57,7 @@ if [ $# -lt 1 ] || [ $# -gt 2 ] || [ "${1#-}" != "$1" ]; then
 	echo " - ramzswap     (ramzswap statistics)"
 	echo " - step.txt     (current use-case step description)"
 	echo " - upstart/     (upstart service logs)"
-        echo " - journalctl   (journal logs from systemd)"
+	echo " - journal.lzo  (journal logs from systemd)"
 	echo "+ 001/"
 	echo "+ 002/"
 	echo "etc."
@@ -343,7 +343,12 @@ else
 fi
 
 # and journalctl
-echo "- journaltcl"
+echo "- journalctl"
 if [ -x /bin/journalctl ]; then
-        /bin/journalctl -a | lzop -c | sp-noncached --write $path/syslog.lzo
+	logger -t endurance-snapshot "End of snapshot $path"
+
+	# TODO: with newer journalctl we should be able to cut only the part of
+	# the journal belonging to this snapshot using --since, --until or --cursor.
+	# For the time being, let's dump the whole log since last boot.
+	/bin/journalctl -abq -o json | lzop -c | sp-noncached --write $path/journal.lzo
 fi
