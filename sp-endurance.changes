@@ -1,3 +1,6 @@
+* Fri Apr 04 2014 Matti Kosola <matti.kosola@jollamobile.com> - 4.0.2-1
+- Improve systemd journal dumping
+
 * Mon Mar 24 2014 Matti Kosola <matti.kosola@jollamobile.com> - 4.0.1-1
 - Report SW version for Mer and Sailfish
 
