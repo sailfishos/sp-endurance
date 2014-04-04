@@ -77,9 +77,12 @@ BuildArch: noarch
 BuildRequires: perl(ExtUtils::MakeMaker)
 # HTML report generation dependencies
 Requires: python
-Requires: perl
 Requires: lzop
+Requires: gnuplot
+Requires: netpbm-progs
+Requires: perl
 Requires: perl(JSON)
+Requires: perl(JSON::XS)
 
 %description postproc
  Postprocessing scripts to parse and generate a report from the endurance
