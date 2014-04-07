@@ -2779,4 +2779,55 @@ sub generate_plot_sched_wait_max {
 }
 BEGIN { register_generator \&generate_plot_sched_wait_max; }
 
+sub generate_plot_display_state {
+    my $plotter = shift;
+    my $masterdb = shift;
+
+    my $plot = $plotter->new_histogram(
+        key => '2000_display_time_in_state',
+        label => 'Display time in state',
+        legend => 'DISPLAY TIME IN STATE',
+        ylabel => 'percent',
+    );
+
+    my @snapshot_states = map { $_->{'display_state'} } @$masterdb;
+
+    # Try to fill the gaps in the data with a knowledge of adjacent snapshots.
+    for (my $i = @snapshot_states - 1; $i > -1; --$i) {
+        my $state = $snapshot_states[$i];
+        if (!defined $state->{'on_percent'}) {
+            # Journal wasn't available in the snapshot.
+            next;
+        }
+        if (defined $state->{'exit_state'}) {
+            # Could be calculated from the journal entries.
+            next;
+        }
+
+        for (my $j = $i - 1; $j > -1; --$j) {
+            my $previous_state = $snapshot_states[$j];
+            if (!exists $previous_state->{'exit_state'}) {
+                # Insufficient data.
+                $snapshot_states[$i]->{'on_percent'} = undef;
+                last;
+            }
+            if (defined $previous_state->{'exit_state'}) {
+                $state->{'exit_state'} = $previous_state->{'exit_state'};
+                if ($state->{'exit_state'} eq "unsleep") {
+                    $state->{'on_percent'} = 100;
+                }
+                last;
+            }
+        }
+    }
+
+    my @values = map { $_->{'on_percent'} } @snapshot_states;
+
+    $plot->push([map { defined $_ ? (100 - $_) : undef } @values], title => 'off');
+    $plot->push([@values], title => 'on');
+
+    done_plotting $plot;
+}
+BEGIN { register_generator \&generate_plot_display_state; }
+
 1;
