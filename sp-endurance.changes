@@ -1,3 +1,8 @@
+* Mon Apr 07 2014 Matti Kosola <matti.kosola@jollamobile.com> - 4.1.0-1
+- Add graph of screen ON/OFF time ratio during a snapshot
+- Add missing endurance-postproc dependencies
+- Merge mer-master branch to master
+
 * Fri Apr 04 2014 Matti Kosola <matti.kosola@jollamobile.com> - 4.0.2-1
 - Improve systemd journal dumping
 

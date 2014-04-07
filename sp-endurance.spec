@@ -1,5 +1,5 @@
 Name: sp-endurance
-Version: 4.0.2
+Version: 4.1.0
 Release: 1
 Summary:  Memory usage reporting tools
 Group: Development/Tools
@@ -7,12 +7,6 @@ License: GPLv2
 URL: http://www.gitorious.org/maemo-tools-developers/maemo-tools/sp-endurance
 Source: %{name}-%{version}.tar.gz
 Source1: _src
-Patch1:	0001-Add-journalctl-to-report.patch
-Patch2:	0002-Use-blts-tool-to-run-tests-with-nemo-user.patch
-Patch3:	0003-Fix-swap-fields-to-match-current-proc-meminfo-format.patch
-Patch4: 0004-Report-SW-version-for-Mer-and-Sailfish.patch
-Patch5: 0005-Report-HW-adaptation-version-on-Sailfish.patch
-Patch6: 0006-Improve-systemd-journal-dumping.patch
 BuildRequires: python
 Requires: lzop
 Requires: sp-smaps
@@ -30,12 +24,6 @@ Requires: sp-smaps
 # %%setup -q -n sp-endurance
 # Adjusting %%setup since git-pkg unpacks to src/
 %setup -q -n src
-%patch1 -p1
-%patch2 -p1
-%patch3 -p1
-%patch4 -p1
-%patch5 -p1
-%patch6 -p1
 
 %build
 make %{!?_with_x11: NO_X=1}
