@@ -110,6 +110,7 @@ sub generate_html {
 <!DOCTYPE html>
 <html>
 <head>
+ <meta charset="UTF-8">
  <style type="text/css">
   table { float: left; margin: 20px 5px 0px 0; }
  </style>
