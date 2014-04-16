@@ -95,13 +95,12 @@ name=$1
 
 # real dumb way to do find free index, but normally this should be
 # run less than 100 times...
-for i in $(seq 0 999); do
-	idx=`printf "%03d" $i`
-	if [ \! -d "$name/$idx" ]; then
+for snapshot_index in $(seq 0 999); do
+	path="$name/`printf "%03d" $snapshot_index`"
+	if [ ! -d "$path" ]; then
 		break
 	fi
 done
-path="$name/$idx"
 
 # directory for storing the new statistics
 echo "Saving to $path:"
@@ -347,8 +346,19 @@ echo "- journalctl"
 if [ -x /bin/journalctl ]; then
 	logger -t endurance-snapshot "End of snapshot $path"
 
-	# TODO: with newer journalctl we should be able to cut only the part of
-	# the journal belonging to this snapshot using --since, --until or --cursor.
-	# For the time being, let's dump the whole log since last boot.
-	/bin/journalctl -abq -o json | lzop -c | sp-noncached --write $path/journal.lzo
+	previous_snapshot="$name/`printf "%03d" $(($snapshot_index - 1))`"
+
+	snapshot_start_cursor=$( \
+		/bin/journalctl -b -o export -r -n 1 \
+			SYSLOG_IDENTIFIER=endurance-snapshot \
+			MESSAGE="End of snapshot $previous_snapshot" 2>/dev/null | \
+		sed -n 's/^__CURSOR=\(.*\)$/\1/p')
+
+	if [ -n "$snapshot_start_cursor" ]; then
+		snapshot_start_cursor="-c $snapshot_start_cursor"
+	fi
+
+	/bin/journalctl -a -b -q -o json $snapshot_start_cursor | \
+		lzop -c | \
+		sp-noncached --write $path/journal.lzo
 fi
