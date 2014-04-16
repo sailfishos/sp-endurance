@@ -1169,7 +1169,9 @@ sub parse_display_state {
     # Get rid of them before trying to decode the string.
     $string =~ s/\t/ /g;
 
-    my $json = decode_json($string);
+    my $json = eval { decode_json($string) };
+
+    return { "on_percent" => undef } unless defined $json;
 
     my $i = @$json;
     my %state_changes;
