@@ -1169,7 +1169,22 @@ sub parse_display_state {
     # Get rid of them before trying to decode the string.
     $string =~ s/\t/ /g;
 
-    my $json = eval { decode_json($string) };
+    my $json = undef;
+
+    if ($string =~ /^\[/) {
+        # Older journalctl json format - a single array.
+        $json = eval { decode_json($string) };
+    } else {
+        # Newer format - one JSON object per line.
+        my @array = ();
+        foreach my $line (split(/\n/, $string)) {
+            my $object = eval { decode_json($line) };
+            if (defined $object) {
+                push(@array, $object);
+            }
+        }
+        $json = \@array unless @array == 0;
+    }
 
     return { "on_percent" => undef } unless defined $json;
 
