@@ -1,5 +1,5 @@
 Name: sp-endurance
-Version: 4.1.0
+Version: 4.1.1
 Release: 1
 Summary:  Memory usage reporting tools
 Group: Development/Tools
