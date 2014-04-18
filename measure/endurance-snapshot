@@ -181,7 +181,7 @@ fi
 
 # Copy files from /proc with cat to avoid GNU coreutils 6.x cp bug:
 echo "- Other proc files"
-for F in slabinfo interrupts stat diskstats zoneinfo pagetypeinfo; do
+for F in slabinfo interrupts stat diskstats zoneinfo pagetypeinfo msm_pm_stats; do
 	cat /proc/$F > $path/$F
 	[ -f $path/$F ] && [ ! -s $path/$F ] && rm $path/$F
 done
