@@ -2830,4 +2830,45 @@ sub generate_plot_display_state {
 }
 BEGIN { register_generator \&generate_plot_display_state; }
 
+sub generate_plot_cpu_suspend_time {
+    my $plotter = shift;
+    my $masterdb = shift;
+
+    my $plot = $plotter->new_linespoints(
+        key => '2025_cpu_suspend_time',
+        label => 'CPU suspend time',
+        legend => 'CPU SUSPEND TIME',
+        ylabel => '%',
+    );
+
+    my @durations = map { $_->{'/proc/uptime'}->{'uptime'} } @$masterdb;
+    for (my $i = @durations - 1; $i != 0; --$i) {
+        $durations[$i] -= $durations[$i - 1];
+    }
+
+    my @cpus = uniq sort map { keys $_->{'/proc/msm_pm_stats'} } @$masterdb;
+
+    if (@cpus == 0) {
+        # No data, add dummy series to have at least an empty graph rendered.
+        $plot->push([ ( 0 ) ], title => 'NO DATA');
+    }
+
+    for my $cpu (@cpus) {
+        my @values = map { $_->{'/proc/msm_pm_stats'}->{$cpu} } @$masterdb;
+
+        for (my $i = @values - 1; $i != 0; --$i) {
+            $values[$i] -= $values[$i - 1];
+        }
+
+        for (my $i = 0; $i != @durations; ++$i) {
+            $values[$i] /= $durations[$i] / 100;
+        }
+
+        $plot->push([@values], title => $cpu);
+    }
+
+    done_plotting $plot;
+}
+BEGIN { register_generator \&generate_plot_cpu_suspend_time; }
+
 1;

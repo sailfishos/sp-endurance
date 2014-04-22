@@ -315,6 +315,29 @@ sub parse_interrupts {
     return \%interrupts;
 }
 
+sub parse_msm_pm_stats {
+    my $fh = shift;
+
+    return {} unless defined $fh;
+
+    my %pm_stats;
+
+    while (<$fh>) {
+        chomp;
+        next unless /\[(cpu \d+)\] suspend/;
+        my $key = $1;
+        while (<$fh>) {
+            chomp;
+            next unless /\s+total_time: (\d+\.\d+)/;
+            my $value = $1;
+            $pm_stats{$key} = $value;
+            last;
+        }
+    }
+
+    return \%pm_stats;
+}
+
 sub parse_bmestat {
     my $fh = shift;
 
@@ -1254,6 +1277,7 @@ sub parse_dir {
         '/bin/df'                  => parse_df(copen $name . '/df'),
         '/proc/diskstats'          => parse_diskstats(copen $name . '/diskstats'),
         '/proc/interrupts'         => parse_interrupts(copen $name . '/interrupts'),
+        '/proc/msm_pm_stats'       => parse_msm_pm_stats(copen $name . '/msm_pm_stats'),
         '/proc/pagetypeinfo'       => parse_pagetypeinfo(copen $name . '/pagetypeinfo'),
         '/proc/pid/fd'             => parse_openfds(copen $name . '/open-fds'),
         '/proc/pid/sched'          => parse_sched(copen $name . '/sched'),
