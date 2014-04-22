@@ -1,3 +1,7 @@
+* Tue Apr 22 2014 Matti Kosola <matti.kosola@jollamobile.com> - 4.1.2-1
+- Endurance-snapshot: collect /proc/msm_pm_stats
+- Plot CPU suspend time graph
+
 * Wed Apr 16 2014 Matti Kosola <matti.kosola@jollamobile.com> - 4.1.1-1
 - Specify UTF-8 charset in endurance-plot HTML output
 - Refactor search for free index
