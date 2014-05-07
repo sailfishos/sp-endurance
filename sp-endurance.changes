@@ -1,3 +1,8 @@
+* Wed May 07 2014 Matti Kosola <matti.kosola@jollamobile.com> - 4.1.3-1
+- Collect statefs value of namespaces/Screen/Blanked
+- Use Screen/Blanked to determine display state
+- Don't plot snapshots whose display state we couldn't trace
+
 * Tue Apr 22 2014 Matti Kosola <matti.kosola@jollamobile.com> - 4.1.2-1
 - Endurance-snapshot: collect /proc/msm_pm_stats
 - Plot CPU suspend time graph
