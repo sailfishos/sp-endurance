@@ -2791,8 +2791,11 @@ sub generate_plot_display_state {
     );
 
     my @snapshot_states = map { $_->{'display_state'} } @$masterdb;
+    my @blanked = map {
+        defined $_->{'statefs'} ? $_->{'statefs'}->{'namespaces/Screen/Blanked'} : undef;
+    } @$masterdb;
 
-    # Try to fill the gaps in the data with a knowledge of adjacent snapshots.
+    # Try to fill data gaps in snapshots that had no display events in journal.
     for (my $i = @snapshot_states - 1; $i > -1; --$i) {
         my $state = $snapshot_states[$i];
         if (!defined $state->{'on_percent'}) {
@@ -2800,14 +2803,22 @@ sub generate_plot_display_state {
             next;
         }
         if (defined $state->{'exit_state'}) {
-            # Could be calculated from the journal entries.
+            # It was possible to calculate display state from journal entries.
             next;
         }
 
+        # Try peeking statefs for the display state.
+        if (defined $blanked[$i]) {
+            $state->{'on_percent'} = ($blanked[$i] == 0) ? 100 : 0;
+            next;
+        }
+
+        # Still no data; try to fill the gaps in the data with a knowledge of
+        # adjacent snapshots.
         for (my $j = $i - 1; $j > -1; --$j) {
             my $previous_state = $snapshot_states[$j];
             if (!exists $previous_state->{'exit_state'}) {
-                # Insufficient data.
+                # Journal not available from the previous snapshot.
                 $snapshot_states[$i]->{'on_percent'} = undef;
                 last;
             }
