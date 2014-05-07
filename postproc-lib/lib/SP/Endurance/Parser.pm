@@ -1262,6 +1262,20 @@ sub parse_display_state {
     return \%result;
 }
 
+sub parse_statefs {
+    my $fh = shift;
+
+    my %result;
+
+    while (<$fh>) {
+        if (/^(?<path>[^=]+)=(?<value>.+)$/) {
+            $result{$+{path}} = $+{value};
+        }
+    }
+
+    return \%result;
+}
+
 sub parse_dir {
     my $name = shift;
 
@@ -1292,6 +1306,7 @@ sub parse_dir {
         '/usr/bin/bmestat'         => parse_bmestat(copen $name . '/bmestat'),
         '/usr/bin/xmeminfo'        => parse_xmeminfo(copen $name . '/xmeminfo'),
         display_state              => parse_display_state(copen $name . '/journal'),
+        statefs                    => parse_statefs(copen $name . '/statefs')
     };
 
     # The CSV parsing creates a bunch of hashes, so let's add them straight to

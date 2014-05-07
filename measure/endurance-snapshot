@@ -78,6 +78,14 @@ parse_from_release_file() {
 	sed -n "s/^${value}=\"\?\([^\"]*\)\"\?$/\1/p" "$file"
 }
 
+dump_statefs_value() {
+	STATEFS_DIR=/run/state
+	file=$STATEFS_DIR/$1
+	if [ -f "$file" ]; then
+		echo "$1="$(cat "$file") >> $path/statefs
+	fi
+}
+
 # do some basic sanity checks
 if [ -z $(which proc2csv 2>/dev/null) ]; then
 	echo "$script: ERROR, 'proc2csv' tool is missing from PATH" 1>&2
@@ -315,6 +323,9 @@ fi
 
 echo "- Disk usage"
 LC_ALL=C df -k -P > $path/df
+
+echo "- statefs"
+dump_statefs_value namespaces/Screen/Blanked
 
 # and syslog...
 echo "- Syslog(s)"
