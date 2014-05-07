@@ -2807,6 +2807,9 @@ sub generate_plot_display_state {
             next;
         }
 
+        # If we won't be able to determine the value, don't plot it.
+        $state->{'on_percent'} = undef;
+
         # Try peeking statefs for the display state.
         if (defined $blanked[$i]) {
             $state->{'on_percent'} = ($blanked[$i] == 0) ? 100 : 0;
@@ -2819,14 +2822,11 @@ sub generate_plot_display_state {
             my $previous_state = $snapshot_states[$j];
             if (!exists $previous_state->{'exit_state'}) {
                 # Journal not available from the previous snapshot.
-                $snapshot_states[$i]->{'on_percent'} = undef;
                 last;
             }
             if (defined $previous_state->{'exit_state'}) {
                 $state->{'exit_state'} = $previous_state->{'exit_state'};
-                if ($state->{'exit_state'} eq "unsleep") {
-                    $state->{'on_percent'} = 100;
-                }
+                $state->{'on_percent'} = ($state->{'exit_state'} eq "unsleep") ? 100 : 0;
                 last;
             }
         }
