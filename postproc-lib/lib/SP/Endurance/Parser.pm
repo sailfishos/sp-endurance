@@ -1227,9 +1227,9 @@ sub parse_display_state {
             next;
         }
 
-        if ($entry->{"MESSAGE"} eq "unsleepDisplay") {
+        if ($entry->{"MESSAGE"} =~ m/unsleepDisplay/) {
             $state_changes{$entry->{"__REALTIME_TIMESTAMP"}} = "unsleep";
-        } elsif ($entry->{"MESSAGE"} eq "sleepDisplay") {
+        } elsif ($entry->{"MESSAGE"} =~ m/sleepDisplay/) {
             $state_changes{$entry->{"__REALTIME_TIMESTAMP"}} = "sleep";
         }
     }
