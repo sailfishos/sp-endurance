@@ -250,6 +250,11 @@ if [ -d /sys/fs ] ; then
 	find /sys/fs -type f | xargs head -10000 2>/dev/null > $path/sysfs_fs
 	[ -f $path/sysfs_fs ] && [ ! -s $path/sysfs_fs ] && rm $path/sysfs_fs
 fi
+if [ -d /sys/devices/virtual/kgsl/kgsl/proc ] ; then
+        echo "- GPU memory values"
+        find /sys/devices/virtual/kgsl/kgsl/proc -type f | xargs head -10000 2>/dev/null > $path/sysfs_kgsl
+        [ -f $path/sysfs_kgsl ] && [ ! -s $path/sysfs_kgsl ] && rm $path/sysfs_kgsl
+fi
 if [ -d /sys/class/backlight ] ; then
 	echo "- Backlight"
 	# Expecting symlinks in /sys/class/backlight/, e.g. 'display0', ...
