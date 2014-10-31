@@ -1,3 +1,7 @@
+* Fri Oct 31 2014 Matti Kosola <matti.kosola@jollamobile.com> - 4.1.4-1
+- Parse display state from journal properly
+- Snapshot info about GPU memory usage
+
 * Wed May 07 2014 Matti Kosola <matti.kosola@jollamobile.com> - 4.1.3-1
 - Collect statefs value of namespaces/Screen/Blanked
 - Use Screen/Blanked to determine display state
