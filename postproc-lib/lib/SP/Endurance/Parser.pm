@@ -479,6 +479,38 @@ sub parse_sysfs_fs {
     return \%fs;
 }
 
+sub parse_sysfs_kgsl {
+    my $fh = shift;
+
+    return {} unless defined $fh;
+
+    use Tie::IxHash;
+    my %kgsl;
+    tie %kgsl, 'Tie::IxHash';
+
+    while (<$fh>) {
+        next unless m#^==> /sys/devices/virtual/kgsl/kgsl/proc/(\S+)/(\S+) <==#;
+        my $key1 = $1;
+        my $key2 = $2;
+        my $value = <$fh>;
+        chomp $value;
+        next unless length $value;
+        $value = int $value;
+        if ( ! exists $kgsl{$key2} ) {
+            $kgsl{$key2} = {};
+            tie ( %{$kgsl{$key2}}, 'Tie::IxHash' );
+        }
+        $kgsl{$key2}->{$key1} = $value;
+    }
+
+    # add separator between snapshots
+    foreach my $key (keys %kgsl) {
+        $kgsl{$key}->{"#####"} = 0;
+    }
+
+    return \%kgsl;
+}
+
 sub parse_sysfs_power_supply {
     my $fh = shift;
 
@@ -1306,7 +1338,8 @@ sub parse_dir {
         '/usr/bin/bmestat'         => parse_bmestat(copen $name . '/bmestat'),
         '/usr/bin/xmeminfo'        => parse_xmeminfo(copen $name . '/xmeminfo'),
         display_state              => parse_display_state(copen $name . '/journal'),
-        statefs                    => parse_statefs(copen $name . '/statefs')
+        statefs                    => parse_statefs(copen $name . '/statefs'),
+        '/sys/devices/virtual/kgsl/kgsl/proc'	=> parse_sysfs_kgsl(copen $name . '/sysfs_kgsl')
     };
 
     # The CSV parsing creates a bunch of hashes, so let's add them straight to
