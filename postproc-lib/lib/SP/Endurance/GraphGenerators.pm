@@ -240,6 +240,63 @@ sub generate_plot_slab_changes {
 }
 BEGIN { register_generator \&generate_plot_slab_changes; }
 
+sub generate_plot_kgsl {
+    my $plotter = shift;
+    my $masterdb = shift;
+
+    my @memories = ("ashmem", "ion", "kernel", "user", "pmem", "inside");
+
+    foreach my $mem (@memories) {
+        my @kgsl_data = uniq map { keys %{$_->{'/sys/devices/virtual/kgsl/kgsl/proc'}} } @$masterdb;
+
+        foreach my $gpu_mem (@kgsl_data) {
+            next if ($gpu_mem ne $mem);
+
+            my $mem_uc = uc $mem; 
+            my $plot = $plotter->new_linespoints(
+                key => "1015_kgsl_$mem",
+                label => "GPU memory $mem",
+                legend => "GPU MEM $mem_uc",
+                ylabel => 'MB',
+            );
+
+            my @kernel_pids = uniq map { keys %{$_->{'/sys/devices/virtual/kgsl/kgsl/proc'}->{$mem}} } @$masterdb;
+            my @all_kernel_pids = map { keys %{$_->{'/sys/devices/virtual/kgsl/kgsl/proc'}->{$mem}} } @$masterdb;
+            my @pids_values = map { values %{$_->{'/sys/devices/virtual/kgsl/kgsl/proc'}->{$mem}} } @$masterdb;
+
+            foreach my $pid (@kernel_pids) {
+                # skip snapshot separator
+                next if ($pid eq "#####");
+                my @pid_values = ();
+                my $snapshot_count = 1;
+
+                for (my $i = 0; $i < scalar @pids_values; ++$i) {
+                    # check snapshot separator
+                    if ($all_kernel_pids[$i] eq "#####") {
+                        # add zero if we do not have value
+                        if ( scalar @pid_values < $snapshot_count) {
+                            push (@pid_values, int 0);
+                        }
+                        $snapshot_count++;
+                    }
+
+                    next if ($all_kernel_pids[$i] ne $pid);
+                    push (@pid_values, $pids_values[$i]);
+                }
+
+                $plot->push(
+                    [nonzero b2mb @pid_values],
+                    title => pid_to_cmdline($masterdb, $pid));
+            }
+
+            $plot->sort(sub { shift->[-1] });
+
+            done_plotting $plot;
+        }
+    }
+}
+BEGIN { register_generator \&generate_plot_kgsl; }
+
 sub generate_plot_ctx_total {
     my $plotter = shift;
     my $masterdb = shift;
