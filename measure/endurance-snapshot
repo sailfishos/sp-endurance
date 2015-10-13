@@ -370,8 +370,9 @@ else
 fi
 
 # and journalctl
-echo "- journalctl"
 if [ -x /bin/journalctl ]; then
+	echo "- journalctl"
+
 	logger -t endurance-snapshot "End of snapshot $path"
 
 	previous_snapshot="$name/`printf "%03d" $(($snapshot_index - 1))`"
