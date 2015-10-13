@@ -41,14 +41,14 @@ if [ $# -lt 1 ] || [ $# -gt 2 ] || [ "${1#-}" != "$1" ]; then
 	echo " - df           (disk usage information)"
 	echo " - dsme/        (DSME lifeguard statistics)"
 	echo " - interrupts   (number of different HW interrupts)"
-	echo " - open-fds.lzo (list of files/sockets open by processes)"
+	echo " - open-fds     (list of files/sockets open by processes)"
 	echo " - slabinfo     (information about kernel caches, see slabinfo(5))"
 	echo " - diskstats    (disk I/O statistics for each disk device)"
 	echo " - zoneinfo     (information about memory zones)"
-	echo " - smaps.cap.lzo(compressed SMAPS memory usage data)"
-	echo " - sched.lzo    (process scheduling information)"
+	echo " - smaps.cap    (SMAPS memory usage data)"
+	echo " - sched        (process scheduling information)"
 	echo " - stat         (kernel/system statistics, see proc(5))"
-	echo " - syslog.lzo   (compressed syslog contents)"
+	echo " - syslog       (syslog contents)"
 	echo " - usage.csv    (/proc info + X resource & disk usage in CSV format)"
 	echo " - xmeminfo     (X server resource usage information)"
 	echo " - xmeminfo.log (XRes related error messages from xmeminfo)"
@@ -91,15 +91,22 @@ if [ -z $(which proc2csv 2>/dev/null) ]; then
 	echo "$script: ERROR, 'proc2csv' tool is missing from PATH" 1>&2
 	exit 1
 fi
-if [ -z $(which lzop 2>/dev/null) ]; then
-	echo "$script: ERROR, 'lzop' tool is missing from PATH" 1>&2
-	exit 1
-fi
 if [ "${1#* }" != "$1" ]; then
 	echo "$script: ERROR, argument '$1' contains space(s)" 1>&2
 	exit 1
 fi
 name=$1
+
+if [ ! -z $(which lzop 2>/dev/null) ] ; then
+	COMPRESSOR="lzop -c"
+	COMPRESSOR_SUFFIX=".lzo"
+elif [ ! -z $(which gzip 2>/dev/null) ] ; then
+	COMPRESSOR="gzip -c"
+	COMPRESSOR_SUFFIX=".gz"
+else
+	COMPRESSOR="cat"
+	COMPRESSOR_SUFFIX=""
+fi
 
 # real dumb way to do find free index, but normally this should be
 # run less than 100 times...
@@ -157,9 +164,9 @@ if [ -z $(which sp_smaps_snapshot 2>/dev/null) ]; then
 		elif [ -f $pid/maps ] ; then
 			cat $pid/maps
 		fi
-	done | lzop -c | sp-noncached --write $path/smaps.cap.lzo
+	done | $COMPRESSOR | sp-noncached --write $path/smaps.cap$COMPRESSOR_SUFFIX
 else
-	sp_smaps_snapshot | lzop -c | sp-noncached --write $path/smaps.cap.lzo
+	sp_smaps_snapshot | $COMPRESSOR | sp-noncached --write $path/smaps.cap$COMPRESSOR_SUFFIX
 fi
 
 # save most of /proc
@@ -215,11 +222,11 @@ fi
 
 # save some less easily parsed /proc/ statistics, ignore errors
 echo "- Open file descriptors"
-ls -l /proc/[0-9]*/fd/ 2>/dev/null | lzop -c | sp-noncached --write $path/open-fds.lzo
+ls -l /proc/[0-9]*/fd/ 2>/dev/null | $COMPRESSOR | sp-noncached --write $path/open-fds$COMPRESSOR_SUFFIX
 
 if [ -f "/proc/1/sched" ] ; then
 	echo "- Process scheduling information"
-	head -10000 /proc/[0-9]*/sched | lzop -c | sp-noncached --write $path/sched.lzo
+	head -10000 /proc/[0-9]*/sched | $COMPRESSOR | sp-noncached --write $path/sched$COMPRESSOR_SUFFIX
 fi
 
 # suspend statistics
@@ -333,9 +340,9 @@ if [ -d /var/log/upstart ]; then
 	mkdir $path/upstart
 	for F in /var/log/upstart/*; do
 		if [ -f "$F" ] && [ -s "$F" ] ; then
-			logto=$path/upstart/${F##*/}
-			sp-noncached --read $F | lzop -c | sp-noncached --write $logto.lzo
-			[ -f $logto.lzo ] && [ ! -s $logto.lzo ] && rm $logto.lzo
+			logto=$path/upstart/${F##*/}$COMPRESSOR_SUFFIX
+			sp-noncached --read $F | $COMPRESSOR | sp-noncached --write $logto
+			[ -f $logto ] && [ ! -s $logto ] && rm $logto
 		fi
 	done
 fi
@@ -366,9 +373,9 @@ if [ -f /var/log/messages ] ; then
 fi
 if [ -z "$logs" ] ; then
 	echo "Syslog file(s) missing! Capturing kernel ring buffer content instead." 1>&2
-	dmesg | lzop -c | sp-noncached --write $path/dmesg.lzo
+	dmesg | $COMPRESSOR | sp-noncached --write $path/dmesg$COMPRESSOR_SUFFIX
 else
-	sp-noncached --read $logs | lzop -c | sp-noncached --write $path/syslog.lzo
+	sp-noncached --read $logs | $COMPRESSOR | sp-noncached --write $path/syslog$COMPRESSOR_SUFFIX
 fi
 
 # and journalctl
@@ -390,6 +397,6 @@ if [ -x /bin/journalctl ]; then
 	fi
 
 	/bin/journalctl -a -b -q -o json $snapshot_start_cursor | \
-		lzop -c | \
-		sp-noncached --write $path/journal.lzo
+		$COMPRESSOR | \
+		sp-noncached --write $path/journal$COMPRESSOR_SUFFIX
 fi
