@@ -103,11 +103,13 @@ name=$1
 
 # real dumb way to do find free index, but normally this should be
 # run less than 100 times...
-for snapshot_index in $(seq 0 999); do
+snapshot_index=0
+while [ $snapshot_index -lt 1000 ] ; do
 	path="$name/`printf "%03d" $snapshot_index`"
 	if [ ! -d "$path" ]; then
 		break
 	fi
+	snapshot_index=$((snapshot_index + 1))
 done
 
 # directory for storing the new statistics
