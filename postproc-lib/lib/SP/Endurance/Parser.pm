@@ -37,7 +37,7 @@ require Exporter;
     parse_upstart_jobs_respawned parse_sched parse_dir parse_pidfilter copen/;
 
 use File::Basename qw/basename/;
-use List::MoreUtils qw/uniq zip all none firstidx/;
+use List::MoreUtils qw/uniq zip all any none firstidx/;
 use List::Util qw/sum min/;
 use IO::File;
 use Data::Dumper;
@@ -722,8 +722,6 @@ sub csv_proc_pid_status {
     $keys =~ s/:$//;
     my @keys = split ',', $keys;
 
-    return {} unless @keys ~~ /Pid/;
-
     my $idx_Name    = firstidx { $_ eq 'Name' } @keys;
     my $idx_Pid     = firstidx { $_ eq 'Pid' } @keys;
     my $idx_Threads = firstidx { $_ eq 'Threads' } @keys;
@@ -1159,7 +1157,7 @@ sub parse_pidfilter {
     if (exists $entry->{'/proc/pid/cmdline'}) {
         foreach my $pid (keys %{$entry->{'/proc/pid/cmdline'}}) {
             my $cmdline = $entry->{'/proc/pid/cmdline'}->{$pid};
-            if ($cmdline ~~ @process_blacklist) {
+            if (any { $_ eq $cmdline } @process_blacklist) {
                 push @filter_pids, $pid;
             }
         }
@@ -1168,7 +1166,7 @@ sub parse_pidfilter {
     if (exists $entry->{'/proc/pid/smaps'}) {
         foreach my $pid (keys %{$entry->{'/proc/pid/smaps'}}) {
             my $name = $entry->{'/proc/pid/smaps'}->{$pid}->{'#Name'};
-            if ($name ~~ @process_blacklist) {
+            if (any { $_ eq $name } @process_blacklist) {
                 push @filter_pids, $pid;
             }
         }
@@ -1177,7 +1175,7 @@ sub parse_pidfilter {
     if (exists $entry->{'/proc/pid/status'}) {
         foreach my $pid (keys %{$entry->{'/proc/pid/status'}}) {
             my %data = split ',', $entry->{'/proc/pid/status'}->{$pid};
-            if ($data{Name} ~~ @process_blacklist) {
+            if (any { $_ eq $data{Name} } @process_blacklist) {
                 push @filter_pids, $pid;
             }
         }
