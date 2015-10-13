@@ -150,7 +150,11 @@ if [ -z $(which sp_smaps_snapshot 2>/dev/null) ]; then
 	for pid in /proc/[0-9]*; do
 		echo "==> $pid/smaps <=="
 		awk '{print "#"$1,$2}' < $pid/status
-		cat $pid/smaps
+		if [ -f $pid/smaps ] ; then
+			cat $pid/smaps
+		elif [ -f $pid/maps ] ; then
+			cat $pid/maps
+		fi
 	done | lzop -c | sp-noncached --write $path/smaps.cap.lzo
 else
 	sp_smaps_snapshot | lzop -c | sp-noncached --write $path/smaps.cap.lzo
