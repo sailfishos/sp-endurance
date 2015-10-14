@@ -213,6 +213,16 @@ for F in slabinfo interrupts stat diskstats zoneinfo pagetypeinfo; do
 	[ -f $path/$F ] && [ ! -s $path/$F ] && rm $path/$F
 done
 
+if [ -f "/proc/sys/kernel/tainted" ] ; then
+	cat /proc/sys/kernel/tainted > $path/tainted
+	[ -f $path/tainted ] && [ ! -s $path/tainted ] && rm $path/tainted
+fi
+
+if [ -f "/proc/sys/kernel/random/boot_id" ] ; then
+	cat /proc/sys/kernel/random/boot_id > $path/boot_id
+	[ -f $path/boot_id ] && [ ! -s $path/boot_id ] && rm $path/boot_id
+fi
+
 which xmeminfo >/dev/null 2>/dev/null
 if [ $? -eq 0 ] ; then
 	echo "- X resource usage"
