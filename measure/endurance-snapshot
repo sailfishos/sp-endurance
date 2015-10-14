@@ -119,6 +119,11 @@ while [ $snapshot_index -lt 1000 ] ; do
 	snapshot_index=$((snapshot_index + 1))
 done
 
+if [ -z "$path" ] ; then
+	echo "$script: ERROR, unable to determine snapshot directory!" >&2
+	exit 1
+fi
+
 # directory for storing the new statistics
 echo "Saving to $path:"
 mkdir -p $path
