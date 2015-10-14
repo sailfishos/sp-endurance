@@ -51,8 +51,10 @@ eval q/use Inline C => 'DATA', VERSION => $SP::Endurance::VERSION, NAME => 'SP::
 my @process_blacklist = qw/
     sp-noncached
     save-incrementa
+    endurance-snaps
     sp_smaps_snapshot
     lzop
+    gzip
 /;
 
 sub copen {
