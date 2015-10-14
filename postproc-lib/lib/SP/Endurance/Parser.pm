@@ -145,6 +145,9 @@ sub parse_openfds {
 our @GFX_MMAPS = (
     '/dev/pvrsrvkm',     # Harmattan
     '/dev/nvidia',       # Desktop Linux with NVIDIA graphics
+    '/dev/dri/',
+    '/drm mm object',
+    '/ttm swap',
 );
 
 my @WANTED_MMAPS = (

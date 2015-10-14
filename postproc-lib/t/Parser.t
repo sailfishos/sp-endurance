@@ -287,7 +287,7 @@ Size:                 32 kB
 
 #Name: second
 #Pid: 2
-a0000000-a000a000 r-xp 00000000 b3:02 84         /path/to/binary
+a0000000-a000a000 r-xp 00000000 b3:02 84         /drm mm object (deleted)
 Size:  40 kB
 b0000000-b0028000 r--p 0001e000 b3:02 84         [heap]
 Size: 160 kB
@@ -311,6 +311,7 @@ END
             '#Name' => 'second',
             vmacount => 5,
             total_Size => 40+80+160+320+111,
+            '/drm mm object' => { total_Size => 40, vmacount => 1 },
             '[heap]' => { total_Size => 160+320, vmacount => 2 },
             'rwxp'   => { total_Size => 111,     vmacount => 1 },
         },
