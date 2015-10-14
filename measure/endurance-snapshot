@@ -268,7 +268,8 @@ if [ -d /sys/devices/system/cpu ] ; then
 fi
 if [ -d /sys/fs ] ; then
 	echo "- File system statistics"
-	find /sys/fs -type f | xargs head -v -10000 2>/dev/null > $path/sysfs_fs
+	# Skip /sys/fs/selinux/policy - it can be several megabytes of binary.
+	find /sys/fs -type f | grep -v -F "/sys/fs/selinux/policy" | xargs head -v -10000 2>/dev/null > $path/sysfs_fs
 	[ -f $path/sysfs_fs ] && [ ! -s $path/sysfs_fs ] && rm $path/sysfs_fs
 fi
 if [ -d /sys/devices/virtual/kgsl/kgsl/proc ] ; then
