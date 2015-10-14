@@ -276,26 +276,26 @@ END
     my $content = << 'END';
 #Name: first
 #Pid: 1
-00008000-00027000 r-xp 00000000 b3:02 84         /sbin/init
+00008000-00009000 r-xp 00000000 b3:02 84         /sbin/init
 Size:                  4 kB
-0002e000-0002f000 r--p 0001e000 b3:02 84         /sbin/init
+0002d000-0002f000 r--p 0001e000 b3:02 84         /sbin/init
 Size:                  8 kB
-00030000-00031000 r--p 0001e000 b3:02 84         /sbin/init
+00030000-00034000 r--p 0001e000 b3:02 84         /sbin/init
 Size:                 16 kB
-00031000-00032000 r--p 0001e000 b3:02 84         /sbin/init
+00040000-00048000 r--p 0001e000 b3:02 84         /sbin/init
 Size:                 32 kB
 
 #Name: second
 #Pid: 2
-a0008000-a0027000 r-xp 00000000 b3:02 84         /path/to/binary
+a0000000-a000a000 r-xp 00000000 b3:02 84         /path/to/binary
 Size:  40 kB
-b0030000-b0031000 r--p 0001e000 b3:02 84         [heap]
+b0000000-b0028000 r--p 0001e000 b3:02 84         [heap]
 Size: 160 kB
-a002e000-a002f000 r--p 0001e000 b3:02 84         /path/to/binary
+c0000000-c0014000 r--p 0001e000 b3:02 84         /path/to/binary
 Size:  80 kB
-b0031000-b0032000 rw-p 0001e000 b3:02 84         [heap]
+d0000000-d0050000 rw-p 0001e000 b3:02 84         [heap]
 Size: 320 kB
-b0031000-b0032000 rwxp 0001e000 b3:02 84
+e0000000-e001bc00 rwxp 0001e000 b3:02 84
 Size: 111 kB
 
 END
