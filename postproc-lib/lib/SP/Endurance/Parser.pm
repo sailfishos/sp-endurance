@@ -1447,7 +1447,6 @@ HV *parse_smaps_inline(PerlIO *fh, AV *wanted_mmaps) {
 
             *colon = '\0';
             char *key = line;
-            size_t key_len = colon - line;
 
             static const struct {
                 const char *key;
