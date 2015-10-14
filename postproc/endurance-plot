@@ -33,7 +33,6 @@ use SP::Endurance::Util qw/GRAPHS_DIR plot_filename plot_thumbname uptimes
         total_duration sw_versions hw_string xtics dur_to_str round_durations/;
 use SP::Endurance::GnuplotWorker;
 
-use POSIX qw/WIFSIGNALED WTERMSIG SIGINT SIGTERM SIGKILL/;
 use List::Util qw/min max/;
 use Getopt::Long;
 use File::Basename qw/basename/;
