@@ -189,7 +189,7 @@ fi
 
 # Copy files from /proc with cat to avoid GNU coreutils 6.x cp bug:
 echo "- Other proc files"
-for F in slabinfo interrupts stat diskstats zoneinfo pagetypeinfo msm_pm_stats; do
+for F in slabinfo interrupts stat diskstats zoneinfo pagetypeinfo; do
 	if [ ! -f /proc/$F ]; then continue; fi
 	cat /proc/$F > $path/$F
 	[ -f $path/$F ] && [ ! -s $path/$F ] && rm $path/$F
@@ -214,6 +214,13 @@ ls -l /proc/[0-9]*/fd/ 2>/dev/null | lzop -c | sp-noncached --write $path/open-f
 if [ -f "/proc/1/sched" ] ; then
 	echo "- Process scheduling information"
 	head -10000 /proc/[0-9]*/sched | lzop -c | sp-noncached --write $path/sched.lzo
+fi
+
+# suspend statistics
+which mcetool >/dev/null 2>/dev/null
+if [ $? -eq 0 ] ; then
+        echo "- Suspend stats"
+        mcetool --get-suspend-stats > $path/suspend-stats
 fi
 
 which sysinfoclient >/dev/null 2>/dev/null
