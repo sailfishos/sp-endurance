@@ -1,5 +1,5 @@
 Name: sp-endurance
-Version: 4.1.6
+Version: 4.1.7
 Release: 1
 Summary:  Memory usage reporting tools
 Group: Development/Tools
@@ -10,6 +10,7 @@ Source1: _src
 BuildRequires: python
 Requires: lzop
 Requires: sp-smaps
+Requires: mce-tools
 
 %description
  Endurance measurement tools save system and process information from /proc
