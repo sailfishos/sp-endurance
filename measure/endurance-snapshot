@@ -241,7 +241,7 @@ ls -l /proc/[0-9]*/fd/ 2>/dev/null | $COMPRESSOR | sp-noncached --write $path/op
 
 if [ -f "/proc/1/sched" ] ; then
 	echo "- Process scheduling information"
-	head -v -10000 /proc/[0-9]*/sched | $COMPRESSOR | sp-noncached --write $path/sched$COMPRESSOR_SUFFIX
+	head -v -n 10000 /proc/[0-9]*/sched | $COMPRESSOR | sp-noncached --write $path/sched$COMPRESSOR_SUFFIX
 fi
 
 # suspend statistics
@@ -272,24 +272,24 @@ elif [ -e /etc/hw-release ]; then
 fi
 if [ -d /syspart ] ; then
 	echo "- Control Group data"
-	find /syspart -type f | xargs head -v -10000 2>/dev/null > $path/cgroups
+	find /syspart -type f | xargs head -v -n 10000 2>/dev/null > $path/cgroups
 	[ -f $path/cgroups ] && [ ! -s $path/cgroups ] && rm $path/cgroups
 fi
 
 if [ -d /sys/devices/system/cpu ] ; then
 	echo "- CPU statistics"
-	find /sys/devices/system/cpu -type f | xargs head -v -10000 2>/dev/null > $path/sysfs_cpu
+	find /sys/devices/system/cpu -type f | xargs head -v -n 10000 2>/dev/null > $path/sysfs_cpu
 	[ -f $path/sysfs_cpu ] && [ ! -s $path/sysfs_cpu ] && rm $path/sysfs_cpu
 fi
 if [ -d /sys/fs ] ; then
 	echo "- File system statistics"
 	# Skip /sys/fs/selinux/policy - it can be several megabytes of binary.
-	find /sys/fs -type f | grep -v -F "/sys/fs/selinux/policy" | xargs head -v -10000 2>/dev/null > $path/sysfs_fs
+	find /sys/fs -type f | grep -v -F "/sys/fs/selinux/policy" | xargs head -v -n 10000 2>/dev/null > $path/sysfs_fs
 	[ -f $path/sysfs_fs ] && [ ! -s $path/sysfs_fs ] && rm $path/sysfs_fs
 fi
 if [ -d /sys/devices/virtual/kgsl/kgsl/proc ] ; then
         echo "- GPU memory values"
-        find /sys/devices/virtual/kgsl/kgsl/proc -type f | xargs head -v -10000 2>/dev/null > $path/sysfs_kgsl
+        find /sys/devices/virtual/kgsl/kgsl/proc -type f | xargs head -v -n 10000 2>/dev/null > $path/sysfs_kgsl
         [ -f $path/sysfs_kgsl ] && [ ! -s $path/sysfs_kgsl ] && rm $path/sysfs_kgsl
 fi
 if [ -d /sys/class/backlight ] ; then
@@ -297,7 +297,7 @@ if [ -d /sys/class/backlight ] ; then
 	# Expecting symlinks in /sys/class/backlight/, e.g. 'display0', ...
 	for D in /sys/class/backlight/* ; do
 		if [ -d "$D/" ] ; then
-			find $D/ -type f | xargs head -v -10000 2>/dev/null
+			find $D/ -type f | xargs head -v -n 10000 2>/dev/null
 			echo
 		fi
 	done > $path/sysfs_backlight
@@ -329,7 +329,7 @@ if [ -d "/sys/class/power_supply/" ] ; then
 	# Expecting symlinks in /sys/class/power_supply/, e.g. 'BAT0', ...
 	for D in /sys/class/power_supply/* ; do
 		if [ -d "$D/" ] ; then
-			find $D/ -type f | xargs head -v -10000 2>/dev/null
+			find $D/ -type f | xargs head -v -n 10000 2>/dev/null
 			echo
 		fi
 	done > $path/sysfs_power_supply
