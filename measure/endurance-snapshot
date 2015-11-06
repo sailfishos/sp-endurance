@@ -87,7 +87,8 @@ dump_statefs_value() {
 }
 
 # do some basic sanity checks
-if [ -z $(which proc2csv 2>/dev/null) ]; then
+type proc2csv >/dev/null 2>/dev/null
+if [ $? -ne 0 ] ; then
 	echo "$script: ERROR, 'proc2csv' tool is missing from PATH" 1>&2
 	exit 1
 fi
@@ -97,10 +98,10 @@ if [ "${1#* }" != "$1" ]; then
 fi
 name=$1
 
-if [ ! -z $(which lzop 2>/dev/null) ] ; then
+if type lzop >/dev/null 2>/dev/null ; then
 	COMPRESSOR="lzop -c"
 	COMPRESSOR_SUFFIX=".lzo"
-elif [ ! -z $(which gzip 2>/dev/null) ] ; then
+elif type gzip >/dev/null 2>/dev/null ; then
 	COMPRESSOR="gzip -c"
 	COMPRESSOR_SUFFIX=".gz"
 else
@@ -134,9 +135,7 @@ if [ $# -gt 1 ]; then
 	echo "$2" > $path/step.txt
 else
 	echo "- use-case step description (focused/topmost window)"
-	if [ -z $(which xprop 2>/dev/null) ]; then
-		echo "$script: WARNING, 'xprop' tool is missing from PATH" 1>&2
-	else
+	if type xprop >/dev/null 2>/dev/null ; then
 		check_display
 		# _NET_ACTIVE_WINDOW standard property tells focused window,
 		# WM_CLASS tells the "name" of the application owning that.
@@ -155,12 +154,15 @@ else
 				echo "$app" > $path/step.txt
 			fi
 		fi
+	else
+		echo "$script: WARNING, 'xprop' tool is missing from PATH" 1>&2
 	fi
 fi
 
 # save memory statistics
 echo "- SMAPS data"
-if [ -z $(which sp_smaps_snapshot 2>/dev/null) ]; then
+type sp_smaps_snapshot >/dev/null 2>/dev/null
+if [ $? -ne 0 ] ; then
 	for pid in /proc/[0-9]*; do
 		echo "==> $pid/smaps <=="
 		awk '{print "#"$1,$2}' < $pid/status
@@ -180,13 +182,13 @@ echo "- /proc/ data in CSV format"
 echo "generator = syte-endurance-stats v3.0"
 echo
 # software release identification
-if [ \! -z $(which sysinfoclient 2>/dev/null) ]; then
+if type sysinfoclient >/dev/null 2>/dev/null ; then
 	# Harmattan
 	echo "SW-version = $(sysinfoclient -p /device/sw-release-ver)"
 elif [ \! -z "$OSSO_VERSION" ]; then
 	# earlier Maemo releases
 	echo "SW-version = $OSSO_VERSION"
-elif [ \! -z $(which osso-product-info 2>/dev/null) ]; then
+elif type osso-product-info >/dev/null 2>/dev/null ; then
 	# Diablo/Fremantle
 	echo "SW-version = $(osso-product-info -q OSSO_VERSION)"
 elif [ -e "/etc/os-release" ]; then
@@ -223,7 +225,7 @@ if [ -f "/proc/sys/kernel/random/boot_id" ] ; then
 	[ -f $path/boot_id ] && [ ! -s $path/boot_id ] && rm $path/boot_id
 fi
 
-which xmeminfo >/dev/null 2>/dev/null
+type xmeminfo >/dev/null 2>/dev/null
 if [ $? -eq 0 ] ; then
 	echo "- X resource usage"
 	check_display
@@ -245,13 +247,13 @@ if [ -f "/proc/1/sched" ] ; then
 fi
 
 # suspend statistics
-which mcetool >/dev/null 2>/dev/null
+type mcetool >/dev/null 2>/dev/null
 if [ $? -eq 0 ] ; then
         echo "- Suspend stats"
         mcetool --get-suspend-stats > $path/suspend-stats
 fi
 
-which sysinfoclient >/dev/null 2>/dev/null
+type sysinfoclient >/dev/null 2>/dev/null
 if [ $? -eq 0 ] ; then
 	echo "- Bootreason"
 	sysinfoclient -p /component/boot-reason > $path/bootreason
@@ -304,7 +306,7 @@ if [ -d /sys/class/backlight ] ; then
 	[ -f $path/sysfs_backlight ] && [ ! -s $path/sysfs_backlight ] && rm $path/sysfs_backlight
 fi
 
-which rzscontrol >/dev/null 2>/dev/null
+type rzscontrol >/dev/null 2>/dev/null
 if [ $? -eq 0 ] ; then
 	echo "- ramzswap statistics"
 	for D in /dev/ramzswap[0-9]* ; do
@@ -319,7 +321,7 @@ if [ $? -eq 0 ] ; then
 fi
 
 # battery
-which bmestat >/dev/null 2>/dev/null
+type bmestat >/dev/null 2>/dev/null
 if [ $? -eq 0 ] ; then
 	echo "- Battery information"
 	bmestat > $path/bmestat
