@@ -370,7 +370,6 @@ echo "- statefs"
 dump_statefs_value namespaces/Screen/Blanked
 
 # and syslog...
-echo "- Syslog(s)"
 logs=""
 if [ -f /var/ftd-log/syslog ]; then
 	logs="/var/ftd-log/logs/syslog /var/ftd-log/syslog $logs"
@@ -388,9 +387,10 @@ if [ -f /var/log/messages ] ; then
 	logs="/var/log/messages $logs"
 fi
 if [ -z "$logs" ] ; then
-	echo "Syslog file(s) missing! Capturing kernel ring buffer content instead." 1>&2
+	echo "- dmesg"
 	dmesg | $COMPRESSOR | sp-noncached --write $path/dmesg$COMPRESSOR_SUFFIX
 else
+	echo "- Syslog(s)"
 	sp-noncached --read $logs | $COMPRESSOR | sp-noncached --write $path/syslog$COMPRESSOR_SUFFIX
 fi
 
