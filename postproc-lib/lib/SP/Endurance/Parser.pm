@@ -315,27 +315,22 @@ sub parse_interrupts {
     return \%interrupts;
 }
 
-sub parse_msm_pm_stats {
+sub parse_suspend_stats {
     my $fh = shift;
 
     return {} unless defined $fh;
 
-    my %pm_stats;
+    my %suspend_stats;
 
     while (<$fh>) {
         chomp;
-        next unless /\[(cpu \d+)\] suspend/;
+        next unless /([a-z\_]+):\s+(\S+)/;
         my $key = $1;
-        while (<$fh>) {
-            chomp;
-            next unless /\s+total_time: (\d+\.\d+)/;
-            my $value = $1;
-            $pm_stats{$key} = $value;
-            last;
-        }
+        my $value = $2;
+        $suspend_stats{$key} = $value;
     }
 
-    return \%pm_stats;
+    return \%suspend_stats;
 }
 
 sub parse_bmestat {
@@ -1320,10 +1315,10 @@ sub parse_dir {
         ramzswap                   => parse_ramzswap(copen $name . '/ramzswap'),
         step                       => parse_step(copen $name . '/step.txt'),
         upstart_jobs_respawned     => parse_upstart_jobs_respawned(copen $name . '/upstart_jobs_respawned'),
+        suspend_stats              => parse_suspend_stats(copen $name . '/suspend-stats'),
         '/bin/df'                  => parse_df(copen $name . '/df'),
         '/proc/diskstats'          => parse_diskstats(copen $name . '/diskstats'),
         '/proc/interrupts'         => parse_interrupts(copen $name . '/interrupts'),
-        '/proc/msm_pm_stats'       => parse_msm_pm_stats(copen $name . '/msm_pm_stats'),
         '/proc/pagetypeinfo'       => parse_pagetypeinfo(copen $name . '/pagetypeinfo'),
         '/proc/pid/fd'             => parse_openfds(copen $name . '/open-fds'),
         '/proc/pid/sched'          => parse_sched(copen $name . '/sched'),
