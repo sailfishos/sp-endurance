@@ -2909,21 +2909,18 @@ sub generate_plot_cpu_suspend_time {
         ylabel => '%',
     );
 
-    my @durations = map { $_->{'/proc/uptime'}->{'uptime'} } @$masterdb;
+    my @durations = map { $_->{suspend_stats}->{'uptime'} } @$masterdb;
     for (my $i = @durations - 1; $i != 0; --$i) {
         $durations[$i] -= $durations[$i - 1];
     }
 
-    my @cpus = uniq sort map { keys $_->{'/proc/msm_pm_stats'} } @$masterdb;
+    my @values = map { $_->{suspend_stats}->{'suspend_time'} } @$masterdb;
 
-    if (@cpus == 0) {
+    if (@values == 0) {
         # No data, add dummy series to have at least an empty graph rendered.
         $plot->push([ ( 0 ) ], title => 'NO DATA');
     }
-
-    for my $cpu (@cpus) {
-        my @values = map { $_->{'/proc/msm_pm_stats'}->{$cpu} } @$masterdb;
-
+    else {
         for (my $i = @values - 1; $i != 0; --$i) {
             $values[$i] -= $values[$i - 1];
         }
@@ -2932,7 +2929,7 @@ sub generate_plot_cpu_suspend_time {
             $values[$i] /= $durations[$i] / 100;
         }
 
-        $plot->push([@values], title => $cpu);
+        $plot->push([@values], title => 'Suspend time %');
     }
 
     done_plotting $plot;
