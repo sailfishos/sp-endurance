@@ -161,8 +161,9 @@ fi
 
 # save memory statistics
 echo "- SMAPS data"
-type sp_smaps_snapshot >/dev/null 2>/dev/null
-if [ $? -ne 0 ] ; then
+if type sp_smaps_snapshot >/dev/null 2>/dev/null ; then
+	sp_smaps_snapshot | $COMPRESSOR | sp-noncached --write $path/smaps.cap$COMPRESSOR_SUFFIX
+else
 	for pid in /proc/[0-9]*; do
 		echo "==> $pid/smaps <=="
 		awk '{print "#"$1,$2}' < $pid/status
@@ -172,8 +173,6 @@ if [ $? -ne 0 ] ; then
 			cat $pid/maps
 		fi
 	done | $COMPRESSOR | sp-noncached --write $path/smaps.cap$COMPRESSOR_SUFFIX
-else
-	sp_smaps_snapshot | $COMPRESSOR | sp-noncached --write $path/smaps.cap$COMPRESSOR_SUFFIX
 fi
 
 # save most of /proc
@@ -225,8 +224,7 @@ if [ -f "/proc/sys/kernel/random/boot_id" ] ; then
 	[ -f $path/boot_id ] && [ ! -s $path/boot_id ] && rm $path/boot_id
 fi
 
-type xmeminfo >/dev/null 2>/dev/null
-if [ $? -eq 0 ] ; then
+if type xmeminfo >/dev/null 2>/dev/null ; then
 	echo "- X resource usage"
 	check_display
 	xmeminfo > $path/xmeminfo 2> $path/xmeminfo.log
@@ -247,14 +245,12 @@ if [ -f "/proc/1/sched" ] ; then
 fi
 
 # suspend statistics
-type mcetool >/dev/null 2>/dev/null
-if [ $? -eq 0 ] ; then
+if type mcetool >/dev/null 2>/dev/null ; then
         echo "- Suspend stats"
         mcetool --get-suspend-stats > $path/suspend-stats
 fi
 
-type sysinfoclient >/dev/null 2>/dev/null
-if [ $? -eq 0 ] ; then
+if type sysinfoclient >/dev/null 2>/dev/null ; then
 	echo "- Bootreason"
 	sysinfoclient -p /component/boot-reason > $path/bootreason
 
@@ -306,8 +302,7 @@ if [ -d /sys/class/backlight ] ; then
 	[ -f $path/sysfs_backlight ] && [ ! -s $path/sysfs_backlight ] && rm $path/sysfs_backlight
 fi
 
-type rzscontrol >/dev/null 2>/dev/null
-if [ $? -eq 0 ] ; then
+if type rzscontrol >/dev/null 2>/dev/null ; then
 	echo "- ramzswap statistics"
 	for D in /dev/ramzswap[0-9]* ; do
 		echo "==> $D <=="
@@ -321,8 +316,7 @@ if [ $? -eq 0 ] ; then
 fi
 
 # battery
-type bmestat >/dev/null 2>/dev/null
-if [ $? -eq 0 ] ; then
+if type bmestat >/dev/null 2>/dev/null ; then
 	echo "- Battery information"
 	bmestat > $path/bmestat
 	[ -f $path/bmestat ] && [ ! -s $path/bmestat ] && rm $path/bmestat
