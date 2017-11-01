@@ -248,8 +248,8 @@ fi
 
 # suspend statistics
 if type mcetool >/dev/null 2>/dev/null ; then
-        echo "- Suspend stats"
-        mcetool --get-suspend-stats > $path/suspend-stats
+	echo "- Suspend stats"
+	mcetool --get-suspend-stats > $path/suspend-stats
 fi
 
 if type sysinfoclient >/dev/null 2>/dev/null ; then
@@ -288,9 +288,9 @@ if [ -d /sys/fs ] ; then
 	[ -f $path/sysfs_fs ] && [ ! -s $path/sysfs_fs ] && rm $path/sysfs_fs
 fi
 if [ -d /sys/devices/virtual/kgsl/kgsl/proc ] ; then
-        echo "- GPU memory values"
-        find /sys/devices/virtual/kgsl/kgsl/proc -type f | xargs head -v -n 10000 2>/dev/null > $path/sysfs_kgsl
-        [ -f $path/sysfs_kgsl ] && [ ! -s $path/sysfs_kgsl ] && rm $path/sysfs_kgsl
+	echo "- GPU memory values"
+	find /sys/devices/virtual/kgsl/kgsl/proc -type f | xargs head -v -n 10000 2>/dev/null > $path/sysfs_kgsl
+	[ -f $path/sysfs_kgsl ] && [ ! -s $path/sysfs_kgsl ] && rm $path/sysfs_kgsl
 fi
 if [ -d /sys/class/backlight ] ; then
 	echo "- Backlight"
