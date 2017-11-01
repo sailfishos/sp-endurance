@@ -57,7 +57,7 @@ if [ $# -lt 1 ] || [ $# -gt 2 ] || [ "${1#-}" != "$1" ]; then
 	echo " - ramzswap     (ramzswap statistics)"
 	echo " - step.txt     (current use-case step description)"
 	echo " - upstart/     (upstart service logs)"
-	echo " - journal.lzo  (journal logs from systemd)"
+	echo " - journal      (journal logs from systemd)"
 	echo "+ 001/"
 	echo "+ 002/"
 	echo "etc."
