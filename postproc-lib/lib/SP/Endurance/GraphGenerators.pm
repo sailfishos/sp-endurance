@@ -2891,8 +2891,10 @@ sub generate_plot_display_state {
 
     my @values = map { $_->{'on_percent'} } @snapshot_states;
 
-    $plot->push([map { defined $_ ? (100 - $_) : undef } @values], title => 'off');
-    $plot->push([@values], title => 'on');
+    if (any { defined } @values) {
+        $plot->push([map { defined $_ ? (100 - $_) : undef } @values], title => 'off');
+        $plot->push([@values], title => 'on');
+    }
 
     done_plotting $plot;
 }
