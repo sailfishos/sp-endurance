@@ -418,7 +418,8 @@ foreach my $i (0 .. @ARGV-1) {
 }
 say;
 
-# Here's a nice way to debug the parsed data structures:
+# Here's a nice way to debug the parsed data structures.
+# (Note that there can be some binary in the output due to use of pack().)
 #$Data::Dumper::Indent = 1;
 #print Dumper \@masterdb;
 
