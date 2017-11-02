@@ -1310,6 +1310,23 @@ sub parse_display_state {
     return \%result;
 }
 
+sub parse_os_release {
+    my $fh = shift;
+
+    my %result;
+
+    while (<$fh>) {
+        if (/^(\S+)=(.+)$/) {
+            my ($key, $value) = ($1, $2);
+            if ($value =~ /^"(.+)"$/) { $value = $1; }
+            next if $value =~ /^\s*$/;
+            $result{$key} = $value;
+        }
+    }
+
+    return \%result;
+}
+
 sub parse_statefs {
     my $fh = shift;
 
@@ -1338,6 +1355,8 @@ sub parse_dir {
         upstart_jobs_respawned     => parse_upstart_jobs_respawned(copen $name . '/upstart_jobs_respawned'),
         suspend_stats              => parse_suspend_stats(copen $name . '/suspend-stats'),
         '/bin/df'                  => parse_df(copen $name . '/df'),
+        '/etc/os-release'          => parse_os_release(copen $name . '/os-release'),
+        '/etc/system-release'      => parse_os_release(copen $name . '/system-release'),
         '/proc/diskstats'          => parse_diskstats(copen $name . '/diskstats'),
         '/proc/interrupts'         => parse_interrupts(copen $name . '/interrupts'),
         '/proc/pagetypeinfo'       => parse_pagetypeinfo(copen $name . '/pagetypeinfo'),
