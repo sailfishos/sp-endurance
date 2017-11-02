@@ -576,6 +576,24 @@ sub parse_sysfs_cpu {
     return \%cpu;
 }
 
+sub parse_sysfs_dmi_id {
+    my $fh = shift;
+
+    return {} unless defined $fh;
+
+    my %ret;
+
+    while (<$fh>) {
+        next unless m#^==> /sys/devices/virtual/dmi/id/(\S+) <==#;
+        my $key = $1;
+        chomp(my $value = <$fh>);
+        next if $value =~ m/^\s*$/;
+        $ret{$key} = $value;
+    }
+
+    return \%ret;
+}
+
 sub parse_component_version {
     my $fh = shift;
 
@@ -1332,6 +1350,7 @@ sub parse_dir {
         '/sys/class/backlight'     => parse_sysfs_backlight(copen $name . '/sysfs_backlight'),
         '/sys/class/power_supply'  => parse_sysfs_power_supply(copen $name . '/sysfs_power_supply'),
         '/sys/devices/system/cpu'  => parse_sysfs_cpu(copen $name . '/sysfs_cpu'),
+        '/sys/devices/virtual/dmi/id' => parse_sysfs_dmi_id(copen $name . '/sysfs_dmi_id'),
         '/sys/fs/ext4'             => parse_sysfs_fs(copen $name . '/sysfs_fs'),
         '/usr/bin/bmestat'         => parse_bmestat(copen $name . '/bmestat'),
         '/usr/bin/xmeminfo'        => parse_xmeminfo(copen $name . '/xmeminfo'),

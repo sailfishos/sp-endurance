@@ -175,9 +175,23 @@ sub hw_string {
                $_->{component_version}->{hw_build} : undef
     } @$masterdb;
 
-    return join ':',
+    my @dmi_id_product_names = uniq sort grep { defined && length } map {
+        exists $_->{'/sys/devices/virtual/dmi/id'} &&
+        exists $_->{'/sys/devices/virtual/dmi/id'}->{product_name} ?
+               $_->{'/sys/devices/virtual/dmi/id'}->{product_name} : undef
+    } @$masterdb;
+
+    my @dmi_id_product_versions = uniq sort grep { defined && length } map {
+        exists $_->{'/sys/devices/virtual/dmi/id'} &&
+        exists $_->{'/sys/devices/virtual/dmi/id'}->{product_version} ?
+               $_->{'/sys/devices/virtual/dmi/id'}->{product_version} : undef
+    } @$masterdb;
+
+    return join ':', grep { defined && length }
         join(' / ', @hw_products),
-        join(' / ', @hw_builds);
+        join(' / ', @hw_builds),
+        join(' / ', @dmi_id_product_names),
+        join(' / ', @dmi_id_product_versions);
 }
 
 sub xtics {
