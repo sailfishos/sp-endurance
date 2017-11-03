@@ -397,12 +397,14 @@ fi
 if [ -f /var/log/messages ] ; then
 	logs="/var/log/messages $logs"
 fi
-if [ -z "$logs" ] ; then
-	echo "- dmesg"
-	dmesg | $COMPRESSOR | sp-noncached --write $path/dmesg$COMPRESSOR_SUFFIX
-else
+if [ "$logs" ] ; then
 	echo "- Syslog(s)"
 	sp-noncached --read $logs | $COMPRESSOR | sp-noncached --write $path/syslog$COMPRESSOR_SUFFIX
+fi
+
+if type dmesg >/dev/null 2>/dev/null ; then
+	echo "- dmesg"
+	dmesg | $COMPRESSOR | sp-noncached --write $path/dmesg$COMPRESSOR_SUFFIX
 fi
 
 # and journalctl
