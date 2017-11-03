@@ -195,23 +195,36 @@ sub hw_string {
                $_->{component_version}->{hw_build} : undef
     } @$masterdb;
 
-    my @dmi_id_product_names = uniq sort grep { defined && length } map {
-        exists $_->{'/sys/devices/virtual/dmi/id'} &&
-        exists $_->{'/sys/devices/virtual/dmi/id'}->{product_name} ?
-               $_->{'/sys/devices/virtual/dmi/id'}->{product_name} : undef
-    } @$masterdb;
+    my @dmi_id;
 
-    my @dmi_id_product_versions = uniq sort grep { defined && length } map {
-        exists $_->{'/sys/devices/virtual/dmi/id'} &&
-        exists $_->{'/sys/devices/virtual/dmi/id'}->{product_version} ?
-               $_->{'/sys/devices/virtual/dmi/id'}->{product_version} : undef
-    } @$masterdb;
+    foreach my $key (qw/sys_vendor product_family product_name product_version/) {
+        push @dmi_id, uniq sort grep { defined && length } map {
+            exists $_->{'/sys/devices/virtual/dmi/id'} &&
+            exists $_->{'/sys/devices/virtual/dmi/id'}->{$key} ?
+                   $_->{'/sys/devices/virtual/dmi/id'}->{$key} : undef
+        } @$masterdb;
+    }
+
+    # BIOS information.
+    my @bios_id;
+    foreach my $key (qw/bios_vendor bios_version bios_date/) {
+        push @bios_id, uniq sort grep { defined && length } map {
+            my $ret =
+                exists $_->{'/sys/devices/virtual/dmi/id'} &&
+                exists $_->{'/sys/devices/virtual/dmi/id'}->{$key} ?
+                       $_->{'/sys/devices/virtual/dmi/id'}->{$key} : undef;
+            if (defined $ret && length $ret > 10) {
+                $ret = substr($ret, 0, 10) . '...';
+            }
+            $ret
+        } @$masterdb;
+    }
+    push @dmi_id, join ':', @bios_id;
 
     return join ':', grep { defined && length }
         join(' / ', @hw_products),
         join(' / ', @hw_builds),
-        join(' / ', @dmi_id_product_names),
-        join(' / ', @dmi_id_product_versions);
+        join(' / ', @dmi_id);
 }
 
 sub xtics {
