@@ -311,9 +311,16 @@ fi
 
 if type lscpu >/dev/null 2>/dev/null ; then
 	echo "- lscpu"
-	lscpu --json >$path/lscpu.json
-	lscpu --json --extended >$path/lscpu-extended.json
+	if lscpu --help | grep -q json ; then
+		LC_ALL=C lscpu --json >$path/lscpu.json
+		LC_ALL=C lscpu --json --extended >$path/lscpu-extended.json
+	else
+		LC_ALL=C lscpu >$path/lscpu
+		LC_ALL=C lscpu --extended >$path/lscpu-extended
+	fi
+	[ -f $path/lscpu ] && [ ! -s $path/lscpu ] && rm $path/lscpu
 	[ -f $path/lscpu.json ] && [ ! -s $path/lscpu.json ] && rm $path/lscpu.json
+	[ -f $path/lscpu-extended ] && [ ! -s $path/lscpu-extended ] && rm $path/lscpu-extended
 	[ -f $path/lscpu-extended.json ] && [ ! -s $path/lscpu-extended.json ] && rm $path/lscpu-extended.json
 fi
 
