@@ -170,7 +170,7 @@ sub sw_versions {
     } @$masterdb;
 
     # If we have PRETTY_NAME, do not bother with sw_version from usage.csv.
-    my @pretty_names = uniq (@os_pretty_names, @sys_pretty_names);
+    my @pretty_names = uniq @os_pretty_names, @sys_pretty_names;
     return @pretty_names if @pretty_names > 0;
 
     my @sw_versions = uniq grep { defined && length } map {
