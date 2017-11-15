@@ -157,7 +157,27 @@ sub total_duration {
 sub sw_versions {
     my $masterdb = shift;
 
-    return uniq grep { defined && length } map { exists $_->{sw_version} ? $_->{sw_version} : undef } @$masterdb;
+    my @os_pretty_names = uniq sort grep { defined && length } map {
+        exists $_->{'/etc/os-release'} &&
+        exists $_->{'/etc/os-release'}->{PRETTY_NAME} ?
+               $_->{'/etc/os-release'}->{PRETTY_NAME} : undef
+    } @$masterdb;
+
+    my @sys_pretty_names = uniq sort grep { defined && length } map {
+        exists $_->{'/etc/system-release'} &&
+        exists $_->{'/etc/system-release'}->{PRETTY_NAME} ?
+               $_->{'/etc/system-release'}->{PRETTY_NAME} : undef
+    } @$masterdb;
+
+    # If we have PRETTY_NAME, do not bother with sw_version from usage.csv.
+    my @pretty_names = uniq @os_pretty_names, @sys_pretty_names;
+    return @pretty_names if @pretty_names > 0;
+
+    my @sw_versions = uniq grep { defined && length } map {
+        exists $_->{sw_version} ? $_->{sw_version} : undef
+    } @$masterdb;
+
+    return @sw_versions;
 }
 
 sub hw_string {
@@ -175,9 +195,36 @@ sub hw_string {
                $_->{component_version}->{hw_build} : undef
     } @$masterdb;
 
-    return join ':',
+    my @dmi_id;
+
+    foreach my $key (qw/sys_vendor product_family product_name product_version/) {
+        push @dmi_id, uniq sort grep { defined && length } map {
+            exists $_->{'/sys/devices/virtual/dmi/id'} &&
+            exists $_->{'/sys/devices/virtual/dmi/id'}->{$key} ?
+                   $_->{'/sys/devices/virtual/dmi/id'}->{$key} : undef
+        } @$masterdb;
+    }
+
+    # BIOS information.
+    my @bios_id;
+    foreach my $key (qw/bios_vendor bios_version bios_date/) {
+        push @bios_id, uniq sort grep { defined && length } map {
+            my $ret =
+                exists $_->{'/sys/devices/virtual/dmi/id'} &&
+                exists $_->{'/sys/devices/virtual/dmi/id'}->{$key} ?
+                       $_->{'/sys/devices/virtual/dmi/id'}->{$key} : undef;
+            if (defined $ret && length $ret > 10) {
+                $ret = substr($ret, 0, 10) . '...';
+            }
+            $ret
+        } @$masterdb;
+    }
+    push @dmi_id, join ':', @bios_id;
+
+    return join ':', grep { defined && length }
         join(' / ', @hw_products),
-        join(' / ', @hw_builds);
+        join(' / ', @hw_builds),
+        join(' / ', @dmi_id);
 }
 
 sub xtics {

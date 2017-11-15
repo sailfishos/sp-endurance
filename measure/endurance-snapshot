@@ -41,14 +41,14 @@ if [ $# -lt 1 ] || [ $# -gt 2 ] || [ "${1#-}" != "$1" ]; then
 	echo " - df           (disk usage information)"
 	echo " - dsme/        (DSME lifeguard statistics)"
 	echo " - interrupts   (number of different HW interrupts)"
-	echo " - open-fds.lzo (list of files/sockets open by processes)"
+	echo " - open-fds     (list of files/sockets open by processes)"
 	echo " - slabinfo     (information about kernel caches, see slabinfo(5))"
 	echo " - diskstats    (disk I/O statistics for each disk device)"
 	echo " - zoneinfo     (information about memory zones)"
-	echo " - smaps.cap.lzo(compressed SMAPS memory usage data)"
-	echo " - sched.lzo    (process scheduling information)"
+	echo " - smaps.cap    (SMAPS memory usage data)"
+	echo " - sched        (process scheduling information)"
 	echo " - stat         (kernel/system statistics, see proc(5))"
-	echo " - syslog.lzo   (compressed syslog contents)"
+	echo " - syslog       (syslog contents)"
 	echo " - usage.csv    (/proc info + X resource & disk usage in CSV format)"
 	echo " - xmeminfo     (X server resource usage information)"
 	echo " - xmeminfo.log (XRes related error messages from xmeminfo)"
@@ -57,7 +57,7 @@ if [ $# -lt 1 ] || [ $# -gt 2 ] || [ "${1#-}" != "$1" ]; then
 	echo " - ramzswap     (ramzswap statistics)"
 	echo " - step.txt     (current use-case step description)"
 	echo " - upstart/     (upstart service logs)"
-	echo " - journal.lzo  (journal logs from systemd)"
+	echo " - journal      (journal logs from systemd)"
 	echo "+ 001/"
 	echo "+ 002/"
 	echo "etc."
@@ -87,12 +87,9 @@ dump_statefs_value() {
 }
 
 # do some basic sanity checks
-if [ -z $(which proc2csv 2>/dev/null) ]; then
+type proc2csv >/dev/null 2>/dev/null
+if [ $? -ne 0 ] ; then
 	echo "$script: ERROR, 'proc2csv' tool is missing from PATH" 1>&2
-	exit 1
-fi
-if [ -z $(which lzop 2>/dev/null) ]; then
-	echo "$script: ERROR, 'lzop' tool is missing from PATH" 1>&2
 	exit 1
 fi
 if [ "${1#* }" != "$1" ]; then
@@ -101,14 +98,32 @@ if [ "${1#* }" != "$1" ]; then
 fi
 name=$1
 
+if type lzop >/dev/null 2>/dev/null ; then
+	COMPRESSOR="lzop -c"
+	COMPRESSOR_SUFFIX=".lzo"
+elif type gzip >/dev/null 2>/dev/null ; then
+	COMPRESSOR="gzip -c"
+	COMPRESSOR_SUFFIX=".gz"
+else
+	COMPRESSOR="cat"
+	COMPRESSOR_SUFFIX=""
+fi
+
 # real dumb way to do find free index, but normally this should be
 # run less than 100 times...
-for snapshot_index in $(seq 0 999); do
+snapshot_index=0
+while [ $snapshot_index -lt 1000 ] ; do
 	path="$name/`printf "%03d" $snapshot_index`"
 	if [ ! -d "$path" ]; then
 		break
 	fi
+	snapshot_index=$((snapshot_index + 1))
 done
+
+if [ -z "$path" ] ; then
+	echo "$script: ERROR, unable to determine snapshot directory!" >&2
+	exit 1
+fi
 
 # directory for storing the new statistics
 echo "Saving to $path:"
@@ -118,42 +133,42 @@ mkdir -p $path
 if [ $# -gt 1 ]; then
 	echo "- use-case step description"
 	echo "$2" > $path/step.txt
-else
+elif type xprop >/dev/null 2>/dev/null ; then
 	echo "- use-case step description (focused/topmost window)"
-	if [ -z $(which xprop 2>/dev/null) ]; then
-		echo "$script: WARNING, 'xprop' tool is missing from PATH" 1>&2
+	check_display
+	# _NET_ACTIVE_WINDOW standard property tells focused window,
+	# WM_CLASS tells the "name" of the application owning that.
+	win=$(xprop -root _NET_ACTIVE_WINDOW)
+	RET=$?
+	if [ $RET -ne 0 ] ; then
+		echo "$script: WARNING, xprop failed with exit code $RET, check \$DISPLAY and \$XAUTHORITY." 1>&2
+		echo "$script: For some platforms, copy of ~/.Xauthority from the user owning the X session is needed." 1>&2
 	else
-		check_display
-		# _NET_ACTIVE_WINDOW standard property tells focused window,
-		# WM_CLASS tells the "name" of the application owning that.
-		win=$(xprop -root _NET_ACTIVE_WINDOW)
-		RET=$?
-		if [ $RET -ne 0 ] ; then
-			echo "$script: WARNING, xprop failed with exit code $RET, check \$DISPLAY and \$XAUTHORITY." 1>&2
-			echo "$script: For some platforms, copy of ~/.Xauthority from the user owning the X session is needed." 1>&2
-		else
-			win=$(echo "$win" | cut -s -d'#' -f2)
-			if [ \! -z $win ]; then
-				app=$(xprop -id $win WM_CLASS|cut -s -d'"' -f2)
-				if [ -z "$app" ]; then
-					app=$(xprop -id $win WM_NAME|cut -s -d'"' -f2)
-				fi
-				echo "$app" > $path/step.txt
+		win=$(echo "$win" | cut -s -d'#' -f2)
+		if [ \! -z $win ]; then
+			app=$(xprop -id $win WM_CLASS|cut -s -d'"' -f2)
+			if [ -z "$app" ]; then
+				app=$(xprop -id $win WM_NAME|cut -s -d'"' -f2)
 			fi
+			echo "$app" > $path/step.txt
 		fi
 	fi
 fi
 
 # save memory statistics
 echo "- SMAPS data"
-if [ -z $(which sp_smaps_snapshot 2>/dev/null) ]; then
+if type sp_smaps_snapshot >/dev/null 2>/dev/null ; then
+	sp_smaps_snapshot | $COMPRESSOR | sp-noncached --write $path/smaps.cap$COMPRESSOR_SUFFIX
+else
 	for pid in /proc/[0-9]*; do
 		echo "==> $pid/smaps <=="
 		awk '{print "#"$1,$2}' < $pid/status
-		cat $pid/smaps
-	done | lzop -c | sp-noncached --write $path/smaps.cap.lzo
-else
-	sp_smaps_snapshot | lzop -c | sp-noncached --write $path/smaps.cap.lzo
+		if [ -f $pid/smaps ] ; then
+			cat $pid/smaps
+		elif [ -f $pid/maps ] ; then
+			cat $pid/maps
+		fi
+	done | $COMPRESSOR | sp-noncached --write $path/smaps.cap$COMPRESSOR_SUFFIX
 fi
 
 # save most of /proc
@@ -162,13 +177,13 @@ echo "- /proc/ data in CSV format"
 echo "generator = syte-endurance-stats v3.0"
 echo
 # software release identification
-if [ \! -z $(which sysinfoclient 2>/dev/null) ]; then
+if type sysinfoclient >/dev/null 2>/dev/null ; then
 	# Harmattan
 	echo "SW-version = $(sysinfoclient -p /device/sw-release-ver)"
 elif [ \! -z "$OSSO_VERSION" ]; then
 	# earlier Maemo releases
 	echo "SW-version = $OSSO_VERSION"
-elif [ \! -z $(which osso-product-info 2>/dev/null) ]; then
+elif type osso-product-info >/dev/null 2>/dev/null ; then
 	# Diablo/Fremantle
 	echo "SW-version = $(osso-product-info -q OSSO_VERSION)"
 elif [ -e "/etc/os-release" ]; then
@@ -187,6 +202,12 @@ if [ $RET -ne 0 ]; then
 fi
 } | sp-noncached --write $path/usage.csv
 
+for F in os-release hw-release sys-release system-release ; do
+	if [ ! -f /etc/$F ]; then continue; fi
+	cat /etc/$F > $path/$F
+	[ -f $path/$F ] && [ ! -s $path/$F ] && rm $path/$F
+done
+
 # Copy files from /proc with cat to avoid GNU coreutils 6.x cp bug:
 echo "- Other proc files"
 for F in slabinfo interrupts stat diskstats zoneinfo pagetypeinfo; do
@@ -195,8 +216,17 @@ for F in slabinfo interrupts stat diskstats zoneinfo pagetypeinfo; do
 	[ -f $path/$F ] && [ ! -s $path/$F ] && rm $path/$F
 done
 
-which xmeminfo >/dev/null 2>/dev/null
-if [ $? -eq 0 ] ; then
+if [ -f "/proc/sys/kernel/tainted" ] ; then
+	cat /proc/sys/kernel/tainted > $path/tainted
+	[ -f $path/tainted ] && [ ! -s $path/tainted ] && rm $path/tainted
+fi
+
+if [ -f "/proc/sys/kernel/random/boot_id" ] ; then
+	cat /proc/sys/kernel/random/boot_id > $path/boot_id
+	[ -f $path/boot_id ] && [ ! -s $path/boot_id ] && rm $path/boot_id
+fi
+
+if type xmeminfo >/dev/null 2>/dev/null ; then
 	echo "- X resource usage"
 	check_display
 	xmeminfo > $path/xmeminfo 2> $path/xmeminfo.log
@@ -209,22 +239,20 @@ fi
 
 # save some less easily parsed /proc/ statistics, ignore errors
 echo "- Open file descriptors"
-ls -l /proc/[0-9]*/fd/ 2>/dev/null | lzop -c | sp-noncached --write $path/open-fds.lzo
+ls -l /proc/[0-9]*/fd/ 2>/dev/null | $COMPRESSOR | sp-noncached --write $path/open-fds$COMPRESSOR_SUFFIX
 
 if [ -f "/proc/1/sched" ] ; then
 	echo "- Process scheduling information"
-	head -10000 /proc/[0-9]*/sched | lzop -c | sp-noncached --write $path/sched.lzo
+	head -v -n 10000 /proc/[0-9]*/sched | $COMPRESSOR | sp-noncached --write $path/sched$COMPRESSOR_SUFFIX
 fi
 
 # suspend statistics
-which mcetool >/dev/null 2>/dev/null
-if [ $? -eq 0 ] ; then
-        echo "- Suspend stats"
-        mcetool --get-suspend-stats > $path/suspend-stats
+if type mcetool >/dev/null 2>/dev/null ; then
+	echo "- Suspend stats"
+	mcetool --get-suspend-stats > $path/suspend-stats
 fi
 
-which sysinfoclient >/dev/null 2>/dev/null
-if [ $? -eq 0 ] ; then
+if type sysinfoclient >/dev/null 2>/dev/null ; then
 	echo "- Bootreason"
 	sysinfoclient -p /component/boot-reason > $path/bootreason
 
@@ -244,39 +272,59 @@ elif [ -e /etc/hw-release ]; then
 fi
 if [ -d /syspart ] ; then
 	echo "- Control Group data"
-	find /syspart -type f | xargs head -10000 2>/dev/null > $path/cgroups
+	find /syspart -type f | xargs head -v -n 10000 2>/dev/null > $path/cgroups
 	[ -f $path/cgroups ] && [ ! -s $path/cgroups ] && rm $path/cgroups
 fi
 
 if [ -d /sys/devices/system/cpu ] ; then
 	echo "- CPU statistics"
-	find /sys/devices/system/cpu -type f | xargs head -10000 2>/dev/null > $path/sysfs_cpu
+	find /sys/devices/system/cpu -type f | xargs head -v -n 10000 2>/dev/null > $path/sysfs_cpu
 	[ -f $path/sysfs_cpu ] && [ ! -s $path/sysfs_cpu ] && rm $path/sysfs_cpu
 fi
 if [ -d /sys/fs ] ; then
 	echo "- File system statistics"
-	find /sys/fs -type f | xargs head -10000 2>/dev/null > $path/sysfs_fs
+	# Skip /sys/fs/selinux/policy - it can be several megabytes of binary.
+	find /sys/fs -type f | grep -v -F "/sys/fs/selinux/policy" | xargs head -v -n 10000 2>/dev/null > $path/sysfs_fs
 	[ -f $path/sysfs_fs ] && [ ! -s $path/sysfs_fs ] && rm $path/sysfs_fs
 fi
 if [ -d /sys/devices/virtual/kgsl/kgsl/proc ] ; then
-        echo "- GPU memory values"
-        find /sys/devices/virtual/kgsl/kgsl/proc -type f | xargs head -10000 2>/dev/null > $path/sysfs_kgsl
-        [ -f $path/sysfs_kgsl ] && [ ! -s $path/sysfs_kgsl ] && rm $path/sysfs_kgsl
+	echo "- GPU memory values"
+	find /sys/devices/virtual/kgsl/kgsl/proc -type f | xargs head -v -n 10000 2>/dev/null > $path/sysfs_kgsl
+	[ -f $path/sysfs_kgsl ] && [ ! -s $path/sysfs_kgsl ] && rm $path/sysfs_kgsl
 fi
 if [ -d /sys/class/backlight ] ; then
 	echo "- Backlight"
 	# Expecting symlinks in /sys/class/backlight/, e.g. 'display0', ...
 	for D in /sys/class/backlight/* ; do
 		if [ -d "$D/" ] ; then
-			find $D/ -type f | xargs head -10000 2>/dev/null
+			find $D/ -type f | xargs head -v -n 10000 2>/dev/null
 			echo
 		fi
 	done > $path/sysfs_backlight
 	[ -f $path/sysfs_backlight ] && [ ! -s $path/sysfs_backlight ] && rm $path/sysfs_backlight
 fi
+if [ -d /sys/devices/virtual/dmi/id ] ; then
+	echo "- dmi"
+	find /sys/devices/virtual/dmi/id -type f | xargs head -v -n 10000 2>/dev/null > $path/sysfs_dmi_id
+	[ -f $path/sysfs_dmi_id ] && [ ! -s $path/sysfs_dmi_id ] && rm $path/sysfs_dmi_id
+fi
 
-which rzscontrol >/dev/null 2>/dev/null
-if [ $? -eq 0 ] ; then
+if type lscpu >/dev/null 2>/dev/null ; then
+	echo "- lscpu"
+	if lscpu --help | grep -q json ; then
+		LC_ALL=C lscpu --json >$path/lscpu.json
+		LC_ALL=C lscpu --json --extended >$path/lscpu-extended.json
+	else
+		LC_ALL=C lscpu >$path/lscpu
+		LC_ALL=C lscpu --extended >$path/lscpu-extended
+	fi
+	[ -f $path/lscpu ] && [ ! -s $path/lscpu ] && rm $path/lscpu
+	[ -f $path/lscpu.json ] && [ ! -s $path/lscpu.json ] && rm $path/lscpu.json
+	[ -f $path/lscpu-extended ] && [ ! -s $path/lscpu-extended ] && rm $path/lscpu-extended
+	[ -f $path/lscpu-extended.json ] && [ ! -s $path/lscpu-extended.json ] && rm $path/lscpu-extended.json
+fi
+
+if type rzscontrol >/dev/null 2>/dev/null ; then
 	echo "- ramzswap statistics"
 	for D in /dev/ramzswap[0-9]* ; do
 		echo "==> $D <=="
@@ -290,8 +338,7 @@ if [ $? -eq 0 ] ; then
 fi
 
 # battery
-which bmestat >/dev/null 2>/dev/null
-if [ $? -eq 0 ] ; then
+if type bmestat >/dev/null 2>/dev/null ; then
 	echo "- Battery information"
 	bmestat > $path/bmestat
 	[ -f $path/bmestat ] && [ ! -s $path/bmestat ] && rm $path/bmestat
@@ -300,7 +347,7 @@ if [ -d "/sys/class/power_supply/" ] ; then
 	# Expecting symlinks in /sys/class/power_supply/, e.g. 'BAT0', ...
 	for D in /sys/class/power_supply/* ; do
 		if [ -d "$D/" ] ; then
-			find $D/ -type f | xargs head -10000 2>/dev/null
+			find $D/ -type f | xargs head -v -n 10000 2>/dev/null
 			echo
 		fi
 	done > $path/sysfs_power_supply
@@ -327,9 +374,9 @@ if [ -d /var/log/upstart ]; then
 	mkdir $path/upstart
 	for F in /var/log/upstart/*; do
 		if [ -f "$F" ] && [ -s "$F" ] ; then
-			logto=$path/upstart/${F##*/}
-			sp-noncached --read $F | lzop -c | sp-noncached --write $logto.lzo
-			[ -f $logto.lzo ] && [ ! -s $logto.lzo ] && rm $logto.lzo
+			logto=$path/upstart/${F##*/}$COMPRESSOR_SUFFIX
+			sp-noncached --read $F | $COMPRESSOR | sp-noncached --write $logto
+			[ -f $logto ] && [ ! -s $logto ] && rm $logto
 		fi
 	done
 fi
@@ -341,7 +388,6 @@ echo "- statefs"
 dump_statefs_value namespaces/Screen/Blanked
 
 # and syslog...
-echo "- Syslog(s)"
 logs=""
 if [ -f /var/ftd-log/syslog ]; then
 	logs="/var/ftd-log/logs/syslog /var/ftd-log/syslog $logs"
@@ -358,16 +404,20 @@ fi
 if [ -f /var/log/messages ] ; then
 	logs="/var/log/messages $logs"
 fi
-if [ -z "$logs" ] ; then
-	echo "Syslog file(s) missing! Capturing kernel ring buffer content instead." 1>&2
-	dmesg | lzop -c | sp-noncached --write $path/dmesg.lzo
-else
-	sp-noncached --read $logs | lzop -c | sp-noncached --write $path/syslog.lzo
+if [ "$logs" ] ; then
+	echo "- Syslog(s)"
+	sp-noncached --read $logs | $COMPRESSOR | sp-noncached --write $path/syslog$COMPRESSOR_SUFFIX
+fi
+
+if type dmesg >/dev/null 2>/dev/null ; then
+	echo "- dmesg"
+	dmesg | $COMPRESSOR | sp-noncached --write $path/dmesg$COMPRESSOR_SUFFIX
 fi
 
 # and journalctl
-echo "- journalctl"
 if [ -x /bin/journalctl ]; then
+	echo "- journalctl"
+
 	logger -t endurance-snapshot "End of snapshot $path"
 
 	previous_snapshot="$name/`printf "%03d" $(($snapshot_index - 1))`"
@@ -383,6 +433,6 @@ if [ -x /bin/journalctl ]; then
 	fi
 
 	/bin/journalctl -a -b -q -o json $snapshot_start_cursor | \
-		lzop -c | \
-		sp-noncached --write $path/journal.lzo
+		$COMPRESSOR | \
+		sp-noncached --write $path/journal$COMPRESSOR_SUFFIX
 fi

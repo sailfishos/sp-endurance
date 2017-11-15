@@ -37,7 +37,7 @@ require Exporter;
     parse_upstart_jobs_respawned parse_sched parse_dir parse_pidfilter copen/;
 
 use File::Basename qw/basename/;
-use List::MoreUtils qw/uniq zip all none firstidx/;
+use List::MoreUtils qw/uniq zip all any none firstidx/;
 use List::Util qw/sum min/;
 use IO::File;
 use Data::Dumper;
@@ -51,8 +51,10 @@ eval q/use Inline C => 'DATA', VERSION => $SP::Endurance::VERSION, NAME => 'SP::
 my @process_blacklist = qw/
     sp-noncached
     save-incrementa
+    endurance-snaps
     sp_smaps_snapshot
     lzop
+    gzip
 /;
 
 sub copen {
@@ -143,6 +145,9 @@ sub parse_openfds {
 our @GFX_MMAPS = (
     '/dev/pvrsrvkm',     # Harmattan
     '/dev/nvidia',       # Desktop Linux with NVIDIA graphics
+    '/dev/dri/',
+    '/drm mm object',
+    '/ttm swap',
 );
 
 my @WANTED_MMAPS = (
@@ -571,6 +576,24 @@ sub parse_sysfs_cpu {
     return \%cpu;
 }
 
+sub parse_sysfs_dmi_id {
+    my $fh = shift;
+
+    return {} unless defined $fh;
+
+    my %ret;
+
+    while (<$fh>) {
+        next unless m#^==> /sys/devices/virtual/dmi/id/(\S+) <==#;
+        my $key = $1;
+        chomp(my $value = <$fh>);
+        next if $value =~ m/^\s*$/;
+        $ret{$key} = $value;
+    }
+
+    return \%ret;
+}
+
 sub parse_component_version {
     my $fh = shift;
 
@@ -721,8 +744,6 @@ sub csv_proc_pid_status {
 
     $keys =~ s/:$//;
     my @keys = split ',', $keys;
-
-    return {} unless @keys ~~ /Pid/;
 
     my $idx_Name    = firstidx { $_ eq 'Name' } @keys;
     my $idx_Pid     = firstidx { $_ eq 'Pid' } @keys;
@@ -1159,7 +1180,7 @@ sub parse_pidfilter {
     if (exists $entry->{'/proc/pid/cmdline'}) {
         foreach my $pid (keys %{$entry->{'/proc/pid/cmdline'}}) {
             my $cmdline = $entry->{'/proc/pid/cmdline'}->{$pid};
-            if ($cmdline ~~ @process_blacklist) {
+            if (any { $_ eq $cmdline } @process_blacklist) {
                 push @filter_pids, $pid;
             }
         }
@@ -1168,7 +1189,7 @@ sub parse_pidfilter {
     if (exists $entry->{'/proc/pid/smaps'}) {
         foreach my $pid (keys %{$entry->{'/proc/pid/smaps'}}) {
             my $name = $entry->{'/proc/pid/smaps'}->{$pid}->{'#Name'};
-            if ($name ~~ @process_blacklist) {
+            if (any { $_ eq $name } @process_blacklist) {
                 push @filter_pids, $pid;
             }
         }
@@ -1177,7 +1198,7 @@ sub parse_pidfilter {
     if (exists $entry->{'/proc/pid/status'}) {
         foreach my $pid (keys %{$entry->{'/proc/pid/status'}}) {
             my %data = split ',', $entry->{'/proc/pid/status'}->{$pid};
-            if ($data{Name} ~~ @process_blacklist) {
+            if (any { $_ eq $data{Name} } @process_blacklist) {
                 push @filter_pids, $pid;
             }
         }
@@ -1289,6 +1310,23 @@ sub parse_display_state {
     return \%result;
 }
 
+sub parse_os_release {
+    my $fh = shift;
+
+    my %result;
+
+    while (<$fh>) {
+        if (/^(\S+)=(.+)$/) {
+            my ($key, $value) = ($1, $2);
+            if ($value =~ /^"(.+)"$/) { $value = $1; }
+            next if $value =~ /^\s*$/;
+            $result{$key} = $value;
+        }
+    }
+
+    return \%result;
+}
+
 sub parse_statefs {
     my $fh = shift;
 
@@ -1317,6 +1355,8 @@ sub parse_dir {
         upstart_jobs_respawned     => parse_upstart_jobs_respawned(copen $name . '/upstart_jobs_respawned'),
         suspend_stats              => parse_suspend_stats(copen $name . '/suspend-stats'),
         '/bin/df'                  => parse_df(copen $name . '/df'),
+        '/etc/os-release'          => parse_os_release(copen $name . '/os-release'),
+        '/etc/system-release'      => parse_os_release(copen $name . '/system-release'),
         '/proc/diskstats'          => parse_diskstats(copen $name . '/diskstats'),
         '/proc/interrupts'         => parse_interrupts(copen $name . '/interrupts'),
         '/proc/pagetypeinfo'       => parse_pagetypeinfo(copen $name . '/pagetypeinfo'),
@@ -1329,6 +1369,7 @@ sub parse_dir {
         '/sys/class/backlight'     => parse_sysfs_backlight(copen $name . '/sysfs_backlight'),
         '/sys/class/power_supply'  => parse_sysfs_power_supply(copen $name . '/sysfs_power_supply'),
         '/sys/devices/system/cpu'  => parse_sysfs_cpu(copen $name . '/sysfs_cpu'),
+        '/sys/devices/virtual/dmi/id' => parse_sysfs_dmi_id(copen $name . '/sysfs_dmi_id'),
         '/sys/fs/ext4'             => parse_sysfs_fs(copen $name . '/sysfs_fs'),
         '/usr/bin/bmestat'         => parse_bmestat(copen $name . '/bmestat'),
         '/usr/bin/xmeminfo'        => parse_xmeminfo(copen $name . '/xmeminfo'),
@@ -1449,7 +1490,6 @@ HV *parse_smaps_inline(PerlIO *fh, AV *wanted_mmaps) {
 
             *colon = '\0';
             char *key = line;
-            size_t key_len = colon - line;
 
             static const struct {
                 const char *key;

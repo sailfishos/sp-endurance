@@ -33,7 +33,6 @@ use SP::Endurance::Util qw/GRAPHS_DIR plot_filename plot_thumbname uptimes
         total_duration sw_versions hw_string xtics dur_to_str round_durations/;
 use SP::Endurance::GnuplotWorker;
 
-use POSIX qw/WIFSIGNALED WTERMSIG SIGINT SIGTERM SIGKILL/;
 use List::Util qw/min max/;
 use Getopt::Long;
 use File::Basename qw/basename/;
@@ -82,7 +81,7 @@ END
 sub html_title {
     my $masterdb = shift;
 
-    my ($sw_version) = sw_versions $masterdb;
+    my $sw_version = join ' / ', sw_versions $masterdb;
     my $hardware     = hw_string $masterdb;
 
     $sw_version = " [$sw_version]" if length $sw_version;
@@ -104,7 +103,7 @@ sub generate_html {
         exit 1;
     }
 
-    my ($sw_version) = sw_versions $masterdb;
+    my $sw_version = join ' / ', sw_versions $masterdb;
 
     print $fh <<END;
 <!DOCTYPE html>
@@ -257,13 +256,6 @@ sub sanity_checks {
     unless (@$masterdb >= 2) {
         say STDERR 'ERROR: unable to continue without at least two valid data directories.';
         exit 1;
-    }
-
-    my @sw_versions = sw_versions $masterdb;
-    if (@sw_versions > 1) {
-        say STDERR "** NOTE: multiple software versions detected (" .
-            join(', ', @sw_versions) .
-            '), was the device reflashed?';
     }
 
     foreach my $i (1 .. @$masterdb-1) {
@@ -426,7 +418,8 @@ foreach my $i (0 .. @ARGV-1) {
 }
 say;
 
-# Here's a nice way to debug the parsed data structures:
+# Here's a nice way to debug the parsed data structures.
+# (Note that there can be some binary in the output due to use of pack().)
 #$Data::Dumper::Indent = 1;
 #print Dumper \@masterdb;
 

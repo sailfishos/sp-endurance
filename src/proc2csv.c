@@ -344,6 +344,7 @@ static void show_proc_pid_wchan(int num, const status_t *statuslist)
 	char buffer[256];
 	FILE *fp;
 	int i;
+	int header = 0;
 	for (i=0; i < num; ++i) {
 		const status_t *s = &statuslist[i];
 		if (s->skip)
@@ -352,9 +353,11 @@ static void show_proc_pid_wchan(int num, const status_t *statuslist)
 		buffer[sizeof(buffer)-1] = 0;
 		fp = fopen(buffer, "r");
 		if (!fp) {
-			error_exit("show_proc_pid_wchan()", "file open failed",
-					buffer);
 			continue;
+		}
+		if (!header) {
+			fputs("\nPID,wchan:\n", stdout);
+			header = 1;
 		}
 		if (fgets(buffer, sizeof(buffer), fp)) {
 			buffer[sizeof(buffer)-1] = 0;
@@ -660,7 +663,6 @@ int main(int argc, char *argv[])
 	fputs("\nProcess status:\n", stdout);
 	show_proc_pid_stat(lines, statuslist);
 	
-	fputs("\nPID,wchan:\n", stdout);
 	show_proc_pid_wchan(lines, statuslist);
 
 	show_proc_pid_io(lines, statuslist);

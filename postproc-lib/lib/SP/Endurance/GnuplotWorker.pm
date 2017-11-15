@@ -49,6 +49,11 @@ sub worker {
     if (exists $config->{flag_j} and $config->{flag_j} > 1) {
         require Parallel::ForkManager;
         $forkmanager = new Parallel::ForkManager($config->{flag_j});
+
+        # Allow ForkManager 1.12+ to wait for all child processes.
+        eval {
+            $forkmanager->set_waitpid_blocking_sleep(0);
+        };
     }
 
     while (<$pipe>) {
