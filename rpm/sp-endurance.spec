@@ -6,7 +6,6 @@ Group: Development/Tools
 License: GPLv2	
 URL: https://github.com/mer-tools/sp-rich-core
 Source: %{name}-%{version}.tar.gz
-Source1: _src
 BuildRequires: python
 Requires: lzop
 Requires: sp-smaps
