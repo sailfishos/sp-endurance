@@ -2391,6 +2391,7 @@ sub generate_plot_process_state_count {
         ylabel => 'count',
     );
 
+    # Note that sleeping and idle task states are skipped when parsing data.
     my %states;
     foreach my $entry (@$masterdb) {
         next unless exists $entry->{'/proc/pid/stat'};
@@ -2415,11 +2416,15 @@ sub generate_plot_process_state_count {
 
         $plot->push([nonzero @count],
             title => $state . {
-                D => ' (Uninterruptible disk sleep)',
-                R => ' (Running)',
-                T => ' (Traced or stopped)',
-                W => ' (Paging)',
-                Z => ' (Zombie)',
+                R => ' (running)',
+                #S => skipped
+                D => ' (disk sleep)',
+                T => ' (stopped)',
+                t => ' (tracing stop)',
+                X => ' (dead)',
+                Z => ' (zombie)',
+                P => ' (parked)',
+                #I => skipped
             }->{$state},
         );
     }
