@@ -723,8 +723,12 @@ sub csv_proc_pid_stat {
         $entry .= 'majflt,' . int($values[11])  . ',' if defined $values[11];
         $entry .= 'utime,'  . int($values[13])  . ',' if defined $values[13];
         $entry .= 'stime,'  . int($values[14])  . ',' if defined $values[14];
-        $entry .= 'state,'  . $values[2]        . ','
-            if defined $values[2] and length $values[2] and $values[2] ne 'S';
+
+        # Skip 'S' sleeping and 'I' idle.
+        if (defined $values[2] and length $values[2]
+                and $values[2] ne 'S' and $values[2] ne 'I') {
+            $entry .= 'state,'  . $values[2]        . ','
+        }
 
         $entry = substr $entry, 0, -1;
 
