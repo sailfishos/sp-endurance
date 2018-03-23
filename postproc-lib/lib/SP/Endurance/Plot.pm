@@ -174,7 +174,7 @@ sub cmd {
     CORE::push @cmd, qq/set xlabel '/ . ($self->{xlabel} // 'rounds') . qq/'/;
     CORE::push @cmd, qq/set ylabel '$self->{ylabel}'/ if length $self->{ylabel};
     CORE::push @cmd,  q/set grid xtics ytics/;
-    CORE::push @cmd, qq/set term $self->{terminal}/ if $self->{terminal};
+    CORE::push @cmd, qq/set term $self->{terminal} noenhanced/ if $self->{terminal};
 
     my $xmax;
 
