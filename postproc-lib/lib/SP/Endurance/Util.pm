@@ -157,22 +157,29 @@ sub total_duration {
 sub sw_versions {
     my $masterdb = shift;
 
-    my @os_pretty_names = uniq sort grep { defined && length } map {
+    my @os_release_names = uniq sort grep { defined && length } map {
         exists $_->{'/etc/os-release'} &&
         exists $_->{'/etc/os-release'}->{PRETTY_NAME} ?
                $_->{'/etc/os-release'}->{PRETTY_NAME} : undef
     } @$masterdb;
 
-    my @sys_pretty_names = uniq sort grep { defined && length } map {
-        exists $_->{'/etc/system-release'} &&
-        exists $_->{'/etc/system-release'}->{PRETTY_NAME} ?
-               $_->{'/etc/system-release'}->{PRETTY_NAME} : undef
+    my @system_release_names = uniq sort grep { defined && length } map {
+        my $ret =
+            exists $_->{'/etc/system-release'} &&
+            exists $_->{'/etc/system-release'}->{PRETTY_NAME} ?
+                   $_->{'/etc/system-release'}->{PRETTY_NAME} : undef;
+        $ret =
+            exists $_->{'/etc/system-release'} &&
+            exists $_->{'/etc/system-release'}->{NAME} ?
+                   $_->{'/etc/system-release'}->{NAME} : undef
+            unless defined $ret;
+        $ret
     } @$masterdb;
 
-    # If we have PRETTY_NAME, do not bother with sw_version from usage.csv.
-    my @pretty_names = uniq @os_pretty_names, @sys_pretty_names;
-    return @pretty_names if @pretty_names > 0;
+    my @names = uniq @os_release_names, @system_release_names;
+    return @names if @names > 0;
 
+    # Fallback to sw_version string from usage.csv:
     my @sw_versions = uniq grep { defined && length } map {
         exists $_->{sw_version} ? $_->{sw_version} : undef
     } @$masterdb;
