@@ -1013,7 +1013,41 @@ sub private_dirty_collect_data {
     return $plot;
 }
 
-sub generate_plot_private_dirty {
+sub generate_plot_private_dirty_only {
+    my $plotter = shift;
+    my $masterdb = shift;
+
+    my $plot = $plotter->new_histogram(
+        key => '1009_private_dirty',
+        label => 'Private dirty',
+        legend => 'PRIVATE DIRTY',
+        ylabel => 'MB',
+        column_limit => 1,
+        reduce_f => sub {
+            my @leftovers;
+
+            foreach my $idx (0 .. @$masterdb-1) {
+                push @leftovers, sum map {
+                    exists $_->{__data} &&
+                    exists $_->{__data}->[$idx] ?
+                           $_->{__data}->[$idx] : undef
+                } @_;
+            }
+
+            return [nonzero @leftovers],
+                   title => 'Sum of ' . scalar(@_) . ' processes';
+        },
+    );
+
+    private_dirty_collect_data $plot, $masterdb;
+
+    $plot->sort(sub { max @{shift()} });
+    $plot->reduce;
+    $plot->sort(\&max_change, sub { max @{shift()} });
+
+    done_plotting $plot;
+}
+sub generate_plot_private_dirty_plus_swap {
     my $plotter = shift;
     my $masterdb = shift;
 
@@ -1047,9 +1081,51 @@ sub generate_plot_private_dirty {
 
     done_plotting $plot;
 }
+sub generate_plot_private_dirty {
+    my $plotter = shift;
+    my $masterdb = shift;
+
+    my @pids = uniq map { keys %{$_->{'/proc/pid/smaps'} // {}} } @$masterdb;
+
+    foreach my $entry (@$masterdb) {
+        foreach my $pid (@pids) {
+            goto swap if exists $entry->{'/proc/pid/smaps'}->{$pid} and
+                         exists $entry->{'/proc/pid/smaps'}->{$pid}->{total_Swap} and
+                                $entry->{'/proc/pid/smaps'}->{$pid}->{total_Swap};
+        }
+    }
+
+    return generate_plot_private_dirty_only $plotter, $masterdb;
+
+swap:
+    return generate_plot_private_dirty_plus_swap $plotter, $masterdb;
+}
 BEGIN { register_generator \&generate_plot_private_dirty; }
 
-sub generate_plot_private_dirty_changes {
+sub generate_plot_private_dirty_only_changes {
+    my $plotter = shift;
+    my $masterdb = shift;
+
+    my $plot = $plotter->new_linespoints(
+        key => '1009_private_dirty_%d',
+        label => 'Private dirty (excluding non-changed)',
+        ylabel => 'MB',
+        multiple => {
+            max_plots => 4,
+            max_per_plot => 15,
+            split_f => sub { max @{shift()} },
+            split_factor => 5,
+            legend_f => sub { 'PRIVATE DIRTY &mdash; MAX ' . ceil(max @{shift()}) . 'MB' },
+        },
+        exclude_nonchanged => 1,
+    );
+
+    private_dirty_collect_data $plot, $masterdb;
+
+    done_plotting $plot;
+}
+
+sub generate_plot_private_dirty_plus_swap_changes {
     my $plotter = shift;
     my $masterdb = shift;
 
@@ -1070,6 +1146,25 @@ sub generate_plot_private_dirty_changes {
     private_dirty_collect_data $plot, $masterdb;
 
     done_plotting $plot;
+}
+sub generate_plot_private_dirty_changes {
+    my $plotter = shift;
+    my $masterdb = shift;
+
+    my @pids = uniq map { keys %{$_->{'/proc/pid/smaps'} // {}} } @$masterdb;
+
+    foreach my $entry (@$masterdb) {
+        foreach my $pid (@pids) {
+            goto swap if exists $entry->{'/proc/pid/smaps'}->{$pid} and
+                         exists $entry->{'/proc/pid/smaps'}->{$pid}->{total_Swap} and
+                                $entry->{'/proc/pid/smaps'}->{$pid}->{total_Swap};
+        }
+    }
+
+    return generate_plot_private_dirty_only_changes $plotter, $masterdb;
+
+swap:
+    return generate_plot_private_dirty_plus_swap_changes $plotter, $masterdb;
 }
 BEGIN { register_generator \&generate_plot_private_dirty_changes; }
 
