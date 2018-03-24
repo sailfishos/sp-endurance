@@ -32,6 +32,10 @@ For improved endurance data parsing performance, install from CPAN:
 Required modules for 'make test' target:
   - IO::String
 
+Fedora example:
+  dnf install perl-Inline-C perl-List-MoreUtils perl-IO-String
+  dnf install gnuplot netpbm-progs
+
 HOW TO RUN UNIT TESTS
 
 Run this command in the postproc-lib directory:
