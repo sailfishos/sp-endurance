@@ -32,6 +32,12 @@ For improved endurance data parsing performance, install from CPAN:
 Required modules for 'make test' target:
   - IO::String
 
+HOW TO RUN UNIT TESTS
+
+Run this command in the postproc-lib directory:
+
+  prove -l --jobs=8
+
 COPYRIGHT AND LICENCE
 
 Copyright (C) 2010-2012 by Nokia Corporation
