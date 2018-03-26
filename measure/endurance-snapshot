@@ -278,14 +278,18 @@ fi
 
 if [ -d /sys/devices/system/cpu ] ; then
 	echo "- CPU statistics"
-	find /sys/devices/system/cpu -type f | xargs head -v -n 10000 2>/dev/null > $path/sysfs_cpu
-	[ -f $path/sysfs_cpu ] && [ ! -s $path/sysfs_cpu ] && rm $path/sysfs_cpu
+	find /sys/devices/system/cpu -type f | xargs head -v -n 10000 2>/dev/null \
+		| $COMPRESSOR | sp-noncached --write $path/sysfs_cpu$COMPRESSOR_SUFFIX
+	[ -f $path/sysfs_cpu$COMPRESSOR_SUFFIX ] && [ ! -s $path/sysfs_cpu$COMPRESSOR_SUFFIX ] \
+		&& rm $path/sysfs_cpu$COMPRESSOR_SUFFIX
 fi
 if [ -d /sys/fs ] ; then
 	echo "- File system statistics"
 	# Skip /sys/fs/selinux/policy - it can be several megabytes of binary.
-	find /sys/fs -type f | grep -v -F "/sys/fs/selinux/policy" | xargs head -v -n 10000 2>/dev/null > $path/sysfs_fs
-	[ -f $path/sysfs_fs ] && [ ! -s $path/sysfs_fs ] && rm $path/sysfs_fs
+	find /sys/fs -type f | grep -v -F "/sys/fs/selinux/policy" | xargs head -v -n 10000 2>/dev/null \
+		| $COMPRESSOR | sp-noncached --write $path/sysfs_fs$COMPRESSOR_SUFFIX
+	[ -f $path/sysfs_fs$COMPRESSOR_SUFFIX ] && [ ! -s $path/sysfs_fs$COMPRESSOR_SUFFIX ] \
+		&& rm $path/sysfs_fs$COMPRESSOR_SUFFIX
 fi
 if [ -d /sys/devices/virtual/kgsl/kgsl/proc ] ; then
 	echo "- GPU memory values"
