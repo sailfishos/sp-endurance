@@ -335,6 +335,7 @@ static void show_proc_pid_stat(int num, const status_t *statuslist)
 			continue;
 		}
 		snprintf(stat, sizeof(stat), "%s/stat", s->pid);
+		stat[sizeof(stat)-1] = 0;
 		show_as_csv(stat, 0, 128);
 	}
 }
