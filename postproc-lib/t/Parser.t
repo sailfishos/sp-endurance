@@ -1618,6 +1618,12 @@ PID,FD count,Command line:
 567,4,hald-runner
 569,0,
 600,45,/usr/bin/Xorg -logfile /tmp/Xorg.0.log -core -background none -logverbose 1 -si
+700,1,python
+701,1,python /path/to/foo.py
+702,1,python2.7 -u /path/to/foo.py
+703,1,python3 /path/to/foo.py arg1 arg2 arg3
+704,1,/usr/bin/python3  -x  -y  -z  --long  foo3     arg1 arg2
+800,1,/usr/bin/perl ./test.pl
 
 Name,State,Tgid,Pid,VmSize,VmLck,voluntary_ctxt_switches,nonvoluntary_ctxt_switches,Threads:
 invalid,line,goes,here
@@ -1718,6 +1724,12 @@ END
         544 => 'hald',
         567 => 'hald-runner',
         600 => 'Xorg',
+        700 => 'python',
+        701 => 'python [foo.py]',
+        702 => 'python2.7 [foo.py]',
+        703 => 'python3 [foo.py]',
+        704 => 'python3 [foo3]',
+        800 => 'perl [test.pl]',
     },
     '/proc/pid/fd_count' => {
         1   => 8,
@@ -1725,6 +1737,12 @@ END
         544 => 17,
         567 => 4,
         600 => 45,
+        700 => 1,
+        701 => 1,
+        702 => 1,
+        703 => 1,
+        704 => 1,
+        800 => 1,
     },
     '/proc/pid/status' => {
         1    => 'Name,init,VmSize,1,VmLck,5,voluntary_ctxt_switches,10,nonvoluntary_ctxt_switches,11,Threads,0',

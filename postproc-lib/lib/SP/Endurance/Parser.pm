@@ -933,12 +933,17 @@ sub csv_pid_fd {
 
         $fdcount{$pid} = $fdcount if $fdcount > 0;
 
-        if (length $cmdline) {
+        next if length $cmdline == 0;
+
+        if ($cmdline =~ /^\S*(python\S*|perl\S*)(?:\s+-\S+)*\s*(\S+)/) {
+            # "/usr/bin/python2.7 -u /path/to/foo.py" => "python2.7 [foo.py]"
+            $cmdline = $1 . ' [' . basename($2) . ']';
+        } else {
             if ($cmdline =~ /^(\S+)\s/) { $cmdline = $1; }
             $cmdline = basename $cmdline;
             #$cmdline = substr $cmdline, 0, 30;
-            $cmdline{$pid} = $cmdline;
         }
+        $cmdline{$pid} = $cmdline;
     }
 
     return \%cmdline, \%fdcount;
