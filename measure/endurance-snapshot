@@ -408,7 +408,7 @@ fi
 if [ -f /var/log/messages ] ; then
 	logs="/var/log/messages $logs"
 fi
-if [ "$logs" ] ; then
+if [ -z "$NO_SYSLOG" ] && [ "$logs" ] ; then
 	echo "- Syslog(s)"
 	sp-noncached --read $logs | $COMPRESSOR | sp-noncached --write $path/syslog$COMPRESSOR_SUFFIX
 fi
@@ -419,7 +419,7 @@ if type dmesg >/dev/null 2>/dev/null ; then
 fi
 
 # and journalctl
-if [ -x /bin/journalctl ]; then
+if [ -z "$NO_SYSLOG" ] && [ -x /bin/journalctl ]; then
 	echo "- journalctl"
 
 	logger -t endurance-snapshot "End of snapshot $path"
