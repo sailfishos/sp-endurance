@@ -121,18 +121,11 @@ static void error_exit(const char *fun, const char *msg, const char *file)
  * 
  * Only count columns from 'start'th one are output.
  */
-static void show_as_csv(const char *filename, int start, int count)
+static void show_as_csv_fp(FILE *fp, int start, int count)
 {
 	char buffer[512], *buf, *value;
 	int field, fields_out;
-	FILE *fp;
 
-	fp = fopen(filename, "r");
-	if (!fp) {
-		error_exit("show_as_csv()", "file open failed", filename);
-		return;
-	}
-	
 	while (fgets(buffer, sizeof(buffer), fp)) {
 		buf = buffer;
 		fields_out = 0;
@@ -166,9 +159,21 @@ static void show_as_csv(const char *filename, int start, int count)
 		}
 		newline();
 	}
-	fclose(fp);
 }
 
+static void show_as_csv(const char *filename, int start, int count)
+{
+	FILE *fp;
+
+	fp = fopen(filename, "r");
+	if (!fp) {
+		error_exit("show_as_csv()", "file open failed", filename);
+		return;
+	}
+
+	show_as_csv_fp(fp, start, count);
+	fclose(fp);
+}
 
 /* splits the given buffer into 'sep' separated key and value strings
  * which are stripped of white space & control chars from both ends.
@@ -327,6 +332,7 @@ static void show_statuses(int num, status_t *statuslist)
 static void show_proc_pid_stat(int num, const status_t *statuslist)
 {
 	char stat[20];
+	FILE *fp;
 	int i;
 	const status_t *s;
 	for (i=0; i < num; ++i) {
@@ -336,7 +342,12 @@ static void show_proc_pid_stat(int num, const status_t *statuslist)
 		}
 		snprintf(stat, sizeof(stat), "%s/stat", s->pid);
 		stat[sizeof(stat)-1] = 0;
-		show_as_csv(stat, 0, 128);
+		fp = fopen(stat, "r");
+		if (!fp) {
+			continue;
+		}
+		show_as_csv_fp(fp, 0, 128);
+		fclose(fp);
 	}
 }
 
