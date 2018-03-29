@@ -179,6 +179,17 @@ fi
 echo "- SMAPS data"
 if type sp_smaps_snapshot >/dev/null 2>/dev/null ; then
 	sp_smaps_snapshot | $COMPRESSOR | $NONCACHED_W $path/smaps.cap$COMPRESSOR_SUFFIX
+elif find --help 2>&1 | grep -q maxdepth ; then
+	if [ -e /proc/self/smaps ] || [ -e /proc/1/smaps ] ; then
+		map_file=smaps
+	else
+		map_file=maps
+	fi
+	# Note that this does not store the additional /proc/pid/status data,
+	# but does not exec awk&cat per process.
+	find /proc -mindepth 2 -maxdepth 2 -name $map_file -print0 \
+		| xargs -0 head -v -n 10000000 \
+		| $COMPRESSOR | $NONCACHED_W $path/smaps.cap$COMPRESSOR_SUFFIX
 else
 	for pid in /proc/[0-9]*; do
 		echo "==> $pid/smaps <=="
