@@ -216,7 +216,7 @@ sub parse_smaps_pp {
             $name = $1;
             $pid = undef;
             $smaps_vma_ref = undef;
-        } elsif (/^#Pid: (\d+)/) {
+        } elsif (/^#Pid: (\d+)/ or m#^==> /proc/(\d+)/s?maps <==$#) {
             $pid = int $1;
             $keyval{$pid}->{'#Name'} = $name
                 if defined $name;
@@ -1423,9 +1423,12 @@ HV *parse_smaps_inline(PerlIO *fh, AV *wanted_mmaps) {
         goto out;
 
     char *name = NULL;
+    char pid_str[64];
     HV *pid_hv = NULL;
     SV *vmacount = NULL;
     HV *wanted_mmap = NULL;
+
+    pid_str[0] = 0;
 
     while (1) {
         char *line = NULL;
@@ -1450,22 +1453,29 @@ HV *parse_smaps_inline(PerlIO *fh, AV *wanted_mmaps) {
         if (line[0] == '#') {
             if (strncmp(&line[1], "Name: ", 6) == 0) {
                 name = strdup(&line[7]);
-            } else if (strncmp(&line[1], "Pid: ", 5) == 0) {
+            } else if (strncmp(line, "#Pid: ", 6) == 0) {
+                STRLEN pid_len = line_len - 6;
+                if (pid_len > 0 && pid_len < sizeof(pid_str)) {
+                    memcpy(pid_str, &line[6], pid_len);
+                    pid_str[pid_len] = 0;
+                }
                 vmacount = NULL;
                 wanted_mmap = NULL;
-
-                pid_hv = newHV();
-                if (!pid_hv)
-                    goto out;
-                hv_store(ret,
-                    &line[6], line_len - 6,
-                    newRV_noinc((SV*) pid_hv), 0);
                 if (name) {
+                    pid_hv = newHV();
+                    if (!pid_hv)
+                        goto out;
+                    hv_store(ret,
+                        pid_str, strlen(pid_str),
+                        newRV_noinc((SV*) pid_hv), 0);
+                    pid_str[0] = 0;
                     hv_store(pid_hv,
                         "#Name", 5,
                         newSVpv(name, strlen(name)), 0);
                     free(name);
                     name = NULL;
+                } else {
+                    pid_hv = NULL;
                 }
             }
             /* Additional metadata not needed for now.
@@ -1489,6 +1499,19 @@ HV *parse_smaps_inline(PerlIO *fh, AV *wanted_mmaps) {
                     newSVpv(value, strlen(value)), 0);
             }
             */
+        } else if (line[0] == '=' && line[1] == '=' && line[2] == '>') {
+            vmacount = NULL;
+            wanted_mmap = NULL;
+            pid_hv = NULL;
+            if (strncmp(line, "==> /proc/", 10) == 0) {
+                STRLEN pid_len = 0;
+                while (isdigit(line[10+pid_len]) && 10+pid_len <= line_len)
+                    pid_len++;
+                if (pid_len > 0 && pid_len < sizeof(pid_str)) {
+                    memcpy(pid_str, &line[10], pid_len);
+                    pid_str[pid_len] = 0;
+                }
+            }
         } else if (isupper(line[0])) {
             if (!pid_hv)
                 continue;
@@ -1557,8 +1580,22 @@ HV *parse_smaps_inline(PerlIO *fh, AV *wanted_mmaps) {
         } else if (isdigit(line[0]) || islower(line[0])) {
             size_t i;
 
-            if (!pid_hv)
-                continue;
+            if (!pid_hv) {
+                pid_hv = newHV();
+                if (!pid_hv)
+                    goto out;
+                hv_store(ret,
+                    pid_str, strlen(pid_str),
+                    newRV_noinc((SV*) pid_hv), 0);
+                pid_str[0] = 0;
+            }
+            if (name) {
+                hv_store(pid_hv,
+                    "#Name", 5,
+                    newSVpv(name, strlen(name)), 0);
+                free(name);
+                name = NULL;
+            }
 
             if (!vmacount) {
                 vmacount = newSViv(0);

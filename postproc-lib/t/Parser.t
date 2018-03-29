@@ -224,6 +224,42 @@ END
 
 {
     my $content = << 'END';
+==> /proc/1/maps <==
+00008000-00027000 r-xp 00000000 b3:02 84         /sbin/init
+
+==> /proc/2/maps <==
+00008000-00027000 r-xp 00000000 b3:02 84         /bin/bash
+0002e000-0002f000 r--p 0001e000 b3:02 84         /bin/bash
+
+==> /proc/3/maps <==
+
+
+==> /proc/4/maps <==
+
+
+==> /proc/32000/maps <==
+00008000-00027000 r-xp 00000000 b3:02 84         /sbin/init
+END
+
+    open my $fh, '<', \$content;
+    my $expected = {
+        1 => {
+            vmacount => 1,
+        },
+        2 => {
+            vmacount => 2,
+        },
+        32000 => {
+            vmacount => 1,
+        },
+    };
+    is_deeply(parse_smaps($fh),    $expected, 'parse_smaps - 3x process, 1+2+1x vmas');
+    seek $fh, 0, SEEK_SET;
+    is_deeply(parse_smaps_pp($fh), $expected, 'parse_smaps_pp - 3x process, 1+2+1x vmas');
+}
+
+{
+    my $content = << 'END';
 ==> /proc/1/smaps <==
 #Pid: 1
 #PPid: 0
