@@ -291,6 +291,51 @@ Swap:                  4 kB
 KernelPageSize:        4 kB
 MMUPageSize:           4 kB
 Locked:                4 kB
+
+==> /proc/317/smaps <==
+55f8d3740000-55f8d37a8000 r-xp 00000000 fd:01 534108                     /usr/sbin/dhclient
+Size:                416 kB
+KernelPageSize:        4 kB
+MMUPageSize:           4 kB
+Rss:                 384 kB
+Pss:                 384 kB
+Shared_Clean:          0 kB
+Shared_Dirty:          0 kB
+Private_Clean:       384 kB
+Private_Dirty:         0 kB
+Referenced:          384 kB
+Anonymous:             0 kB
+LazyFree:              0 kB
+AnonHugePages:         0 kB
+ShmemPmdMapped:        0 kB
+Shared_Hugetlb:        0 kB
+Private_Hugetlb:       0 kB
+Swap:                  0 kB
+SwapPss:               0 kB
+Locked:              384 kB
+VmFlags: rd ex mr mw me dw sd 
+55f8d39a8000-55f8d39a9000 r--p 00068000 fd:01 534108                     /usr/sbin/dhclient
+Size:                  4 kB
+KernelPageSize:        4 kB
+MMUPageSize:           4 kB
+Rss:                   4 kB
+Pss:                   4 kB
+Shared_Clean:          0 kB
+Shared_Dirty:          0 kB
+Private_Clean:         0 kB
+Private_Dirty:         4 kB
+Referenced:            4 kB
+Anonymous:             4 kB
+LazyFree:              0 kB
+AnonHugePages:         0 kB
+ShmemPmdMapped:        0 kB
+Shared_Hugetlb:        0 kB
+Private_Hugetlb:       0 kB
+Swap:                  0 kB
+SwapPss:               0 kB
+Locked:                4 kB
+VmFlags: rd mr mw me dw ac sd 
+
 END
 
     open my $fh, '<', \$content;
@@ -302,10 +347,16 @@ END
             total_Private_Dirty => 0+4,
             total_Swap          => 0+4,
         },
+        317 => {
+            vmacount => 2,
+            total_Size          => 416+4,
+            total_Pss           => 384+4,
+            total_Private_Dirty => 0+4,
+        },
     };
-    is_deeply(parse_smaps($fh),    $expected, 'parse_smaps - 1x process, 2x vmas');
+    is_deeply(parse_smaps($fh),    $expected, 'parse_smaps - 2x process, 2+2x vmas');
     seek $fh, 0, SEEK_SET;
-    is_deeply(parse_smaps_pp($fh), $expected, 'parse_smaps_pp - 1x process, 2x vmas');
+    is_deeply(parse_smaps_pp($fh), $expected, 'parse_smaps_pp - 2x process, 2+2x vmas');
 }
 
 {
