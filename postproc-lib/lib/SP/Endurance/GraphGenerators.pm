@@ -129,8 +129,9 @@ sub generate_plot_system_memory_1 {
         [kb2mb nonzero sum_smaps($masterdb, 'Swap')],
         lc => 'FF0000', title => 'Sum of swapped in applications',
     );
-    foreach my $key (qw/SwapCached MemFree Cached Active(file)
-                Inactive(file) Active(anon) Inactive(anon) Shmem/) {
+    foreach my $key (qw/SwapCached MemFree MemAvailable AnonPages Cached
+                    Active(file) Inactive(file) Active(anon) Inactive(anon)
+                    Shmem/) {
         $plot->push(
             [kb2mb nonzero map { $_->{'/proc/meminfo'}->{$key} } @$masterdb],
             title => $key,
