@@ -1350,6 +1350,18 @@ sub parse_statefs {
     return \%result;
 }
 
+sub read_str {
+    my $fh = shift;
+    my $result;
+    while (<$fh>) {
+        chomp;
+        s/\r+$//;
+        next if $_ eq '';
+        $result .= "$_\n";
+    }
+    return $result;
+}
+
 sub parse_dir {
     my $name = shift;
 
@@ -1366,6 +1378,8 @@ sub parse_dir {
         '/bin/df'                  => parse_df(copen $name . '/df'),
         '/etc/os-release'          => parse_os_release(copen $name . '/os-release'),
         '/etc/system-release'      => parse_os_release(copen $name . '/system-release'),
+        'str:/etc/os-release'      => read_str(copen $name . '/os-release'),
+        'str:/etc/system-release'  => read_str(copen $name . '/system-release'),
         '/proc/diskstats'          => parse_diskstats(copen $name . '/diskstats'),
         '/proc/interrupts'         => parse_interrupts(copen $name . '/interrupts'),
         '/proc/pagetypeinfo'       => parse_pagetypeinfo(copen $name . '/pagetypeinfo'),

@@ -27,7 +27,7 @@ require Exporter;
 @EXPORT_OK = qw/GRAPHS_DIR plot_filename plot_thumbname b2mb kb2mb nonzero
         has_changes max_change cumulative_to_changes uptimes total_duration
         sw_versions hw_string xtics dur_to_str round_durations
-        change_per_second/;
+        change_per_second get_str/;
 
 use List::Util qw/min max/;
 use List::MoreUtils qw/any minmax uniq/;
@@ -185,6 +185,29 @@ sub sw_versions {
     } @$masterdb;
 
     return @sw_versions;
+}
+
+sub get_str {
+    my ($masterdb, $key, $max_line_len) = @_;
+    $key = "str:$key";
+    my $value;
+    foreach (@$masterdb) {
+        if (exists $_->{$key} && length $_->{$key} > 0) {
+            $value = $_->{$key};
+            last;
+        }
+    }
+    if (defined $value && defined $max_line_len) {
+        $value = join("\n", map {
+            my $v = $_;
+            if (length($v) > $max_line_len) {
+                $v = substr $v, 0, $max_line_len;
+                $v .= "...";
+            }
+            $v
+        } split(/\n/, $value));
+    }
+    return $value;
 }
 
 sub hw_string {
