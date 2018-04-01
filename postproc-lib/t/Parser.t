@@ -27,12 +27,12 @@ use Fcntl qw/SEEK_SET/;
 
 BEGIN {
     use_ok('SP::Endurance::Parser', qw/parse_openfds parse_smaps parse_smaps_pp
-        parse_slabinfo parse_cgroups parse_interrupts parse_bmestat
-        parse_ramzswap parse_proc_stat parse_pagetypeinfo parse_diskstats
-        parse_sysfs_fs parse_sysfs_power_supply parse_sysfs_backlight
-        parse_sysfs_cpu parse_component_version parse_step parse_usage_csv
-        parse_ifconfig parse_upstart_jobs_respawned parse_sched parse_pidfilter
-        copen/);
+        parse_slabinfo parse_cgroups parse_interrupts parse_softirqs
+        parse_bmestat parse_ramzswap parse_proc_stat parse_pagetypeinfo
+        parse_diskstats parse_sysfs_fs parse_sysfs_power_supply
+        parse_sysfs_backlight parse_sysfs_cpu parse_component_version
+        parse_step parse_usage_csv parse_ifconfig parse_upstart_jobs_respawned
+        parse_sched parse_pidfilter copen/);
 }
 
 ###### parse_openfds ######
@@ -593,6 +593,38 @@ END
     RES => { count => 16770322+15932281+15195215+2920639+2963192, desc => 'Rescheduling interrupts' },
     MIS => { count => 10 },
 }, 'parse_interrupts - 8x CPU');
+
+###### parse_softirqs ######
+
+is_deeply(parse_softirqs, {}, 'parse_softirqs - undef input');
+
+{
+    my $content = '';
+    open my $fh, '<', \$content;
+    is_deeply(parse_softirqs($fh), {}, 'parse_softirqs - empty input file');
+}
+
+{
+    my $content = "\n\n\n";
+    open my $fh, '<', \$content;
+    is_deeply(parse_softirqs($fh), {}, 'parse_softirqs - input file with only newlines');
+}
+
+{
+    my $content = <<'END';
+                    CPU0       CPU1       CPU2       CPU3       CPU4       CPU5       CPU6       CPU7       
+          HI:         34          6          5          3         37         18         20         13
+       TIMER:   10753360    7844399    6667189    6612645    6433904    6737684    6161470    6110333
+      NET_TX:        104        103        120        100         41        191        140        134
+END
+
+    open my $fh, '<', \$content;
+    is_deeply(parse_softirqs($fh), {
+            HI => [34, 6, 5, 3, 37, 18, 20, 13],
+         TIMER => [10753360, 7844399, 6667189, 6612645, 6433904, 6737684, 6161470, 6110333],
+        NET_TX => [104, 103, 120, 100, 41, 191, 140, 134],
+    }, 'parse_softirqs - 8x CPU');
+}
 
 ###### parse_bmestat ######
 

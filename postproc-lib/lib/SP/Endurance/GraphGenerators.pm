@@ -1954,6 +1954,37 @@ sub generate_plot_interrupts {
 }
 BEGIN { register_generator \&generate_plot_interrupts; }
 
+sub generate_plot_softirqs {
+    my $plotter = shift;
+    my $masterdb = shift;
+
+    my $plot = $plotter->new_linespoints(
+        key => '2071_softirqs',
+        label => 'Softirqs.',
+        legend => 'SOFTIRQS',
+        ylabel => 'count per second',
+    );
+
+    my @softirqs = uniq grep { defined && length } map { keys %{$_->{'/proc/softirqs'} // {}} } @$masterdb;
+    return unless @softirqs > 0;
+
+    foreach my $interrupt (@softirqs) {
+        $plot->push(
+            [nonzero change_per_second $masterdb,
+                cumulative_to_changes map {
+                    exists $_->{'/proc/softirqs'}->{$interrupt} ?
+                     sum(@{$_->{'/proc/softirqs'}->{$interrupt}}) : undef
+            } @$masterdb],
+            title => $interrupt,
+        );
+    }
+
+    $plot->sort(sub { shift->[-1] });
+
+    done_plotting $plot;
+}
+BEGIN { register_generator \&generate_plot_softirqs; }
+
 sub generate_plot_diskstats_reads_mb {
     my $plotter = shift;
     my $masterdb = shift;

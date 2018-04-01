@@ -30,11 +30,12 @@ require Exporter;
 @ISA = qw/Exporter/;
 @EXPORT_OK = qw/parse_openfds FD_DISK FD_EPOLL FD_EVENTFD FD_INOTIFY FD_PIPE
     FD_SIGNALFD FD_SOCKET FD_TIMERFD FD_TMPFS parse_smaps parse_smaps_pp
-    parse_slabinfo parse_cgroups parse_interrupts parse_bmestat parse_ramzswap
-    parse_proc_stat parse_pagetypeinfo parse_diskstats parse_sysfs_fs
-    parse_sysfs_power_supply parse_sysfs_backlight parse_sysfs_cpu
-    parse_component_version parse_step parse_usage_csv parse_df parse_ifconfig
-    parse_upstart_jobs_respawned parse_sched parse_dir parse_pidfilter copen/;
+    parse_slabinfo parse_cgroups parse_interrupts parse_softirqs parse_bmestat
+    parse_ramzswap parse_proc_stat parse_pagetypeinfo parse_diskstats
+    parse_sysfs_fs parse_sysfs_power_supply parse_sysfs_backlight
+    parse_sysfs_cpu parse_component_version parse_step parse_usage_csv parse_df
+    parse_ifconfig parse_upstart_jobs_respawned parse_sched parse_dir
+    parse_pidfilter copen/;
 
 use File::Basename qw/basename/;
 use List::MoreUtils qw/uniq zip all any none firstidx/;
@@ -318,6 +319,26 @@ sub parse_interrupts {
     }
 
     return \%interrupts;
+}
+
+sub parse_softirqs {
+    my $fh = shift;
+    return {} unless defined $fh;
+    my %softirqs;
+    while (<$fh>) {
+        chomp;
+        next if $_ eq '';
+        my ($key, $values) = split /:/, $_, 2;
+        $key =~ s/^\s*//;
+        $key =~ s/\s*$//;
+        $values =~ s/^\s*//;
+        $values =~ s/\s*$//;
+        my @values = split /\s+/, $values;
+        if (length $key > 0 && @values > 0) {
+            $softirqs{$key} = \@values;
+        }
+    }
+    return \%softirqs;
 }
 
 sub parse_suspend_stats {
@@ -1382,6 +1403,7 @@ sub parse_dir {
         'str:/etc/system-release'  => read_str(copen $name . '/system-release'),
         '/proc/diskstats'          => parse_diskstats(copen $name . '/diskstats'),
         '/proc/interrupts'         => parse_interrupts(copen $name . '/interrupts'),
+        '/proc/softirqs'           => parse_softirqs(copen $name . '/softirqs'),
         '/proc/pagetypeinfo'       => parse_pagetypeinfo(copen $name . '/pagetypeinfo'),
         '/proc/pid/fd'             => parse_openfds(copen $name . '/open-fds'),
         '/proc/pid/sched'          => parse_sched(copen $name . '/sched'),
