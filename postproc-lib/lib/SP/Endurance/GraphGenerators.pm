@@ -540,6 +540,49 @@ sub generate_plot_minor_pagefaults {
 }
 BEGIN { register_generator \&generate_plot_minor_pagefaults; }
 
+my @proc_stat_cpu_key_order = qw/idle iowait nice user softirq irq sys steal guest guest_nice/;
+my %proc_stat_cpu_key2lc = (
+    user    => "3149BD",
+    nice    => "4265FF",
+    sys     => "DE2821",
+    idle    => "ADE739",
+    iowait  => "EE00FF",
+    irq     => "FF0000",
+    softirq => "EF0000",
+    steal   => "FFFF00",
+    guest   => "FF00B4",
+    guest_nice => "00FF4B",
+);
+sub proc_stat_cpu_hash {
+    my $values = shift;
+    my @values = @{$values // []};
+    my @datakeys  = qw/user nice sys idle iowait irq softirq steal guest guest_nice/;
+    my %keyidx = (
+        user => 0,
+        nice => 1,
+        sys => 2,
+        idle => 3,
+        iowait => 4,
+        irq => 5,
+        softirq => 6,
+        steal => 7,
+        guest => 8,
+        guest_nice => 9,
+    );
+    if ($values[$keyidx{guest}] > 0) {
+        # deduct 'guest' from 'user', kernel adds it to both for
+        # compat reasons.
+        $values[$keyidx{user}] = max(0, $values[$keyidx{user}] - $values[$keyidx{guest}]);
+    }
+    if ($values[$keyidx{guest_nice}] > 0) {
+        # deduct 'guest_nice' from 'nice', kernel adds it to both
+        # for compat reasons.
+        $values[$keyidx{nice}] = max(0, $values[$keyidx{nice}] - $values[$keyidx{guest_nice}]);
+    }
+    my $h = { zip @datakeys, @values };
+    return $h;
+}
+
 sub generate_plot_cpu {
     my $plotter = shift;
     my $masterdb = shift;
@@ -551,25 +594,12 @@ sub generate_plot_cpu {
         ylabel => 'percent',
     );
 
-    my @cpu_keys = qw/idle iowait nice user softirq irq sys/;
-
-    foreach my $key (@cpu_keys) {
+    foreach my $key (@proc_stat_cpu_key_order) {
         $plot->push(
             [nonzero cumulative_to_changes map {
-                my @datakeys = qw/user nice sys idle iowait irq softirq/;
-                my $h = { zip @datakeys, @{$_->{'/proc/stat'}->{cpu}} };
-                $h->{$key}
+                proc_stat_cpu_hash($_->{'/proc/stat'}->{cpu})->{$key}
             } @$masterdb],
-            lc => {
-                user    => "3149BD",
-                nice    => "4265FF",
-                sys     => "DE2821",
-                idle    => "ADE739",
-                iowait  => "EE00FF",
-                irq     => "FF0000",
-                softirq => "EF0000",
-            }->{$key},
-            title => $key,
+            lc => $proc_stat_cpu_key2lc{$key}, title => $key,
         );
     }
 
@@ -578,6 +608,36 @@ sub generate_plot_cpu {
     done_plotting $plot;
 }
 BEGIN { register_generator \&generate_plot_cpu; }
+
+sub generate_plot_per_cpu {
+    my $plotter = shift;
+    my $masterdb = shift;
+
+    my @cpus = sort { $a <=> $b } map { /^cpu([0-9]+)$/ ; $1 }
+        uniq grep { /^cpu[0-9]/ } map { keys %{$_->{'/proc/stat'} // {}} } @$masterdb;
+    #print Dumper \@cpus;
+    return if @cpus <= 1;
+
+    foreach my $cpu_num (@cpus) {
+        my $plot = $plotter->new_histogram(
+            key => sprintf('2016_cpu_%04d', $cpu_num),
+            label => "cpu$cpu_num utilization",
+            legend => "CPU$cpu_num UTILIZATION",
+            ylabel => 'percent',
+        );
+        foreach my $key (@proc_stat_cpu_key_order) {
+            $plot->push(
+                [nonzero cumulative_to_changes map {
+                    proc_stat_cpu_hash($_->{'/proc/stat'}->{"cpu$cpu_num"})->{$key}
+                } @$masterdb],
+                lc => $proc_stat_cpu_key2lc{$key}, title => $key,
+            );
+        }
+        $plot->scale(to => 100);
+        done_plotting $plot;
+    }
+}
+BEGIN { register_generator \&generate_plot_per_cpu; }
 
 sub generate_plot_cpu_freq {
     my $plotter = shift;

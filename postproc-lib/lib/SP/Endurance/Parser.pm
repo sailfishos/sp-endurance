@@ -408,7 +408,7 @@ sub parse_proc_stat {
         my $data = $2;
 
         # Take only what we really need.
-        next unless $key =~ /^(?:cpu|ctxt|processes)$/;
+        next unless $key =~ /^(?:cpu[0-9]*|ctxt|processes)$/;
 
         my @ints = map { int } grep { /\d+/ } split ' ', $data;
         next unless @ints;
