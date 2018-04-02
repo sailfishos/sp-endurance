@@ -592,6 +592,8 @@ sub generate_plot_cpu {
         label => 'CPU utilization',
         legend => 'CPU UTILIZATION',
         ylabel => 'percent',
+        ymin => 0,
+        ymax => 120,
     );
 
     foreach my $key (@proc_stat_cpu_key_order) {
@@ -624,6 +626,8 @@ sub generate_plot_per_cpu {
             label => "cpu$cpu_num utilization",
             legend => "CPU$cpu_num UTILIZATION",
             ylabel => 'percent',
+            ymin => 0,
+            ymax => 120,
         );
         foreach my $key (@proc_stat_cpu_key_order) {
             $plot->push(
