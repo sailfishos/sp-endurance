@@ -76,7 +76,7 @@
  */
 typedef struct {
 	int skip;	/* whether to skip this item */
-	char cmd[128];	/* command line[read/show size] */
+	char cmd[256];	/* command line[read/show size] */
 	char pid[6];	/* Pid */
 } status_t;
 
