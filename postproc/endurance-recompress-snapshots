@@ -79,7 +79,7 @@ if ($? != 0) {
 
 print "Finding files for recompression.\n";
 for my $dir (@ARGV) {
-	my @files = map { "$dir/$_" } qw/smaps.cap syslog dmesg open-fds/;
+	my @files = map { "$dir/$_" } qw/smaps.cap syslog dmesg open-fds sysfs_fs sysfs_cpu sched/;
 	push @files, glob "$dir/upstart/*.log";
 	push @files, map { s/\.lzo$//; $_ } glob "$dir/upstart/*.log.lzo";
 	foreach my $file (@files) {
