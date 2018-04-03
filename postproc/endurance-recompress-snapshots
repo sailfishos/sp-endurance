@@ -84,7 +84,7 @@ for my $dir (@ARGV) {
 	push @files, map { s/\.lzo$//; $_ } glob "$dir/upstart/*.log.lzo";
 	foreach my $file (@files) {
 		next if -e $file . '.xz';
-		foreach ($file . '.lzo', $file . 'gz', $file) {
+		foreach ("$file.lzo", "$file.gz", $file) {
 			if (-e $_ and -f $_ and -r $_ and -s $_) {
 				push(@recompress, $_);
 				last;
