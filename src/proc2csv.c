@@ -77,7 +77,7 @@
 typedef struct {
 	int skip;	/* whether to skip this item */
 	char cmd[256];	/* command line[read/show size] */
-	char pid[6];	/* Pid */
+	char pid[16];	/* Pid */
 } status_t;
 
 /* return values for process types */
@@ -272,7 +272,7 @@ static void show_keyvalue_file(const char *filename, char separator)
 
 static pid_type_t show_status(status_t *s, int show)
 {
-	char status[20];
+	char status[256];
 	FILE *fp;
 
 	if (s->skip) {
@@ -331,7 +331,7 @@ static void show_statuses(int num, status_t *statuslist)
 /* read /proc/pid/stat */
 static void show_proc_pid_stat(int num, const status_t *statuslist)
 {
-	char stat[20];
+	char stat[256];
 	FILE *fp;
 	int i;
 	const status_t *s;
@@ -384,7 +384,7 @@ static void show_proc_pid_wchan(int num, const status_t *statuslist)
 
 static void show_proc_pid_io(int num, const status_t *statuslist)
 {
-	char buffer[20];
+	char buffer[256];
 	FILE *fp;
 	int i;
 	int header = 0;
@@ -415,7 +415,7 @@ static void show_proc_pid_io(int num, const status_t *statuslist)
 static void show_fd_counts(int num, status_t *statuslist)
 {
 	int fds, idx, exited = 0;
-	char fddir[20];
+	char fddir[256];
 	status_t *s;
 	DIR *dir;
 
@@ -468,7 +468,7 @@ static status_t *read_info(int num, struct dirent **namelist)
 	struct dirent **n;
 	status_t *statuslist, *s;
 	int i, idx, count, exited = 0;
-	char filename[20], *cmdline;
+	char filename[256], *cmdline;
 	
 	/* allocate & zero status for each of the processes */
 	statuslist = calloc(num, sizeof(status_t));
