@@ -3114,11 +3114,7 @@ sub generate_plot_cpu_suspend_time {
 
     my @values = map { $_->{suspend_stats}->{'suspend_time'} } @$masterdb;
 
-    if (@values == 0) {
-        # No data, add dummy series to have at least an empty graph rendered.
-        $plot->push([ ( 0 ) ], title => 'NO DATA');
-    }
-    else {
+    if (any { defined } @values) {
         for (my $i = @values - 1; $i != 0; --$i) {
             $values[$i] -= $values[$i - 1];
         }
