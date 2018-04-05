@@ -1969,6 +1969,18 @@ END
     ],
 }, 'parse_usage_csv');
 
+{
+    my $content = <<'END';
+Name,Umask,State,Tgid,Ngid,Pid,PPid,TracerPid,Uid,Gid,FDSize,Groups,NStgid,NSpid,NSpgid,NSsid,VmPeak,VmSize,VmLck,VmPin,VmHWM,VmRSS,RssAnon,RssFile,RssShmem,VmData,VmStk,VmExe,VmLib,VmPTE,VmSwap,HugetlbPages,CoreDumping,Threads,SigQ,SigPnd,ShdPnd,SigBlk,SigIgn,SigCgt,CapInh,CapPrm,CapEff,CapBnd,CapAmb,NoNewPrivs,Seccomp,Cpus_allowed,Cpus_allowed_list,Mems_allowed,Mems_allowed_list,voluntary_ctxt_switches,nonvoluntary_ctxt_switches:
+systemd,0000,S (sleeping),1,0,1,0,0,0,0,512,,1,1,1,1,295916 kB,239140 kB,0 kB,0 kB,12336 kB,12280 kB,5044 kB,7236 kB,0 kB,29532 kB,132 kB,1440 kB,10196 kB,216 kB,0 kB,0 kB,0,1,1/94851,0000000000000000,0000000000000000,7be3c0fe28014a03,0000000000001000,00000001800004ec,0000000000000000,0000003fffffffff,0000003fffffffff,0000003fffffffff,0000000000000000,0,0,ff,0-7,00000000/00000000/00000000/00000000/00000000/00000000/00000000/00000000/00000000/00000000/00000000/00000000/00000000/00000000/00000000/00000000/00000000/00000000/00000000/00000000/00000000/00000000/00000000/00000000/00000000/00000000/00000000/00000000/00000000/00000000/00000000/00000001,0,3616951,1822
+END
+
+    open my $fh, '<', \$content;
+    is_deeply(parse_usage_csv($fh), {
+        1 => 'Name,systemd,VmSize,239140,VmLck,0,voluntary_ctxt_switches,3616951,nonvoluntary_ctxt_switches,1822,Threads,1'
+    }, 'parse_usage_csv');
+}
+
 ###### parse_ifconfig ######
 
 is_deeply(parse_ifconfig, {}, 'parse_ifconfig - undef input');

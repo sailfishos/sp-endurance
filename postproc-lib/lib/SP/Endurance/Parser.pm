@@ -1099,7 +1099,7 @@ sub parse_usage_csv {
         elsif (/^Shared memory segments:/) { $csv{'/proc/sysvipc/shm'} = csv_sysvipc_shm($fh, $_) }
         elsif (/^MemTotal/)                { $csv{'/proc/meminfo'} = csv_proc_meminfo($fh, $_) }
         elsif (/^Process status:/)         { $csv{'/proc/pid/stat'} = csv_proc_pid_stat($fh, $_) }
-        elsif (/^Name,State,/)             { $csv{'/proc/pid/status'} = csv_proc_pid_status($fh, $_) }
+        elsif (/^Name,/)                   { $csv{'/proc/pid/status'} = csv_proc_pid_status($fh, $_) }
         elsif (/^PID,wchan:/)              { $csv{'/proc/pid/wchan'} = csv_wchan($fh, $_) }
         elsif (/^PID,rchar,/)              { $csv{'/proc/pid/io'} = csv_proc_pid_io($fh, $_) }
         elsif (/^PID,FD count,Command/)    { ($csv{'/proc/pid/cmdline'},
