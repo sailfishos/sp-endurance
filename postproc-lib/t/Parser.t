@@ -27,12 +27,12 @@ use Fcntl qw/SEEK_SET/;
 
 BEGIN {
     use_ok('SP::Endurance::Parser', qw/parse_openfds parse_smaps parse_smaps_pp
-        parse_slabinfo parse_cgroups parse_interrupts parse_bmestat
-        parse_ramzswap parse_proc_stat parse_pagetypeinfo parse_diskstats
-        parse_sysfs_fs parse_sysfs_power_supply parse_sysfs_backlight
-        parse_sysfs_cpu parse_component_version parse_step parse_usage_csv
-        parse_ifconfig parse_upstart_jobs_respawned parse_sched parse_pidfilter
-        copen/);
+        parse_slabinfo parse_cgroups parse_interrupts parse_softirqs
+        parse_bmestat parse_ramzswap parse_proc_stat parse_pagetypeinfo
+        parse_diskstats parse_sysfs_fs parse_sysfs_power_supply
+        parse_sysfs_backlight parse_sysfs_cpu parse_component_version
+        parse_step parse_usage_csv parse_ifconfig parse_upstart_jobs_respawned
+        parse_sched parse_pidfilter copen/);
 }
 
 ###### parse_openfds ######
@@ -224,6 +224,42 @@ END
 
 {
     my $content = << 'END';
+==> /proc/1/maps <==
+00008000-00027000 r-xp 00000000 b3:02 84         /sbin/init
+
+==> /proc/2/maps <==
+00008000-00027000 r-xp 00000000 b3:02 84         /bin/bash
+0002e000-0002f000 r--p 0001e000 b3:02 84         /bin/bash
+
+==> /proc/3/maps <==
+
+
+==> /proc/4/maps <==
+
+
+==> /proc/32000/maps <==
+00008000-00027000 r-xp 00000000 b3:02 84         /sbin/init
+END
+
+    open my $fh, '<', \$content;
+    my $expected = {
+        1 => {
+            vmacount => 1,
+        },
+        2 => {
+            vmacount => 2,
+        },
+        32000 => {
+            vmacount => 1,
+        },
+    };
+    is_deeply(parse_smaps($fh),    $expected, 'parse_smaps - 3x process, 1+2+1x vmas');
+    seek $fh, 0, SEEK_SET;
+    is_deeply(parse_smaps_pp($fh), $expected, 'parse_smaps_pp - 3x process, 1+2+1x vmas');
+}
+
+{
+    my $content = << 'END';
 ==> /proc/1/smaps <==
 #Pid: 1
 #PPid: 0
@@ -255,6 +291,51 @@ Swap:                  4 kB
 KernelPageSize:        4 kB
 MMUPageSize:           4 kB
 Locked:                4 kB
+
+==> /proc/317/smaps <==
+55f8d3740000-55f8d37a8000 r-xp 00000000 fd:01 534108                     /usr/sbin/dhclient
+Size:                416 kB
+KernelPageSize:        4 kB
+MMUPageSize:           4 kB
+Rss:                 384 kB
+Pss:                 384 kB
+Shared_Clean:          0 kB
+Shared_Dirty:          0 kB
+Private_Clean:       384 kB
+Private_Dirty:         0 kB
+Referenced:          384 kB
+Anonymous:             0 kB
+LazyFree:              0 kB
+AnonHugePages:         0 kB
+ShmemPmdMapped:        0 kB
+Shared_Hugetlb:        0 kB
+Private_Hugetlb:       0 kB
+Swap:                  0 kB
+SwapPss:               0 kB
+Locked:              384 kB
+VmFlags: rd ex mr mw me dw sd 
+55f8d39a8000-55f8d39a9000 r--p 00068000 fd:01 534108                     /usr/sbin/dhclient
+Size:                  4 kB
+KernelPageSize:        4 kB
+MMUPageSize:           4 kB
+Rss:                   4 kB
+Pss:                   4 kB
+Shared_Clean:          0 kB
+Shared_Dirty:          0 kB
+Private_Clean:         0 kB
+Private_Dirty:         4 kB
+Referenced:            4 kB
+Anonymous:             4 kB
+LazyFree:              0 kB
+AnonHugePages:         0 kB
+ShmemPmdMapped:        0 kB
+Shared_Hugetlb:        0 kB
+Private_Hugetlb:       0 kB
+Swap:                  0 kB
+SwapPss:               0 kB
+Locked:                4 kB
+VmFlags: rd mr mw me dw ac sd 
+
 END
 
     open my $fh, '<', \$content;
@@ -266,10 +347,16 @@ END
             total_Private_Dirty => 0+4,
             total_Swap          => 0+4,
         },
+        317 => {
+            vmacount => 2,
+            total_Size          => 416+4,
+            total_Pss           => 384+4,
+            total_Private_Dirty => 0+4,
+        },
     };
-    is_deeply(parse_smaps($fh),    $expected, 'parse_smaps - 1x process, 2x vmas');
+    is_deeply(parse_smaps($fh),    $expected, 'parse_smaps - 2x process, 2+2x vmas');
     seek $fh, 0, SEEK_SET;
-    is_deeply(parse_smaps_pp($fh), $expected, 'parse_smaps_pp - 1x process, 2x vmas');
+    is_deeply(parse_smaps_pp($fh), $expected, 'parse_smaps_pp - 2x process, 2+2x vmas');
 }
 
 {
@@ -507,6 +594,38 @@ END
     MIS => { count => 10 },
 }, 'parse_interrupts - 8x CPU');
 
+###### parse_softirqs ######
+
+is_deeply(parse_softirqs, {}, 'parse_softirqs - undef input');
+
+{
+    my $content = '';
+    open my $fh, '<', \$content;
+    is_deeply(parse_softirqs($fh), {}, 'parse_softirqs - empty input file');
+}
+
+{
+    my $content = "\n\n\n";
+    open my $fh, '<', \$content;
+    is_deeply(parse_softirqs($fh), {}, 'parse_softirqs - input file with only newlines');
+}
+
+{
+    my $content = <<'END';
+                    CPU0       CPU1       CPU2       CPU3       CPU4       CPU5       CPU6       CPU7       
+          HI:         34          6          5          3         37         18         20         13
+       TIMER:   10753360    7844399    6667189    6612645    6433904    6737684    6161470    6110333
+      NET_TX:        104        103        120        100         41        191        140        134
+END
+
+    open my $fh, '<', \$content;
+    is_deeply(parse_softirqs($fh), {
+            HI => [34, 6, 5, 3, 37, 18, 20, 13],
+         TIMER => [10753360, 7844399, 6667189, 6612645, 6433904, 6737684, 6161470, 6110333],
+        NET_TX => [104, 103, 120, 100, 41, 191, 140, 134],
+    }, 'parse_softirqs - 8x CPU');
+}
+
 ###### parse_bmestat ######
 
 is_deeply(parse_bmestat, {}, 'parse_bmestat - undef input');
@@ -643,7 +762,7 @@ softirq 182351 2255 64305 3 213 0 0 21403 0 27 94145
 END
 )), {
     'cpu' =>  [ 33416, 1806, 11546, 15350, 3714, 212, 16, 0, 0 ],
-    #'cpu0' => [ 33416, 1806, 11546, 15350, 3714, 212, 16, 0, 0 ],
+    'cpu0' => [ 33416, 1806, 11546, 15350, 3714, 212, 16, 0, 0 ],
     #'intr' => [ 469046, 0, 0, 0, 0, 0, 0, 0, 575, 0, 0, 0, 14955, 97232, 0, 0, 0, 0, 0, 1, 1, 0, 20074 ],
     'ctxt' => 1239044,
     #'btime' => 1324049575,
@@ -673,14 +792,14 @@ softirq 128253506 0 36745780
 END
 )), {
     'cpu' =>  [ 2175726, 732308, 734523, 1010007255, 1139610, 324, 5713, 0, 0, 0 ],
-    #'cpu0' => [ 422430, 127647, 147258, 126148712, 31629, 0, 1099, 0, 0, 0 ],
-    #'cpu1' => [ 428545, 102638, 146221, 126166690, 17830, 3, 1012, 0, 0, 0 ],
-    #'cpu2' => [ 381561, 129317, 144999, 126200639, 13708, 0, 276, 0, 0, 0 ],
-    #'cpu3' => [ 434220, 98836, 143584, 125510251, 13983, 320, 241, 0, 0, 0 ],
-    #'cpu4' => [ 133241, 68444, 37233, 126743478, 4665, 0, 205, 0, 0, 0 ],
-    #'cpu5' => [ 98827, 60411, 24858, 126811064, 5007, 0, 107, 0, 0, 0 ],
-    #'cpu6' => [ 99532, 64579, 30560, 126804167, 4125, 0, 46, 0, 0, 0 ],
-    #'cpu7' => [ 177367, 80431, 59807, 125622251, 1048659, 0, 2724, 0, 0, 0 ],
+    'cpu0' => [ 422430, 127647, 147258, 126148712, 31629, 0, 1099, 0, 0, 0 ],
+    'cpu1' => [ 428545, 102638, 146221, 126166690, 17830, 3, 1012, 0, 0, 0 ],
+    'cpu2' => [ 381561, 129317, 144999, 126200639, 13708, 0, 276, 0, 0, 0 ],
+    'cpu3' => [ 434220, 98836, 143584, 125510251, 13983, 320, 241, 0, 0, 0 ],
+    'cpu4' => [ 133241, 68444, 37233, 126743478, 4665, 0, 205, 0, 0, 0 ],
+    'cpu5' => [ 98827, 60411, 24858, 126811064, 5007, 0, 107, 0, 0, 0 ],
+    'cpu6' => [ 99532, 64579, 30560, 126804167, 4125, 0, 46, 0, 0, 0 ],
+    'cpu7' => [ 177367, 80431, 59807, 125622251, 1048659, 0, 2724, 0, 0, 0 ],
     #'intr' => [ 1097444528, 528956480, 2 ],
     'ctxt' => 1387646639,
     #'btime' => 1333024007,
@@ -1618,6 +1737,12 @@ PID,FD count,Command line:
 567,4,hald-runner
 569,0,
 600,45,/usr/bin/Xorg -logfile /tmp/Xorg.0.log -core -background none -logverbose 1 -si
+700,1,python
+701,1,python /path/to/foo.py
+702,1,python2.7 -u /path/to/foo.py
+703,1,python3 /path/to/foo.py arg1 arg2 arg3
+704,1,/usr/bin/python3  -x  -y  -z  --long  foo3     arg1 arg2
+800,1,/usr/bin/perl ./test.pl
 
 Name,State,Tgid,Pid,VmSize,VmLck,voluntary_ctxt_switches,nonvoluntary_ctxt_switches,Threads:
 invalid,line,goes,here
@@ -1718,6 +1843,12 @@ END
         544 => 'hald',
         567 => 'hald-runner',
         600 => 'Xorg',
+        700 => 'python',
+        701 => 'python [foo.py]',
+        702 => 'python2.7 [foo.py]',
+        703 => 'python3 [foo.py]',
+        704 => 'python3 [foo3]',
+        800 => 'perl [test.pl]',
     },
     '/proc/pid/fd_count' => {
         1   => 8,
@@ -1725,6 +1856,12 @@ END
         544 => 17,
         567 => 4,
         600 => 45,
+        700 => 1,
+        701 => 1,
+        702 => 1,
+        703 => 1,
+        704 => 1,
+        800 => 1,
     },
     '/proc/pid/status' => {
         1    => 'Name,init,VmSize,1,VmLck,5,voluntary_ctxt_switches,10,nonvoluntary_ctxt_switches,11,Threads,0',
@@ -1831,6 +1968,18 @@ END
         },
     ],
 }, 'parse_usage_csv');
+
+{
+    my $content = <<'END';
+Name,Umask,State,Tgid,Ngid,Pid,PPid,TracerPid,Uid,Gid,FDSize,Groups,NStgid,NSpid,NSpgid,NSsid,VmPeak,VmSize,VmLck,VmPin,VmHWM,VmRSS,RssAnon,RssFile,RssShmem,VmData,VmStk,VmExe,VmLib,VmPTE,VmSwap,HugetlbPages,CoreDumping,Threads,SigQ,SigPnd,ShdPnd,SigBlk,SigIgn,SigCgt,CapInh,CapPrm,CapEff,CapBnd,CapAmb,NoNewPrivs,Seccomp,Cpus_allowed,Cpus_allowed_list,Mems_allowed,Mems_allowed_list,voluntary_ctxt_switches,nonvoluntary_ctxt_switches:
+systemd,0000,S (sleeping),1,0,1,0,0,0,0,512,,1,1,1,1,295916 kB,239140 kB,0 kB,0 kB,12336 kB,12280 kB,5044 kB,7236 kB,0 kB,29532 kB,132 kB,1440 kB,10196 kB,216 kB,0 kB,0 kB,0,1,1/94851,0000000000000000,0000000000000000,7be3c0fe28014a03,0000000000001000,00000001800004ec,0000000000000000,0000003fffffffff,0000003fffffffff,0000003fffffffff,0000000000000000,0,0,ff,0-7,00000000/00000000/00000000/00000000/00000000/00000000/00000000/00000000/00000000/00000000/00000000/00000000/00000000/00000000/00000000/00000000/00000000/00000000/00000000/00000000/00000000/00000000/00000000/00000000/00000000/00000000/00000000/00000000/00000000/00000000/00000000/00000001,0,3616951,1822
+END
+
+    open my $fh, '<', \$content;
+    is_deeply(parse_usage_csv($fh), {
+        1 => 'Name,systemd,VmSize,239140,VmLck,0,voluntary_ctxt_switches,3616951,nonvoluntary_ctxt_switches,1822,Threads,1'
+    }, 'parse_usage_csv');
+}
 
 ###### parse_ifconfig ######
 

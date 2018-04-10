@@ -129,8 +129,9 @@ sub generate_plot_system_memory_1 {
         [kb2mb nonzero sum_smaps($masterdb, 'Swap')],
         lc => 'FF0000', title => 'Sum of swapped in applications',
     );
-    foreach my $key (qw/SwapCached MemFree Cached Active(file)
-                Inactive(file) Active(anon) Inactive(anon) Shmem/) {
+    foreach my $key (qw/SwapCached MemFree MemAvailable AnonPages Cached
+                    Active(file) Inactive(file) Active(anon) Inactive(anon)
+                    Shmem/) {
         $plot->push(
             [kb2mb nonzero map { $_->{'/proc/meminfo'}->{$key} } @$masterdb],
             title => $key,
@@ -539,6 +540,49 @@ sub generate_plot_minor_pagefaults {
 }
 BEGIN { register_generator \&generate_plot_minor_pagefaults; }
 
+my @proc_stat_cpu_key_order = qw/idle iowait nice user softirq irq sys steal guest guest_nice/;
+my %proc_stat_cpu_key2lc = (
+    user    => "3149BD",
+    nice    => "4265FF",
+    sys     => "DE2821",
+    idle    => "ADE739",
+    iowait  => "EE00FF",
+    irq     => "FF0000",
+    softirq => "EF0000",
+    steal   => "FFFF00",
+    guest   => "FF00B4",
+    guest_nice => "00FF4B",
+);
+sub proc_stat_cpu_hash {
+    my $values = shift;
+    my @values = @{$values // []};
+    my @datakeys  = qw/user nice sys idle iowait irq softirq steal guest guest_nice/;
+    my %keyidx = (
+        user => 0,
+        nice => 1,
+        sys => 2,
+        idle => 3,
+        iowait => 4,
+        irq => 5,
+        softirq => 6,
+        steal => 7,
+        guest => 8,
+        guest_nice => 9,
+    );
+    if ($values[$keyidx{guest}] > 0) {
+        # deduct 'guest' from 'user', kernel adds it to both for
+        # compat reasons.
+        $values[$keyidx{user}] = max(0, $values[$keyidx{user}] - $values[$keyidx{guest}]);
+    }
+    if ($values[$keyidx{guest_nice}] > 0) {
+        # deduct 'guest_nice' from 'nice', kernel adds it to both
+        # for compat reasons.
+        $values[$keyidx{nice}] = max(0, $values[$keyidx{nice}] - $values[$keyidx{guest_nice}]);
+    }
+    my $h = { zip @datakeys, @values };
+    return $h;
+}
+
 sub generate_plot_cpu {
     my $plotter = shift;
     my $masterdb = shift;
@@ -548,27 +592,16 @@ sub generate_plot_cpu {
         label => 'CPU utilization',
         legend => 'CPU UTILIZATION',
         ylabel => 'percent',
+        ymin => 0,
+        ymax => 120,
     );
 
-    my @cpu_keys = qw/idle iowait nice user softirq irq sys/;
-
-    foreach my $key (@cpu_keys) {
+    foreach my $key (@proc_stat_cpu_key_order) {
         $plot->push(
             [nonzero cumulative_to_changes map {
-                my @datakeys = qw/user nice sys idle iowait irq softirq/;
-                my $h = { zip @datakeys, @{$_->{'/proc/stat'}->{cpu}} };
-                $h->{$key}
+                proc_stat_cpu_hash($_->{'/proc/stat'}->{cpu})->{$key}
             } @$masterdb],
-            lc => {
-                user    => "3149BD",
-                nice    => "4265FF",
-                sys     => "DE2821",
-                idle    => "ADE739",
-                iowait  => "EE00FF",
-                irq     => "FF0000",
-                softirq => "EF0000",
-            }->{$key},
-            title => $key,
+            lc => $proc_stat_cpu_key2lc{$key}, title => $key,
         );
     }
 
@@ -577,6 +610,38 @@ sub generate_plot_cpu {
     done_plotting $plot;
 }
 BEGIN { register_generator \&generate_plot_cpu; }
+
+sub generate_plot_per_cpu {
+    my $plotter = shift;
+    my $masterdb = shift;
+
+    my @cpus = sort { $a <=> $b } map { /^cpu([0-9]+)$/ ; $1 }
+        uniq grep { /^cpu[0-9]/ } map { keys %{$_->{'/proc/stat'} // {}} } @$masterdb;
+    #print Dumper \@cpus;
+    return if @cpus <= 1;
+
+    foreach my $cpu_num (@cpus) {
+        my $plot = $plotter->new_histogram(
+            key => sprintf('2016_cpu_%04d', $cpu_num),
+            label => "cpu$cpu_num utilization",
+            legend => "CPU$cpu_num UTILIZATION",
+            ylabel => 'percent',
+            ymin => 0,
+            ymax => 120,
+        );
+        foreach my $key (@proc_stat_cpu_key_order) {
+            $plot->push(
+                [nonzero cumulative_to_changes map {
+                    proc_stat_cpu_hash($_->{'/proc/stat'}->{"cpu$cpu_num"})->{$key}
+                } @$masterdb],
+                lc => $proc_stat_cpu_key2lc{$key}, title => $key,
+            );
+        }
+        $plot->scale(to => 100);
+        done_plotting $plot;
+    }
+}
+BEGIN { register_generator \&generate_plot_per_cpu; }
 
 sub generate_plot_cpu_freq {
     my $plotter = shift;
@@ -1013,7 +1078,41 @@ sub private_dirty_collect_data {
     return $plot;
 }
 
-sub generate_plot_private_dirty {
+sub generate_plot_private_dirty_only {
+    my $plotter = shift;
+    my $masterdb = shift;
+
+    my $plot = $plotter->new_histogram(
+        key => '1009_private_dirty',
+        label => 'Private dirty',
+        legend => 'PRIVATE DIRTY',
+        ylabel => 'MB',
+        column_limit => 1,
+        reduce_f => sub {
+            my @leftovers;
+
+            foreach my $idx (0 .. @$masterdb-1) {
+                push @leftovers, sum map {
+                    exists $_->{__data} &&
+                    exists $_->{__data}->[$idx] ?
+                           $_->{__data}->[$idx] : undef
+                } @_;
+            }
+
+            return [nonzero @leftovers],
+                   title => 'Sum of ' . scalar(@_) . ' processes';
+        },
+    );
+
+    private_dirty_collect_data $plot, $masterdb;
+
+    $plot->sort(sub { max @{shift()} });
+    $plot->reduce;
+    $plot->sort(\&max_change, sub { max @{shift()} });
+
+    done_plotting $plot;
+}
+sub generate_plot_private_dirty_plus_swap {
     my $plotter = shift;
     my $masterdb = shift;
 
@@ -1047,9 +1146,51 @@ sub generate_plot_private_dirty {
 
     done_plotting $plot;
 }
+sub generate_plot_private_dirty {
+    my $plotter = shift;
+    my $masterdb = shift;
+
+    my @pids = uniq map { keys %{$_->{'/proc/pid/smaps'} // {}} } @$masterdb;
+
+    foreach my $entry (@$masterdb) {
+        foreach my $pid (@pids) {
+            goto swap if exists $entry->{'/proc/pid/smaps'}->{$pid} and
+                         exists $entry->{'/proc/pid/smaps'}->{$pid}->{total_Swap} and
+                                $entry->{'/proc/pid/smaps'}->{$pid}->{total_Swap};
+        }
+    }
+
+    return generate_plot_private_dirty_only $plotter, $masterdb;
+
+swap:
+    return generate_plot_private_dirty_plus_swap $plotter, $masterdb;
+}
 BEGIN { register_generator \&generate_plot_private_dirty; }
 
-sub generate_plot_private_dirty_changes {
+sub generate_plot_private_dirty_only_changes {
+    my $plotter = shift;
+    my $masterdb = shift;
+
+    my $plot = $plotter->new_linespoints(
+        key => '1009_private_dirty_%d',
+        label => 'Private dirty (excluding non-changed)',
+        ylabel => 'MB',
+        multiple => {
+            max_plots => 4,
+            max_per_plot => 15,
+            split_f => sub { max @{shift()} },
+            split_factor => 5,
+            legend_f => sub { 'PRIVATE DIRTY &mdash; MAX ' . ceil(max @{shift()}) . 'MB' },
+        },
+        exclude_nonchanged => 1,
+    );
+
+    private_dirty_collect_data $plot, $masterdb;
+
+    done_plotting $plot;
+}
+
+sub generate_plot_private_dirty_plus_swap_changes {
     my $plotter = shift;
     my $masterdb = shift;
 
@@ -1070,6 +1211,25 @@ sub generate_plot_private_dirty_changes {
     private_dirty_collect_data $plot, $masterdb;
 
     done_plotting $plot;
+}
+sub generate_plot_private_dirty_changes {
+    my $plotter = shift;
+    my $masterdb = shift;
+
+    my @pids = uniq map { keys %{$_->{'/proc/pid/smaps'} // {}} } @$masterdb;
+
+    foreach my $entry (@$masterdb) {
+        foreach my $pid (@pids) {
+            goto swap if exists $entry->{'/proc/pid/smaps'}->{$pid} and
+                         exists $entry->{'/proc/pid/smaps'}->{$pid}->{total_Swap} and
+                                $entry->{'/proc/pid/smaps'}->{$pid}->{total_Swap};
+        }
+    }
+
+    return generate_plot_private_dirty_only_changes $plotter, $masterdb;
+
+swap:
+    return generate_plot_private_dirty_plus_swap_changes $plotter, $masterdb;
 }
 BEGIN { register_generator \&generate_plot_private_dirty_changes; }
 
@@ -1858,6 +2018,37 @@ sub generate_plot_interrupts {
 }
 BEGIN { register_generator \&generate_plot_interrupts; }
 
+sub generate_plot_softirqs {
+    my $plotter = shift;
+    my $masterdb = shift;
+
+    my $plot = $plotter->new_linespoints(
+        key => '2071_softirqs',
+        label => 'Softirqs.',
+        legend => 'SOFTIRQS',
+        ylabel => 'count per second',
+    );
+
+    my @softirqs = uniq grep { defined && length } map { keys %{$_->{'/proc/softirqs'} // {}} } @$masterdb;
+    return unless @softirqs > 0;
+
+    foreach my $interrupt (@softirqs) {
+        $plot->push(
+            [nonzero change_per_second $masterdb,
+                cumulative_to_changes map {
+                    exists $_->{'/proc/softirqs'}->{$interrupt} ?
+                     sum(@{$_->{'/proc/softirqs'}->{$interrupt}}) : undef
+            } @$masterdb],
+            title => $interrupt,
+        );
+    }
+
+    $plot->sort(sub { shift->[-1] });
+
+    done_plotting $plot;
+}
+BEGIN { register_generator \&generate_plot_softirqs; }
+
 sub generate_plot_diskstats_reads_mb {
     my $plotter = shift;
     my $masterdb = shift;
@@ -2391,6 +2582,7 @@ sub generate_plot_process_state_count {
         ylabel => 'count',
     );
 
+    # Note that sleeping and idle task states are skipped when parsing data.
     my %states;
     foreach my $entry (@$masterdb) {
         next unless exists $entry->{'/proc/pid/stat'};
@@ -2415,11 +2607,15 @@ sub generate_plot_process_state_count {
 
         $plot->push([nonzero @count],
             title => $state . {
-                D => ' (Uninterruptible disk sleep)',
-                R => ' (Running)',
-                T => ' (Traced or stopped)',
-                W => ' (Paging)',
-                Z => ' (Zombie)',
+                R => ' (running)',
+                #S => skipped
+                D => ' (disk sleep)',
+                T => ' (stopped)',
+                t => ' (tracing stop)',
+                X => ' (dead)',
+                Z => ' (zombie)',
+                P => ' (parked)',
+                #I => skipped
             }->{$state},
         );
     }
@@ -2918,11 +3114,7 @@ sub generate_plot_cpu_suspend_time {
 
     my @values = map { $_->{suspend_stats}->{'suspend_time'} } @$masterdb;
 
-    if (@values == 0) {
-        # No data, add dummy series to have at least an empty graph rendered.
-        $plot->push([ ( 0 ) ], title => 'NO DATA');
-    }
-    else {
+    if (any { defined } @values) {
         for (my $i = @values - 1; $i != 0; --$i) {
             $values[$i] -= $values[$i - 1];
         }

@@ -30,7 +30,8 @@ use SP::Endurance::Parser qw/parse_dir/;
 use SP::Endurance::Plotter;
 use SP::Endurance::GraphGenerators qw/graph_generators get_plots/;
 use SP::Endurance::Util qw/GRAPHS_DIR plot_filename plot_thumbname uptimes
-        total_duration sw_versions hw_string xtics dur_to_str round_durations/;
+        total_duration sw_versions hw_string xtics dur_to_str round_durations
+        get_str/;
 use SP::Endurance::GnuplotWorker;
 
 use List::Util qw/min max/;
@@ -229,7 +230,16 @@ sub generate_plots {
     my $sw_version = join ' / ', sw_versions $masterdb;
     my $global_label =
         'SW=' . $sw_version . '\n' .
-        'HW=' . hw_string($masterdb);
+        'HW=' . hw_string($masterdb) . '\n';
+
+    foreach my $k (qw#/etc/system-release /etc/os-release#) {
+        my $value = get_str($masterdb, $k, 100);
+        next unless defined $value;
+
+        $value =~ s/\n/\\n/g;
+        $value =~ s/"//g;
+        $global_label .= '\n' . $k . ':\n' . $value . '\n';
+    }
 
     my $plotter = SP::Endurance::Plotter->new(
         rounds => scalar @{$masterdb},

@@ -27,7 +27,7 @@ require Exporter;
 @EXPORT_OK = qw/GRAPHS_DIR plot_filename plot_thumbname b2mb kb2mb nonzero
         has_changes max_change cumulative_to_changes uptimes total_duration
         sw_versions hw_string xtics dur_to_str round_durations
-        change_per_second/;
+        change_per_second get_str/;
 
 use List::Util qw/min max/;
 use List::MoreUtils qw/any minmax uniq/;
@@ -157,27 +157,57 @@ sub total_duration {
 sub sw_versions {
     my $masterdb = shift;
 
-    my @os_pretty_names = uniq sort grep { defined && length } map {
+    my @os_release_names = uniq sort grep { defined && length } map {
         exists $_->{'/etc/os-release'} &&
         exists $_->{'/etc/os-release'}->{PRETTY_NAME} ?
                $_->{'/etc/os-release'}->{PRETTY_NAME} : undef
     } @$masterdb;
 
-    my @sys_pretty_names = uniq sort grep { defined && length } map {
-        exists $_->{'/etc/system-release'} &&
-        exists $_->{'/etc/system-release'}->{PRETTY_NAME} ?
-               $_->{'/etc/system-release'}->{PRETTY_NAME} : undef
+    my @system_release_names = uniq sort grep { defined && length } map {
+        my $ret =
+            exists $_->{'/etc/system-release'} &&
+            exists $_->{'/etc/system-release'}->{PRETTY_NAME} ?
+                   $_->{'/etc/system-release'}->{PRETTY_NAME} : undef;
+        $ret =
+            exists $_->{'/etc/system-release'} &&
+            exists $_->{'/etc/system-release'}->{NAME} ?
+                   $_->{'/etc/system-release'}->{NAME} : undef
+            unless defined $ret;
+        $ret
     } @$masterdb;
 
-    # If we have PRETTY_NAME, do not bother with sw_version from usage.csv.
-    my @pretty_names = uniq @os_pretty_names, @sys_pretty_names;
-    return @pretty_names if @pretty_names > 0;
+    my @names = uniq @os_release_names, @system_release_names;
+    return @names if @names > 0;
 
+    # Fallback to sw_version string from usage.csv:
     my @sw_versions = uniq grep { defined && length } map {
         exists $_->{sw_version} ? $_->{sw_version} : undef
     } @$masterdb;
 
     return @sw_versions;
+}
+
+sub get_str {
+    my ($masterdb, $key, $max_line_len) = @_;
+    $key = "str:$key";
+    my $value;
+    foreach (@$masterdb) {
+        if (exists $_->{$key} && length $_->{$key} > 0) {
+            $value = $_->{$key};
+            last;
+        }
+    }
+    if (defined $value && defined $max_line_len) {
+        $value = join("\n", map {
+            my $v = $_;
+            if (length($v) > $max_line_len) {
+                $v = substr $v, 0, $max_line_len;
+                $v .= "...";
+            }
+            $v
+        } split(/\n/, $value));
+    }
+    return $value;
 }
 
 sub hw_string {

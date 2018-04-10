@@ -21,7 +21,13 @@
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA
 
+# ./endurance-snapshot         => script="endurance-snapshot" script_path="."
+# ./measure/endurance-snapshot => script="endurance-snapshot" script_path="./measure"
+# /usr/bin/endurance-snapshot  => script="endurance-snapshot" script_path="/usr/bin"
 script="${0##*/}"
+script_path="${0%%/$script}"
+#echo "$0 => script=\"$script\" script_path=\"$script_path\""
+
 # incorrect number of arguments or first argument starts with "-"
 if [ $# -lt 1 ] || [ $# -gt 2 ] || [ "${1#-}" != "$1" ]; then
 	echo
@@ -87,8 +93,11 @@ dump_statefs_value() {
 }
 
 # do some basic sanity checks
-type proc2csv >/dev/null 2>/dev/null
-if [ $? -ne 0 ] ; then
+if type proc2csv >/dev/null 2>/dev/null ; then
+	PROC2CSV="proc2csv"
+elif [ "$script_path" ] && type $script_path/proc2csv >/dev/null 2>/dev/null ; then
+	PROC2CSV="$script_path/proc2csv"
+else
 	echo "$script: ERROR, 'proc2csv' tool is missing from PATH" 1>&2
 	exit 1
 fi
@@ -107,6 +116,17 @@ elif type gzip >/dev/null 2>/dev/null ; then
 else
 	COMPRESSOR="cat"
 	COMPRESSOR_SUFFIX=""
+fi
+
+if type sp-noncached >/dev/null 2>/dev/null ; then
+	NONCACHED_R="sp-noncached --read"
+	NONCACHED_W="sp-noncached --write"
+elif [ "$script_path" ] && type $script_path/sp-noncached >/dev/null 2>/dev/null ; then
+	NONCACHED_R="$script_path/sp-noncached --read"
+	NONCACHED_W="$script_path/sp-noncached --write"
+else
+	NONCACHED_R="cat"
+	NONCACHED_W="cat"
 fi
 
 # real dumb way to do find free index, but normally this should be
@@ -158,7 +178,18 @@ fi
 # save memory statistics
 echo "- SMAPS data"
 if type sp_smaps_snapshot >/dev/null 2>/dev/null ; then
-	sp_smaps_snapshot | $COMPRESSOR | sp-noncached --write $path/smaps.cap$COMPRESSOR_SUFFIX
+	sp_smaps_snapshot | $COMPRESSOR | $NONCACHED_W $path/smaps.cap$COMPRESSOR_SUFFIX
+elif find --help 2>&1 | grep -q maxdepth ; then
+	if [ -e /proc/self/smaps ] || [ -e /proc/1/smaps ] ; then
+		map_file=smaps
+	else
+		map_file=maps
+	fi
+	# Note that this does not store the additional /proc/pid/status data,
+	# but does not exec awk&cat per process.
+	find /proc -mindepth 2 -maxdepth 2 -name $map_file -print0 \
+		| xargs -0 head -v -n 10000000 \
+		| $COMPRESSOR | $NONCACHED_W $path/smaps.cap$COMPRESSOR_SUFFIX
 else
 	for pid in /proc/[0-9]*; do
 		echo "==> $pid/smaps <=="
@@ -168,7 +199,7 @@ else
 		elif [ -f $pid/maps ] ; then
 			cat $pid/maps
 		fi
-	done | $COMPRESSOR | sp-noncached --write $path/smaps.cap$COMPRESSOR_SUFFIX
+	done | $COMPRESSOR | $NONCACHED_W $path/smaps.cap$COMPRESSOR_SUFFIX
 fi
 
 # save most of /proc
@@ -195,12 +226,12 @@ else
 fi
 echo "date = $(date +'%F %T')"
 # all relevant info from the /proc that is easy to parse
-proc2csv -p
+"$PROC2CSV" -p
 RET=$?
 if [ $RET -ne 0 ]; then
-	echo "$script: WARNING, proc2csv failed with exit code $RET." 1>&2
+	echo "$script: WARNING, $PROC2CSV failed with exit code $RET." 1>&2
 fi
-} | sp-noncached --write $path/usage.csv
+} | $NONCACHED_W $path/usage.csv
 
 for F in os-release hw-release sys-release system-release ; do
 	if [ ! -f /etc/$F ]; then continue; fi
@@ -210,7 +241,7 @@ done
 
 # Copy files from /proc with cat to avoid GNU coreutils 6.x cp bug:
 echo "- Other proc files"
-for F in slabinfo interrupts stat diskstats zoneinfo pagetypeinfo; do
+for F in slabinfo interrupts softirqs stat diskstats zoneinfo pagetypeinfo; do
 	if [ ! -f /proc/$F ]; then continue; fi
 	cat /proc/$F > $path/$F
 	[ -f $path/$F ] && [ ! -s $path/$F ] && rm $path/$F
@@ -239,11 +270,11 @@ fi
 
 # save some less easily parsed /proc/ statistics, ignore errors
 echo "- Open file descriptors"
-ls -l /proc/[0-9]*/fd/ 2>/dev/null | $COMPRESSOR | sp-noncached --write $path/open-fds$COMPRESSOR_SUFFIX
+ls -l /proc/[0-9]*/fd/ 2>/dev/null | $COMPRESSOR | $NONCACHED_W $path/open-fds$COMPRESSOR_SUFFIX
 
 if [ -f "/proc/1/sched" ] ; then
 	echo "- Process scheduling information"
-	head -v -n 10000 /proc/[0-9]*/sched | $COMPRESSOR | sp-noncached --write $path/sched$COMPRESSOR_SUFFIX
+	head -v -n 10000 /proc/[0-9]*/sched | $COMPRESSOR | $NONCACHED_W $path/sched$COMPRESSOR_SUFFIX
 fi
 
 # suspend statistics
@@ -278,14 +309,18 @@ fi
 
 if [ -d /sys/devices/system/cpu ] ; then
 	echo "- CPU statistics"
-	find /sys/devices/system/cpu -type f | xargs head -v -n 10000 2>/dev/null > $path/sysfs_cpu
-	[ -f $path/sysfs_cpu ] && [ ! -s $path/sysfs_cpu ] && rm $path/sysfs_cpu
+	find /sys/devices/system/cpu -type f | xargs head -v -n 10000 2>/dev/null \
+		| $COMPRESSOR | $NONCACHED_W $path/sysfs_cpu$COMPRESSOR_SUFFIX
+	[ -f $path/sysfs_cpu$COMPRESSOR_SUFFIX ] && [ ! -s $path/sysfs_cpu$COMPRESSOR_SUFFIX ] \
+		&& rm $path/sysfs_cpu$COMPRESSOR_SUFFIX
 fi
 if [ -d /sys/fs ] ; then
 	echo "- File system statistics"
 	# Skip /sys/fs/selinux/policy - it can be several megabytes of binary.
-	find /sys/fs -type f | grep -v -F "/sys/fs/selinux/policy" | xargs head -v -n 10000 2>/dev/null > $path/sysfs_fs
-	[ -f $path/sysfs_fs ] && [ ! -s $path/sysfs_fs ] && rm $path/sysfs_fs
+	find /sys/fs -type f | grep -v -F "/sys/fs/selinux/policy" | xargs head -v -n 10000 2>/dev/null \
+		| $COMPRESSOR | $NONCACHED_W $path/sysfs_fs$COMPRESSOR_SUFFIX
+	[ -f $path/sysfs_fs$COMPRESSOR_SUFFIX ] && [ ! -s $path/sysfs_fs$COMPRESSOR_SUFFIX ] \
+		&& rm $path/sysfs_fs$COMPRESSOR_SUFFIX
 fi
 if [ -d /sys/devices/virtual/kgsl/kgsl/proc ] ; then
 	echo "- GPU memory values"
@@ -375,7 +410,7 @@ if [ -d /var/log/upstart ]; then
 	for F in /var/log/upstart/*; do
 		if [ -f "$F" ] && [ -s "$F" ] ; then
 			logto=$path/upstart/${F##*/}$COMPRESSOR_SUFFIX
-			sp-noncached --read $F | $COMPRESSOR | sp-noncached --write $logto
+			$NONCACHED_R $F | $COMPRESSOR | $NONCACHED_W $logto
 			[ -f $logto ] && [ ! -s $logto ] && rm $logto
 		fi
 	done
@@ -404,18 +439,18 @@ fi
 if [ -f /var/log/messages ] ; then
 	logs="/var/log/messages $logs"
 fi
-if [ "$logs" ] ; then
+if [ -z "$NO_SYSLOG" ] && [ "$logs" ] ; then
 	echo "- Syslog(s)"
-	sp-noncached --read $logs | $COMPRESSOR | sp-noncached --write $path/syslog$COMPRESSOR_SUFFIX
+	$NONCACHED_R $logs | $COMPRESSOR | $NONCACHED_W $path/syslog$COMPRESSOR_SUFFIX
 fi
 
 if type dmesg >/dev/null 2>/dev/null ; then
 	echo "- dmesg"
-	dmesg | $COMPRESSOR | sp-noncached --write $path/dmesg$COMPRESSOR_SUFFIX
+	dmesg | $COMPRESSOR | $NONCACHED_W $path/dmesg$COMPRESSOR_SUFFIX
 fi
 
 # and journalctl
-if [ -x /bin/journalctl ]; then
+if [ -z "$NO_SYSLOG" ] && [ -x /bin/journalctl ]; then
 	echo "- journalctl"
 
 	logger -t endurance-snapshot "End of snapshot $path"
@@ -434,5 +469,5 @@ if [ -x /bin/journalctl ]; then
 
 	/bin/journalctl -a -b -q -o json $snapshot_start_cursor | \
 		$COMPRESSOR | \
-		sp-noncached --write $path/journal$COMPRESSOR_SUFFIX
+		$NONCACHED_W $path/journal$COMPRESSOR_SUFFIX
 fi

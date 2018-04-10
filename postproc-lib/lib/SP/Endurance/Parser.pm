@@ -30,11 +30,12 @@ require Exporter;
 @ISA = qw/Exporter/;
 @EXPORT_OK = qw/parse_openfds FD_DISK FD_EPOLL FD_EVENTFD FD_INOTIFY FD_PIPE
     FD_SIGNALFD FD_SOCKET FD_TIMERFD FD_TMPFS parse_smaps parse_smaps_pp
-    parse_slabinfo parse_cgroups parse_interrupts parse_bmestat parse_ramzswap
-    parse_proc_stat parse_pagetypeinfo parse_diskstats parse_sysfs_fs
-    parse_sysfs_power_supply parse_sysfs_backlight parse_sysfs_cpu
-    parse_component_version parse_step parse_usage_csv parse_df parse_ifconfig
-    parse_upstart_jobs_respawned parse_sched parse_dir parse_pidfilter copen/;
+    parse_slabinfo parse_cgroups parse_interrupts parse_softirqs parse_bmestat
+    parse_ramzswap parse_proc_stat parse_pagetypeinfo parse_diskstats
+    parse_sysfs_fs parse_sysfs_power_supply parse_sysfs_backlight
+    parse_sysfs_cpu parse_component_version parse_step parse_usage_csv parse_df
+    parse_ifconfig parse_upstart_jobs_respawned parse_sched parse_dir
+    parse_pidfilter copen/;
 
 use File::Basename qw/basename/;
 use List::MoreUtils qw/uniq zip all any none firstidx/;
@@ -216,7 +217,7 @@ sub parse_smaps_pp {
             $name = $1;
             $pid = undef;
             $smaps_vma_ref = undef;
-        } elsif (/^#Pid: (\d+)/) {
+        } elsif (/^#Pid: (\d+)/ or m#^==> /proc/(\d+)/s?maps <==$#) {
             $pid = int $1;
             $keyval{$pid}->{'#Name'} = $name
                 if defined $name;
@@ -320,6 +321,26 @@ sub parse_interrupts {
     return \%interrupts;
 }
 
+sub parse_softirqs {
+    my $fh = shift;
+    return {} unless defined $fh;
+    my %softirqs;
+    while (<$fh>) {
+        chomp;
+        next if $_ eq '';
+        my ($key, $values) = split /:/, $_, 2;
+        $key =~ s/^\s*//;
+        $key =~ s/\s*$//;
+        $values =~ s/^\s*//;
+        $values =~ s/\s*$//;
+        my @values = split /\s+/, $values;
+        if (length $key > 0 && @values > 0) {
+            $softirqs{$key} = \@values;
+        }
+    }
+    return \%softirqs;
+}
+
 sub parse_suspend_stats {
     my $fh = shift;
 
@@ -387,7 +408,7 @@ sub parse_proc_stat {
         my $data = $2;
 
         # Take only what we really need.
-        next unless $key =~ /^(?:cpu|ctxt|processes)$/;
+        next unless $key =~ /^(?:cpu[0-9]*|ctxt|processes)$/;
 
         my @ints = map { int } grep { /\d+/ } split ' ', $data;
         next unless @ints;
@@ -723,8 +744,12 @@ sub csv_proc_pid_stat {
         $entry .= 'majflt,' . int($values[11])  . ',' if defined $values[11];
         $entry .= 'utime,'  . int($values[13])  . ',' if defined $values[13];
         $entry .= 'stime,'  . int($values[14])  . ',' if defined $values[14];
-        $entry .= 'state,'  . $values[2]        . ','
-            if defined $values[2] and length $values[2] and $values[2] ne 'S';
+
+        # Skip 'S' sleeping and 'I' idle.
+        if (defined $values[2] and length $values[2]
+                and $values[2] ne 'S' and $values[2] ne 'I') {
+            $entry .= 'state,'  . $values[2]        . ','
+        }
 
         $entry = substr $entry, 0, -1;
 
@@ -929,12 +954,17 @@ sub csv_pid_fd {
 
         $fdcount{$pid} = $fdcount if $fdcount > 0;
 
-        if (length $cmdline) {
+        next if length $cmdline == 0;
+
+        if ($cmdline =~ /^\S*(python\S*|perl\S*)(?:\s+-\S+)*\s*(\S+)/) {
+            # "/usr/bin/python2.7 -u /path/to/foo.py" => "python2.7 [foo.py]"
+            $cmdline = $1 . ' [' . basename($2) . ']';
+        } else {
             if ($cmdline =~ /^(\S+)\s/) { $cmdline = $1; }
             $cmdline = basename $cmdline;
             #$cmdline = substr $cmdline, 0, 30;
-            $cmdline{$pid} = $cmdline;
         }
+        $cmdline{$pid} = $cmdline;
     }
 
     return \%cmdline, \%fdcount;
@@ -1069,7 +1099,7 @@ sub parse_usage_csv {
         elsif (/^Shared memory segments:/) { $csv{'/proc/sysvipc/shm'} = csv_sysvipc_shm($fh, $_) }
         elsif (/^MemTotal/)                { $csv{'/proc/meminfo'} = csv_proc_meminfo($fh, $_) }
         elsif (/^Process status:/)         { $csv{'/proc/pid/stat'} = csv_proc_pid_stat($fh, $_) }
-        elsif (/^Name,State,/)             { $csv{'/proc/pid/status'} = csv_proc_pid_status($fh, $_) }
+        elsif (/^Name,/)                   { $csv{'/proc/pid/status'} = csv_proc_pid_status($fh, $_) }
         elsif (/^PID,wchan:/)              { $csv{'/proc/pid/wchan'} = csv_wchan($fh, $_) }
         elsif (/^PID,rchar,/)              { $csv{'/proc/pid/io'} = csv_proc_pid_io($fh, $_) }
         elsif (/^PID,FD count,Command/)    { ($csv{'/proc/pid/cmdline'},
@@ -1341,6 +1371,18 @@ sub parse_statefs {
     return \%result;
 }
 
+sub read_str {
+    my $fh = shift;
+    my $result;
+    while (<$fh>) {
+        chomp;
+        s/\r+$//;
+        next if $_ eq '';
+        $result .= "$_\n";
+    }
+    return $result;
+}
+
 sub parse_dir {
     my $name = shift;
 
@@ -1357,8 +1399,11 @@ sub parse_dir {
         '/bin/df'                  => parse_df(copen $name . '/df'),
         '/etc/os-release'          => parse_os_release(copen $name . '/os-release'),
         '/etc/system-release'      => parse_os_release(copen $name . '/system-release'),
+        'str:/etc/os-release'      => read_str(copen $name . '/os-release'),
+        'str:/etc/system-release'  => read_str(copen $name . '/system-release'),
         '/proc/diskstats'          => parse_diskstats(copen $name . '/diskstats'),
         '/proc/interrupts'         => parse_interrupts(copen $name . '/interrupts'),
+        '/proc/softirqs'           => parse_softirqs(copen $name . '/softirqs'),
         '/proc/pagetypeinfo'       => parse_pagetypeinfo(copen $name . '/pagetypeinfo'),
         '/proc/pid/fd'             => parse_openfds(copen $name . '/open-fds'),
         '/proc/pid/sched'          => parse_sched(copen $name . '/sched'),
@@ -1414,9 +1459,12 @@ HV *parse_smaps_inline(PerlIO *fh, AV *wanted_mmaps) {
         goto out;
 
     char *name = NULL;
+    char pid_str[64];
     HV *pid_hv = NULL;
     SV *vmacount = NULL;
     HV *wanted_mmap = NULL;
+
+    pid_str[0] = 0;
 
     while (1) {
         char *line = NULL;
@@ -1441,22 +1489,29 @@ HV *parse_smaps_inline(PerlIO *fh, AV *wanted_mmaps) {
         if (line[0] == '#') {
             if (strncmp(&line[1], "Name: ", 6) == 0) {
                 name = strdup(&line[7]);
-            } else if (strncmp(&line[1], "Pid: ", 5) == 0) {
+            } else if (strncmp(line, "#Pid: ", 6) == 0) {
+                STRLEN pid_len = line_len - 6;
+                if (pid_len > 0 && pid_len < sizeof(pid_str)) {
+                    memcpy(pid_str, &line[6], pid_len);
+                    pid_str[pid_len] = 0;
+                }
                 vmacount = NULL;
                 wanted_mmap = NULL;
-
-                pid_hv = newHV();
-                if (!pid_hv)
-                    goto out;
-                hv_store(ret,
-                    &line[6], line_len - 6,
-                    newRV_noinc((SV*) pid_hv), 0);
                 if (name) {
+                    pid_hv = newHV();
+                    if (!pid_hv)
+                        goto out;
+                    hv_store(ret,
+                        pid_str, strlen(pid_str),
+                        newRV_noinc((SV*) pid_hv), 0);
+                    pid_str[0] = 0;
                     hv_store(pid_hv,
                         "#Name", 5,
                         newSVpv(name, strlen(name)), 0);
                     free(name);
                     name = NULL;
+                } else {
+                    pid_hv = NULL;
                 }
             }
             /* Additional metadata not needed for now.
@@ -1480,6 +1535,19 @@ HV *parse_smaps_inline(PerlIO *fh, AV *wanted_mmaps) {
                     newSVpv(value, strlen(value)), 0);
             }
             */
+        } else if (line[0] == '=' && line[1] == '=' && line[2] == '>') {
+            vmacount = NULL;
+            wanted_mmap = NULL;
+            pid_hv = NULL;
+            if (strncmp(line, "==> /proc/", 10) == 0) {
+                STRLEN pid_len = 0;
+                while (isdigit(line[10+pid_len]) && 10+pid_len <= line_len)
+                    pid_len++;
+                if (pid_len > 0 && pid_len < sizeof(pid_str)) {
+                    memcpy(pid_str, &line[10], pid_len);
+                    pid_str[pid_len] = 0;
+                }
+            }
         } else if (isupper(line[0])) {
             if (!pid_hv)
                 continue;
@@ -1548,8 +1616,22 @@ HV *parse_smaps_inline(PerlIO *fh, AV *wanted_mmaps) {
         } else if (isdigit(line[0]) || islower(line[0])) {
             size_t i;
 
-            if (!pid_hv)
-                continue;
+            if (!pid_hv) {
+                pid_hv = newHV();
+                if (!pid_hv)
+                    goto out;
+                hv_store(ret,
+                    pid_str, strlen(pid_str),
+                    newRV_noinc((SV*) pid_hv), 0);
+                pid_str[0] = 0;
+            }
+            if (name) {
+                hv_store(pid_hv,
+                    "#Name", 5,
+                    newSVpv(name, strlen(name)), 0);
+                free(name);
+                name = NULL;
+            }
 
             if (!vmacount) {
                 vmacount = newSViv(0);
