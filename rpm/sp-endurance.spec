@@ -3,13 +3,14 @@ Version: 4.3.0
 Release: 1
 Summary:  Memory usage reporting tools
 Group: Development/Tools
-License: GPLv2	
+License: GPLv2+
 URL: https://github.com/mer-tools/sp-rich-core
 Source: %{name}-%{version}.tar.gz
 BuildRequires: python
 Requires: lzop
 Requires: sp-smaps
 Requires: mce-tools
+Requires: findutils
 
 %description
  Endurance measurement tools save system and process information from /proc
