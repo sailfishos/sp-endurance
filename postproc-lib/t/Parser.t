@@ -1977,7 +1977,9 @@ END
 
     open my $fh, '<', \$content;
     is_deeply(parse_usage_csv($fh), {
-        1 => 'Name,systemd,VmSize,239140,VmLck,0,voluntary_ctxt_switches,3616951,nonvoluntary_ctxt_switches,1822,Threads,1'
+        '/proc/pid/status' => {
+            1 => 'Name,systemd,VmSize,239140,VmLck,0,voluntary_ctxt_switches,3616951,nonvoluntary_ctxt_switches,1822,Threads,1',
+        }
     }, 'parse_usage_csv');
 }
 
