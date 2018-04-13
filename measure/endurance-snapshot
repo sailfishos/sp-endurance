@@ -277,6 +277,11 @@ if [ -f "/proc/1/sched" ] ; then
 	head -v -n 10000 /proc/[0-9]*/sched | $COMPRESSOR | $NONCACHED_W $path/sched$COMPRESSOR_SUFFIX
 fi
 
+if [ -f "/proc/1/status" ] ; then
+	echo "- /proc/PID/status"
+	head -v -n 10000 /proc/[0-9]*/status | $COMPRESSOR | $NONCACHED_W $path/pid_status$COMPRESSOR_SUFFIX
+fi
+
 # suspend statistics
 if type mcetool >/dev/null 2>/dev/null ; then
 	echo "- Suspend stats"

@@ -253,7 +253,6 @@ static void output_fields(FILE *fp, int show, char separator)
 	newline();
 }
 
-
 static void show_keyvalue_file(const char *filename, char separator)
 {
 	FILE *fp;
@@ -268,65 +267,6 @@ static void show_keyvalue_file(const char *filename, char separator)
 	output_fields(fp, SHOW_VALUES, separator);
 	fclose(fp);
 }
-
-
-static pid_type_t show_status(status_t *s, int show)
-{
-	char status[256];
-	FILE *fp;
-
-	if (s->skip) {
-		return PID_SKIP;
-	}
-	/* read the process info from 'status' in PID dir */
-	snprintf(status, sizeof(status), "%s/status", s->pid);
-	fp = fopen(status, "r");
-	if (!fp) {
-		if (errno != ENOENT) {
-			error_exit("show_status()",
-				   "file open failed", status);
-		}
-		/* skip already exited processes */
-		s->skip = 1;
-		return PID_EXITED;
-	}
-	output_fields(fp, show, ':');
-	fclose(fp);
-	return PID_OK;
-}
-
-
-/* read process statuses */
-static void show_statuses(int num, status_t *statuslist)
-{
-	int idx, exited = 0;
-	status_t *s;
-	
-	/* output CSV header for status file fields... */
-	for (s = statuslist, idx = 0; idx < num; idx++, s++) {
-		if (show_status(s, SHOW_FIELDS) == PID_OK) {
-			/* fields printed OK from one status file */
-			break;
-		}
-	}
-	/* ...and the status file field values */
-	for (s = statuslist, idx = 0; idx < num; idx++, s++) {
-		switch (show_status(s, SHOW_VALUES)) {
-		case PID_EXITED:
-			exited++;
-			break;
-		case PID_SKIP:
-		case PID_OK:
-			break;
-		}
-	}
-	if (exited) {
-		fprintf(stderr,
-			"%d (more) processes had exited in the meanwhile.\n",
-			exited);
-	}
-}
-
 
 /* read /proc/pid/stat */
 static void show_proc_pid_stat(int num, const status_t *statuslist)
@@ -666,10 +606,6 @@ int main(int argc, char *argv[])
 	/* show how many file descriptors each process is using */
 	newline();
 	show_fd_counts(lines, statuslist);
-	
-	/* read and show status for each of the processes */
-	newline();
-	show_statuses(lines, statuslist);
 
 	/* show /proc/pid/stat for each process */
 	fputs("\nProcess status:\n", stdout);
