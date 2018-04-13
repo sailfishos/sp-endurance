@@ -381,8 +381,8 @@ sub generate_plot_ctx_vol {
         my @ctx = map {
             if (exists $_->{'/proc/pid/status'}->{$pid}) {
                 my %entry = split ',', $_->{'/proc/pid/status'}->{$pid};
-                exists $entry{nonvoluntary_ctxt_switches} ?
-                       $entry{nonvoluntary_ctxt_switches} : undef
+                exists $entry{voluntary_ctxt_switches} ?
+                       $entry{voluntary_ctxt_switches} : undef
             } else { undef }
         } @$masterdb;
         $plot->push(
