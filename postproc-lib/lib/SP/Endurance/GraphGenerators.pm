@@ -1991,7 +1991,6 @@ sub generate_plot_interrupts {
                    $_->{'/proc/interrupts'}->{$interrupt}->{desc} : undef
         } @$masterdb;
 
-        my $idx = 0;
         $plot->push(
             [nonzero change_per_second $masterdb,
                 cumulative_to_changes map {
