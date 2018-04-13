@@ -574,9 +574,9 @@ is_deeply(parse_interrupts(IO::String->new(<< 'END'
 Err:          0
 END
 )), {
-      7 => { count => 575, desc => 'INTC interrupt description 1' },
-     11 => { count => 14955, desc => 'INTC interrupt description 2' },
-     12 => { count => 22222, desc => '1111111' },
+      7 => { count => [575], desc => 'INTC interrupt description 1' },
+     11 => { count => [14955], desc => 'INTC interrupt description 2' },
+     12 => { count => [22222], desc => '1111111' },
 }, 'parse_interrupts - 1x CPU');
 
 is_deeply(parse_interrupts(IO::String->new(<< 'END'
@@ -588,10 +588,10 @@ is_deeply(parse_interrupts(IO::String->new(<< 'END'
  MIS:         10
 END
 )), {
-      0 => { count => 73+505773539, desc => 'IO-APIC-edge timer' },
-    PMI => { count => 10552+10495+34469+3907+3357+3437, desc => 'Performance monitoring interrupts' },
-    RES => { count => 16770322+15932281+15195215+2920639+2963192, desc => 'Rescheduling interrupts' },
-    MIS => { count => 10 },
+      0 => { count => [73,0,0,505773539,0,0,0,0], desc => 'IO-APIC-edge timer' },
+    PMI => { count => [10552,0,10495,34469,3907,3357,3437,0], desc => 'Performance monitoring interrupts' },
+    RES => { count => [16770322,15932281,0,15195215,2920639,0,0,2963192], desc => 'Rescheduling interrupts' },
+    MIS => { count => [10] },
 }, 'parse_interrupts - 8x CPU');
 
 ###### parse_softirqs ######

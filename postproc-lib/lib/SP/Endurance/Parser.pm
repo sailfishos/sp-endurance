@@ -309,12 +309,13 @@ sub parse_interrupts {
         next unless /^\s*(\S+):((?:\s+\d+){1,$cpus})\s*(.*)/;
         my $interrupt = $1;
 
-        my $cnt = sum split ' ', $2;
-        next unless $cnt;
+        my @values = split ' ', $2;
+        next if @values == 0;
+        next if sum(@values) == 0;
 
         my $desc = $3;
         $desc =~ s/\s+/ /g;
-        $interrupts{$interrupt}->{count} = $cnt;
+        $interrupts{$interrupt}->{count} = \@values;
         $interrupts{$interrupt}->{desc} = $desc if length $desc;
     }
 

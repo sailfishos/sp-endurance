@@ -1975,7 +1975,7 @@ sub generate_plot_interrupts {
 
     my $plot = $plotter->new_linespoints(
         key => '2070_interrupts',
-        label => 'Interrupts.',
+        label => 'Interrupts (all CPUs).',
         legend => 'INTERRUPTS',
         ylabel => 'count per second',
         y2label => 'total count per second',
@@ -1996,7 +1996,7 @@ sub generate_plot_interrupts {
                 cumulative_to_changes map {
                     exists $_->{'/proc/interrupts'}->{$interrupt} &&
                     exists $_->{'/proc/interrupts'}->{$interrupt}->{count} ?
-                           $_->{'/proc/interrupts'}->{$interrupt}->{count} : undef
+                     sum(@{$_->{'/proc/interrupts'}->{$interrupt}->{count}}) : undef
             } @$masterdb],
             axes => 'x1y1', title => sprintf("%-4s %s", $interrupt . ':', $desc),
         );
@@ -2004,7 +2004,7 @@ sub generate_plot_interrupts {
 
     my @total_interrupts = map {
         my $entry = $_;
-        sum map { exists $_->{count} ? $_->{count} : undef } values %{$entry->{'/proc/interrupts'}}
+        sum map { exists $_->{count} ? sum(@{$_->{count}}) : undef } values %{$entry->{'/proc/interrupts'}}
     } @$masterdb;
 
     $plot->push(
@@ -2017,13 +2017,110 @@ sub generate_plot_interrupts {
 }
 BEGIN { register_generator \&generate_plot_interrupts; }
 
+sub generate_plot_interrupts_per_cpu {
+    my $plotter = shift;
+    my $masterdb = shift;
+
+    my @irqs = uniq sort grep { defined && length } map { keys %{$_->{'/proc/interrupts'} // {}} } @$masterdb;
+    #print Dumper \@irqs;
+    return unless @irqs > 0;
+
+    my @cpus = sort { $a <=> $b } map { /^cpu([0-9]+)$/ ; $1 }
+        uniq grep { /^cpu[0-9]/ } map { keys %{$_->{'/proc/stat'} // {}} } @$masterdb;
+    #print Dumper \@cpus;
+    return if @cpus <= 1;
+
+    # Collect irqs per-cpu first, so that we can set ymax in the plot.
+    my %irqs_per_cpu;
+    foreach my $cpu_num (@cpus) {
+        foreach my $interrupt (@irqs) {
+            $irqs_per_cpu{$cpu_num}->{$interrupt} =
+                [change_per_second $masterdb,
+                    cumulative_to_changes map {
+                        exists $_->{'/proc/interrupts'}->{$interrupt} ?
+                               $_->{'/proc/interrupts'}->{$interrupt}->{count}->[$cpu_num] : undef
+                } @$masterdb];
+        }
+    }
+    #print Dumper [\@irqs, \@cpus, \%irqs_per_cpu];
+
+    # Check for irqs that did not happen on any CPU, or rate is low (less
+    # than once per second).
+    my @skip;
+    foreach my $interrupt (@irqs) {
+        my $keep = 0;
+        foreach my $cpu_num (@cpus) {
+            if (any { $_ >= 1 } @{$irqs_per_cpu{$cpu_num}->{$interrupt}}) {
+                $keep = 1;
+                last;
+            }
+        }
+        next if $keep;
+        foreach my $cpu_num (@cpus) {
+            delete $irqs_per_cpu{$cpu_num}->{$interrupt};
+        }
+        push @skip, $interrupt;
+    }
+    @skip = sort @skip;
+    #print Dumper \@skip;
+
+    # Calculate ymax.
+    my $ymax = 0;
+    foreach my $idx (0 .. @$masterdb-1) {
+        foreach my $cpu_num (@cpus) {
+            my $total;
+            foreach my $interrupt (@irqs) {
+                next unless defined $irqs_per_cpu{$cpu_num}->{$interrupt}->[$idx];
+                $total += $irqs_per_cpu{$cpu_num}->{$interrupt}->[$idx];
+            }
+            #print Dumper [$idx, $cpu_num, $total];
+            next unless defined $total;
+            if ($total > $ymax) {
+                $ymax = $total;
+            }
+        }
+    }
+
+    foreach my $cpu_num (@cpus) {
+        my $label = "Interrupts cpu$cpu_num";
+        if (@skip > 0) {
+            $label .= "\\n(Skipped low-rate irqs: " . join(', ', @skip) . ")";
+        }
+        my $plot = $plotter->new_histogram(
+            key => sprintf('2070_interrupts_%04d', $cpu_num),
+            label => $label,
+            legend => "INTERRUPTS &mdash; CPU$cpu_num",
+            ylabel => 'count per second',
+            ymax => 1.2 * $ymax,
+        );
+
+        foreach my $interrupt (@irqs) {
+            next if any { $_ eq $interrupt } @skip;
+            my ($desc) = uniq grep { defined && length } map {
+                exists $_->{'/proc/interrupts'}->{$interrupt} &&
+                exists $_->{'/proc/interrupts'}->{$interrupt}->{desc} ?
+                       $_->{'/proc/interrupts'}->{$interrupt}->{desc} : undef
+            } @$masterdb;
+            $plot->push(
+                $irqs_per_cpu{$cpu_num}->{$interrupt},
+                title => sprintf("%-4s %s", $interrupt . ':', $desc),
+            );
+        }
+
+        #$plot->sort(sub { shift->[-1] });
+
+        done_plotting $plot;
+    }
+}
+BEGIN { register_generator \&generate_plot_interrupts_per_cpu; }
+
 sub generate_plot_softirqs {
     my $plotter = shift;
     my $masterdb = shift;
 
     my $plot = $plotter->new_linespoints(
         key => '2071_softirqs',
-        label => 'Softirqs.',
+        label => 'Softirqs (all CPUs).',
         legend => 'SOFTIRQS',
         ylabel => 'count per second',
     );
@@ -2047,6 +2144,98 @@ sub generate_plot_softirqs {
     done_plotting $plot;
 }
 BEGIN { register_generator \&generate_plot_softirqs; }
+
+sub generate_plot_softirqs_per_cpu {
+    my $plotter = shift;
+    my $masterdb = shift;
+
+    my @irqs = uniq sort grep { defined && length } map { keys %{$_->{'/proc/softirqs'} // {}} } @$masterdb;
+    #print Dumper \@irqs;
+    return unless @irqs > 0;
+
+    my @cpus = sort { $a <=> $b } map { /^cpu([0-9]+)$/ ; $1 }
+        uniq grep { /^cpu[0-9]/ } map { keys %{$_->{'/proc/stat'} // {}} } @$masterdb;
+        #print Dumper \@cpus;
+    return if @cpus <= 1;
+
+    # Collect softirqs per-cpu first, so that we can set ymax in the plot.
+    my %softirqs_per_cpu;
+    foreach my $cpu_num (@cpus) {
+        foreach my $interrupt (@irqs) {
+            $softirqs_per_cpu{$cpu_num}->{$interrupt} =
+                [change_per_second $masterdb,
+                    cumulative_to_changes map {
+                        exists $_->{'/proc/softirqs'}->{$interrupt} ?
+                               $_->{'/proc/softirqs'}->{$interrupt}->[$cpu_num] : undef
+                } @$masterdb];
+        }
+    }
+    #print Dumper \%softirqs_per_cpu;
+
+    # Check for softirqs that did not happen on any CPU, or rate is low (less
+    # than once per second).
+    my @skip;
+    foreach my $interrupt (@irqs) {
+        my $keep = 0;
+        foreach my $cpu_num (@cpus) {
+            if (any { $_ >= 1 } @{$softirqs_per_cpu{$cpu_num}->{$interrupt}}) {
+                $keep = 1;
+                last;
+            }
+        }
+        next if $keep;
+        foreach my $cpu_num (@cpus) {
+            delete $softirqs_per_cpu{$cpu_num}->{$interrupt};
+        }
+        push @skip, $interrupt;
+    }
+    @skip = sort @skip;
+    #print Dumper \@skip;
+
+    # Calculate ymax.
+    my $ymax = 0;
+    foreach my $idx (0 .. @$masterdb-1) {
+        foreach my $cpu_num (@cpus) {
+            my $total;
+            foreach my $interrupt (@irqs) {
+                next unless defined $softirqs_per_cpu{$cpu_num}->{$interrupt}->[$idx];
+                $total += $softirqs_per_cpu{$cpu_num}->{$interrupt}->[$idx];
+            }
+            #print Dumper [$idx, $cpu_num, $total];
+            next unless defined $total;
+            if ($total > $ymax) {
+                $ymax = $total;
+            }
+        }
+    }
+
+    foreach my $cpu_num (@cpus) {
+        my $label = "Softirqs cpu$cpu_num";
+        if (@skip > 0) {
+            $label .= "\\n(Skipped low-rate softirqs: " . join(', ', @skip) . ")";
+        }
+        my $plot = $plotter->new_histogram(
+            key => sprintf('2071_softirqs_%04d', $cpu_num),
+            label => $label,
+            legend => "SOFTIRQS &mdash; CPU$cpu_num",
+            ylabel => 'count per second',
+            ymax => 1.2 * $ymax,
+        );
+
+        foreach my $interrupt (@irqs) {
+            next if any { $_ eq $interrupt } @skip;
+            $plot->push(
+                $softirqs_per_cpu{$cpu_num}->{$interrupt},
+                title => $interrupt,
+            );
+        }
+
+        #$plot->sort(sub { shift->[-1] });
+
+        done_plotting $plot;
+    }
+}
+BEGIN { register_generator \&generate_plot_softirqs_per_cpu; }
 
 sub generate_plot_diskstats_reads_mb {
     my $plotter = shift;
