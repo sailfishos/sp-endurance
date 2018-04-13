@@ -740,7 +740,10 @@ sub csv_proc_pid_stat {
 
         unshift @values, $pid, $name;
 
+        $name =~ s/,//g;
+
         my $entry = '';
+        $entry .= 'name,'   . $name             . ',' if length $name > 0;
         $entry .= 'minflt,' . int($values[9])   . ',' if defined $values[9];
         $entry .= 'majflt,' . int($values[11])  . ',' if defined $values[11];
         $entry .= 'utime,'  . int($values[13])  . ',' if defined $values[13];

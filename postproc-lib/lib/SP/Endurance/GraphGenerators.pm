@@ -81,6 +81,9 @@ sub pid_to_cmdline {
                 $_->{'/proc/pid/cmdline'}->{$pid}
             } elsif (exists $_->{'/proc/pid/smaps'}->{$pid} and exists $_->{'/proc/pid/smaps'}->{$pid}->{'#Name'}) {
                 $_->{'/proc/pid/smaps'}->{$pid}->{'#Name'}
+            } elsif (exists $_->{'/proc/pid/stat'}->{$pid}) {
+                my %entry = split ',', $_->{'/proc/pid/stat'}->{$pid};
+                exists $entry{name} ? $entry{name} : undef
             } else {
                 undef
             }

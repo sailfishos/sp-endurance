@@ -1871,10 +1871,10 @@ END
         11   => 'Name,foobar,VmSize,0,VmLck,0,voluntary_ctxt_switches,0,nonvoluntary_ctxt_switches,0,Threads,999',
     },
     '/proc/pid/stat' => {
-        1     => 'minflt,1,majflt,5,utime,9,stime,13',
-        2     => 'minflt,2,majflt,6,utime,10,stime,14',
-        1082  => 'minflt,3,majflt,7,utime,11,stime,15,state,R',
-        99999 => 'minflt,4,majflt,8,utime,12,stime,16,state,D',
+        1     => 'name,init,minflt,1,majflt,5,utime,9,stime,13',
+        2     => 'name,kthreadd,minflt,2,majflt,6,utime,10,stime,14',
+        1082  => 'name,dnsmasq,minflt,3,majflt,7,utime,11,stime,15,state,R',
+        99999 => 'name,.!/_ )))()(),minflt,4,majflt,8,utime,12,stime,16,state,D',
     },
     '/proc/pid/wchan' => {
         poll_schedule_timeout => 2,
