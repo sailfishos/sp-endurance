@@ -1988,7 +1988,7 @@ sub generate_plot_interrupts {
         my ($desc) = uniq grep { defined && length } map {
             exists $_->{'/proc/interrupts'}->{$interrupt} &&
             exists $_->{'/proc/interrupts'}->{$interrupt}->{desc} ?
-            $_->{'/proc/interrupts'}->{$interrupt}->{desc} : undef
+                   $_->{'/proc/interrupts'}->{$interrupt}->{desc} : undef
         } @$masterdb;
 
         my $idx = 0;
