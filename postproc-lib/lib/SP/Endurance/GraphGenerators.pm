@@ -727,6 +727,7 @@ sub generate_plot_cputime {
         key => '1150_cpu_user_sys_time_%d',
         label => 'CPU user+sys time',
         ylabel => 'percent',
+        ymin => 0,
         multiple => {
             max_plots => 2,
             max_per_plot => 20,
@@ -771,6 +772,7 @@ sub generate_plot_cputime_user {
         key => '1160_cpu_usertime_%d',
         label => 'CPU user time',
         ylabel => 'percent',
+        ymin => 0,
         multiple => {
             max_plots => 2,
             max_per_plot => 20,
@@ -814,6 +816,7 @@ sub generate_plot_cputime_sys {
         key => '1162_cpu_systime_%d',
         label => 'CPU sys time',
         ylabel => 'percent',
+        ymin => 0,
         multiple => {
             max_plots => 2,
             max_per_plot => 20,
@@ -3083,6 +3086,7 @@ sub generate_plot_sched_wakeups {
         key => '1500_sched_wakeups_%d',
         label => 'Number of times the process was woken up.',
         ylabel => 'count',
+        ymin => 0,
         multiple => {
             max_plots => 3,
             max_per_plot => 10,
@@ -3120,6 +3124,7 @@ sub generate_plot_sched_iowait {
         key => '1501_sched_iowait_%d',
         label => 'Time spent waiting for I/O.',
         ylabel => 'ms',
+        ymin => 0,
         multiple => {
             max_plots => 3,
             max_per_plot => 10,
@@ -3157,6 +3162,7 @@ sub generate_plot_sched_block_max {
         key => '1502_sched_block_max_%d',
         label => 'Maximum time the process has been blocked in uninterruptible sleep.',
         ylabel => 'ms',
+        ymin => 0,
         multiple => {
             max_plots => 3,
             max_per_plot => 10,
@@ -3194,6 +3200,7 @@ sub generate_plot_sched_wait_max {
         key => '1503_sched_wait_max_%d',
         label => 'Maximum time the process waited in kernel runqueue before entering CPU.',
         ylabel => 'ms',
+        ymin => 0,
         multiple => {
             max_plots => 3,
             max_per_plot => 10,

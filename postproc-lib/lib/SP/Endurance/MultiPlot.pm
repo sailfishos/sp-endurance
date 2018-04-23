@@ -71,6 +71,8 @@ sub done_plotting {
             ylabel => $self->{ylabel},
             y2label => $self->{y2label},
             type => $self->{type},
+            ymin => $self->{ymin},
+            ymax => $self->{ymax},
         );
         foreach (@{$split_data[$idx]}) {
             $plot->push($_->{__data}, %{$_});

@@ -184,10 +184,9 @@ sub cmd {
         $xmax = $self->{rounds} + max(25, $self->{rounds} / 3);
     }
 
-    my $ymin = exists $self->{ymin} ? $self->{ymin} : 0;
-    my $ymax = exists $self->{ymax} ? $self->{ymax} : '';
-
     if (defined $self->{y2label} and length $self->{y2label}) {
+        my $ymin = $self->{ymin} // 0;
+        my $ymax = $self->{ymax};
         CORE::push @cmd, qq/set y2label '$self->{y2label}'/;
         CORE::push @cmd,  q/set ytics nomirror/;
         CORE::push @cmd,  q/set y2tics/;
@@ -213,13 +212,15 @@ sub cmd {
     }
 
     if ($self->{type} eq 'linespoints') {
-        if ($ymin != 0 || $ymax ne '') {
-            CORE::push @cmd, qq/set yrange [$ymin : $ymax]/;
+        if (defined $self->{ymin} || defined $self->{ymax}) {
+            CORE::push @cmd, qq/set yrange [$self->{ymin} : $self->{ymax}]/;
         }
         CORE::push @cmd, qq/set style data linespoints/;
         CORE::push @cmd, q/set key autotitle reverse Left/;
         CORE::push @cmd, qq/plot [0:$xmax]\\/;
     } elsif ($self->{type} eq 'histogram') {
+        my $ymin = $self->{ymin} // 0;
+        my $ymax = $self->{ymax};
         CORE::push @cmd, q/set style data histograms/;
         CORE::push @cmd, q/set key invert autotitle reverse Left/;
         CORE::push @cmd, q/set style histogram rowstacked/;
@@ -228,6 +229,9 @@ sub cmd {
         CORE::push @cmd, q/set xrange [-1 : ]/;
         CORE::push @cmd, qq/plot [-1:$xmax]\\/;
     } elsif ($self->{type} eq 'yerrorbars') {
+        my $ymin = $self->{ymin} // 0;
+        my $ymax = $self->{ymax};
+
         CORE::push @cmd, q/set key off/
             unless any { defined $_->{title} } @{$self->{entries}};
 
