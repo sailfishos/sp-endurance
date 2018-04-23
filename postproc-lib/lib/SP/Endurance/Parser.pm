@@ -35,7 +35,7 @@ require Exporter;
     parse_sysfs_fs parse_sysfs_power_supply parse_sysfs_backlight
     parse_sysfs_cpu parse_component_version parse_step parse_usage_csv parse_df
     parse_ifconfig parse_upstart_jobs_respawned parse_sched parse_dir
-    parse_pidfilter copen/;
+    parse_pidfilter parse_proc_pid_status copen/;
 
 use File::Basename qw/basename/;
 use List::MoreUtils qw/uniq zip all any none firstidx/;
@@ -794,42 +794,38 @@ sub csv_proc_pid_status {
         my $pid = $values[$idx_Pid];
         next unless defined $pid and $pid =~ /^\d+$/ and $pid > 0;
 
-        my $entry = '';
-
         if ($idx_Name != -1 and defined $values[$idx_Name] and
                length $values[$idx_Name]) {
-            $entry .= 'Name,' . $values[$idx_Name] . ',';
+            $stat{$pid}->{Name} = $values[$idx_Name];
         }
 
         if ($idx_VmSize != -1 and defined $values[$idx_VmSize] and
                $values[$idx_VmSize] =~ /^(\d+) kB$/) {
-            $entry .= 'VmSize,' . int($1) . ',';
+            $stat{$pid}->{VmSize} = int($1);
         }
 
         if ($idx_VmLck != -1 and defined $values[$idx_VmLck] and
                 $values[$idx_VmLck] =~ /^(\d+) kB$/) {
-            $entry .= 'VmLck,' . int($1) . ',';
+            $stat{$pid}->{VmLck} = int($1);
         }
 
-        $entry .= 'voluntary_ctxt_switches,' . int($values[$idx_voluntary_ctxt_switches]) . ','
-            if $idx_voluntary_ctxt_switches != -1 and
-               defined $values[$idx_voluntary_ctxt_switches] and
-               $values[$idx_voluntary_ctxt_switches] =~ /^\d+$/;
+        if ($idx_voluntary_ctxt_switches != -1 and
+                defined $values[$idx_voluntary_ctxt_switches] and
+                $values[$idx_voluntary_ctxt_switches] =~ /^\d+$/) {
+            $stat{$pid}->{voluntary_ctxt_switches} = int($values[$idx_voluntary_ctxt_switches]);
+        }
 
-        $entry .= 'nonvoluntary_ctxt_switches,' . int($values[$idx_nonvoluntary_ctxt_switches]) . ','
-            if $idx_nonvoluntary_ctxt_switches != -1 and
-               defined $values[$idx_nonvoluntary_ctxt_switches] and
-               $values[$idx_nonvoluntary_ctxt_switches] =~ /^\d+$/;
+        if ($idx_nonvoluntary_ctxt_switches != -1 and
+                defined $values[$idx_nonvoluntary_ctxt_switches] and
+                $values[$idx_nonvoluntary_ctxt_switches] =~ /^\d+$/) {
+            $stat{$pid}->{nonvoluntary_ctxt_switches} = int($values[$idx_nonvoluntary_ctxt_switches]);
+        }
 
-        $entry .= 'Threads,' . int($values[$idx_Threads]) . ','
-            if $idx_Threads != -1 and
-               defined $values[$idx_Threads] and
-               $values[$idx_Threads] =~ /^\d+/;
-
-        $entry = substr $entry, 0, -1;
-        next unless length $entry;
-
-        $stat{$pid} = $entry;
+        if ($idx_Threads != -1 and
+                defined $values[$idx_Threads] and
+                $values[$idx_Threads] =~ /^\d+/) {
+            $stat{$pid}->{Threads} = int($values[$idx_Threads]);
+        }
     }
 
     return \%stat;
@@ -1387,6 +1383,25 @@ sub read_str {
     return $result;
 }
 
+sub parse_proc_pid_status {
+    my $fh = shift;
+    my %result;
+    my $pid;
+    while (<$fh>) {
+        chomp;
+        if (m#^==> /proc/(\d+)/status <==#) {
+            $pid = $1;
+        } elsif (m#^(\S+):\s+(.*)$#) {
+            my ($key, $value) = ($1, $2);
+            $value =~ s/^\s*//;
+            $value =~ s/\s*$//;
+            next if length $value == 0;
+            $result{$pid}->{$key} = $value;
+        }
+    }
+    return \%result;
+}
+
 sub parse_dir {
     my $name = shift;
 
@@ -1432,6 +1447,11 @@ sub parse_dir {
     my $csv = parse_usage_csv(copen $name . '/usage.csv');
     foreach (keys %$csv) {
         $result->{$_} = $csv->{$_};
+    }
+
+    my $fh = copen($name . '/pid_status');
+    if (defined $fh) {
+        $result->{'/proc/pid/status'} = parse_proc_pid_status($fh);
     }
 
     return parse_pidfilter $result;

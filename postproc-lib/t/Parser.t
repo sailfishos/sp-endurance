@@ -32,7 +32,7 @@ BEGIN {
         parse_diskstats parse_sysfs_fs parse_sysfs_power_supply
         parse_sysfs_backlight parse_sysfs_cpu parse_component_version
         parse_step parse_usage_csv parse_ifconfig parse_upstart_jobs_respawned
-        parse_sched parse_pidfilter copen/);
+        parse_sched parse_pidfilter parse_proc_pid_status copen/);
 }
 
 ###### parse_openfds ######
@@ -1864,11 +1864,43 @@ END
         800 => 1,
     },
     '/proc/pid/status' => {
-        1    => 'Name,init,VmSize,1,VmLck,5,voluntary_ctxt_switches,10,nonvoluntary_ctxt_switches,11,Threads,0',
-        2777 => 'Name,booster-m,VmSize,2,VmLck,6,voluntary_ctxt_switches,12,nonvoluntary_ctxt_switches,13,Threads,555',
-        2847 => 'Name,budaemon,VmSize,4,VmLck,8,nonvoluntary_ctxt_switches,0,Threads,777',
-        10   => 'Name,foobar,voluntary_ctxt_switches,0,nonvoluntary_ctxt_switches,0,Threads,888',
-        11   => 'Name,foobar,VmSize,0,VmLck,0,voluntary_ctxt_switches,0,nonvoluntary_ctxt_switches,0,Threads,999',
+        1 => {
+            Name => 'init',
+            VmSize => 1,
+            VmLck => 5,
+            voluntary_ctxt_switches => 10,
+            nonvoluntary_ctxt_switches => 11,
+            Threads => 0,
+        },
+        2777 => {
+            Name => 'booster-m',
+            VmSize => 2,
+            VmLck => 6,
+            voluntary_ctxt_switches => 12,
+            nonvoluntary_ctxt_switches => 13,
+            Threads => 555,
+        },
+        2847 => {
+            Name => 'budaemon',
+            VmSize => 4,
+            VmLck => 8,
+            nonvoluntary_ctxt_switches => 0,
+            Threads => 777,
+        },
+        10 => {
+            Name => 'foobar',
+            voluntary_ctxt_switches => 0,
+            nonvoluntary_ctxt_switches => 0,
+            Threads => 888,
+        },
+        11 => {
+            Name => 'foobar',
+            VmSize => 0,
+            VmLck => 0,
+            voluntary_ctxt_switches => 0,
+            nonvoluntary_ctxt_switches => 0,
+            Threads => 999,
+        },
     },
     '/proc/pid/stat' => {
         1     => 'name,init,minflt,1,majflt,5,utime,9,stime,13',
@@ -1978,7 +2010,14 @@ END
     open my $fh, '<', \$content;
     is_deeply(parse_usage_csv($fh), {
         '/proc/pid/status' => {
-            1 => 'Name,systemd,VmSize,239140,VmLck,0,voluntary_ctxt_switches,3616951,nonvoluntary_ctxt_switches,1822,Threads,1',
+            1 => {
+                Name => 'systemd',
+                VmSize => 239140,
+                VmLck => 0,
+                voluntary_ctxt_switches => 3616951,
+                nonvoluntary_ctxt_switches => 1822,
+                Threads => 1,
+            },
         }
     }, 'parse_usage_csv');
 }
@@ -2351,6 +2390,213 @@ is_deeply(parse_pidfilter({
     },
     '/proc/pid/io' => {},
 }, 'parse_pidfilter - /proc/pid/{cmdline,smaps,status,fd_count,wchan,io}');
+
+###### parse_proc_pid_status ######
+is_deeply(parse_proc_pid_status, {}, 'parse_proc_pid_status - undef input');
+
+{
+    my $content = '';
+    open my $fh, '<', \$content;
+    is_deeply(parse_proc_pid_status($fh), {}, 'parse_proc_pid_status - empty input file');
+}
+{
+    my $content = "\n\n\n";
+    open my $fh, '<', \$content;
+    is_deeply(parse_proc_pid_status($fh), {}, 'parse_proc_pid_status - input file with only newlines');
+}
+
+{
+    my $content = <<'END';
+==> /proc/10250/status <==
+Name:   ssh
+Umask:  0022
+State:  S (sleeping)
+Tgid:   10250
+Ngid:   0
+Pid:    10250
+PPid:   8060
+TracerPid:      0
+Uid:    1000    1000    1000    1000
+Gid:    1000    1000    1000    1000
+FDSize: 256
+Groups: 10 980 1000 1002 
+NStgid: 10250
+NSpid:  10250
+NSpgid: 10250
+NSsid:  8060
+VmPeak:   162568 kB
+VmSize:   162568 kB
+VmLck:         0 kB
+VmPin:         0 kB
+VmHWM:      6832 kB
+VmRSS:      6700 kB
+RssAnon:             736 kB
+RssFile:            5964 kB
+RssShmem:              0 kB
+VmData:     1060 kB
+VmStk:       136 kB
+VmExe:       716 kB
+VmLib:      6968 kB
+VmPTE:       152 kB
+VmSwap:        0 kB
+HugetlbPages:          0 kB
+CoreDumping:    0
+Threads:        1
+SigQ:   0/94315
+SigPnd: 0000000000000000
+ShdPnd: 0000000000000000
+SigBlk: 0000000000000000
+SigIgn: 0000000000001000
+SigCgt: 0000000188014007
+CapInh: 0000000000000000
+CapPrm: 0000000000000000
+CapEff: 0000000000000000
+CapBnd: 0000003fffffffff
+CapAmb: 0000000000000000
+NoNewPrivs:     0
+Seccomp:        0
+Cpus_allowed:   ff
+Cpus_allowed_list:      0-7
+Mems_allowed:   00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000001
+Mems_allowed_list:      0
+voluntary_ctxt_switches:        561
+nonvoluntary_ctxt_switches:     1
+
+==> /proc/1053/status <==
+Name:   loop0
+Umask:  0000
+State:  S (sleeping)
+Tgid:   1053
+Ngid:   0
+Pid:    1053
+PPid:   2
+TracerPid:      0
+Uid:    0       0       0       0
+Gid:    0       0       0       0
+FDSize: 64
+Groups:  
+NStgid: 1053
+NSpid:  1053
+NSpgid: 0
+NSsid:  0
+Threads:        1
+SigQ:   1/94315
+SigPnd: 0000000000000000
+ShdPnd: 0000000000000000
+SigBlk: 0000000000000000
+SigIgn: ffffffffffffffff
+SigCgt: 0000000000000000
+CapInh: 0000000000000000
+CapPrm: 0000003fffffffff
+CapEff: 0000003fffffffff
+CapBnd: 0000003fffffffff
+CapAmb: 0000000000000000
+NoNewPrivs:     0
+Seccomp:        0
+Cpus_allowed:   ff
+Cpus_allowed_list:      0-7
+Mems_allowed:   00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000001
+Mems_allowed_list:      0
+voluntary_ctxt_switches:        160
+nonvoluntary_ctxt_switches:     1
+END
+
+    open my $fh, '<', \$content;
+    is_deeply(parse_proc_pid_status($fh), {
+        10250 => {
+            Name =>   'ssh',
+            Umask =>  '0022',
+            State =>  'S (sleeping)',
+            Tgid =>   '10250',
+            Ngid =>   '0',
+            Pid =>    '10250',
+            PPid =>   '8060',
+            TracerPid =>      '0',
+            Uid =>    '1000    1000    1000    1000',
+            Gid =>    '1000    1000    1000    1000',
+            FDSize => '256',
+            Groups => '10 980 1000 1002',
+            NStgid => '10250',
+            NSpid =>  '10250',
+            NSpgid => '10250',
+            NSsid =>  '8060',
+            VmPeak =>   '162568 kB',
+            VmSize =>   '162568 kB',
+            VmLck =>         '0 kB',
+            VmPin =>         '0 kB',
+            VmHWM =>      '6832 kB',
+            VmRSS =>      '6700 kB',
+            RssAnon =>             '736 kB',
+            RssFile =>            '5964 kB',
+            RssShmem =>              '0 kB',
+            VmData =>     '1060 kB',
+            VmStk =>       '136 kB',
+            VmExe =>       '716 kB',
+            VmLib =>      '6968 kB',
+            VmPTE =>       '152 kB',
+            VmSwap =>        '0 kB',
+            HugetlbPages =>          '0 kB',
+            CoreDumping =>    '0',
+            Threads =>        '1',
+            SigQ =>   '0/94315',
+            SigPnd => '0000000000000000',
+            ShdPnd => '0000000000000000',
+            SigBlk => '0000000000000000',
+            SigIgn => '0000000000001000',
+            SigCgt => '0000000188014007',
+            CapInh => '0000000000000000',
+            CapPrm => '0000000000000000',
+            CapEff => '0000000000000000',
+            CapBnd => '0000003fffffffff',
+            CapAmb => '0000000000000000',
+            NoNewPrivs =>     '0',
+            Seccomp =>        '0',
+            Cpus_allowed =>   'ff',
+            Cpus_allowed_list =>      '0-7',
+            Mems_allowed =>   '00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000001',
+            Mems_allowed_list =>      '0',
+            voluntary_ctxt_switches =>        '561',
+            nonvoluntary_ctxt_switches =>     '1',
+        },
+        1053 => {
+            Name =>   'loop0',
+            Umask =>  '0000',
+            State =>  'S (sleeping)',
+            Tgid =>   '1053',
+            Ngid =>   '0',
+            Pid =>    '1053',
+            PPid =>   '2',
+            TracerPid =>      '0',
+            Uid =>    '0       0       0       0',
+            Gid =>    '0       0       0       0',
+            FDSize => '64',
+            NStgid => '1053',
+            NSpid =>  '1053',
+            NSpgid => '0',
+            NSsid =>  '0',
+            Threads =>        '1',
+            SigQ =>   '1/94315',
+            SigPnd => '0000000000000000',
+            ShdPnd => '0000000000000000',
+            SigBlk => '0000000000000000',
+            SigIgn => 'ffffffffffffffff',
+            SigCgt => '0000000000000000',
+            CapInh => '0000000000000000',
+            CapPrm => '0000003fffffffff',
+            CapEff => '0000003fffffffff',
+            CapBnd => '0000003fffffffff',
+            CapAmb => '0000000000000000',
+            NoNewPrivs =>     '0',
+            Seccomp =>        '0',
+            Cpus_allowed =>   'ff',
+            Cpus_allowed_list =>      '0-7',
+            Mems_allowed =>   '00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000001',
+            Mems_allowed_list =>      '0',
+            voluntary_ctxt_switches =>        '160',
+            nonvoluntary_ctxt_switches =>     '1',
+        },
+    }, 'parse_proc_pid_status - ssh, loop0');
+}
 
 done_testing;
 # vim: ts=4:sw=4:et

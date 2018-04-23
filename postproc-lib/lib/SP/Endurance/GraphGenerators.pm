@@ -81,6 +81,9 @@ sub pid_to_cmdline {
                 $_->{'/proc/pid/cmdline'}->{$pid}
             } elsif (exists $_->{'/proc/pid/smaps'}->{$pid} and exists $_->{'/proc/pid/smaps'}->{$pid}->{'#Name'}) {
                 $_->{'/proc/pid/smaps'}->{$pid}->{'#Name'}
+            } elsif (exists $_->{'/proc/pid/status'}->{$pid}
+                  && exists $_->{'/proc/pid/status'}->{$pid}->{Name}) {
+                $_->{'/proc/pid/status'}->{$pid}->{Name}
             } elsif (exists $_->{'/proc/pid/stat'}->{$pid}) {
                 my %entry = split ',', $_->{'/proc/pid/stat'}->{$pid};
                 exists $entry{name} ? $entry{name} : undef
@@ -317,10 +320,10 @@ sub generate_plot_ctx_total {
     foreach my $pid (@pids) {
         my @total_ctx = map {
             if (exists $_->{'/proc/pid/status'}->{$pid}) {
-                my %entry = split ',', $_->{'/proc/pid/status'}->{$pid};
-                exists $entry{voluntary_ctxt_switches} &&
-                exists $entry{nonvoluntary_ctxt_switches} ?
-                       $entry{voluntary_ctxt_switches} + $entry{nonvoluntary_ctxt_switches} :
+                exists $_->{'/proc/pid/status'}->{$pid}->{voluntary_ctxt_switches} &&
+                exists $_->{'/proc/pid/status'}->{$pid}->{nonvoluntary_ctxt_switches} ?
+                       $_->{'/proc/pid/status'}->{$pid}->{voluntary_ctxt_switches}
+                     + $_->{'/proc/pid/status'}->{$pid}->{nonvoluntary_ctxt_switches} :
                        undef
             } else { undef }
         } @$masterdb;
@@ -352,9 +355,8 @@ sub generate_plot_ctx_nonvol {
     foreach my $pid (@pids) {
         my @ctx = map {
             if (exists $_->{'/proc/pid/status'}->{$pid}) {
-                my %entry = split ',', $_->{'/proc/pid/status'}->{$pid};
-                exists $entry{nonvoluntary_ctxt_switches} ?
-                       $entry{nonvoluntary_ctxt_switches} : undef
+                exists $_->{'/proc/pid/status'}->{$pid}->{nonvoluntary_ctxt_switches} ?
+                       $_->{'/proc/pid/status'}->{$pid}->{nonvoluntary_ctxt_switches} : undef
             } else { undef }
         } @$masterdb;
         $plot->push(
@@ -383,9 +385,8 @@ sub generate_plot_ctx_vol {
     foreach my $pid (@pids) {
         my @ctx = map {
             if (exists $_->{'/proc/pid/status'}->{$pid}) {
-                my %entry = split ',', $_->{'/proc/pid/status'}->{$pid};
-                exists $entry{voluntary_ctxt_switches} ?
-                       $entry{voluntary_ctxt_switches} : undef
+                exists $_->{'/proc/pid/status'}->{$pid}->{voluntary_ctxt_switches} ?
+                       $_->{'/proc/pid/status'}->{$pid}->{voluntary_ctxt_switches} : undef
             } else { undef }
         } @$masterdb;
         $plot->push(
@@ -967,10 +968,8 @@ sub generate_plot_mlocked {
     foreach my $pid (@pids) {
         $plot->push(
             [kb2mb nonzero map {
-                if (exists $_->{'/proc/pid/status'}->{$pid}) {
-                    my %entry = split ',', $_->{'/proc/pid/status'}->{$pid};
-                    exists $entry{VmLck} ? $entry{VmLck} : undef
-                } else { undef }
+                exists $_->{'/proc/pid/status'}->{$pid} ?
+                       $_->{'/proc/pid/status'}->{$pid}->{VmLck} : undef
             } @$masterdb],
             title => pid_to_cmdline($masterdb, $pid),
         );
@@ -1002,10 +1001,8 @@ sub generate_plot_vmsize {
     foreach my $pid (@pids) {
         $plot->push(
             [nonzero kb2mb has_changes map {
-                if (exists $_->{'/proc/pid/status'}->{$pid}) {
-                    my %entry = split ',', $_->{'/proc/pid/status'}->{$pid};
-                    exists $entry{VmSize} ? $entry{VmSize} : undef
-                } else { undef }
+                exists $_->{'/proc/pid/status'}->{$pid} ?
+                       $_->{'/proc/pid/status'}->{$pid}->{VmSize} : undef
             } @$masterdb],
             title => pid_to_cmdline($masterdb, $pid),
         );
@@ -1641,11 +1638,9 @@ sub generate_plot_threads {
 
     foreach my $pid (@pids) {
         my @threads = map {
-                if (exists $_->{'/proc/pid/status'}->{$pid}) {
-                    my %entry = split ',', $_->{'/proc/pid/status'}->{$pid};
-                    exists $entry{Threads} ? $entry{Threads} : undef
-                } else { undef }
-            } @$masterdb;
+            exists $_->{'/proc/pid/status'}->{$pid} ?
+                   $_->{'/proc/pid/status'}->{$pid}->{Threads} : undef
+        } @$masterdb;
 
         next unless any { defined and $_ > 1 } @threads;
 
@@ -1678,11 +1673,9 @@ sub generate_plot_threads_changes {
 
     foreach my $pid (@pids) {
         my @threads = map {
-                if (exists $_->{'/proc/pid/status'}->{$pid}) {
-                    my %entry = split ',', $_->{'/proc/pid/status'}->{$pid};
-                    exists $entry{Threads} ? $entry{Threads} : undef
-                } else { undef }
-            } @$masterdb;
+            exists $_->{'/proc/pid/status'}->{$pid} ?
+                   $_->{'/proc/pid/status'}->{$pid}->{Threads} : undef
+        } @$masterdb;
 
         next unless any { defined and $_ > 1 } @threads;
 
