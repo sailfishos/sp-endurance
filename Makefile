@@ -34,6 +34,9 @@ ALL = $(SRC) $(BIN) $(DOC) postproc-lib
 .PHONY: all
 all: $(ALL)
 
+.PHONY: measure
+measure: $(BIN)
+
 postproc-lib/Makefile:
 	cd postproc-lib && perl Makefile.PL
 
@@ -82,7 +85,7 @@ endurance-extract-process-cgroups.1: postproc/endurance-extract-process-cgroups 
 DOCDIR ?= /usr/share/doc
 
 .PHONY: install-measure
-install-measure:
+install-measure: measure
 	install -d $(DESTDIR)/usr/bin/
 	cp measure/* $(DESTDIR)/usr/bin/
 
