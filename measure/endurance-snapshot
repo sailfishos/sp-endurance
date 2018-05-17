@@ -364,6 +364,12 @@ if type lscpu >/dev/null 2>/dev/null ; then
 	[ -f $path/lscpu-extended.json ] && [ ! -s $path/lscpu-extended.json ] && rm $path/lscpu-extended.json
 fi
 
+if type lsns >/dev/null 2>/dev/null && lsns --help | grep -q json ; then
+	echo "- lsns"
+	LC_ALL=C lsns --json >$path/lsns.json
+	[ -f $path/lsns.json ] && [ ! -s $path/lsns.json ] && rm $path/lsns.json
+fi
+
 if type rzscontrol >/dev/null 2>/dev/null ; then
 	echo "- ramzswap statistics"
 	for D in /dev/ramzswap[0-9]* ; do
