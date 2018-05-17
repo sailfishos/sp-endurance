@@ -73,6 +73,16 @@ check_xz()
 	which xzcat >/dev/null 2>/dev/null || usage "'xzcat' utility to extract SMAPS .xz content is missing"
 }
 
+CHECK_GZIP=""
+check_gzip()
+{
+	if [ "$CHECK_GZIP" ] ; then
+		return 0
+	fi
+	CHECK_GZIP=1
+	which gzip >/dev/null 2>/dev/null || usage "'gzip' utility to extract SMAPS .gz content is missing"
+}
+
 extract_info ()
 {
 	# get snapshot/directory name/number
@@ -92,6 +102,10 @@ extract_info ()
 		READER="xzcat"
 		SUFFIX=".xz"
 		check_xz
+	elif [ -f "$1.gz" ] ; then
+		READER="gzip -c -d"
+		SUFFIX=".gz"
+		check_gzip
 	else
 		echo "ERROR: unrecognized capture compression format for file: $1" >&2
 		exit 1
@@ -106,7 +120,7 @@ capfile=smaps.cap
 
 check_cap()
 {
-	test -f "$1/$capfile" -o -f "$1/$capfile.lzo" -o -f "$1/$capfile.xz"
+	test -f "$1/$capfile" -o -f "$1/$capfile.lzo" -o -f "$1/$capfile.xz" -o -f "$1/$capfile.gz"
 }
 
 if [ $# -gt 0 ]; then
