@@ -83,6 +83,7 @@ extract_info ()
 	# uncompress, take only program info and store that
 	if [ -f "$1" ] ; then
 		READER="cat"
+		SUFFIX=""
 	elif [ -f "$1.lzo" ] ; then
 		READER="lzop -c -d"
 		SUFFIX="lzo"
