@@ -39,7 +39,7 @@ postproc-lib/Makefile:
 
 .PHONY: postproc-lib
 postproc-lib: postproc-lib/Makefile
-	cd postproc-lib && $(MAKE)
+	$(MAKE) -C postproc-lib
 
 measure/proc2csv: src/proc2csv.c
 	$(CC) $(CFLAGS) -o $@ $<
@@ -88,7 +88,7 @@ install-measure:
 
 .PHONY: install-postproc-lib
 install-postproc-lib:
-	cd postproc-lib && $(MAKE) install DESTDIR=$(DESTDIR)
+	$(MAKE) -C postproc-lib install DESTDIR=$(DESTDIR)
 
 .PHONY: install-postproc
 install-postproc:
