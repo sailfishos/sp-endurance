@@ -27,15 +27,17 @@ usage ()
 	echo
 	echo "usage:"
 	echo "	$name <program name> [directories]"
+	echo "	$name -p PID [directories]"
 	echo 
 	echo "This can be run in the saved endurance data dir to extract"
-	echo "SMAPS information for the named process(es). Or you can give"
-	echo "the endurance snapshot directories from which it should"
-	echo "extract the informations."
+	echo "SMAPS information for the named process(es) or PID."
+	echo "Or you can give the endurance snapshot directories from"
+	echo "which it should extract the informations."
 	echo
 	echo "Examples:"
 	echo "	$name pulseaudio"
 	echo "	$name pulseaudio 020 021"
+	echo "	$name -p 123"
 	echo
 	echo "ERROR: $1!"
 	echo
@@ -43,15 +45,26 @@ usage ()
 }
 
 prog=$1
+shift
 if [ -z "$prog" ]; then
 	usage "Give a name for program which info should be extracted"
 fi
 if [ "$prog" = "-h" ] || [ "$prog" = "--help" ]; then
 	usage "-h/--help given as program name"
 fi
-shift
+if [ "$prog" = "-p" ] ; then
+	prog=""
+	pid=$1
+	shift
+fi
 
-echo "Searching/extracting SMAPS information for '$prog' from snapshots..."
+if [ "$prog" ] ; then
+	echo "Searching/extracting SMAPS information for '$prog' from snapshots..."
+elif [ "$pid" ] ; then
+	echo "Searching/extracting SMAPS information for PID $pid from snapshots..."
+else
+	usage "Give a name or PID for program which info should be extracted"
+fi
 
 CHECK_LZOP=""
 check_lzop()
@@ -88,7 +101,11 @@ extract_info ()
 	# get snapshot/directory name/number
 	num=${1%/*}
 	num=${num##*/}
-	name=$prog-$num.cap
+	if [ "$prog" ] ; then
+		name=$prog-$num.cap
+	elif [ "$pid" ] ; then
+		name=$pid-$num.cap
+	fi
 	echo "- $num"
 	# uncompress, take only program info and store that
 	if [ -f "$1" ] ; then
@@ -110,10 +127,17 @@ extract_info ()
 		echo "ERROR: unrecognized capture compression format for file: $1" >&2
 		exit 1
 	fi
-	$READER "${1}${SUFFIX}" | awk "
+	if [ "$prog" ] ; then
+		$READER "${1}${SUFFIX}" | awk "
 /^==/ {	show=0; next }
 /Name: .*$prog/ { show=1 }
 { if(show) print }" > $name
+	elif [ "$pid" ] ; then
+		$READER "${1}${SUFFIX}" | awk "
+/^==> \/proc\/$pid\// { show=1; next }
+/^==/ {	show=0; next }
+{ if(show) print }" > $name
+	fi
 }
 
 capfile=smaps.cap
@@ -139,11 +163,29 @@ else
 	done
 fi
 
-grep -q "Name: .*$prog" $prog-*.cap
-if [ $? -ne 0 ]; then
-	echo "ERROR: No matches found for program '$prog'!" 1>&2
-	rm $prog-*.cap
-	exit 1
+if [ "$prog" ] ; then
+	grep -q "Name: .*$prog" $prog-*.cap
+	if [ $? -ne 0 ]; then
+		echo "ERROR: No matches found for program '$prog'!" 1>&2
+		rm $prog-*.cap
+		exit 1
+	fi
+	echo "Information extracted:"
+	ls $prog-*.cap
+elif [ "$pid" ] ; then
+	ok=0
+	for F in "$pid"-*.cap ; do
+		if [ -s "$F" ] ; then
+			ok=1
+			continue
+		fi
+		rm "$F"
+	done
+	if [ "$ok" -eq 0 ] ; then
+		echo "ERROR: No matches found for PID '$pid'!" 1>&2
+		exit 1
+	else
+		echo "Information extracted:"
+		ls $pid-*.cap
+	fi
 fi
-echo "Information extracted:"
-ls $prog-*.cap
