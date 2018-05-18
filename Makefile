@@ -37,7 +37,7 @@ all: $(ALL)
 .PHONY: measure
 measure: $(BIN)
 
-postproc-lib/Makefile:
+postproc-lib/Makefile: postproc-lib/Makefile.PL
 	cd postproc-lib && perl Makefile.PL
 
 .PHONY: postproc-lib
