@@ -1,0 +1,8 @@
+[Unit]
+Description=endurance-snapshot data collection
+
+[Service]
+Environment=NO_SYSLOG=1
+Environment=DATADIR=/var/sp-endurance/snapshot-%H-%v-%b
+ExecStartPre=/usr/bin/mkdir -p "$DATADIR"
+ExecStart=/usr/bin/endurance-snapshot "$DATADIR"

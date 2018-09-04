@@ -1,0 +1,13 @@
+[Unit]
+Description=periodic endurance-snapshot data collection
+
+[Timer]
+# once per 1h (default):
+OnCalendar=hourly
+# once per 30min:
+#OnCalendar=*:00,30:00
+# once per 20min:
+#OnCalendar=*:00,20,40:00
+
+[Install]
+WantedBy=timers.target
