@@ -68,19 +68,16 @@ clean:
 test:
 	[ ! -f postproc-lib/Makefile ] || $(MAKE) -C postproc-lib test
 
-mandir:
-	install -d $(DESTDIR)/usr/share/man/man1/
-	
-endurance-recompress-snapshots.1: postproc/endurance-recompress-snapshots mandir
+endurance-recompress-snapshots.1: postproc/endurance-recompress-snapshots
 	pod2man postproc/endurance-recompress-snapshots > man/$@
-	install -m 644 man/$@ $(DESTDIR)/usr/share/man/man1/
+	install -D -m 644 man/$@ $(DESTDIR)/usr/share/man/man1/$@
 
-endurance-extract-process-cgroups.1: postproc/endurance-extract-process-cgroups mandir
+endurance-extract-process-cgroups.1: postproc/endurance-extract-process-cgroups
 	pod2man postproc/endurance-extract-process-cgroups > man/$@
-	install -m 644 man/$@ $(DESTDIR)/usr/share/man/man1/
+	install -D -m 644 man/$@ $(DESTDIR)/usr/share/man/man1/$@
 
-%.1: man/$@ mandir
-	install -m 644 man/$@ $(DESTDIR)/usr/share/man/man1/
+%.1: man/$@
+	install -D -m 644 man/$@ $(DESTDIR)/usr/share/man/man1/$@
 
 DOCDIR ?= /usr/share/doc
 
