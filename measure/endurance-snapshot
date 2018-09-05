@@ -175,6 +175,36 @@ elif type xprop >/dev/null 2>/dev/null ; then
 	fi
 fi
 
+# Save certain info (that we expect not to change) only in first snapshot.
+if [ "$snapshot_index" -eq 0 ] ; then
+	for F in os-release hw-release sys-release system-release ; do
+		if [ ! -f /etc/$F ]; then continue; fi
+		cat /etc/$F > $path/$F
+		[ -f $path/$F ] && [ ! -s $path/$F ] && rm $path/$F
+	done
+
+	if type lscpu >/dev/null 2>/dev/null ; then
+		echo "- lscpu"
+		if lscpu --help | grep -q json ; then
+			LC_ALL=C lscpu --json >$path/lscpu.json
+			LC_ALL=C lscpu --json --extended >$path/lscpu-extended.json
+		else
+			LC_ALL=C lscpu >$path/lscpu
+			LC_ALL=C lscpu --extended >$path/lscpu-extended
+		fi
+		[ -f $path/lscpu ] && [ ! -s $path/lscpu ] && rm $path/lscpu
+		[ -f $path/lscpu.json ] && [ ! -s $path/lscpu.json ] && rm $path/lscpu.json
+		[ -f $path/lscpu-extended ] && [ ! -s $path/lscpu-extended ] && rm $path/lscpu-extended
+		[ -f $path/lscpu-extended.json ] && [ ! -s $path/lscpu-extended.json ] && rm $path/lscpu-extended.json
+	fi
+
+	if [ -d /sys/devices/virtual/dmi/id ] ; then
+		echo "- dmi"
+		find /sys/devices/virtual/dmi/id -type f | xargs head -v -n 10000 2>/dev/null > $path/sysfs_dmi_id
+		[ -f $path/sysfs_dmi_id ] && [ ! -s $path/sysfs_dmi_id ] && rm $path/sysfs_dmi_id
+	fi
+fi
+
 # save memory statistics
 echo "- SMAPS data"
 if type sp_smaps_snapshot >/dev/null 2>/dev/null ; then
@@ -232,12 +262,6 @@ if [ $RET -ne 0 ]; then
 	echo "$script: WARNING, $PROC2CSV failed with exit code $RET." 1>&2
 fi
 } | $NONCACHED_W $path/usage.csv
-
-for F in os-release hw-release sys-release system-release ; do
-	if [ ! -f /etc/$F ]; then continue; fi
-	cat /etc/$F > $path/$F
-	[ -f $path/$F ] && [ ! -s $path/$F ] && rm $path/$F
-done
 
 # Copy files from /proc with cat to avoid GNU coreutils 6.x cp bug:
 echo "- Other proc files"
@@ -342,26 +366,6 @@ if [ -d /sys/class/backlight ] ; then
 		fi
 	done > $path/sysfs_backlight
 	[ -f $path/sysfs_backlight ] && [ ! -s $path/sysfs_backlight ] && rm $path/sysfs_backlight
-fi
-if [ -d /sys/devices/virtual/dmi/id ] ; then
-	echo "- dmi"
-	find /sys/devices/virtual/dmi/id -type f | xargs head -v -n 10000 2>/dev/null > $path/sysfs_dmi_id
-	[ -f $path/sysfs_dmi_id ] && [ ! -s $path/sysfs_dmi_id ] && rm $path/sysfs_dmi_id
-fi
-
-if type lscpu >/dev/null 2>/dev/null ; then
-	echo "- lscpu"
-	if lscpu --help | grep -q json ; then
-		LC_ALL=C lscpu --json >$path/lscpu.json
-		LC_ALL=C lscpu --json --extended >$path/lscpu-extended.json
-	else
-		LC_ALL=C lscpu >$path/lscpu
-		LC_ALL=C lscpu --extended >$path/lscpu-extended
-	fi
-	[ -f $path/lscpu ] && [ ! -s $path/lscpu ] && rm $path/lscpu
-	[ -f $path/lscpu.json ] && [ ! -s $path/lscpu.json ] && rm $path/lscpu.json
-	[ -f $path/lscpu-extended ] && [ ! -s $path/lscpu-extended ] && rm $path/lscpu-extended
-	[ -f $path/lscpu-extended.json ] && [ ! -s $path/lscpu-extended.json ] && rm $path/lscpu-extended.json
 fi
 
 if type lsns >/dev/null 2>/dev/null && lsns --help | grep -q json ; then
