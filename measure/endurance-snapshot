@@ -177,7 +177,16 @@ fi
 
 # Save certain info (that we expect not to change) only in first snapshot.
 if [ "$snapshot_index" -eq 0 ] ; then
-	for F in os-release hw-release sys-release system-release ; do
+	if [ "$HOSTNAME" ] ; then
+		echo "$HOSTNAME" >$path/hostname
+	elif type hostname >/dev/null 2>/dev/null ; then
+		hostname >$path/hostname
+	fi
+	if type uname >/dev/null 2>/dev/null ; then
+		uname -r >$path/kernel_release
+	fi
+
+	for F in os-release hw-release sys-release system-release machine-id ; do
 		if [ ! -f /etc/$F ]; then continue; fi
 		cat /etc/$F > $path/$F
 		[ -f $path/$F ] && [ ! -s $path/$F ] && rm $path/$F
@@ -270,6 +279,12 @@ for F in slabinfo interrupts softirqs stat diskstats zoneinfo pagetypeinfo; do
 	cat /proc/$F > $path/$F
 	[ -f $path/$F ] && [ ! -s $path/$F ] && rm $path/$F
 done
+
+if [ -e /proc/net ] ; then
+	echo "- /proc/net"
+	find /proc/net/ -type f | xargs head -v -n 10000 2>/dev/null >$path/proc_net
+	[ -f $path/proc_net ] && [ ! -s $path/proc_net ] && rm $path/proc_net
+fi
 
 if [ -f "/proc/sys/kernel/tainted" ] ; then
 	cat /proc/sys/kernel/tainted > $path/tainted
