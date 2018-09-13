@@ -149,6 +149,12 @@ fi
 echo "Saving to $path:"
 mkdir -p $path
 
+# local data collection extensions:
+# add extra data collection commands to "endurance-snapshot.local"
+if [ -x "$script_path/$script.local" ] ; then
+	"$script_path/$script.local" "$snapshot_index" "$path"
+fi
+
 # optional use-case step description
 if [ $# -gt 1 ]; then
 	echo "- use-case step description"
