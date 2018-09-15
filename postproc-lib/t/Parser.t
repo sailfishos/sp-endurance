@@ -1743,6 +1743,9 @@ PID,FD count,Command line:
 703,1,python3 /path/to/foo.py arg1 arg2 arg3
 704,1,/usr/bin/python3  -x  -y  -z  --long  foo3     arg1 arg2
 800,1,/usr/bin/perl ./test.pl
+808,2,/usr/bin/glusterfs --volfile=volfile --acl -L off -N --read-only /mnt/glusterfs/mountpoint
+810,10,glusterfs
+812,12,glusterfs -x y foo=bar
 
 Name,State,Tgid,Pid,VmSize,VmLck,voluntary_ctxt_switches,nonvoluntary_ctxt_switches,Threads:
 invalid,line,goes,here
@@ -1849,6 +1852,9 @@ END
         703 => 'python3 [foo.py]',
         704 => 'python3 [foo3]',
         800 => 'perl [test.pl]',
+        808 => 'glusterfs [/mnt/glusterfs/mountpoint]',
+        810 => 'glusterfs',
+        812 => 'glusterfs',
     },
     '/proc/pid/fd_count' => {
         1   => 8,
@@ -1862,6 +1868,9 @@ END
         703 => 1,
         704 => 1,
         800 => 1,
+        808 => 2,
+        810 => 10,
+        812 => 12,
     },
     '/proc/pid/status' => {
         1 => {

@@ -959,6 +959,21 @@ sub csv_pid_fd {
         if ($cmdline =~ /^\S*(python\S*|perl\S*)(?:\s+-\S+)*\s*(\S+)/) {
             # "/usr/bin/python2.7 -u /path/to/foo.py" => "python2.7 [foo.py]"
             $cmdline = $1 . ' [' . basename($2) . ']';
+        } elsif ($cmdline =~ /^\S*(glusterfs)\s+(\S.*)$/) {
+            $cmdline = $1;
+            # Grab glusterfs mount point from command line.
+            # Synopsis from manual pages:
+            #   glusterfs [options] [mountpoint]
+            # Example:
+            #   "/usr/sbin/glusterfs --acl --volfile-server=1.2.3.4 --volfile-id=/config /mnt/config"
+            #   => "glusterfs [/mnt/config]"
+            my @args = grep { ! /^-/ } split(/\s/, $2);
+            #print STDERR Dumper \@args;
+            # Some sanity checking for the mountpoint name, accept only those
+            # starting with "/"
+            if (@args > 0 && $args[-1] =~ m#^/# && $args[-1] !~ m#=#) {
+                $cmdline .= ' [' . $args[-1] . ']';
+            }
         } else {
             if ($cmdline =~ /^(\S+)\s/) { $cmdline = $1; }
             $cmdline = basename $cmdline;
