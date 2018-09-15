@@ -959,6 +959,15 @@ sub csv_pid_fd {
         if ($cmdline =~ /^\S*(python\S*|perl\S*)(?:\s+-\S+)*\s*(\S+)/) {
             # "/usr/bin/python2.7 -u /path/to/foo.py" => "python2.7 [foo.py]"
             $cmdline = $1 . ' [' . basename($2) . ']';
+        } elsif ($cmdline =~ /^\S*(bash)\s+(\S.*)$/) {
+            # "bash /path/to/script_name.sh" => bash [script_name.sh]"
+            $cmdline = $1;
+            my @args = grep { ! /^-/ } split(/\s/, $2);
+            # Give up if options which accept filename (such as --rcfile) are
+            # found in the cmdline.
+            if (@args > 0 && $2 !~ /--rcfile|--init-file|-c|-O|\+O/) {
+                $cmdline .= ' [' . basename($args[-1]) . ']';
+            }
         } elsif ($cmdline =~ /^\S*(glusterfs)\s+(\S.*)$/) {
             $cmdline = $1;
             # Grab glusterfs mount point from command line.

@@ -1746,6 +1746,14 @@ PID,FD count,Command line:
 808,2,/usr/bin/glusterfs --volfile=volfile --acl -L off -N --read-only /mnt/glusterfs/mountpoint
 810,10,glusterfs
 812,12,glusterfs -x y foo=bar
+820,0,/bin/bash /path/to/script.sh --script-opt1 -x -y -z
+821,0,/bin/bash -x -y -z script_name
+822,0,/bin/bash -i -l -r --rcfile /path/to/rcfile script_name -x -y -z --opt1 foo
+823,0,bash
+824,0,/bin/bash -c 'x y z ; qwerty ; zxcvb'
+825,0,man bash
+826,0,/bin/bash -O shopt script
+827,0,/bin/bash +O shopt script
 
 Name,State,Tgid,Pid,VmSize,VmLck,voluntary_ctxt_switches,nonvoluntary_ctxt_switches,Threads:
 invalid,line,goes,here
@@ -1855,6 +1863,14 @@ END
         808 => 'glusterfs [/mnt/glusterfs/mountpoint]',
         810 => 'glusterfs',
         812 => 'glusterfs',
+        820 => 'bash [script.sh]',
+        821 => 'bash [script_name]',
+        822 => 'bash',
+        823 => 'bash',
+        824 => 'bash',
+        825 => 'man',
+        826 => 'bash',
+        827 => 'bash',
     },
     '/proc/pid/fd_count' => {
         1   => 8,
