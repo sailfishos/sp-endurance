@@ -69,6 +69,7 @@ if ($flag_h or @ARGV < 1) {
 if ($flag_j > 1) {
 	eval 'use Parallel::ForkManager';
 	eval '$forkmanager = new Parallel::ForkManager(' . $flag_j . ')';
+	eval '$forkmanager->set_waitpid_blocking_sleep(0);';
 }
 
 `which xz >/dev/null 2>/dev/null`;
