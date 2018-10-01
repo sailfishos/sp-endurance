@@ -83,8 +83,11 @@ DOCDIR ?= /usr/share/doc
 
 .PHONY: install-measure
 install-measure: measure
-	install -d $(DESTDIR)/usr/bin/
-	cp measure/* $(DESTDIR)/usr/bin/
+	install -D measure/endurance-mem-overview $(DESTDIR)/usr/bin/endurance-mem-overview
+	install -D measure/endurance-snapshot $(DESTDIR)/usr/bin/endurance-snapshot
+	install -D measure/proc2csv $(DESTDIR)/usr/bin/proc2csv
+	install -D measure/sp-noncached $(DESTDIR)/usr/bin/sp-noncached
+	[ ! -x measure/xmeminfo ] || install -D measure/xmeminfo $(DESTDIR)/usr/bin/xmeminfo
 
 .PHONY: install-postproc-lib
 install-postproc-lib:
