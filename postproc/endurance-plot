@@ -419,7 +419,7 @@ foreach my $i (0 .. @ARGV-1) {
     print $dir . ' ';
 
     eval {
-        die "invalid endurance directory, '$dir/usage.csv' missing" unless -e "$dir/usage.csv";
+        die "invalid endurance directory, '$dir/usage.csv' missing" unless -e "$dir/usage.csv" || -e "$dir/usage.csv.xz";
         my $entry = parse_dir($dir);
         die "parsing failed" unless defined $entry and ref $entry eq 'HASH';
         push @masterdb, $entry;
