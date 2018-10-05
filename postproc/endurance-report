@@ -734,7 +734,7 @@ def parse_csv(file, filename):
     data['commands'], data['fdcounts'], data['cmdlines'] = get_commands_and_fd_counts(file)
     
     # get process statistics
-    headers = skip_to(file, "Name,State,", True)
+    headers = skip_to(file, "Name,", True)
     data['processes'], data['kthreads'] = get_process_info(file, headers)
 
     # check if we have /proc/pid/stat in the CSV file
