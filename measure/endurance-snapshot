@@ -311,6 +311,8 @@ if type xmeminfo >/dev/null 2>/dev/null ; then
 		cat $path/xmeminfo.log 1>&2
 		echo "$script: WARNING, xmeminfo failed with exit code $RET, check \$DISPLAY and \$XAUTHORITY." 1>&2
 	fi
+	[ -f $path/xmeminfo ] && [ ! -s $path/xmeminfo ] && rm $path/xmeminfo
+	[ -f $path/xmeminfo.log ] && [ ! -s $path/xmeminfo.log ] && rm $path/xmeminfo.log
 fi
 
 # save some less easily parsed /proc/ statistics, ignore errors
