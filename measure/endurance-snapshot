@@ -145,8 +145,23 @@ if [ -z "$path" ] ; then
 	exit 1
 fi
 
+# collect files in temporary directory first, only create the final directory
+# at the end when all data collected.
+path_final=$path
+path=$path.$$
+
+if [ -e "$path_final" ] ; then
+	echo "$script: ERROR, '$path_final' already exists!" >&2
+	exit 1
+fi
+
+if [ -e "$path" ] ; then
+	echo "$script: ERROR, '$path' already exists!" >&2
+	exit 1
+fi
+
 # directory for storing the new statistics
-echo "Saving to $path:"
+echo "Saving to $path_final (using $path as tmpdir):"
 mkdir -p $path
 
 # local data collection extensions:
@@ -509,3 +524,6 @@ if [ -z "$NO_SYSLOG" ] && [ -x /bin/journalctl ]; then
 		$COMPRESSOR | \
 		$NONCACHED_W $path/journal$COMPRESSOR_SUFFIX
 fi
+
+# all done!
+mv $path $path_final
