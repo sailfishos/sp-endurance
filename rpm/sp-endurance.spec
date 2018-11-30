@@ -11,6 +11,8 @@ Requires: lzop
 Requires: sp-smaps
 Requires: mce-tools
 Requires: findutils
+# awk used by measure/endurance-mem-overview and measure/endurance-snapshot
+Requires: gawk
 
 %description
  Endurance measurement tools save system and process information from /proc
