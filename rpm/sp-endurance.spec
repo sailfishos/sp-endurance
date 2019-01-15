@@ -38,6 +38,9 @@ make install-compat-symlinks DESTDIR=%{buildroot}
 rm -f $RPM_BUILD_ROOT%{perl_archlib}/perllocal.pod
 rm -f $RPM_BUILD_ROOT%{perl_vendorarch}/auto/SP/Endurance/.packlist
 
+mkdir -p $RPM_BUILD_ROOT%{_docdir}/%{name}-%{version}
+install -m0644 README $RPM_BUILD_ROOT%{_docdir}/%{name}-%{version}
+
 %clean
 rm -rf %{buildroot}
 
@@ -50,15 +53,10 @@ rm -rf %{buildroot}
 # This is the compat symlink:
 %{_bindir}/save-incremental-endurance-stats
 # ...
-%{_mandir}/man1/proc2csv.1.gz
-%{_mandir}/man1/sp-noncached.1.gz
-%{_mandir}/man1/endurance-mem-overview.1.gz
-%{_mandir}/man1/endurance-snapshot.1.gz
 %if %is_x11
     %{_bindir}/xmeminfo
-    %{_mandir}/man1/xmeminfo.1.gz
 %endif
-%doc COPYING README
+%license COPYING
 
 %package postproc
 Summary: Postprocessing for endurance data
@@ -102,14 +100,6 @@ Requires: perl(JSON::XS)
 %{_bindir}/recompress-endurance-measurements
 # ...
 %{perl_vendorlib}/SP/
-%{_mandir}/man1/endurance-plot.1.gz
-%{_mandir}/man1/endurance-report.1.gz
-%{_mandir}/man1/syslog_parse.py.1.gz
-%{_mandir}/man1/endurance-parse-snapshots.1.gz
-%{_mandir}/man1/endurance-split-snapshots.1.gz
-%{_mandir}/man1/endurance-extract-process-smaps.1.gz
-%{_mandir}/man1/endurance-extract-process-cgroups.1.gz
-%{_mandir}/man1/endurance-recompress-snapshots.1.gz
 %{_datadir}/%{name}-postproc/
 %{_defaultdocdir}/%{name}-postproc/
 
@@ -129,3 +119,15 @@ Requires: blts-tools
 %defattr(-,root,root,-)
 %{_datadir}/%{name}-tests/
 
+%package doc
+Summary:   Documentation for %{name}
+Group:     Documentation
+Requires:  %{name} = %{version}-%{release}
+
+%description doc
+Man pages for %{name}.
+
+%files doc
+%defattr(-,root,root,-)
+%{_mandir}/man*/*.*
+%{_docdir}/%{name}-%{version}
