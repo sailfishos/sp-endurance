@@ -207,10 +207,11 @@ if [ "$snapshot_index" -eq 0 ] ; then
 		uname -r >$path/kernel_release
 	fi
 
-	for F in os-release hw-release sys-release system-release machine-id ; do
-		if [ ! -f /etc/$F ]; then continue; fi
-		cat /etc/$F > $path/$F
-		[ -f $path/$F ] && [ ! -s $path/$F ] && rm $path/$F
+	for F in /etc/*release* /etc/*-id ; do
+		if [ ! -f $F ]; then continue; fi
+		FF="${F##*/}"
+		cat $F > $path/$FF
+		[ -f $path/$FF ] && [ ! -s $path/$FF ] && rm $path/$FF
 	done
 
 	if type lscpu >/dev/null 2>/dev/null ; then
