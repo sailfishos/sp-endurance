@@ -92,7 +92,24 @@ sub pid_to_cmdline {
             }
         } @$masterdb;
 
-        $pid_to_cmdline{$pid} = join(' / ', @cmdlines);
+        # Filter out substrings, example:
+        #  ("systemd-journal", "systemd-journald") => ("systemd-journald")
+        my @cmdlines_uniq;
+        foreach my $cmd1 (@cmdlines) {
+            my $take = 1;
+            foreach my $cmd2 (@cmdlines) {
+                next if $cmd1 eq $cmd2;
+                if (index($cmd2, $cmd1) != -1) {
+                    $take = 0;
+                    last;
+                }
+            }
+            if ($take) {
+                push @cmdlines_uniq, $cmd1;
+            }
+        }
+
+        $pid_to_cmdline{$pid} = join(' / ', @cmdlines_uniq);
     }
 
     join(': ', $pid, $pid_to_cmdline{$pid})
