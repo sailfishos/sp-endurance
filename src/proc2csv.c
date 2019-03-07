@@ -57,6 +57,13 @@
 #include <assert.h>
 #include <errno.h>
 
+#ifdef HAVE_VALGRIND_H
+#include <valgrind.h>
+#endif
+#ifndef RUNNING_ON_VALGRIND
+#define RUNNING_ON_VALGRIND 0
+#endif
+
 /* set to non-zero value to enable "-t" option which can be used
  * to test parsing of /proc contents copied from other machines.
  * 
@@ -74,9 +81,10 @@
 /* process information taken from /proc,
  * The code takes into account how long the fields below are.
  */
+#define MAX_CMDLINE_LEN 2048
 typedef struct {
 	int skip;	/* whether to skip this item */
-	char cmd[256];	/* command line[read/show size] */
+	char *cmd;	/* command line[read/show size] */
 	char pid[16];	/* Pid */
 } status_t;
 
@@ -387,7 +395,7 @@ static void show_fd_counts(int num, status_t *statuslist)
 		fds -= 2;
 		assert(fds >= 0);
 		fprintf(stdout, "%s%c%d%c%s\n",
-			s->pid, CSV_SEPARATOR, fds, CSV_SEPARATOR, s->cmd);
+			s->pid, CSV_SEPARATOR, fds, CSV_SEPARATOR, s->cmd ? s->cmd : "");
 	}
 	if (exited) {
 		fprintf(stderr,
@@ -408,7 +416,7 @@ static status_t *read_info(int num, struct dirent **namelist)
 	struct dirent **n;
 	status_t *statuslist, *s;
 	int i, idx, count, exited = 0;
-	char filename[256], *cmdline;
+	char filename[256], cmdline[MAX_CMDLINE_LEN];
 	
 	/* allocate & zero status for each of the processes */
 	statuslist = calloc(num, sizeof(status_t));
@@ -441,16 +449,20 @@ static status_t *read_info(int num, struct dirent **namelist)
 			exited++;
 			continue;
 		}
-		count = fread(s->cmd, 1, sizeof(s->cmd)-1, fp);
+		cmdline[0] = '\0';
+		count = fread(cmdline, 1, sizeof(cmdline)-1, fp);
+		cmdline[sizeof(cmdline)-1] = '\0';
 		fclose(fp);
 		
-		cmdline = s->cmd;
 		for (i = 0; i < count-1; i++) {
 			if (cmdline[i] < ' ') {
 				cmdline[i] = ' ';
 			}
 		}
 		cmdline[++i] = '\0';
+
+		if (cmdline[0])
+			s->cmd = strdup(cmdline);
 	}
 	free(namelist);
 	if (exited) {
@@ -615,6 +627,17 @@ int main(int argc, char *argv[])
 
 	show_proc_pid_io(lines, statuslist);
 
-	free(statuslist);
+	/* Cleanup memory before exiting only when running under valgrind,
+	 * otherwise it's just waste of time.
+	 */
+	if (RUNNING_ON_VALGRIND) {
+		int i;
+
+		for (i=0; i < lines; ++i)
+			free(statuslist[i].cmd);
+
+		free(statuslist);
+	}
+
 	return 0;
 }
