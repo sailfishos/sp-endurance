@@ -1444,6 +1444,7 @@ sub parse_dir {
         '/etc/system-release'      => parse_os_release(copen $name . '/system-release'),
         'str:/etc/os-release'      => read_str(copen $name . '/os-release'),
         'str:/etc/system-release'  => read_str(copen $name . '/system-release'),
+        'str:hostname'             => read_str(copen $name . '/hostname'),
         '/proc/diskstats'          => parse_diskstats(copen $name . '/diskstats'),
         '/proc/interrupts'         => parse_interrupts(copen $name . '/interrupts'),
         '/proc/softirqs'           => parse_softirqs(copen $name . '/softirqs'),
