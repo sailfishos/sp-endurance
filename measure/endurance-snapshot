@@ -304,8 +304,10 @@ done
 
 if [ -e /proc/net ] ; then
 	echo "- /proc/net"
-	find /proc/net/ -type f | xargs head -v -n 10000 2>/dev/null >$path/proc_net
-	[ -f $path/proc_net ] && [ ! -s $path/proc_net ] && rm $path/proc_net
+	find /proc/net/ -type f | xargs head -v -n 10000 2>/dev/null \
+		| $COMPRESSOR | $NONCACHED_W $path/proc_net$COMPRESSOR_SUFFIX
+	[ -f $path/proc_net$COMPRESSOR_SUFFIX ] && [ ! -s $path/proc_net$COMPRESSOR_SUFFIX ] \
+		&& rm $path/proc_net$COMPRESSOR_SUFFIX
 fi
 
 if [ -f "/proc/sys/kernel/tainted" ] ; then
