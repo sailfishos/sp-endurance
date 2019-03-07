@@ -2830,8 +2830,6 @@ sub generate_plot_process_state_count {
 }
 BEGIN { register_generator \&generate_plot_process_state_count; }
 
-my %wchan_suffix = (0 => ' (in user space)');
-
 sub generate_plot_wchan_count {
     my $plotter = shift;
     my $masterdb = shift;
@@ -2851,7 +2849,7 @@ sub generate_plot_wchan_count {
                 exists $_->{'/proc/pid/wchan'}->{$wchan} ?
                        $_->{'/proc/pid/wchan'}->{$wchan} : undef
             } @$masterdb],
-            title => $wchan . $wchan_suffix{$wchan},
+            title => $wchan,
         );
     }
 
@@ -2880,7 +2878,7 @@ sub generate_plot_wchan_changes {
                 exists $_->{'/proc/pid/wchan'}->{$wchan} ?
                        $_->{'/proc/pid/wchan'}->{$wchan} : undef
             } @$masterdb],
-            title => $wchan . $wchan_suffix{$wchan},
+            title => $wchan,
         );
     }
 
