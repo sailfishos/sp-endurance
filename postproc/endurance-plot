@@ -232,9 +232,10 @@ sub generate_plots {
 
     my $hostname = get_str($masterdb, 'hostname');
     $hostname =~ s/["\n]//g;
+    $hostname = 'Hostname=' . $hostname . '\n' if $hostname ne '';
     my $sw_version = join ' / ', sw_versions $masterdb;
     my $global_label =
-        'Hostname=' . $hostname . '\n' .
+        $hostname .
         'SW=' . $sw_version . '\n' .
         'HW=' . hw_string($masterdb) . '\n';
 
