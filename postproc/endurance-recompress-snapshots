@@ -80,7 +80,8 @@ if ($? != 0) {
 
 print "Finding files for recompression.\n";
 for my $dir (@ARGV) {
-	my @files = map { "$dir/$_" } qw/smaps.cap syslog dmesg open-fds sysfs_fs sysfs_cpu sched usage.csv/;
+	my @files = map { "$dir/$_" } qw/smaps.cap syslog dmesg open-fds
+		sysfs_fs sysfs_cpu sched usage.csv pid_status proc_net/;
 	push @files, glob "$dir/upstart/*.log";
 	push @files, map { s/\.lzo$//; $_ } glob "$dir/upstart/*.log.lzo";
 	foreach my $file (@files) {
