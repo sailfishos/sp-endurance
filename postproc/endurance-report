@@ -148,6 +148,15 @@ def parse_smaps(file):
         #print line        #DEBUG
         if line[0] == '=':
             # ==> /proc/767/smaps <==
+            pid = line[10:]
+            end = pid.find("/")
+            if end > 0:
+                pid = pid[:end]
+                smaps[pid] = { 'private_dirty' : 0,
+                               'swap'          : 0,
+                               'pss'           : 0,
+                               'rss'           : 0,
+                               'size'          : 0 }
             continue
         if line[0] == '#':
             if line[0:6] == "#Pid: ":
@@ -734,7 +743,7 @@ def parse_csv(file, filename):
     data['commands'], data['fdcounts'], data['cmdlines'] = get_commands_and_fd_counts(file)
     
     # get process statistics
-    headers = skip_to(file, "Name,State,", True)
+    headers = skip_to(file, "Name,", True)
     data['processes'], data['kthreads'] = get_process_info(file, headers)
 
     # check if we have /proc/pid/stat in the CSV file

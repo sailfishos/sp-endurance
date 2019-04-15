@@ -35,7 +35,7 @@ require Exporter;
     parse_sysfs_fs parse_sysfs_power_supply parse_sysfs_backlight
     parse_sysfs_cpu parse_component_version parse_step parse_usage_csv parse_df
     parse_ifconfig parse_upstart_jobs_respawned parse_sched parse_dir
-    parse_pidfilter copen/;
+    parse_pidfilter parse_proc_pid_status copen/;
 
 use File::Basename qw/basename/;
 use List::MoreUtils qw/uniq zip all any none firstidx/;
@@ -309,12 +309,13 @@ sub parse_interrupts {
         next unless /^\s*(\S+):((?:\s+\d+){1,$cpus})\s*(.*)/;
         my $interrupt = $1;
 
-        my $cnt = sum split ' ', $2;
-        next unless $cnt;
+        my @values = split ' ', $2;
+        next if @values == 0;
+        next if sum(@values) == 0;
 
         my $desc = $3;
         $desc =~ s/\s+/ /g;
-        $interrupts{$interrupt}->{count} = $cnt;
+        $interrupts{$interrupt}->{count} = \@values;
         $interrupts{$interrupt}->{desc} = $desc if length $desc;
     }
 
@@ -739,7 +740,10 @@ sub csv_proc_pid_stat {
 
         unshift @values, $pid, $name;
 
+        $name =~ s/,//g;
+
         my $entry = '';
+        $entry .= 'name,'   . $name             . ',' if length $name > 0;
         $entry .= 'minflt,' . int($values[9])   . ',' if defined $values[9];
         $entry .= 'majflt,' . int($values[11])  . ',' if defined $values[11];
         $entry .= 'utime,'  . int($values[13])  . ',' if defined $values[13];
@@ -790,42 +794,38 @@ sub csv_proc_pid_status {
         my $pid = $values[$idx_Pid];
         next unless defined $pid and $pid =~ /^\d+$/ and $pid > 0;
 
-        my $entry = '';
-
         if ($idx_Name != -1 and defined $values[$idx_Name] and
                length $values[$idx_Name]) {
-            $entry .= 'Name,' . $values[$idx_Name] . ',';
+            $stat{$pid}->{Name} = $values[$idx_Name];
         }
 
         if ($idx_VmSize != -1 and defined $values[$idx_VmSize] and
                $values[$idx_VmSize] =~ /^(\d+) kB$/) {
-            $entry .= 'VmSize,' . int($1) . ',';
+            $stat{$pid}->{VmSize} = int($1);
         }
 
         if ($idx_VmLck != -1 and defined $values[$idx_VmLck] and
                 $values[$idx_VmLck] =~ /^(\d+) kB$/) {
-            $entry .= 'VmLck,' . int($1) . ',';
+            $stat{$pid}->{VmLck} = int($1);
         }
 
-        $entry .= 'voluntary_ctxt_switches,' . int($values[$idx_voluntary_ctxt_switches]) . ','
-            if $idx_voluntary_ctxt_switches != -1 and
-               defined $values[$idx_voluntary_ctxt_switches] and
-               $values[$idx_voluntary_ctxt_switches] =~ /^\d+$/;
+        if ($idx_voluntary_ctxt_switches != -1 and
+                defined $values[$idx_voluntary_ctxt_switches] and
+                $values[$idx_voluntary_ctxt_switches] =~ /^\d+$/) {
+            $stat{$pid}->{voluntary_ctxt_switches} = int($values[$idx_voluntary_ctxt_switches]);
+        }
 
-        $entry .= 'nonvoluntary_ctxt_switches,' . int($values[$idx_nonvoluntary_ctxt_switches]) . ','
-            if $idx_nonvoluntary_ctxt_switches != -1 and
-               defined $values[$idx_nonvoluntary_ctxt_switches] and
-               $values[$idx_nonvoluntary_ctxt_switches] =~ /^\d+$/;
+        if ($idx_nonvoluntary_ctxt_switches != -1 and
+                defined $values[$idx_nonvoluntary_ctxt_switches] and
+                $values[$idx_nonvoluntary_ctxt_switches] =~ /^\d+$/) {
+            $stat{$pid}->{nonvoluntary_ctxt_switches} = int($values[$idx_nonvoluntary_ctxt_switches]);
+        }
 
-        $entry .= 'Threads,' . int($values[$idx_Threads]) . ','
-            if $idx_Threads != -1 and
-               defined $values[$idx_Threads] and
-               $values[$idx_Threads] =~ /^\d+/;
-
-        $entry = substr $entry, 0, -1;
-        next unless length $entry;
-
-        $stat{$pid} = $entry;
+        if ($idx_Threads != -1 and
+                defined $values[$idx_Threads] and
+                $values[$idx_Threads] =~ /^\d+/) {
+            $stat{$pid}->{Threads} = int($values[$idx_Threads]);
+        }
     }
 
     return \%stat;
@@ -959,6 +959,30 @@ sub csv_pid_fd {
         if ($cmdline =~ /^\S*(python\S*|perl\S*)(?:\s+-\S+)*\s*(\S+)/) {
             # "/usr/bin/python2.7 -u /path/to/foo.py" => "python2.7 [foo.py]"
             $cmdline = $1 . ' [' . basename($2) . ']';
+        } elsif ($cmdline =~ /^\S*(bash)\s+(\S.*)$/) {
+            # "bash /path/to/script_name.sh" => bash [script_name.sh]"
+            $cmdline = $1;
+            my @args = grep { ! /^-/ } split(/\s/, $2);
+            # Give up if options which accept filename (such as --rcfile) are
+            # found in the cmdline.
+            if (@args > 0 && $2 !~ /--rcfile|--init-file|-c|-O|\+O/) {
+                $cmdline .= ' [' . basename($args[-1]) . ']';
+            }
+        } elsif ($cmdline =~ /^\S*(glusterfs)\s+(\S.*)$/) {
+            $cmdline = $1;
+            # Grab glusterfs mount point from command line.
+            # Synopsis from manual pages:
+            #   glusterfs [options] [mountpoint]
+            # Example:
+            #   "/usr/sbin/glusterfs --acl --volfile-server=1.2.3.4 --volfile-id=/config /mnt/config"
+            #   => "glusterfs [/mnt/config]"
+            my @args = grep { ! /^-/ } split(/\s/, $2);
+            #print STDERR Dumper \@args;
+            # Some sanity checking for the mountpoint name, accept only those
+            # starting with "/"
+            if (@args > 0 && $args[-1] =~ m#^/# && $args[-1] !~ m#=#) {
+                $cmdline .= ' [' . $args[-1] . ']';
+            }
         } else {
             if ($cmdline =~ /^(\S+)\s/) { $cmdline = $1; }
             $cmdline = basename $cmdline;
@@ -1383,6 +1407,25 @@ sub read_str {
     return $result;
 }
 
+sub parse_proc_pid_status {
+    my $fh = shift;
+    my %result;
+    my $pid;
+    while (<$fh>) {
+        chomp;
+        if (m#^==> /proc/(\d+)/status <==#) {
+            $pid = $1;
+        } elsif (m#^(\S+):\s+(.*)$#) {
+            my ($key, $value) = ($1, $2);
+            $value =~ s/^\s*//;
+            $value =~ s/\s*$//;
+            next if length $value == 0;
+            $result{$pid}->{$key} = $value;
+        }
+    }
+    return \%result;
+}
+
 sub parse_dir {
     my $name = shift;
 
@@ -1401,6 +1444,7 @@ sub parse_dir {
         '/etc/system-release'      => parse_os_release(copen $name . '/system-release'),
         'str:/etc/os-release'      => read_str(copen $name . '/os-release'),
         'str:/etc/system-release'  => read_str(copen $name . '/system-release'),
+        'str:hostname'             => read_str(copen $name . '/hostname'),
         '/proc/diskstats'          => parse_diskstats(copen $name . '/diskstats'),
         '/proc/interrupts'         => parse_interrupts(copen $name . '/interrupts'),
         '/proc/softirqs'           => parse_softirqs(copen $name . '/softirqs'),
@@ -1428,6 +1472,11 @@ sub parse_dir {
     my $csv = parse_usage_csv(copen $name . '/usage.csv');
     foreach (keys %$csv) {
         $result->{$_} = $csv->{$_};
+    }
+
+    my $fh = copen($name . '/pid_status');
+    if (defined $fh) {
+        $result->{'/proc/pid/status'} = parse_proc_pid_status($fh);
     }
 
     return parse_pidfilter $result;

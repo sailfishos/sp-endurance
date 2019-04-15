@@ -145,9 +145,30 @@ if [ -z "$path" ] ; then
 	exit 1
 fi
 
+# collect files in temporary directory first, only create the final directory
+# at the end when all data collected.
+path_final=$path
+path=$path.$$
+
+if [ -e "$path_final" ] ; then
+	echo "$script: ERROR, '$path_final' already exists!" >&2
+	exit 1
+fi
+
+if [ -e "$path" ] ; then
+	echo "$script: ERROR, '$path' already exists!" >&2
+	exit 1
+fi
+
 # directory for storing the new statistics
-echo "Saving to $path:"
+echo "Saving to $path_final (using $path as tmpdir):"
 mkdir -p $path
+
+# local data collection extensions:
+# add extra data collection commands to "endurance-snapshot.local"
+if [ -x "$script_path/$script.local" ] ; then
+	"$script_path/$script.local" "$snapshot_index" "$path"
+fi
 
 # optional use-case step description
 if [ $# -gt 1 ]; then
@@ -172,6 +193,46 @@ elif type xprop >/dev/null 2>/dev/null ; then
 			fi
 			echo "$app" > $path/step.txt
 		fi
+	fi
+fi
+
+# Save certain info (that we expect not to change) only in first snapshot.
+if [ "$snapshot_index" -eq 0 ] ; then
+	if [ "$HOSTNAME" ] ; then
+		echo "$HOSTNAME" >$path/hostname
+	elif type hostname >/dev/null 2>/dev/null ; then
+		hostname >$path/hostname
+	fi
+	if type uname >/dev/null 2>/dev/null ; then
+		uname -r >$path/kernel_release
+	fi
+
+	for F in /etc/*release* /etc/*-id ; do
+		if [ ! -f $F ]; then continue; fi
+		FF="${F##*/}"
+		cat $F > $path/$FF
+		[ -f $path/$FF ] && [ ! -s $path/$FF ] && rm $path/$FF
+	done
+
+	if type lscpu >/dev/null 2>/dev/null ; then
+		echo "- lscpu"
+		if lscpu --help | grep -q json ; then
+			LC_ALL=C lscpu --json >$path/lscpu.json
+			LC_ALL=C lscpu --json --extended >$path/lscpu-extended.json
+		else
+			LC_ALL=C lscpu >$path/lscpu
+			LC_ALL=C lscpu --extended >$path/lscpu-extended
+		fi
+		[ -f $path/lscpu ] && [ ! -s $path/lscpu ] && rm $path/lscpu
+		[ -f $path/lscpu.json ] && [ ! -s $path/lscpu.json ] && rm $path/lscpu.json
+		[ -f $path/lscpu-extended ] && [ ! -s $path/lscpu-extended ] && rm $path/lscpu-extended
+		[ -f $path/lscpu-extended.json ] && [ ! -s $path/lscpu-extended.json ] && rm $path/lscpu-extended.json
+	fi
+
+	if [ -d /sys/devices/virtual/dmi/id ] ; then
+		echo "- dmi"
+		find /sys/devices/virtual/dmi/id -type f | xargs head -v -n 10000 2>/dev/null > $path/sysfs_dmi_id
+		[ -f $path/sysfs_dmi_id ] && [ ! -s $path/sysfs_dmi_id ] && rm $path/sysfs_dmi_id
 	fi
 fi
 
@@ -233,12 +294,6 @@ if [ $RET -ne 0 ]; then
 fi
 } | $NONCACHED_W $path/usage.csv
 
-for F in os-release hw-release sys-release system-release ; do
-	if [ ! -f /etc/$F ]; then continue; fi
-	cat /etc/$F > $path/$F
-	[ -f $path/$F ] && [ ! -s $path/$F ] && rm $path/$F
-done
-
 # Copy files from /proc with cat to avoid GNU coreutils 6.x cp bug:
 echo "- Other proc files"
 for F in slabinfo interrupts softirqs stat diskstats zoneinfo pagetypeinfo; do
@@ -246,6 +301,14 @@ for F in slabinfo interrupts softirqs stat diskstats zoneinfo pagetypeinfo; do
 	cat /proc/$F > $path/$F
 	[ -f $path/$F ] && [ ! -s $path/$F ] && rm $path/$F
 done
+
+if [ -e /proc/net ] ; then
+	echo "- /proc/net"
+	find /proc/net/ -type f | xargs head -v -n 10000 2>/dev/null \
+		| $COMPRESSOR | $NONCACHED_W $path/proc_net$COMPRESSOR_SUFFIX
+	[ -f $path/proc_net$COMPRESSOR_SUFFIX ] && [ ! -s $path/proc_net$COMPRESSOR_SUFFIX ] \
+		&& rm $path/proc_net$COMPRESSOR_SUFFIX
+fi
 
 if [ -f "/proc/sys/kernel/tainted" ] ; then
 	cat /proc/sys/kernel/tainted > $path/tainted
@@ -266,6 +329,8 @@ if type xmeminfo >/dev/null 2>/dev/null ; then
 		cat $path/xmeminfo.log 1>&2
 		echo "$script: WARNING, xmeminfo failed with exit code $RET, check \$DISPLAY and \$XAUTHORITY." 1>&2
 	fi
+	[ -f $path/xmeminfo ] && [ ! -s $path/xmeminfo ] && rm $path/xmeminfo
+	[ -f $path/xmeminfo.log ] && [ ! -s $path/xmeminfo.log ] && rm $path/xmeminfo.log
 fi
 
 # save some less easily parsed /proc/ statistics, ignore errors
@@ -275,6 +340,11 @@ ls -l /proc/[0-9]*/fd/ 2>/dev/null | $COMPRESSOR | $NONCACHED_W $path/open-fds$C
 if [ -f "/proc/1/sched" ] ; then
 	echo "- Process scheduling information"
 	head -v -n 10000 /proc/[0-9]*/sched | $COMPRESSOR | $NONCACHED_W $path/sched$COMPRESSOR_SUFFIX
+fi
+
+if [ -f "/proc/1/status" ] ; then
+	echo "- /proc/PID/status"
+	head -v -n 10000 /proc/[0-9]*/status | $COMPRESSOR | $NONCACHED_W $path/pid_status$COMPRESSOR_SUFFIX
 fi
 
 # suspend statistics
@@ -338,25 +408,11 @@ if [ -d /sys/class/backlight ] ; then
 	done > $path/sysfs_backlight
 	[ -f $path/sysfs_backlight ] && [ ! -s $path/sysfs_backlight ] && rm $path/sysfs_backlight
 fi
-if [ -d /sys/devices/virtual/dmi/id ] ; then
-	echo "- dmi"
-	find /sys/devices/virtual/dmi/id -type f | xargs head -v -n 10000 2>/dev/null > $path/sysfs_dmi_id
-	[ -f $path/sysfs_dmi_id ] && [ ! -s $path/sysfs_dmi_id ] && rm $path/sysfs_dmi_id
-fi
 
-if type lscpu >/dev/null 2>/dev/null ; then
-	echo "- lscpu"
-	if lscpu --help | grep -q json ; then
-		LC_ALL=C lscpu --json >$path/lscpu.json
-		LC_ALL=C lscpu --json --extended >$path/lscpu-extended.json
-	else
-		LC_ALL=C lscpu >$path/lscpu
-		LC_ALL=C lscpu --extended >$path/lscpu-extended
-	fi
-	[ -f $path/lscpu ] && [ ! -s $path/lscpu ] && rm $path/lscpu
-	[ -f $path/lscpu.json ] && [ ! -s $path/lscpu.json ] && rm $path/lscpu.json
-	[ -f $path/lscpu-extended ] && [ ! -s $path/lscpu-extended ] && rm $path/lscpu-extended
-	[ -f $path/lscpu-extended.json ] && [ ! -s $path/lscpu-extended.json ] && rm $path/lscpu-extended.json
+if type lsns >/dev/null 2>/dev/null && lsns --help | grep -q json ; then
+	echo "- lsns"
+	LC_ALL=C lsns --json >$path/lsns.json
+	[ -f $path/lsns.json ] && [ ! -s $path/lsns.json ] && rm $path/lsns.json
 fi
 
 if type rzscontrol >/dev/null 2>/dev/null ; then
@@ -471,3 +527,6 @@ if [ -z "$NO_SYSLOG" ] && [ -x /bin/journalctl ]; then
 		$COMPRESSOR | \
 		$NONCACHED_W $path/journal$COMPRESSOR_SUFFIX
 fi
+
+# all done!
+mv $path $path_final

@@ -34,12 +34,15 @@ ALL = $(SRC) $(BIN) $(DOC) postproc-lib
 .PHONY: all
 all: $(ALL)
 
-postproc-lib/Makefile:
+.PHONY: measure
+measure: $(BIN)
+
+postproc-lib/Makefile: postproc-lib/Makefile.PL
 	cd postproc-lib && perl Makefile.PL
 
 .PHONY: postproc-lib
 postproc-lib: postproc-lib/Makefile
-	cd postproc-lib && $(MAKE)
+	$(MAKE) -C postproc-lib
 
 measure/proc2csv: src/proc2csv.c
 	$(CC) $(CFLAGS) -o $@ $<
@@ -65,30 +68,30 @@ clean:
 test:
 	[ ! -f postproc-lib/Makefile ] || $(MAKE) -C postproc-lib test
 
-mandir:
-	install -d $(DESTDIR)/usr/share/man/man1/
-	
-endurance-recompress-snapshots.1: postproc/endurance-recompress-snapshots mandir
+endurance-recompress-snapshots.1: postproc/endurance-recompress-snapshots
 	pod2man postproc/endurance-recompress-snapshots > man/$@
-	install -m 644 man/$@ $(DESTDIR)/usr/share/man/man1/
+	install -D -m 644 man/$@ $(DESTDIR)/usr/share/man/man1/$@
 
-endurance-extract-process-cgroups.1: postproc/endurance-extract-process-cgroups mandir
+endurance-extract-process-cgroups.1: postproc/endurance-extract-process-cgroups
 	pod2man postproc/endurance-extract-process-cgroups > man/$@
-	install -m 644 man/$@ $(DESTDIR)/usr/share/man/man1/
+	install -D -m 644 man/$@ $(DESTDIR)/usr/share/man/man1/$@
 
-%.1: man/$@ mandir
-	install -m 644 man/$@ $(DESTDIR)/usr/share/man/man1/
+%.1: man/$@
+	install -D -m 644 man/$@ $(DESTDIR)/usr/share/man/man1/$@
 
 DOCDIR ?= /usr/share/doc
 
 .PHONY: install-measure
-install-measure:
-	install -d $(DESTDIR)/usr/bin/
-	cp measure/* $(DESTDIR)/usr/bin/
+install-measure: measure
+	install -D measure/endurance-mem-overview $(DESTDIR)/usr/bin/endurance-mem-overview
+	install -D measure/endurance-snapshot $(DESTDIR)/usr/bin/endurance-snapshot
+	install -D measure/proc2csv $(DESTDIR)/usr/bin/proc2csv
+	install -D measure/sp-noncached $(DESTDIR)/usr/bin/sp-noncached
+	[ ! -x measure/xmeminfo ] || install -D measure/xmeminfo $(DESTDIR)/usr/bin/xmeminfo
 
 .PHONY: install-postproc-lib
 install-postproc-lib:
-	cd postproc-lib && $(MAKE) install DESTDIR=$(DESTDIR)
+	$(MAKE) -C postproc-lib install DESTDIR=$(DESTDIR)
 
 .PHONY: install-postproc
 install-postproc:

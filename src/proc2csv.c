@@ -57,6 +57,13 @@
 #include <assert.h>
 #include <errno.h>
 
+#ifdef HAVE_VALGRIND_H
+#include <valgrind.h>
+#endif
+#ifndef RUNNING_ON_VALGRIND
+#define RUNNING_ON_VALGRIND 0
+#endif
+
 /* set to non-zero value to enable "-t" option which can be used
  * to test parsing of /proc contents copied from other machines.
  * 
@@ -74,9 +81,10 @@
 /* process information taken from /proc,
  * The code takes into account how long the fields below are.
  */
+#define MAX_CMDLINE_LEN 2048
 typedef struct {
 	int skip;	/* whether to skip this item */
-	char cmd[256];	/* command line[read/show size] */
+	char *cmd;	/* command line[read/show size] */
 	char pid[16];	/* Pid */
 } status_t;
 
@@ -253,7 +261,6 @@ static void output_fields(FILE *fp, int show, char separator)
 	newline();
 }
 
-
 static void show_keyvalue_file(const char *filename, char separator)
 {
 	FILE *fp;
@@ -268,65 +275,6 @@ static void show_keyvalue_file(const char *filename, char separator)
 	output_fields(fp, SHOW_VALUES, separator);
 	fclose(fp);
 }
-
-
-static pid_type_t show_status(status_t *s, int show)
-{
-	char status[256];
-	FILE *fp;
-
-	if (s->skip) {
-		return PID_SKIP;
-	}
-	/* read the process info from 'status' in PID dir */
-	snprintf(status, sizeof(status), "%s/status", s->pid);
-	fp = fopen(status, "r");
-	if (!fp) {
-		if (errno != ENOENT) {
-			error_exit("show_status()",
-				   "file open failed", status);
-		}
-		/* skip already exited processes */
-		s->skip = 1;
-		return PID_EXITED;
-	}
-	output_fields(fp, show, ':');
-	fclose(fp);
-	return PID_OK;
-}
-
-
-/* read process statuses */
-static void show_statuses(int num, status_t *statuslist)
-{
-	int idx, exited = 0;
-	status_t *s;
-	
-	/* output CSV header for status file fields... */
-	for (s = statuslist, idx = 0; idx < num; idx++, s++) {
-		if (show_status(s, SHOW_FIELDS) == PID_OK) {
-			/* fields printed OK from one status file */
-			break;
-		}
-	}
-	/* ...and the status file field values */
-	for (s = statuslist, idx = 0; idx < num; idx++, s++) {
-		switch (show_status(s, SHOW_VALUES)) {
-		case PID_EXITED:
-			exited++;
-			break;
-		case PID_SKIP:
-		case PID_OK:
-			break;
-		}
-	}
-	if (exited) {
-		fprintf(stderr,
-			"%d (more) processes had exited in the meanwhile.\n",
-			exited);
-	}
-}
-
 
 /* read /proc/pid/stat */
 static void show_proc_pid_stat(int num, const status_t *statuslist)
@@ -447,7 +395,7 @@ static void show_fd_counts(int num, status_t *statuslist)
 		fds -= 2;
 		assert(fds >= 0);
 		fprintf(stdout, "%s%c%d%c%s\n",
-			s->pid, CSV_SEPARATOR, fds, CSV_SEPARATOR, s->cmd);
+			s->pid, CSV_SEPARATOR, fds, CSV_SEPARATOR, s->cmd ? s->cmd : "");
 	}
 	if (exited) {
 		fprintf(stderr,
@@ -468,7 +416,7 @@ static status_t *read_info(int num, struct dirent **namelist)
 	struct dirent **n;
 	status_t *statuslist, *s;
 	int i, idx, count, exited = 0;
-	char filename[256], *cmdline;
+	char filename[256], cmdline[MAX_CMDLINE_LEN];
 	
 	/* allocate & zero status for each of the processes */
 	statuslist = calloc(num, sizeof(status_t));
@@ -501,16 +449,20 @@ static status_t *read_info(int num, struct dirent **namelist)
 			exited++;
 			continue;
 		}
-		count = fread(s->cmd, 1, sizeof(s->cmd)-1, fp);
+		cmdline[0] = '\0';
+		count = fread(cmdline, 1, sizeof(cmdline)-1, fp);
+		cmdline[sizeof(cmdline)-1] = '\0';
 		fclose(fp);
 		
-		cmdline = s->cmd;
 		for (i = 0; i < count-1; i++) {
 			if (cmdline[i] < ' ') {
 				cmdline[i] = ' ';
 			}
 		}
 		cmdline[++i] = '\0';
+
+		if (cmdline[0])
+			s->cmd = strdup(cmdline);
 	}
 	free(namelist);
 	if (exited) {
@@ -666,10 +618,6 @@ int main(int argc, char *argv[])
 	/* show how many file descriptors each process is using */
 	newline();
 	show_fd_counts(lines, statuslist);
-	
-	/* read and show status for each of the processes */
-	newline();
-	show_statuses(lines, statuslist);
 
 	/* show /proc/pid/stat for each process */
 	fputs("\nProcess status:\n", stdout);
@@ -679,6 +627,17 @@ int main(int argc, char *argv[])
 
 	show_proc_pid_io(lines, statuslist);
 
-	free(statuslist);
+	/* Cleanup memory before exiting only when running under valgrind,
+	 * otherwise it's just waste of time.
+	 */
+	if (RUNNING_ON_VALGRIND) {
+		int i;
+
+		for (i=0; i < lines; ++i)
+			free(statuslist[i].cmd);
+
+		free(statuslist);
+	}
+
 	return 0;
 }

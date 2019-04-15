@@ -69,6 +69,7 @@ if ($flag_h or @ARGV < 1) {
 if ($flag_j > 1) {
 	eval 'use Parallel::ForkManager';
 	eval '$forkmanager = new Parallel::ForkManager(' . $flag_j . ')';
+	eval '$forkmanager->set_waitpid_blocking_sleep(0);';
 }
 
 `which xz >/dev/null 2>/dev/null`;
@@ -79,7 +80,8 @@ if ($? != 0) {
 
 print "Finding files for recompression.\n";
 for my $dir (@ARGV) {
-	my @files = map { "$dir/$_" } qw/smaps.cap syslog dmesg open-fds sysfs_fs sysfs_cpu sched/;
+	my @files = map { "$dir/$_" } qw/smaps.cap syslog dmesg open-fds
+		sysfs_fs sysfs_cpu sched usage.csv pid_status proc_net/;
 	push @files, glob "$dir/upstart/*.log";
 	push @files, map { s/\.lzo$//; $_ } glob "$dir/upstart/*.log.lzo";
 	foreach my $file (@files) {

@@ -1,0 +1,14 @@
+/man/endurance-extract-process-cgroups.1
+/man/endurance-recompress-snapshots.1
+/measure/proc2csv
+/measure/sp-noncached
+/measure/xmeminfo
+/postproc-lib/MYMETA.json
+/postproc-lib/MYMETA.yml
+/postproc-lib/Makefile
+/postproc-lib/Makefile.old
+/postproc-lib/_Inline/
+/postproc-lib/blib/
+/postproc-lib/lib/SP/Endurance.pm
+/postproc-lib/pm_to_blib
+*.pyc

@@ -37,7 +37,7 @@ use strict;
 # The gnuplot pngcairo color palette seems to be limited, so use our own
 # colors. Based on the X11 color set.
 our @line_colors = qw/
-FF0000 66CDAA DEB887 00FF00 87CEEB B22222 D8BFD8 2F4F4F C71585 E9967A 90EE90
+FF0000 0A00D6 DEB887 00FF00 87CEEB B22222 D8BFD8 2F4F4F C71585 E9967A 90EE90
 8FBC8F 9370DB 48D1CC 008080 0000CD 483D8B 9932CC E0FFFF 808000 98FB98 B8860B
 A52A2A 20B2AA 556B2F DC143C 808080 800080 6A5ACD 000080 A0522D 00FFFF BA55D3
 00FF00 7CFC00 800000 008B8B 708090 4682B4 8B4513 2E8B57 87CEFA DA70D6 3CB371
@@ -184,10 +184,9 @@ sub cmd {
         $xmax = $self->{rounds} + max(25, $self->{rounds} / 3);
     }
 
-    my $ymin = exists $self->{ymin} ? $self->{ymin} : 0;
-    my $ymax = exists $self->{ymax} ? $self->{ymax} : '';
-
     if (defined $self->{y2label} and length $self->{y2label}) {
+        my $ymin = $self->{ymin} // 0;
+        my $ymax = $self->{ymax};
         CORE::push @cmd, qq/set y2label '$self->{y2label}'/;
         CORE::push @cmd,  q/set ytics nomirror/;
         CORE::push @cmd,  q/set y2tics/;
@@ -213,13 +212,15 @@ sub cmd {
     }
 
     if ($self->{type} eq 'linespoints') {
-        if ($ymin != 0 || $ymax ne '') {
-            CORE::push @cmd, qq/set yrange [$ymin : $ymax]/;
+        if (defined $self->{ymin} || defined $self->{ymax}) {
+            CORE::push @cmd, qq/set yrange [$self->{ymin} : $self->{ymax}]/;
         }
         CORE::push @cmd, qq/set style data linespoints/;
         CORE::push @cmd, q/set key autotitle reverse Left/;
         CORE::push @cmd, qq/plot [0:$xmax]\\/;
     } elsif ($self->{type} eq 'histogram') {
+        my $ymin = $self->{ymin} // 0;
+        my $ymax = $self->{ymax};
         CORE::push @cmd, q/set style data histograms/;
         CORE::push @cmd, q/set key invert autotitle reverse Left/;
         CORE::push @cmd, q/set style histogram rowstacked/;
@@ -228,6 +229,9 @@ sub cmd {
         CORE::push @cmd, q/set xrange [-1 : ]/;
         CORE::push @cmd, qq/plot [-1:$xmax]\\/;
     } elsif ($self->{type} eq 'yerrorbars') {
+        my $ymin = $self->{ymin} // 0;
+        my $ymax = $self->{ymax};
+
         CORE::push @cmd, q/set key off/
             unless any { defined $_->{title} } @{$self->{entries}};
 

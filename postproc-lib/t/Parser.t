@@ -32,7 +32,7 @@ BEGIN {
         parse_diskstats parse_sysfs_fs parse_sysfs_power_supply
         parse_sysfs_backlight parse_sysfs_cpu parse_component_version
         parse_step parse_usage_csv parse_ifconfig parse_upstart_jobs_respawned
-        parse_sched parse_pidfilter copen/);
+        parse_sched parse_pidfilter parse_proc_pid_status copen/);
 }
 
 ###### parse_openfds ######
@@ -574,9 +574,9 @@ is_deeply(parse_interrupts(IO::String->new(<< 'END'
 Err:          0
 END
 )), {
-      7 => { count => 575, desc => 'INTC interrupt description 1' },
-     11 => { count => 14955, desc => 'INTC interrupt description 2' },
-     12 => { count => 22222, desc => '1111111' },
+      7 => { count => [575], desc => 'INTC interrupt description 1' },
+     11 => { count => [14955], desc => 'INTC interrupt description 2' },
+     12 => { count => [22222], desc => '1111111' },
 }, 'parse_interrupts - 1x CPU');
 
 is_deeply(parse_interrupts(IO::String->new(<< 'END'
@@ -588,10 +588,10 @@ is_deeply(parse_interrupts(IO::String->new(<< 'END'
  MIS:         10
 END
 )), {
-      0 => { count => 73+505773539, desc => 'IO-APIC-edge timer' },
-    PMI => { count => 10552+10495+34469+3907+3357+3437, desc => 'Performance monitoring interrupts' },
-    RES => { count => 16770322+15932281+15195215+2920639+2963192, desc => 'Rescheduling interrupts' },
-    MIS => { count => 10 },
+      0 => { count => [73,0,0,505773539,0,0,0,0], desc => 'IO-APIC-edge timer' },
+    PMI => { count => [10552,0,10495,34469,3907,3357,3437,0], desc => 'Performance monitoring interrupts' },
+    RES => { count => [16770322,15932281,0,15195215,2920639,0,0,2963192], desc => 'Rescheduling interrupts' },
+    MIS => { count => [10] },
 }, 'parse_interrupts - 8x CPU');
 
 ###### parse_softirqs ######
@@ -1743,6 +1743,17 @@ PID,FD count,Command line:
 703,1,python3 /path/to/foo.py arg1 arg2 arg3
 704,1,/usr/bin/python3  -x  -y  -z  --long  foo3     arg1 arg2
 800,1,/usr/bin/perl ./test.pl
+808,2,/usr/bin/glusterfs --volfile=volfile --acl -L off -N --read-only /mnt/glusterfs/mountpoint
+810,10,glusterfs
+812,12,glusterfs -x y foo=bar
+820,0,/bin/bash /path/to/script.sh --script-opt1 -x -y -z
+821,0,/bin/bash -x -y -z script_name
+822,0,/bin/bash -i -l -r --rcfile /path/to/rcfile script_name -x -y -z --opt1 foo
+823,0,bash
+824,0,/bin/bash -c 'x y z ; qwerty ; zxcvb'
+825,0,man bash
+826,0,/bin/bash -O shopt script
+827,0,/bin/bash +O shopt script
 
 Name,State,Tgid,Pid,VmSize,VmLck,voluntary_ctxt_switches,nonvoluntary_ctxt_switches,Threads:
 invalid,line,goes,here
@@ -1849,6 +1860,17 @@ END
         703 => 'python3 [foo.py]',
         704 => 'python3 [foo3]',
         800 => 'perl [test.pl]',
+        808 => 'glusterfs [/mnt/glusterfs/mountpoint]',
+        810 => 'glusterfs',
+        812 => 'glusterfs',
+        820 => 'bash [script.sh]',
+        821 => 'bash [script_name]',
+        822 => 'bash',
+        823 => 'bash',
+        824 => 'bash',
+        825 => 'man',
+        826 => 'bash',
+        827 => 'bash',
     },
     '/proc/pid/fd_count' => {
         1   => 8,
@@ -1862,19 +1884,54 @@ END
         703 => 1,
         704 => 1,
         800 => 1,
+        808 => 2,
+        810 => 10,
+        812 => 12,
     },
     '/proc/pid/status' => {
-        1    => 'Name,init,VmSize,1,VmLck,5,voluntary_ctxt_switches,10,nonvoluntary_ctxt_switches,11,Threads,0',
-        2777 => 'Name,booster-m,VmSize,2,VmLck,6,voluntary_ctxt_switches,12,nonvoluntary_ctxt_switches,13,Threads,555',
-        2847 => 'Name,budaemon,VmSize,4,VmLck,8,nonvoluntary_ctxt_switches,0,Threads,777',
-        10   => 'Name,foobar,voluntary_ctxt_switches,0,nonvoluntary_ctxt_switches,0,Threads,888',
-        11   => 'Name,foobar,VmSize,0,VmLck,0,voluntary_ctxt_switches,0,nonvoluntary_ctxt_switches,0,Threads,999',
+        1 => {
+            Name => 'init',
+            VmSize => 1,
+            VmLck => 5,
+            voluntary_ctxt_switches => 10,
+            nonvoluntary_ctxt_switches => 11,
+            Threads => 0,
+        },
+        2777 => {
+            Name => 'booster-m',
+            VmSize => 2,
+            VmLck => 6,
+            voluntary_ctxt_switches => 12,
+            nonvoluntary_ctxt_switches => 13,
+            Threads => 555,
+        },
+        2847 => {
+            Name => 'budaemon',
+            VmSize => 4,
+            VmLck => 8,
+            nonvoluntary_ctxt_switches => 0,
+            Threads => 777,
+        },
+        10 => {
+            Name => 'foobar',
+            voluntary_ctxt_switches => 0,
+            nonvoluntary_ctxt_switches => 0,
+            Threads => 888,
+        },
+        11 => {
+            Name => 'foobar',
+            VmSize => 0,
+            VmLck => 0,
+            voluntary_ctxt_switches => 0,
+            nonvoluntary_ctxt_switches => 0,
+            Threads => 999,
+        },
     },
     '/proc/pid/stat' => {
-        1     => 'minflt,1,majflt,5,utime,9,stime,13',
-        2     => 'minflt,2,majflt,6,utime,10,stime,14',
-        1082  => 'minflt,3,majflt,7,utime,11,stime,15,state,R',
-        99999 => 'minflt,4,majflt,8,utime,12,stime,16,state,D',
+        1     => 'name,init,minflt,1,majflt,5,utime,9,stime,13',
+        2     => 'name,kthreadd,minflt,2,majflt,6,utime,10,stime,14',
+        1082  => 'name,dnsmasq,minflt,3,majflt,7,utime,11,stime,15,state,R',
+        99999 => 'name,.!/_ )))()(),minflt,4,majflt,8,utime,12,stime,16,state,D',
     },
     '/proc/pid/wchan' => {
         poll_schedule_timeout => 2,
@@ -1977,7 +2034,16 @@ END
 
     open my $fh, '<', \$content;
     is_deeply(parse_usage_csv($fh), {
-        1 => 'Name,systemd,VmSize,239140,VmLck,0,voluntary_ctxt_switches,3616951,nonvoluntary_ctxt_switches,1822,Threads,1'
+        '/proc/pid/status' => {
+            1 => {
+                Name => 'systemd',
+                VmSize => 239140,
+                VmLck => 0,
+                voluntary_ctxt_switches => 3616951,
+                nonvoluntary_ctxt_switches => 1822,
+                Threads => 1,
+            },
+        }
     }, 'parse_usage_csv');
 }
 
@@ -2349,6 +2415,213 @@ is_deeply(parse_pidfilter({
     },
     '/proc/pid/io' => {},
 }, 'parse_pidfilter - /proc/pid/{cmdline,smaps,status,fd_count,wchan,io}');
+
+###### parse_proc_pid_status ######
+is_deeply(parse_proc_pid_status, {}, 'parse_proc_pid_status - undef input');
+
+{
+    my $content = '';
+    open my $fh, '<', \$content;
+    is_deeply(parse_proc_pid_status($fh), {}, 'parse_proc_pid_status - empty input file');
+}
+{
+    my $content = "\n\n\n";
+    open my $fh, '<', \$content;
+    is_deeply(parse_proc_pid_status($fh), {}, 'parse_proc_pid_status - input file with only newlines');
+}
+
+{
+    my $content = <<'END';
+==> /proc/10250/status <==
+Name:   ssh
+Umask:  0022
+State:  S (sleeping)
+Tgid:   10250
+Ngid:   0
+Pid:    10250
+PPid:   8060
+TracerPid:      0
+Uid:    1000    1000    1000    1000
+Gid:    1000    1000    1000    1000
+FDSize: 256
+Groups: 10 980 1000 1002 
+NStgid: 10250
+NSpid:  10250
+NSpgid: 10250
+NSsid:  8060
+VmPeak:   162568 kB
+VmSize:   162568 kB
+VmLck:         0 kB
+VmPin:         0 kB
+VmHWM:      6832 kB
+VmRSS:      6700 kB
+RssAnon:             736 kB
+RssFile:            5964 kB
+RssShmem:              0 kB
+VmData:     1060 kB
+VmStk:       136 kB
+VmExe:       716 kB
+VmLib:      6968 kB
+VmPTE:       152 kB
+VmSwap:        0 kB
+HugetlbPages:          0 kB
+CoreDumping:    0
+Threads:        1
+SigQ:   0/94315
+SigPnd: 0000000000000000
+ShdPnd: 0000000000000000
+SigBlk: 0000000000000000
+SigIgn: 0000000000001000
+SigCgt: 0000000188014007
+CapInh: 0000000000000000
+CapPrm: 0000000000000000
+CapEff: 0000000000000000
+CapBnd: 0000003fffffffff
+CapAmb: 0000000000000000
+NoNewPrivs:     0
+Seccomp:        0
+Cpus_allowed:   ff
+Cpus_allowed_list:      0-7
+Mems_allowed:   00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000001
+Mems_allowed_list:      0
+voluntary_ctxt_switches:        561
+nonvoluntary_ctxt_switches:     1
+
+==> /proc/1053/status <==
+Name:   loop0
+Umask:  0000
+State:  S (sleeping)
+Tgid:   1053
+Ngid:   0
+Pid:    1053
+PPid:   2
+TracerPid:      0
+Uid:    0       0       0       0
+Gid:    0       0       0       0
+FDSize: 64
+Groups:  
+NStgid: 1053
+NSpid:  1053
+NSpgid: 0
+NSsid:  0
+Threads:        1
+SigQ:   1/94315
+SigPnd: 0000000000000000
+ShdPnd: 0000000000000000
+SigBlk: 0000000000000000
+SigIgn: ffffffffffffffff
+SigCgt: 0000000000000000
+CapInh: 0000000000000000
+CapPrm: 0000003fffffffff
+CapEff: 0000003fffffffff
+CapBnd: 0000003fffffffff
+CapAmb: 0000000000000000
+NoNewPrivs:     0
+Seccomp:        0
+Cpus_allowed:   ff
+Cpus_allowed_list:      0-7
+Mems_allowed:   00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000001
+Mems_allowed_list:      0
+voluntary_ctxt_switches:        160
+nonvoluntary_ctxt_switches:     1
+END
+
+    open my $fh, '<', \$content;
+    is_deeply(parse_proc_pid_status($fh), {
+        10250 => {
+            Name =>   'ssh',
+            Umask =>  '0022',
+            State =>  'S (sleeping)',
+            Tgid =>   '10250',
+            Ngid =>   '0',
+            Pid =>    '10250',
+            PPid =>   '8060',
+            TracerPid =>      '0',
+            Uid =>    '1000    1000    1000    1000',
+            Gid =>    '1000    1000    1000    1000',
+            FDSize => '256',
+            Groups => '10 980 1000 1002',
+            NStgid => '10250',
+            NSpid =>  '10250',
+            NSpgid => '10250',
+            NSsid =>  '8060',
+            VmPeak =>   '162568 kB',
+            VmSize =>   '162568 kB',
+            VmLck =>         '0 kB',
+            VmPin =>         '0 kB',
+            VmHWM =>      '6832 kB',
+            VmRSS =>      '6700 kB',
+            RssAnon =>             '736 kB',
+            RssFile =>            '5964 kB',
+            RssShmem =>              '0 kB',
+            VmData =>     '1060 kB',
+            VmStk =>       '136 kB',
+            VmExe =>       '716 kB',
+            VmLib =>      '6968 kB',
+            VmPTE =>       '152 kB',
+            VmSwap =>        '0 kB',
+            HugetlbPages =>          '0 kB',
+            CoreDumping =>    '0',
+            Threads =>        '1',
+            SigQ =>   '0/94315',
+            SigPnd => '0000000000000000',
+            ShdPnd => '0000000000000000',
+            SigBlk => '0000000000000000',
+            SigIgn => '0000000000001000',
+            SigCgt => '0000000188014007',
+            CapInh => '0000000000000000',
+            CapPrm => '0000000000000000',
+            CapEff => '0000000000000000',
+            CapBnd => '0000003fffffffff',
+            CapAmb => '0000000000000000',
+            NoNewPrivs =>     '0',
+            Seccomp =>        '0',
+            Cpus_allowed =>   'ff',
+            Cpus_allowed_list =>      '0-7',
+            Mems_allowed =>   '00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000001',
+            Mems_allowed_list =>      '0',
+            voluntary_ctxt_switches =>        '561',
+            nonvoluntary_ctxt_switches =>     '1',
+        },
+        1053 => {
+            Name =>   'loop0',
+            Umask =>  '0000',
+            State =>  'S (sleeping)',
+            Tgid =>   '1053',
+            Ngid =>   '0',
+            Pid =>    '1053',
+            PPid =>   '2',
+            TracerPid =>      '0',
+            Uid =>    '0       0       0       0',
+            Gid =>    '0       0       0       0',
+            FDSize => '64',
+            NStgid => '1053',
+            NSpid =>  '1053',
+            NSpgid => '0',
+            NSsid =>  '0',
+            Threads =>        '1',
+            SigQ =>   '1/94315',
+            SigPnd => '0000000000000000',
+            ShdPnd => '0000000000000000',
+            SigBlk => '0000000000000000',
+            SigIgn => 'ffffffffffffffff',
+            SigCgt => '0000000000000000',
+            CapInh => '0000000000000000',
+            CapPrm => '0000003fffffffff',
+            CapEff => '0000003fffffffff',
+            CapBnd => '0000003fffffffff',
+            CapAmb => '0000000000000000',
+            NoNewPrivs =>     '0',
+            Seccomp =>        '0',
+            Cpus_allowed =>   'ff',
+            Cpus_allowed_list =>      '0-7',
+            Mems_allowed =>   '00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000001',
+            Mems_allowed_list =>      '0',
+            voluntary_ctxt_switches =>        '160',
+            nonvoluntary_ctxt_switches =>     '1',
+        },
+    }, 'parse_proc_pid_status - ssh, loop0');
+}
 
 done_testing;
 # vim: ts=4:sw=4:et

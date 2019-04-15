@@ -81,12 +81,35 @@ sub pid_to_cmdline {
                 $_->{'/proc/pid/cmdline'}->{$pid}
             } elsif (exists $_->{'/proc/pid/smaps'}->{$pid} and exists $_->{'/proc/pid/smaps'}->{$pid}->{'#Name'}) {
                 $_->{'/proc/pid/smaps'}->{$pid}->{'#Name'}
+            } elsif (exists $_->{'/proc/pid/status'}->{$pid}
+                  && exists $_->{'/proc/pid/status'}->{$pid}->{Name}) {
+                $_->{'/proc/pid/status'}->{$pid}->{Name}
+            } elsif (exists $_->{'/proc/pid/stat'}->{$pid}) {
+                my %entry = split ',', $_->{'/proc/pid/stat'}->{$pid};
+                exists $entry{name} ? $entry{name} : undef
             } else {
                 undef
             }
         } @$masterdb;
 
-        $pid_to_cmdline{$pid} = join(' / ', @cmdlines);
+        # Filter out substrings, example:
+        #  ("systemd-journal", "systemd-journald") => ("systemd-journald")
+        my @cmdlines_uniq;
+        foreach my $cmd1 (@cmdlines) {
+            my $take = 1;
+            foreach my $cmd2 (@cmdlines) {
+                next if $cmd1 eq $cmd2;
+                if (index($cmd2, $cmd1) != -1) {
+                    $take = 0;
+                    last;
+                }
+            }
+            if ($take) {
+                push @cmdlines_uniq, $cmd1;
+            }
+        }
+
+        $pid_to_cmdline{$pid} = join(' / ', @cmdlines_uniq);
     }
 
     join(': ', $pid, $pid_to_cmdline{$pid})
@@ -314,10 +337,10 @@ sub generate_plot_ctx_total {
     foreach my $pid (@pids) {
         my @total_ctx = map {
             if (exists $_->{'/proc/pid/status'}->{$pid}) {
-                my %entry = split ',', $_->{'/proc/pid/status'}->{$pid};
-                exists $entry{voluntary_ctxt_switches} &&
-                exists $entry{nonvoluntary_ctxt_switches} ?
-                       $entry{voluntary_ctxt_switches} + $entry{nonvoluntary_ctxt_switches} :
+                exists $_->{'/proc/pid/status'}->{$pid}->{voluntary_ctxt_switches} &&
+                exists $_->{'/proc/pid/status'}->{$pid}->{nonvoluntary_ctxt_switches} ?
+                       $_->{'/proc/pid/status'}->{$pid}->{voluntary_ctxt_switches}
+                     + $_->{'/proc/pid/status'}->{$pid}->{nonvoluntary_ctxt_switches} :
                        undef
             } else { undef }
         } @$masterdb;
@@ -349,9 +372,8 @@ sub generate_plot_ctx_nonvol {
     foreach my $pid (@pids) {
         my @ctx = map {
             if (exists $_->{'/proc/pid/status'}->{$pid}) {
-                my %entry = split ',', $_->{'/proc/pid/status'}->{$pid};
-                exists $entry{nonvoluntary_ctxt_switches} ?
-                       $entry{nonvoluntary_ctxt_switches} : undef
+                exists $_->{'/proc/pid/status'}->{$pid}->{nonvoluntary_ctxt_switches} ?
+                       $_->{'/proc/pid/status'}->{$pid}->{nonvoluntary_ctxt_switches} : undef
             } else { undef }
         } @$masterdb;
         $plot->push(
@@ -380,9 +402,8 @@ sub generate_plot_ctx_vol {
     foreach my $pid (@pids) {
         my @ctx = map {
             if (exists $_->{'/proc/pid/status'}->{$pid}) {
-                my %entry = split ',', $_->{'/proc/pid/status'}->{$pid};
-                exists $entry{nonvoluntary_ctxt_switches} ?
-                       $entry{nonvoluntary_ctxt_switches} : undef
+                exists $_->{'/proc/pid/status'}->{$pid}->{voluntary_ctxt_switches} ?
+                       $_->{'/proc/pid/status'}->{$pid}->{voluntary_ctxt_switches} : undef
             } else { undef }
         } @$masterdb;
         $plot->push(
@@ -724,6 +745,7 @@ sub generate_plot_cputime {
         key => '1150_cpu_user_sys_time_%d',
         label => 'CPU user+sys time',
         ylabel => 'percent',
+        ymin => 0,
         multiple => {
             max_plots => 2,
             max_per_plot => 20,
@@ -768,6 +790,7 @@ sub generate_plot_cputime_user {
         key => '1160_cpu_usertime_%d',
         label => 'CPU user time',
         ylabel => 'percent',
+        ymin => 0,
         multiple => {
             max_plots => 2,
             max_per_plot => 20,
@@ -811,6 +834,7 @@ sub generate_plot_cputime_sys {
         key => '1162_cpu_systime_%d',
         label => 'CPU sys time',
         ylabel => 'percent',
+        ymin => 0,
         multiple => {
             max_plots => 2,
             max_per_plot => 20,
@@ -961,10 +985,8 @@ sub generate_plot_mlocked {
     foreach my $pid (@pids) {
         $plot->push(
             [kb2mb nonzero map {
-                if (exists $_->{'/proc/pid/status'}->{$pid}) {
-                    my %entry = split ',', $_->{'/proc/pid/status'}->{$pid};
-                    exists $entry{VmLck} ? $entry{VmLck} : undef
-                } else { undef }
+                exists $_->{'/proc/pid/status'}->{$pid} ?
+                       $_->{'/proc/pid/status'}->{$pid}->{VmLck} : undef
             } @$masterdb],
             title => pid_to_cmdline($masterdb, $pid),
         );
@@ -996,10 +1018,8 @@ sub generate_plot_vmsize {
     foreach my $pid (@pids) {
         $plot->push(
             [nonzero kb2mb has_changes map {
-                if (exists $_->{'/proc/pid/status'}->{$pid}) {
-                    my %entry = split ',', $_->{'/proc/pid/status'}->{$pid};
-                    exists $entry{VmSize} ? $entry{VmSize} : undef
-                } else { undef }
+                exists $_->{'/proc/pid/status'}->{$pid} ?
+                       $_->{'/proc/pid/status'}->{$pid}->{VmSize} : undef
             } @$masterdb],
             title => pid_to_cmdline($masterdb, $pid),
         );
@@ -1635,11 +1655,9 @@ sub generate_plot_threads {
 
     foreach my $pid (@pids) {
         my @threads = map {
-                if (exists $_->{'/proc/pid/status'}->{$pid}) {
-                    my %entry = split ',', $_->{'/proc/pid/status'}->{$pid};
-                    exists $entry{Threads} ? $entry{Threads} : undef
-                } else { undef }
-            } @$masterdb;
+            exists $_->{'/proc/pid/status'}->{$pid} ?
+                   $_->{'/proc/pid/status'}->{$pid}->{Threads} : undef
+        } @$masterdb;
 
         next unless any { defined and $_ > 1 } @threads;
 
@@ -1672,11 +1690,9 @@ sub generate_plot_threads_changes {
 
     foreach my $pid (@pids) {
         my @threads = map {
-                if (exists $_->{'/proc/pid/status'}->{$pid}) {
-                    my %entry = split ',', $_->{'/proc/pid/status'}->{$pid};
-                    exists $entry{Threads} ? $entry{Threads} : undef
-                } else { undef }
-            } @$masterdb;
+            exists $_->{'/proc/pid/status'}->{$pid} ?
+                   $_->{'/proc/pid/status'}->{$pid}->{Threads} : undef
+        } @$masterdb;
 
         next unless any { defined and $_ > 1 } @threads;
 
@@ -1975,7 +1991,7 @@ sub generate_plot_interrupts {
 
     my $plot = $plotter->new_linespoints(
         key => '2070_interrupts',
-        label => 'Interrupts.',
+        label => 'Interrupts (all CPUs).',
         legend => 'INTERRUPTS',
         ylabel => 'count per second',
         y2label => 'total count per second',
@@ -1988,16 +2004,15 @@ sub generate_plot_interrupts {
         my ($desc) = uniq grep { defined && length } map {
             exists $_->{'/proc/interrupts'}->{$interrupt} &&
             exists $_->{'/proc/interrupts'}->{$interrupt}->{desc} ?
-            $_->{'/proc/interrupts'}->{$interrupt}->{desc} : undef
+                   $_->{'/proc/interrupts'}->{$interrupt}->{desc} : undef
         } @$masterdb;
 
-        my $idx = 0;
         $plot->push(
             [nonzero change_per_second $masterdb,
                 cumulative_to_changes map {
                     exists $_->{'/proc/interrupts'}->{$interrupt} &&
                     exists $_->{'/proc/interrupts'}->{$interrupt}->{count} ?
-                           $_->{'/proc/interrupts'}->{$interrupt}->{count} : undef
+                     sum(@{$_->{'/proc/interrupts'}->{$interrupt}->{count}}) : undef
             } @$masterdb],
             axes => 'x1y1', title => sprintf("%-4s %s", $interrupt . ':', $desc),
         );
@@ -2005,7 +2020,7 @@ sub generate_plot_interrupts {
 
     my @total_interrupts = map {
         my $entry = $_;
-        sum map { exists $_->{count} ? $_->{count} : undef } values %{$entry->{'/proc/interrupts'}}
+        sum map { exists $_->{count} ? sum(@{$_->{count}}) : undef } values %{$entry->{'/proc/interrupts'}}
     } @$masterdb;
 
     $plot->push(
@@ -2018,13 +2033,110 @@ sub generate_plot_interrupts {
 }
 BEGIN { register_generator \&generate_plot_interrupts; }
 
+sub generate_plot_interrupts_per_cpu {
+    my $plotter = shift;
+    my $masterdb = shift;
+
+    my @irqs = uniq sort grep { defined && length } map { keys %{$_->{'/proc/interrupts'} // {}} } @$masterdb;
+    #print Dumper \@irqs;
+    return unless @irqs > 0;
+
+    my @cpus = sort { $a <=> $b } map { /^cpu([0-9]+)$/ ; $1 }
+        uniq grep { /^cpu[0-9]/ } map { keys %{$_->{'/proc/stat'} // {}} } @$masterdb;
+    #print Dumper \@cpus;
+    return if @cpus <= 1;
+
+    # Collect irqs per-cpu first, so that we can set ymax in the plot.
+    my %irqs_per_cpu;
+    foreach my $cpu_num (@cpus) {
+        foreach my $interrupt (@irqs) {
+            $irqs_per_cpu{$cpu_num}->{$interrupt} =
+                [change_per_second $masterdb,
+                    cumulative_to_changes map {
+                        exists $_->{'/proc/interrupts'}->{$interrupt} ?
+                               $_->{'/proc/interrupts'}->{$interrupt}->{count}->[$cpu_num] : undef
+                } @$masterdb];
+        }
+    }
+    #print Dumper [\@irqs, \@cpus, \%irqs_per_cpu];
+
+    # Check for irqs that did not happen on any CPU, or rate is low (less
+    # than once per second).
+    my @skip;
+    foreach my $interrupt (@irqs) {
+        my $keep = 0;
+        foreach my $cpu_num (@cpus) {
+            if (any { $_ >= 1 } @{$irqs_per_cpu{$cpu_num}->{$interrupt}}) {
+                $keep = 1;
+                last;
+            }
+        }
+        next if $keep;
+        foreach my $cpu_num (@cpus) {
+            delete $irqs_per_cpu{$cpu_num}->{$interrupt};
+        }
+        push @skip, $interrupt;
+    }
+    @skip = sort @skip;
+    #print Dumper \@skip;
+
+    # Calculate ymax.
+    my $ymax = 0;
+    foreach my $idx (0 .. @$masterdb-1) {
+        foreach my $cpu_num (@cpus) {
+            my $total;
+            foreach my $interrupt (@irqs) {
+                next unless defined $irqs_per_cpu{$cpu_num}->{$interrupt}->[$idx];
+                $total += $irqs_per_cpu{$cpu_num}->{$interrupt}->[$idx];
+            }
+            #print Dumper [$idx, $cpu_num, $total];
+            next unless defined $total;
+            if ($total > $ymax) {
+                $ymax = $total;
+            }
+        }
+    }
+
+    foreach my $cpu_num (@cpus) {
+        my $label = "Interrupts cpu$cpu_num";
+        if (@skip > 0) {
+            $label .= "\\n(Skipped low-rate irqs: " . join(', ', @skip) . ")";
+        }
+        my $plot = $plotter->new_histogram(
+            key => sprintf('2070_interrupts_%04d', $cpu_num),
+            label => $label,
+            legend => "INTERRUPTS &mdash; CPU$cpu_num",
+            ylabel => 'count per second',
+            ymax => 1.2 * $ymax,
+        );
+
+        foreach my $interrupt (@irqs) {
+            next if any { $_ eq $interrupt } @skip;
+            my ($desc) = uniq grep { defined && length } map {
+                exists $_->{'/proc/interrupts'}->{$interrupt} &&
+                exists $_->{'/proc/interrupts'}->{$interrupt}->{desc} ?
+                       $_->{'/proc/interrupts'}->{$interrupt}->{desc} : undef
+            } @$masterdb;
+            $plot->push(
+                $irqs_per_cpu{$cpu_num}->{$interrupt},
+                title => sprintf("%-4s %s", $interrupt . ':', $desc),
+            );
+        }
+
+        #$plot->sort(sub { shift->[-1] });
+
+        done_plotting $plot;
+    }
+}
+BEGIN { register_generator \&generate_plot_interrupts_per_cpu; }
+
 sub generate_plot_softirqs {
     my $plotter = shift;
     my $masterdb = shift;
 
     my $plot = $plotter->new_linespoints(
         key => '2071_softirqs',
-        label => 'Softirqs.',
+        label => 'Softirqs (all CPUs).',
         legend => 'SOFTIRQS',
         ylabel => 'count per second',
     );
@@ -2048,6 +2160,98 @@ sub generate_plot_softirqs {
     done_plotting $plot;
 }
 BEGIN { register_generator \&generate_plot_softirqs; }
+
+sub generate_plot_softirqs_per_cpu {
+    my $plotter = shift;
+    my $masterdb = shift;
+
+    my @irqs = uniq sort grep { defined && length } map { keys %{$_->{'/proc/softirqs'} // {}} } @$masterdb;
+    #print Dumper \@irqs;
+    return unless @irqs > 0;
+
+    my @cpus = sort { $a <=> $b } map { /^cpu([0-9]+)$/ ; $1 }
+        uniq grep { /^cpu[0-9]/ } map { keys %{$_->{'/proc/stat'} // {}} } @$masterdb;
+        #print Dumper \@cpus;
+    return if @cpus <= 1;
+
+    # Collect softirqs per-cpu first, so that we can set ymax in the plot.
+    my %softirqs_per_cpu;
+    foreach my $cpu_num (@cpus) {
+        foreach my $interrupt (@irqs) {
+            $softirqs_per_cpu{$cpu_num}->{$interrupt} =
+                [change_per_second $masterdb,
+                    cumulative_to_changes map {
+                        exists $_->{'/proc/softirqs'}->{$interrupt} ?
+                               $_->{'/proc/softirqs'}->{$interrupt}->[$cpu_num] : undef
+                } @$masterdb];
+        }
+    }
+    #print Dumper \%softirqs_per_cpu;
+
+    # Check for softirqs that did not happen on any CPU, or rate is low (less
+    # than once per second).
+    my @skip;
+    foreach my $interrupt (@irqs) {
+        my $keep = 0;
+        foreach my $cpu_num (@cpus) {
+            if (any { $_ >= 1 } @{$softirqs_per_cpu{$cpu_num}->{$interrupt}}) {
+                $keep = 1;
+                last;
+            }
+        }
+        next if $keep;
+        foreach my $cpu_num (@cpus) {
+            delete $softirqs_per_cpu{$cpu_num}->{$interrupt};
+        }
+        push @skip, $interrupt;
+    }
+    @skip = sort @skip;
+    #print Dumper \@skip;
+
+    # Calculate ymax.
+    my $ymax = 0;
+    foreach my $idx (0 .. @$masterdb-1) {
+        foreach my $cpu_num (@cpus) {
+            my $total;
+            foreach my $interrupt (@irqs) {
+                next unless defined $softirqs_per_cpu{$cpu_num}->{$interrupt}->[$idx];
+                $total += $softirqs_per_cpu{$cpu_num}->{$interrupt}->[$idx];
+            }
+            #print Dumper [$idx, $cpu_num, $total];
+            next unless defined $total;
+            if ($total > $ymax) {
+                $ymax = $total;
+            }
+        }
+    }
+
+    foreach my $cpu_num (@cpus) {
+        my $label = "Softirqs cpu$cpu_num";
+        if (@skip > 0) {
+            $label .= "\\n(Skipped low-rate softirqs: " . join(', ', @skip) . ")";
+        }
+        my $plot = $plotter->new_histogram(
+            key => sprintf('2071_softirqs_%04d', $cpu_num),
+            label => $label,
+            legend => "SOFTIRQS &mdash; CPU$cpu_num",
+            ylabel => 'count per second',
+            ymax => 1.2 * $ymax,
+        );
+
+        foreach my $interrupt (@irqs) {
+            next if any { $_ eq $interrupt } @skip;
+            $plot->push(
+                $softirqs_per_cpu{$cpu_num}->{$interrupt},
+                title => $interrupt,
+            );
+        }
+
+        #$plot->sort(sub { shift->[-1] });
+
+        done_plotting $plot;
+    }
+}
+BEGIN { register_generator \&generate_plot_softirqs_per_cpu; }
 
 sub generate_plot_diskstats_reads_mb {
     my $plotter = shift;
@@ -2626,8 +2830,6 @@ sub generate_plot_process_state_count {
 }
 BEGIN { register_generator \&generate_plot_process_state_count; }
 
-my %wchan_suffix = (0 => ' (in user space)');
-
 sub generate_plot_wchan_count {
     my $plotter = shift;
     my $masterdb = shift;
@@ -2647,7 +2849,7 @@ sub generate_plot_wchan_count {
                 exists $_->{'/proc/pid/wchan'}->{$wchan} ?
                        $_->{'/proc/pid/wchan'}->{$wchan} : undef
             } @$masterdb],
-            title => $wchan . $wchan_suffix{$wchan},
+            title => $wchan,
         );
     }
 
@@ -2676,7 +2878,7 @@ sub generate_plot_wchan_changes {
                 exists $_->{'/proc/pid/wchan'}->{$wchan} ?
                        $_->{'/proc/pid/wchan'}->{$wchan} : undef
             } @$masterdb],
-            title => $wchan . $wchan_suffix{$wchan},
+            title => $wchan,
         );
     }
 
@@ -2892,6 +3094,7 @@ sub generate_plot_sched_wakeups {
         key => '1500_sched_wakeups_%d',
         label => 'Number of times the process was woken up.',
         ylabel => 'count',
+        ymin => 0,
         multiple => {
             max_plots => 3,
             max_per_plot => 10,
@@ -2929,6 +3132,7 @@ sub generate_plot_sched_iowait {
         key => '1501_sched_iowait_%d',
         label => 'Time spent waiting for I/O.',
         ylabel => 'ms',
+        ymin => 0,
         multiple => {
             max_plots => 3,
             max_per_plot => 10,
@@ -2966,6 +3170,7 @@ sub generate_plot_sched_block_max {
         key => '1502_sched_block_max_%d',
         label => 'Maximum time the process has been blocked in uninterruptible sleep.',
         ylabel => 'ms',
+        ymin => 0,
         multiple => {
             max_plots => 3,
             max_per_plot => 10,
@@ -3003,6 +3208,7 @@ sub generate_plot_sched_wait_max {
         key => '1503_sched_wait_max_%d',
         label => 'Maximum time the process waited in kernel runqueue before entering CPU.',
         ylabel => 'ms',
+        ymin => 0,
         multiple => {
             max_plots => 3,
             max_per_plot => 10,

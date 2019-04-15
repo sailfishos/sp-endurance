@@ -41,6 +41,9 @@ use Data::Dumper;
 use IO::Pipe;
 use JSON qw/encode_json/;
 
+$Data::Dumper::Indent = 1;
+$Data::Dumper::Sortkeys = 1;
+
 sub THUMB_WIDTH()  { 320 }
 sub THUMB_HEIGHT() { 250 }
 sub HTML_NAME()    { 'index.html' }
@@ -227,8 +230,12 @@ sub generate_plots {
         $terminal = qq/png small truecolor size $plot_width, 1000/;
     }
 
+    my $hostname = get_str($masterdb, 'hostname');
+    $hostname =~ s/["\n]//g;
+    $hostname = 'Hostname=' . $hostname . '\n' if $hostname ne '';
     my $sw_version = join ' / ', sw_versions $masterdb;
     my $global_label =
+        $hostname .
         'SW=' . $sw_version . '\n' .
         'HW=' . hw_string($masterdb) . '\n';
 
@@ -416,7 +423,7 @@ foreach my $i (0 .. @ARGV-1) {
     print $dir . ' ';
 
     eval {
-        die "invalid endurance directory, '$dir/usage.csv' missing" unless -e "$dir/usage.csv";
+        die "invalid endurance directory, '$dir/usage.csv' missing" unless -e "$dir/usage.csv" || -e "$dir/usage.csv.xz";
         my $entry = parse_dir($dir);
         die "parsing failed" unless defined $entry and ref $entry eq 'HASH';
         push @masterdb, $entry;
@@ -430,7 +437,6 @@ say;
 
 # Here's a nice way to debug the parsed data structures.
 # (Note that there can be some binary in the output due to use of pack().)
-#$Data::Dumper::Indent = 1;
 #print Dumper \@masterdb;
 
 db_size \@masterdb;
