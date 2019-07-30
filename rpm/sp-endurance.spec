@@ -13,6 +13,8 @@ Requires: mce-tools
 Requires: findutils
 # awk used by measure/endurance-mem-overview and measure/endurance-snapshot
 Requires: gawk
+# which is used by measure/endurance-mem-overview
+Requires: which
 
 %description
  Endurance measurement tools save system and process information from /proc
@@ -71,6 +73,9 @@ Requires: netpbm-progs
 Requires: perl
 Requires: perl(JSON)
 Requires: perl(JSON::XS)
+# which is used by syslog_parse.py, endurance-parse-snapshots and
+# endurance-extract-process-smaps
+Requires: which
 
 %description postproc
  Postprocessing scripts to parse and generate a report from the endurance
