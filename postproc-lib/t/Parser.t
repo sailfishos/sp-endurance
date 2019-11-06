@@ -2096,6 +2096,23 @@ END
     },
 }, 'parse_ifconfig - eth0, lo, pan0');
 
+is_deeply(parse_ifconfig(IO::String->new(<< 'END'
+eth1: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
+        inet 169.254.0.37  netmask 255.255.224.0  broadcast 169.254.31.255
+        inet6 fe80::f816:3eff:fed3:b1d6  prefixlen 64  scopeid 0x20<link>
+        ether fa:16:3e:d3:b1:d6  txqueuelen 1000  (Ethernet)
+        RX packets 2301951145  bytes 373048805632 (347.4 GiB)
+        RX errors 0  dropped 120  overruns 0  frame 0
+        TX packets 2373666182  bytes 516326170615 (480.8 GiB)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+END
+)), {
+    eth1 => {
+        RX => { bytes => 373048805632, packets => 2301951145 },
+        TX => { bytes => 516326170615, packets => 2373666182 },
+    },
+}, 'parse_ifconfig - eth1');
+
 ###### parse_upstart_jobs_respawned ######
 
 is_deeply(parse_upstart_jobs_respawned, {}, 'parse_upstart_jobs_respawned - undef input');
