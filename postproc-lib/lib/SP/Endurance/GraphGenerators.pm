@@ -2703,9 +2703,16 @@ sub generate_plot_networking {
 
     foreach my $interface (sort @interfaces) {
         foreach my $key (qw/bytes packets/) {
+            my $label = "RX and TX $key for networking interface $interface";
+            my ($info) = grep { defined && length } map {
+                $_->{'/sbin/ifconfig'}->{$interface}->{info} // ''
+            } @$masterdb;
+            $info =~ s/\n/\\n/g;
+            $label .= "\\n\\n" . $info if length $info > 0;
+
             my $plot = $plotter->new_linespoints(
                 key => "2090_networking-$key-$interface",
-                label => "RX and TX $key for networking interface $interface",
+                label => $label,
                 legend => 'NET RX/TX ' . uc($key) . ' &mdash; ' . $interface,
                 ylabel => { bytes => 'kB', packets => 'packets' }->{$key},
             );

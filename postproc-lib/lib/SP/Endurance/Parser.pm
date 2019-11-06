@@ -1155,10 +1155,13 @@ sub parse_ifconfig {
 
     my %ifconfig;
     my $iface;
+    my $ifinfo;
     while (<$fh>) {
+        s/\s*$//;
         if (/^(\S+)\s+/) {
             $iface = $1;
             $iface =~ s/:$//;
+            $ifconfig{$iface}->{info} = "$_\n";
         } elsif (/(RX|TX) packets\s+(\d+)\s+bytes\s+(\d+)/) {
             $ifconfig{$iface}->{$1}->{packets} = int $2 if defined $iface;
             $ifconfig{$iface}->{$1}->{bytes}   = int $3 if defined $iface;
@@ -1169,6 +1172,9 @@ sub parse_ifconfig {
         } elsif (/RX bytes:(\d+) .* TX bytes:(\d+) /) {
             $ifconfig{$iface}->{RX}->{bytes} = int $1 if defined $iface;
             $ifconfig{$iface}->{TX}->{bytes} = int $2 if defined $iface;
+        } elsif (/(RX|TX)\s+/) {
+        } elsif (/\S/) {
+            $ifconfig{$iface}->{info} .= "$_\n" if defined $iface;
         }
     }
 

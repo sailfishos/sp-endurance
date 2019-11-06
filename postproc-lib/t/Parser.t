@@ -2074,10 +2074,8 @@ lo        Link encap:Local Loopback
           RX bytes:10079963165 (9.3 GiB)  TX bytes:10079963165 (9.3 GiB)
 
 pan0      Link encap:Ethernet  HWaddr 36:e9:79:32:dd:eb  
-          BROADCAST MULTICAST  MTU:1500  Metric:1
           RX packets:0 errors:0 dropped:0 overruns:0 frame:0
           TX packets:0 errors:0 dropped:0 overruns:0 carrier:0
-          collisions:0 txqueuelen:0 
           RX bytes:0 (0.0 B)  TX bytes:0 (0.0 B)
 
 END
@@ -2085,14 +2083,30 @@ END
     eth0 => {
         RX => { bytes => 6783082580, packets => 34081833 },
         TX => { bytes => 243353875,  packets => 1584936  },
+        info =>
+'eth0      Link encap:Ethernet  HWaddr 00:24:e8:48:4c:1a
+          inet addr:172.21.81.237  Bcast:172.21.81.255  Mask:255.255.254.0
+          inet6 addr: fe80::224:e8ff:fe48:4c1a/64 Scope:Link
+          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+          collisions:0 txqueuelen:1000
+          Interrupt:17
+',
     },
     lo => {
         RX => { bytes => 10079963165, packets => 1191333 },
         TX => { bytes => 10079963165, packets => 1191333 },
+        info =>
+'lo        Link encap:Local Loopback
+          inet addr:127.0.0.1  Mask:255.0.0.0
+          inet6 addr: ::1/128 Scope:Host
+          UP LOOPBACK RUNNING  MTU:16436  Metric:1
+          collisions:0 txqueuelen:0
+',
     },
     pan0 => {
         RX => { bytes => 0, packets => 0 },
         TX => { bytes => 0, packets => 0 },
+        info => "pan0      Link encap:Ethernet  HWaddr 36:e9:79:32:dd:eb\n",
     },
 }, 'parse_ifconfig - eth0, lo, pan0');
 
@@ -2110,6 +2124,12 @@ END
     eth1 => {
         RX => { bytes => 373048805632, packets => 2301951145 },
         TX => { bytes => 516326170615, packets => 2373666182 },
+        info =>
+'eth1: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
+        inet 169.254.0.37  netmask 255.255.224.0  broadcast 169.254.31.255
+        inet6 fe80::f816:3eff:fed3:b1d6  prefixlen 64  scopeid 0x20<link>
+        ether fa:16:3e:d3:b1:d6  txqueuelen 1000  (Ethernet)
+',
     },
 }, 'parse_ifconfig - eth1');
 
