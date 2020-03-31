@@ -84,14 +84,6 @@ parse_from_release_file() {
 	sed -n "s/^${value}=\"\?\([^\"]*\)\"\?$/\1/p" "$file"
 }
 
-dump_statefs_value() {
-	STATEFS_DIR=/run/state
-	file=$STATEFS_DIR/$1
-	if [ -f "$file" ]; then
-		echo "$1="$(cat "$file") >> $path/statefs
-	fi
-}
-
 # do some basic sanity checks
 if type proc2csv >/dev/null 2>/dev/null ; then
 	PROC2CSV="proc2csv"
@@ -475,8 +467,12 @@ fi
 echo "- Disk usage"
 LC_ALL=C df -k -P > $path/df
 
-echo "- statefs"
-dump_statefs_value namespaces/Screen/Blanked
+# Collect screen blanking info from mce if it's available
+if type mcetool >/dev/null 2>/dev/null ; then
+	echo "- mce display stats"
+	# Stores the output from mcetool display stats
+	mcetool --get-display-stats=machine 2>/dev/null > $path/mce_display_stats
+fi
 
 # and syslog...
 logs=""

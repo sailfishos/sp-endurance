@@ -3258,30 +3258,60 @@ sub generate_plot_display_state {
     );
 
     my @snapshot_states = map { $_->{'display_state'} } @$masterdb;
-    my @blanked = map {
-        defined $_->{'statefs'} ? $_->{'statefs'}->{'namespaces/Screen/Blanked'} : undef;
+    my @on_duration = map {
+        defined $_->{'mce_display_stats'}
+            ? int ( $_->{'mce_display_stats'}->{'ON/duration'} )
+                + int ( $_->{'mce_display_stats'}->{'DIM/duration'} )
+                + int ( $_->{'mce_display_stats'}->{'LPM_ON/duration'} )
+                + int ( $_->{'mce_display_stats'}->{'POWER_UP/duration'} )
+            : undef;
+    } @$masterdb;
+    my @off_duration = map {
+        defined $_->{'mce_display_stats'}
+            ? int ( $_->{'mce_display_stats'}->{'OFF/duration'} )
+                + int ( $_->{'mce_display_stats'}->{'LPM_OFF/duration'} )
+                + int ( $_->{'mce_display_stats'}->{'POWER_DOWN/duration'} )
+            : undef;
+    } @$masterdb;
+    my @undef_duration = map {
+        defined $_->{'mce_display_stats'}
+            ? int ( $_->{'mce_display_stats'}->{'UNDEF/duration'} )
+            : undef;
     } @$masterdb;
 
+    my $threshold = 100;
     # Try to fill data gaps in snapshots that had no display events in journal.
     for (my $i = @snapshot_states - 1; $i > -1; --$i) {
         my $state = $snapshot_states[$i];
-        if (!defined $state->{'on_percent'}) {
-            # Journal wasn't available in the snapshot.
-            next;
-        }
-        if (defined $state->{'exit_state'}) {
-            # It was possible to calculate display state from journal entries.
+
+        if (defined $on_duration[$i] && defined $off_duration[$i]) {
+            my $on = $on_duration[$i];
+            my $total = $on_duration[$i] + $off_duration[$i];
+
+            if (defined $undef_duration[$i] && $i > 0
+                && defined $undef_duration[$i - 1]
+                && $undef_duration[$i] <= ($undef_duration[$i - 1] + $threshold)
+                && defined $on_duration[$i - 1]
+                && defined $off_duration[$i - 1]) {
+
+                # mce wasn't reset, so we should do a delta
+
+                $on = ($on_duration[$i] - $on_duration[$i - 1]);
+                $total = (($on_duration[$i] + $off_duration[$i])
+                    - ($on_duration[$i - 1] + $off_duration[$i - 1]));
+            }
+
+            if ($total > 0) {
+                $state->{'on_percent'} = 100.0 * $on / $total;
+            } else {
+                $state->{'on_percent'} = undef;
+            }
+
             next;
         }
 
         # If we won't be able to determine the value, don't plot it.
         $state->{'on_percent'} = undef;
-
-        # Try peeking statefs for the display state.
-        if (defined $blanked[$i]) {
-            $state->{'on_percent'} = ($blanked[$i] == 0) ? 100 : 0;
-            next;
-        }
 
         # Still no data; try to fill the gaps in the data with a knowledge of
         # adjacent snapshots.
