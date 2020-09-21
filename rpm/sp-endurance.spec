@@ -2,11 +2,10 @@ Name: sp-endurance
 Version: 4.4.2
 Release: 1
 Summary:  Memory usage reporting tools
-Group: Development/Tools
 License: GPLv2+
-URL: https://github.com/mer-tools/sp-rich-core
+URL: https://github.com/sailfishos/sp-endurance
 Source: %{name}-%{version}.tar.gz
-BuildRequires: python
+BuildRequires: python3-base
 Requires: lzop
 Requires: sp-smaps
 Requires: mce-tools
@@ -62,11 +61,10 @@ rm -rf %{buildroot}
 
 %package postproc
 Summary: Postprocessing for endurance data
-Group: Development/Tools
 BuildArch: noarch
 BuildRequires: perl(ExtUtils::MakeMaker)
 # HTML report generation dependencies
-Requires: python
+Requires: python3-base
 Requires: lzop
 Requires: gnuplot
 Requires: netpbm-progs
@@ -110,7 +108,6 @@ Requires: which
 
 %package tests
 Summary: CI tests for sp-endurance
-Group: Development/Tools
 BuildArch: noarch
 Requires: sp-endurance
 Requires: sp-endurance-postproc
@@ -126,7 +123,7 @@ Requires: blts-tools
 
 %package doc
 Summary:   Documentation for %{name}
-Group:     Documentation
+BuildArch: noarch
 Requires:  %{name} = %{version}-%{release}
 
 %description doc

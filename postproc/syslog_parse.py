@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 # vim: et:ts=4:sw=4:
 #
 # This file is part of sp-endurance.
@@ -78,8 +78,8 @@ class LogParserConfig:
                 continue
             try:
                 regexp = re.compile(line)
-            except re.error, e:
-                raise RuntimeError("Invalid regular expression: '%s': %s" % (line, e.message))
+            except re.error as e:
+                raise RuntimeError("Invalid regular expression: '%s': %s" % (line, str(e)))
             except: pass
             if not regexp:
                 raise RuntimeError("Invalid regular expression: '%s'" % line)
@@ -153,35 +153,35 @@ def open_compressed(filename):
     return file, filename
 
 def __output_text_report(files, config):
-    print "Syslog report"
-    print "============="
+    print("Syslog report")
+    print("=============")
     for path in files:
-        print
-        print path
-        print "-" * len(path)
+        print()
+        print(path)
+        print("-" * len(path))
         try:
             syslog_file = open_compressed(path)[0]
-        except RuntimeError, e:
-            print >>sys.stderr, "ERROR: unable to open '%s': %s" % \
-                    (path, str(e))
+        except RuntimeError as e:
+            print("ERROR: unable to open '%s': %s" % \
+                    (path, str(e)), file=sys.stderr)
             sys.exit(1)
         errors_by_category = get_errors_by_category(syslog_file, config.regexps)
         if not errors_by_category:
-            print
-            print "No notifiable log items identified."
+            print()
+            print("No notifiable log items identified.")
             continue
         for category in config.categories:
             if not category in errors_by_category or len(errors_by_category[category]) <= 0:
                 continue
             if category in config.category_description and config.category_description[category]:
-                print "[%s] %s:" % (category, config.category_description[category])
+                print("[%s] %s:" % (category, config.category_description[category]))
             else:
-                print "[%s]:" % category
+                print("[%s]:" % category)
             for message in errors_by_category[category]:
-                print message
-            print ""
-        print "Summary:"
-        print "--------"
+                print(message)
+            print("")
+        print("Summary:")
+        print("--------")
         for category in config.categories:
             count = 0
             if category in errors_by_category:
@@ -189,7 +189,7 @@ def __output_text_report(files, config):
             desc = ""
             if category in config.category_description and config.category_description[category]:
                 desc = config.category_description[category]
-            print "- %d [%s] %s" % (count, category, desc)
+            print("- %d [%s] %s" % (count, category, desc))
 
 def __help(error=''):
     msg = __doc__.replace("<TOOL_NAME>", sys.argv[0].split('/')[-1])
