@@ -21,12 +21,7 @@ MAN = endurance-mem-overview.1 \
     proc2csv.1 \
     syslog_parse.py.1 \
     sp-noncached.1
-    
-ifeq ($(NO_X),)
-BIN += measure/xmeminfo
-SRC += src/xmeminfo.c
-MAN += xmeminfo.1
-endif
+
 DOC = README
 
 ALL = $(SRC) $(BIN) $(DOC) postproc-lib
@@ -46,9 +41,6 @@ postproc-lib: postproc-lib/Makefile
 
 measure/proc2csv: src/proc2csv.c
 	$(CC) $(CFLAGS) -o $@ $<
-
-measure/xmeminfo: src/xmeminfo.c
-	$(CC) -I/usr/X11R6/include $(CFLAGS) -o $@ $< -lXRes -lX11
 
 measure/sp-noncached: src/sp_noncached.c
 	$(CC) $(CFLAGS) -o $@ $<

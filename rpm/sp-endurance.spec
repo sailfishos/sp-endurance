@@ -21,19 +21,17 @@ Requires: which
  errors in syslog etc.  The data can be later used to see logged application
  errors, memory usage and resource leakages and leakage trends under
  long time use-case.
-      
-%define is_x11 %{?_with_x11:1}%{!?_with_x11:0}
 
 %prep
 
 %setup -q
 
 %build
-make %{!?_with_x11: NO_X=1}
+%make_build
 
 %install
 rm -rf %{buildroot}
-make install DESTDIR=%{buildroot} DOCDIR=%{_defaultdocdir} %{!?_with_x11: NO_X=1}
+make install DESTDIR=%{buildroot} DOCDIR=%{_defaultdocdir}
 make install-compat-symlinks DESTDIR=%{buildroot}
 # Remove common Perl files which we don't package
 rm -f $RPM_BUILD_ROOT%{perl_archlib}/perllocal.pod
@@ -54,9 +52,6 @@ rm -rf %{buildroot}
 # This is the compat symlink:
 %{_bindir}/save-incremental-endurance-stats
 # ...
-%if %is_x11
-    %{_bindir}/xmeminfo
-%endif
 %license COPYING
 
 %package postproc
