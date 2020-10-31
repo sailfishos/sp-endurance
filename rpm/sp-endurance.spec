@@ -2,11 +2,10 @@ Name: sp-endurance
 Version: 4.4.2
 Release: 1
 Summary:  Memory usage reporting tools
-Group: Development/Tools
 License: GPLv2+
-URL: https://github.com/mer-tools/sp-rich-core
+URL: https://github.com/sailfishos/sp-endurance
 Source: %{name}-%{version}.tar.gz
-BuildRequires: python
+BuildRequires: python3-base
 Requires: lzop
 Requires: sp-smaps
 Requires: mce-tools
@@ -22,19 +21,17 @@ Requires: which
  errors in syslog etc.  The data can be later used to see logged application
  errors, memory usage and resource leakages and leakage trends under
  long time use-case.
-      
-%define is_x11 %{?_with_x11:1}%{!?_with_x11:0}
 
 %prep
 
 %setup -q
 
 %build
-make %{!?_with_x11: NO_X=1}
+%make_build
 
 %install
 rm -rf %{buildroot}
-make install DESTDIR=%{buildroot} DOCDIR=%{_defaultdocdir} %{!?_with_x11: NO_X=1}
+make install DESTDIR=%{buildroot} DOCDIR=%{_defaultdocdir}
 make install-compat-symlinks DESTDIR=%{buildroot}
 # Remove common Perl files which we don't package
 rm -f $RPM_BUILD_ROOT%{perl_archlib}/perllocal.pod
@@ -55,18 +52,14 @@ rm -rf %{buildroot}
 # This is the compat symlink:
 %{_bindir}/save-incremental-endurance-stats
 # ...
-%if %is_x11
-    %{_bindir}/xmeminfo
-%endif
 %license COPYING
 
 %package postproc
 Summary: Postprocessing for endurance data
-Group: Development/Tools
 BuildArch: noarch
 BuildRequires: perl(ExtUtils::MakeMaker)
 # HTML report generation dependencies
-Requires: python
+Requires: python3-base
 Requires: lzop
 Requires: gnuplot
 Requires: netpbm-progs
@@ -110,7 +103,6 @@ Requires: which
 
 %package tests
 Summary: CI tests for sp-endurance
-Group: Development/Tools
 BuildArch: noarch
 Requires: sp-endurance
 Requires: sp-endurance-postproc
@@ -126,7 +118,7 @@ Requires: blts-tools
 
 %package doc
 Summary:   Documentation for %{name}
-Group:     Documentation
+BuildArch: noarch
 Requires:  %{name} = %{version}-%{release}
 
 %description doc

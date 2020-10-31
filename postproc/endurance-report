@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 # vim: et:ts=4:sw=4:
 #
 # This file is part of sp-endurance.
@@ -117,8 +117,8 @@ def error_exit(msg):
     sys.exit(1)
 
 def parse_warning(msg):
-    print "<p><font color=red>%s</font>" % msg
-    print >>sys.stderr, msg
+    print("<p><font color=red>%s</font>" % msg)
+    print(msg, file=sys.stderr)
 
 # --------------------- SMAPS data parsing --------------------------
 
@@ -725,7 +725,7 @@ def parse_csv(file, filename):
     keys = skip_to(file, "nr_free_pages", True).strip()[:-1].split(',')
     try:
         vals = [int(x) for x in file.readline().strip().split(',')]
-        data['/proc/vmstat'] = dict(zip(keys, vals))
+        data['/proc/vmstat'] = dict(list(zip(keys, vals)))
     except:
         pass
 
@@ -812,7 +812,7 @@ def parse_ifconfig(file):
 def get_pids_from_procs(processes, commands):
     "return pid:name dictionary for given processes array"
     pids = {}
-    for process in processes.values():
+    for process in list(processes.values()):
         pid = process['Pid']
         name = process['Name']
         if name == "maemo-launcher":
@@ -863,33 +863,33 @@ def output_process_changes(pids1, pids2, titles, pid2cgroup1, pid2cgroup2, do_su
     if namepid_gone or namepid_new:
         processes = len(pids2)
         change = processes - len(pids1)
-        print "<p>%s: <b>%d</b>" % (titles[0], change)
-        print "<br>(now totaling %d)." % processes
+        print("<p>%s: <b>%d</b>" % (titles[0], change))
+        print("<br>(now totaling %d)." % processes)
 
-        print "<p><table border=0>"
-        print "<tr style='vertical-align: top'>"
+        print("<p><table border=0>")
+        print("<tr style='vertical-align: top'>")
 
-        print "<td><table border=1>"
-        print "<tr><th>%s" % titles[1]
-        print "<tr><th>Command[Pid]:"
+        print("<td><table border=1>")
+        print("<tr><th>%s" % titles[1])
+        print("<tr><th>Command[Pid]:")
         for name, pid, name_unique in namepid_gone:
             if name_unique:
-                print ("<tr>" \
+                print(("<tr>" \
                         + "<td><del>%s</del>[%d]") \
-                        % (name, pid)
+                        % (name, pid))
             else:
-                print ("<tr>" \
+                print(("<tr>" \
                         + "<td>%s[%d]") \
-                        % (name, pid)
-        print "</table>"
+                        % (name, pid))
+        print("</table>")
 
-        print "<td><table border=1>"
+        print("<td><table border=1>")
         if show_cgroups:
-            print "<tr><th colspan=2>%s" % titles[2]
-            print "<tr><th>Command[Pid]:<th>Cgroup"
+            print("<tr><th colspan=2>%s" % titles[2])
+            print("<tr><th>Command[Pid]:<th>Cgroup")
         else:
-            print "<tr><th>%s" % titles[2]
-            print "<tr><th>Command[Pid]:"
+            print("<tr><th>%s" % titles[2])
+            print("<tr><th>Command[Pid]:")
         for name, pid, name_unique in namepid_new:
             cgroup = ""
             if show_cgroups:
@@ -900,21 +900,21 @@ def output_process_changes(pids1, pids2, titles, pid2cgroup1, pid2cgroup2, do_su
                 else:
                     cgroup = "<td>%s" % cgroup
             if name_unique:
-                print ("<tr>" \
+                print(("<tr>" \
                         + "<td><ins><b>%s</b>[%d]</ins>" \
                         + "%s") \
-                        % (name, pid, cgroup)
+                        % (name, pid, cgroup))
             else:
-                print ("<tr>" \
+                print(("<tr>" \
                         + "<td>%s[%d]" \
                         + "%s") \
-                        % (name, pid, cgroup)
-        print "</table>"
+                        % (name, pid, cgroup))
+        print("</table>")
 
-        print "</table>"
+        print("</table>")
 
     if do_summary:
-        print "<!--\n- %s: %+d\n-->" % (titles[0], change)
+        print("<!--\n- %s: %+d\n-->" % (titles[0], change))
 
 def output_new_dsme_rich_cores(dsme_rich_cores1, dsme_rich_cores2):
     crashed_processes = {}
@@ -928,17 +928,17 @@ def output_new_dsme_rich_cores(dsme_rich_cores1, dsme_rich_cores2):
                 crashed_processes[process] = cnt2 - cnt1
     if not crashed_processes:
         return
-    print "<p><table border=1>"
-    print "<caption><i>Process crashes reported by DSME</i></caption>"
-    print "<tr>" \
+    print("<p><table border=1>")
+    print("<caption><i>Process crashes reported by DSME</i></caption>")
+    print("<tr>" \
             + "<th>Process:" \
-            + "<th>Crashes:"
+            + "<th>Crashes:")
     for process in crashed_processes:
-        print ("<tr>" \
+        print(("<tr>" \
                 + "<td>%s" \
                 + "<td align=right><b>%d</b>") % \
-                (process, crashed_processes[process])
-    print "</table>"
+                (process, crashed_processes[process]))
+    print("</table>")
 
 def output_new_upstart_jobs_respawned(upstart_jobs_respawned1, upstart_jobs_respawned2):
     respawned_jobs = {}
@@ -952,32 +952,32 @@ def output_new_upstart_jobs_respawned(upstart_jobs_respawned1, upstart_jobs_resp
                 respawned_jobs[job] = cnt2 - cnt1
     if not respawned_jobs:
         return
-    print "<p><table border=1>"
-    print "<caption><i>Upstart respawned jobs</i></caption>"
-    print "<tr>" \
+    print("<p><table border=1>")
+    print("<caption><i>Upstart respawned jobs</i></caption>")
+    print("<tr>" \
             + "<th>Job:" \
-            + "<th>Respawn count:"
+            + "<th>Respawn count:")
     for job in sorted(respawned_jobs.keys()):
-        print ("<tr>" \
+        print(("<tr>" \
                 + "<td>%s" \
                 + "<td align=right><b>%d</b>") % \
-                (job, respawned_jobs[job])
-    print "</table>"
+                (job, respawned_jobs[job]))
+    print("</table>")
 
 def output_cgroup_diffs(cgroups1, cgroups2):
-    all_groups = cgroups2.keys()
+    all_groups = list(cgroups2.keys())
     all_groups.sort()
     if not all_groups:
         return
-    print "<p><table border=1 bgcolor=#%s>" % Colors.memory
-    print "<caption><i>Control Groups</i></caption>"
-    print "<tr>" \
+    print("<p><table border=1 bgcolor=#%s>" % Colors.memory)
+    print("<caption><i>Control Groups</i></caption>")
+    print("<tr>" \
             + "<th>Cgroup:" \
             + "<th>RAM+swap usage:" \
             + "<th>RAM usage (% of limit):" \
             + "<th>RAM usage change:" \
             + "<th>Swap usage:" \
-            + "<th>Swap usage change:"
+            + "<th>Swap usage change:")
     for cgroup in all_groups:
         memory_limit_in_bytes = cgroups2[cgroup]['memory.limit_in_bytes']
         if memory_limit_in_bytes == 9223372036854775807 or memory_limit_in_bytes == 0:
@@ -989,7 +989,7 @@ def output_cgroup_diffs(cgroups1, cgroups2):
                     cgroups1[cgroup]['memory.usage_in_bytes']) / 1024
         swap2_kb = (cgroups2[cgroup]['memory.memsw.usage_in_bytes'] -
                     cgroups2[cgroup]['memory.usage_in_bytes']) / 1024
-        print ("<tr>" \
+        print(("<tr>" \
                 + "<td>%s" \
                 + "<td align=right>%d kB" \
                 + "<td align=right>%d kB (%s)" \
@@ -1002,8 +1002,8 @@ def output_cgroup_diffs(cgroups1, cgroups2):
                     (cgroups2[cgroup]['memory.usage_in_bytes'] -
                      cgroups1[cgroup]['memory.usage_in_bytes']) / 1024,
                     swap2_kb,
-                    swap2_kb - swap1_kb)
-    print "</table>"
+                    swap2_kb - swap1_kb))
+    print("</table>")
 
 def output_diffs(diffs, title, first_column_title, data_units, bgcolor, idx1, do_summary):
     "diffs = { <change>, <change from initial>, <total value>, <name> }"
@@ -1012,31 +1012,31 @@ def output_diffs(diffs, title, first_column_title, data_units, bgcolor, idx1, do
     if diffs:
         diffs.sort()
         diffs.reverse()
-        print '\n<p><table border=1 bgcolor="#%s">' % bgcolor
-        print "<caption><i>%s</i></caption>" % title
+        print('\n<p><table border=1 bgcolor="#%s">' % bgcolor)
+        print("<caption><i>%s</i></caption>" % title)
         # HTML end tags (</th>, </tr>, </td>) omitted on purpose to reduce
         # output file size, it's permitted by the HTML4 spec.
         if idx1 > 0:
-            print "<tr><th>%s:<th>Total:<th>Change:<th>Change from<br>initial state:" % first_column_title
+            print("<tr><th>%s:<th>Total:<th>Change:<th>Change from<br>initial state:" % first_column_title)
         else:
-            print "<tr><th>%s:<th>Total:<th>Change:" % first_column_title
+            print("<tr><th>%s:<th>Total:<th>Change:" % first_column_title)
         for change, change_from_initial, value, name in diffs:
             initialch = ""
             if idx1 > 0:
                 initialch = "<td align=right>%+d%s" % (change_from_initial, data_units)
-            print "<tr><td>%s<td align=right>%d%s<td align=right><b>%+d</b>%s%s" % \
+            print("<tr><td>%s<td align=right>%d%s<td align=right><b>%+d</b>%s%s" % \
                     (name, \
                      value, data_units, \
                      change, data_units, \
-                     initialch)
+                     initialch))
         initialch = ""
         if idx1 > 0:
             initialch = "<td align=right>%+d%s" % (total_change_from_initial, data_units)
-        print "<tr><td align=right><i>Total change =</i><td>&nbsp;<td align=right><b>%+d%s</b>%s" % \
-                (total_change, data_units, initialch)
-        print "</table>"
+        print("<tr><td align=right><i>Total change =</i><td>&nbsp;<td align=right><b>%+d%s</b>%s" % \
+                (total_change, data_units, initialch))
+        print("</table>")
     if do_summary:
-        print "<!--\n- %s change: %+d\n-->" % (title, total_change)
+        print("<!--\n- %s change: %+d\n-->" % (title, total_change))
 
 # list0: initial values
 # list1 & list2: compare these rounds
@@ -1055,7 +1055,7 @@ def output_diffs(diffs, title, first_column_title, data_units, bgcolor, idx1, do
 def get_usage_diffs(list0, list1, list2):
     """return [(<change>, <change from initial>, <total value>, <name>), ...]"""
     diffs = []
-    for name,value2 in list2.items():
+    for name,value2 in list(list2.items()):
         if name in list1:
             value1 = list1[name]
             if value2 != value1:
@@ -1150,7 +1150,7 @@ def syslog_error_summary_text(new_errors_by_category):
         count = 0
         if category in new_errors_by_category:
             count = len(new_errors_by_category[category])
-        print "- %d %s" % (count, category)
+        print("- %d %s" % (count, category))
 
 def category_to_anchor(category):
     return category.replace("/", "_")
@@ -1159,14 +1159,14 @@ def create_errors_html(idx, run1, run2, new_errors_by_category):
     title = "Syslog errors for round %d" % idx
     url = "%s/errors.html" % run2['basedir']
     f = open(url, "w")
-    print >>f, "<html>\n<title>%s</title>\n<body>\n<h1>%s</h1>\n" % (title, title)
+    print("<html>\n<title>%s</title>\n<body>\n<h1>%s</h1>\n" % (title, title), file=f)
     if 'basedir' in run1:
         path = run1['basedir']
         if path[0] != '/':
             # assume files are in the same hierachy
             path = "../" + path.split('/')[-1]
         path += "/errors.html"
-        print >>f, '<a href="%s">Errors for previous round</a>' % path
+        print('<a href="%s">Errors for previous round</a>' % path, file=f)
     if new_errors_by_category:
         for category in logparser_config_syslog.categories:
             if category not in new_errors_by_category \
@@ -1178,14 +1178,14 @@ def create_errors_html(idx, run1, run2, new_errors_by_category):
                         logparser_config_syslog.category_description[category])
             else:
                 title = category
-            print >>f, '<a name="%s"></a>' % category_to_anchor(category)
-            print >>f, "<h4>%s</h4>" % title
-            print >>f, "<ul>"
+            print('<a name="%s"></a>' % category_to_anchor(category), file=f)
+            print("<h4>%s</h4>" % title, file=f)
+            print("<ul>", file=f)
             for message in new_errors_by_category[category]:
-                print >>f, "<li>%s</li>" % message
-            print >>f, "</ul>"
-    print >>f, "<hr>"
-    print >>f, """
+                print("<li>%s</li>" % message, file=f)
+            print("</ul>", file=f)
+    print("<hr>", file=f)
+    print("""
 <a name="signals"></a>
 <h2>Crash signals explained</h2>
 <p>Explanations of some common exit signals on the Maemo platform:
@@ -1198,8 +1198,8 @@ Other reasons for termination are background killing, locale change and shutdown
 <tr><td>6</td><td>SIGABORT</td><td>Program (glibc/glib) called abort() when a fatal program error was detected</td></tr>
 <tr><td>7</td><td>SIGBUS</td><td>The process was terminated due to bad memory access.</td></tr>
 <table>
-"""
-    print >>f, "</body>\n</html>"
+""", file=f)
+    print("</body>\n</html>", file=f)
     f.close()
 
 def syslog_error_summary(run, new_errors_by_category, links=True):
@@ -1209,9 +1209,9 @@ def syslog_error_summary(run, new_errors_by_category, links=True):
     errors_html = None
     if links and 'basedir' in run and os.path.exists("%s/errors.html" % run['basedir']):
         errors_html = "%s/errors.html" % run['basedir']
-    print '\n<p><table border=1 bgcolor="#%s">' % Colors.errors
-    print "<caption><i>Items logged to syslog</i></caption>"
-    print "<tr><th>Error types:<th>Count:</tr>"
+    print('\n<p><table border=1 bgcolor="#%s">' % Colors.errors)
+    print("<caption><i>Items logged to syslog</i></caption>")
+    print("<tr><th>Error types:<th>Count:</tr>")
     for category in logparser_config_syslog.categories:
         if category not in new_errors_by_category \
                 or len(new_errors_by_category[category]) <= 0:
@@ -1222,16 +1222,16 @@ def syslog_error_summary(run, new_errors_by_category, links=True):
                     logparser_config_syslog.category_description[category])
         else:
             title = category
-        print "<tr>"
+        print("<tr>")
         if errors_html:
-            print ' <td align=left><a href="%s#%s">%s</a></td>' % \
-                (errors_html, category_to_anchor(category), title)
+            print(' <td align=left><a href="%s#%s">%s</a></td>' % \
+                (errors_html, category_to_anchor(category), title))
         else:
-            print " <td align=left>%s</td>" % title
-        print " <td align=right>%d</td>" % len(new_errors_by_category[category])
-        print "</tr>"
-    print "<tr><td align=right><i>Total of items =</i></td><td align=right><b>%d</b></td></tr>" % error_cnt
-    print "</table>"
+            print(" <td align=left>%s</td>" % title)
+        print(" <td align=right>%d</td>" % len(new_errors_by_category[category]))
+        print("</tr>")
+    print("<tr><td align=right><i>Total of items =</i></td><td align=right><b>%d</b></td></tr>" % error_cnt)
+    print("</table>")
 
 def get_new_errors_by_category(run1, run2):
     errors_by_category1, errors_by_category2 = None, None
@@ -1244,7 +1244,7 @@ def get_new_errors_by_category(run1, run2):
     if not errors_by_category2:
         return errors_by_category2
     new_errors_by_category = {}
-    for category in errors_by_category2.keys():
+    for category in list(errors_by_category2.keys()):
         if not category in errors_by_category1:
             new_errors_by_category[category] = errors_by_category2[category]
             continue
@@ -1265,30 +1265,30 @@ def output_data_links(run):
     "output links to all collected uncompressed data"
     compression_suffixes = ("", ".gz", ".xz", ".lzo")
     basedir = run['basedir']
-    print "<h4>For more details on...</h4>"
-    print "<ul>"
+    print("<h4>For more details on...</h4>")
+    print("<ul>")
     if 'logfile' in run:
-        print '<li>log messages, see <a href="%s">syslog</a>' % run['logfile']
+        print('<li>log messages, see <a href="%s">syslog</a>' % run['logfile'])
     if os.path.exists("%s/smaps.html" % basedir):
-        print "<li>private memory usage of all processes, see"
-        print '<a href="%s/smaps.html">smaps overview</a>' % basedir
+        print("<li>private memory usage of all processes, see")
+        print('<a href="%s/smaps.html">smaps overview</a>' % basedir)
     for suffix in compression_suffixes:
         if os.path.exists("%s/smaps.cap%s" % (basedir, suffix)):
-            print "<li>private memory usage of all processes, see"
-            print '<a href="%s/smaps.cap%s">smaps data</a>' % (basedir, suffix)
+            print("<li>private memory usage of all processes, see")
+            print('<a href="%s/smaps.cap%s">smaps data</a>' % (basedir, suffix))
             break
-    print "<li>process and device state details, see"
-    print '<a href="%s/usage.csv">collected CSV data</a> and' % basedir
-    print '<a href="%s/ifconfig">ifconfig output</a>' % basedir
-    print "<li>rest of /proc/ information; see "
+    print("<li>process and device state details, see")
+    print('<a href="%s/usage.csv">collected CSV data</a> and' % basedir)
+    print('<a href="%s/ifconfig">ifconfig output</a>' % basedir)
+    print("<li>rest of /proc/ information; see ")
     for suffix in compression_suffixes:
         if os.path.exists("%s/open-fds%s" % (basedir, suffix)):
-            print '<a href="%s/open-fds%s">open file descriptors</a>, ' % (basedir, suffix)
+            print('<a href="%s/open-fds%s">open file descriptors</a>, ' % (basedir, suffix))
             break
-    print '<a href="%s/interrupts">interrupts</a>, ' % basedir
-    print '<a href="%s/slabinfo">slabinfo</a> and' % basedir
-    print '<a href="%s/stat">stat</a> files' % basedir
-    print "</ul>"
+    print('<a href="%s/interrupts">interrupts</a>, ' % basedir)
+    print('<a href="%s/slabinfo">slabinfo</a> and' % basedir)
+    print('<a href="%s/stat">stat</a> files' % basedir)
+    print("</ul>")
 
 def combine_dirty_and_swap(smaps):
     "Combines private dirty and swap memory usage for each PID"
@@ -1337,8 +1337,8 @@ def cpu_tickdiff(round1, round2, pid):
 # Total difference in CPU clock ticks between given rounds.
 def total_cpu_tickdiff(round1, round2):
     try:
-        return sum(round2['/proc/stat']['cpu'].itervalues()) - \
-               sum(round1['/proc/stat']['cpu'].itervalues())
+        return sum(round2['/proc/stat']['cpu'].values()) - \
+               sum(round1['/proc/stat']['cpu'].values())
     except KeyError:
         return 0
 
@@ -1352,29 +1352,29 @@ def resource_overall_changes(data, idx1, idx2, do_summary):
     change_from_initial = [(run2['ram_free']+run2['swap_free']) - (data[0]['ram_free']+data[0]['swap_free'])]
     change_from_initial += [run2[key]-data[0][key] for key in ['ram_free', 'swap_free', 'fdfree']]
 
-    print "<p>System free memory change: <b>%+d</b> kB" % memory_change
+    print("<p>System free memory change: <b>%+d</b> kB" % memory_change)
     if ram_change or swap_change:
-        print "<br>(free RAM change: <b>%+d</b> kB, free swap change: <b>%+d</b> kB)" % (ram_change, swap_change)
-    print "<br>System unused file descriptor change: <b>%+d</b>" % fdfree_change
+        print("<br>(free RAM change: <b>%+d</b> kB, free swap change: <b>%+d</b> kB)" % (ram_change, swap_change))
+    print("<br>System unused file descriptor change: <b>%+d</b>" % fdfree_change)
     if idx1 > 0:
-        print "<br>(change from initial state: free memory: %+d kB [RAM: %+d kB, swap: %+d kB], FD: %+d)" % \
-                (change_from_initial[0], change_from_initial[1], change_from_initial[2], change_from_initial[3])
+        print("<br>(change from initial state: free memory: %+d kB [RAM: %+d kB, swap: %+d kB], FD: %+d)" % \
+                (change_from_initial[0], change_from_initial[1], change_from_initial[2], change_from_initial[3]))
     if run2['fdfree'] < 200:
-        print "<br><font color=red>Less than 200 FDs are free in the system.</font>"
+        print("<br><font color=red>Less than 200 FDs are free in the system.</font>")
     elif run2['fdfree'] < 500:
-        print "<br>(Less that 500 FDs are free in the system.)"
+        print("<br>(Less that 500 FDs are free in the system.)")
     if do_summary:
-        print """
+        print("""
 <!--
 - System free memory change: %+d
 - System free RAM change: %+d
 - System free swap change: %+d
 - System free FD change: %+d
--->""" % (memory_change, ram_change, swap_change, fdfree_change)
+-->""" % (memory_change, ram_change, swap_change, fdfree_change))
         if 'private_code' in run1:
             dcode_change = run2['private_code'] - run1['private_code']
             if dcode_change:
-                print "<br>System private dirty code pages change: <b>%+d</b> kB" % dcode_change
+                print("<br>System private dirty code pages change: <b>%+d</b> kB" % dcode_change)
 
 
 def output_run_diffs(idx1, idx2, data, do_summary):
@@ -1404,24 +1404,24 @@ def output_run_diffs(idx1, idx2, data, do_summary):
     def process_cpu_usage():
         if not '/proc/pid/stat' in run1 or not '/proc/pid/stat' in run2:
             return
-        print "<h4>Process CPU usage</h4>"
+        print("<h4>Process CPU usage</h4>")
         if cpu_total_diff < 0:
-            print "<p><i>WARNING: system reboot detected, CPU usage omitted.</i>"
+            print("<p><i>WARNING: system reboot detected, CPU usage omitted.</i>")
             return
         if cpu_total_diff == 0:
             # No CPU spent? Most likely user has manually copied the snapshot directories.
-            print "<p><i>WARNING: identical snapshots detected, CPU usage omitted.</i>"
+            print("<p><i>WARNING: identical snapshots detected, CPU usage omitted.</i>")
             return
         if cpu_total_secs >= 3600:
-            print "<p>Interval between rounds was %d seconds (%d hours %d minutes)." % \
-                    (cpu_total_secs, int(cpu_total_secs/3600), int((cpu_total_secs%3600)/60))
+            print("<p>Interval between rounds was %d seconds (%d hours %d minutes)." % \
+                    (cpu_total_secs, int(cpu_total_secs/3600), int((cpu_total_secs%3600)/60)))
         elif cpu_total_secs >= 60:
-            print "<p>Interval between rounds was %d seconds (%d minutes)." % \
-                    (cpu_total_secs, int(cpu_total_secs/60))
+            print("<p>Interval between rounds was %d seconds (%d minutes)." % \
+                    (cpu_total_secs, int(cpu_total_secs/60)))
         else:
-            print "<p>Interval between rounds was %d seconds." % cpu_total_secs
+            print("<p>Interval between rounds was %d seconds." % cpu_total_secs)
 
-        print "<p>"
+        print("<p>")
         diffs = []
         for pid in iter(run2['/proc/pid/stat']):
             stime1 = utime1 = 0
@@ -1457,6 +1457,8 @@ def output_run_diffs(idx1, idx2, data, do_summary):
                 filtered_out.append(x)
         diffs = diffs2
         # Sort in descending order of CPU ticks used.
+        def cmp(a, b):
+            return (a > b) - (a < b)
         diffs.sort(lambda x,y: cmp(x[1]+x[2], y[1]+y[2]))
         diffs.reverse()
         if len(diffs)==0:
@@ -1473,19 +1475,19 @@ def output_run_diffs(idx1, idx2, data, do_summary):
                           sum([x[1]+x[2] for x in diffs])/CLK_TCK)\
                 ])])
         if filtered_out:
-            print "<p><i>Note:</i> %d other processes also used some CPU, but "\
+            print("<p><i>Note:</i> %d other processes also used some CPU, but "\
                   "did not exceed the threshold of 0.5%% CPU Usage (%.2f seconds).<br>"\
                   "They used %.2f seconds of CPU time in total." \
-                  % (len(filtered_out), THRESHOLD/CLK_TCK, sum([x[1]+x[2] for x in filtered_out])/CLK_TCK)
+                  % (len(filtered_out), THRESHOLD/CLK_TCK, sum([x[1]+x[2] for x in filtered_out])/CLK_TCK))
         if UNACC in [x[0] for x in diffs]:
-            print "<p><i>Unaccounted CPU time</i> stands for such CPU time that "\
+            print("<p><i>Unaccounted CPU time</i> stands for such CPU time that "\
                   "could not be attributed to any process.<br>"\
                   "These can be for example short living programs that "\
-                  "started and exited during one round of the tests."
+                  "started and exited during one round of the tests.")
 
     process_cpu_usage()
 
-    print "<h4>Resource usage changes</h4>"
+    print("<h4>Resource usage changes</h4>")
     resource_overall_changes(data, idx1, idx2, do_summary)
 
     # filesystem usage changes
@@ -1518,7 +1520,7 @@ def output_run_diffs(idx1, idx2, data, do_summary):
                 "Process private dirty and swap memory usages combined (according to SMAPS)",
                 "Command[Pid]", " kB", Colors.memory, idx1, do_summary)
     else:
-        print "<p>No SMAPS data for process memory usage available."
+        print("<p>No SMAPS data for process memory usage available.")
     
     # process X resource usage changes
     xmeminfo_initial = initial_values(data, 'xmeminfo')
@@ -1564,7 +1566,7 @@ def output_run_diffs(idx1, idx2, data, do_summary):
 
     # Kernel statistics
     if cpu_total_diff > 0:
-        print "\n<h4>Kernel events</h4>"
+        print("\n<h4>Kernel events</h4>")
 
         def format_key(key, max):
             if key > max:
@@ -1584,12 +1586,12 @@ def output_run_diffs(idx1, idx2, data, do_summary):
         if pswpout > 0:
             diffs.append(("Page swap outs per second", format_key(pswpout, 100)))
         if diffs:
-            print '\n<p><table border=1 bgcolor=%s>' % Colors.kernel
-            print "<caption><i>Virtual memory subsystem</i></caption>"
-            print "<tr><th>Type:</th><th>Value:</th></tr>"
+            print('\n<p><table border=1 bgcolor=%s>' % Colors.kernel)
+            print("<caption><i>Virtual memory subsystem</i></caption>")
+            print("<tr><th>Type:</th><th>Value:</th></tr>")
             for d in diffs:
-                print "<tr><td>%s</td><td align=right><b>%s</b></td></tr>" % d
-            print "</table>"
+                print("<tr><td>%s</td><td align=right><b>%s</b></td></tr>" % d)
+            print("</table>")
 
         # Interrupts and context switches.
         intr = (run2['/proc/stat']['intr']-run1['/proc/stat']['intr'])/cpu_total_secs
@@ -1598,15 +1600,15 @@ def output_run_diffs(idx1, idx2, data, do_summary):
                  ("Interrupts per second", format_key(intr, 1e5/3600)),
                  ("Context switches per second", format_key(ctxt, 1e6/3600)),
                 ]
-        print '\n<p><table border=1 bgcolor=%s>' % Colors.kernel
-        print "<caption><i>Low level system events</i></caption>"
-        print "<tr><th>Type:</th><th>Value:</th></tr>"
+        print('\n<p><table border=1 bgcolor=%s>' % Colors.kernel)
+        print("<caption><i>Low level system events</i></caption>")
+        print("<tr><th>Type:</th><th>Value:</th></tr>")
         for d in diffs:
-            print "<tr><td>%s</td><td align=right><b>%s</b></td></tr>" % d
-        print "</table>"
+            print("<tr><td>%s</td><td align=right><b>%s</b></td></tr>" % d)
+        print("</table>")
 
 
-    print "\n<h4>Changes in processes</h4>"
+    print("\n<h4>Changes in processes</h4>")
 
     # thread count changes
     diffs = get_thread_count_diffs(run2['commands'],
@@ -1662,26 +1664,26 @@ def hw_string(run):
 
 def output_initial_state(run):
     "show basic information about the test run"
-    print "<p>%s" % run['release']
+    print("<p>%s" % run['release'])
     if hw_string(run):
-        print "<p>HW: %s" % hw_string(run)
-    print "<p>Date: %s" % run['datetime']
-    print "<p>Free system RAM: <b>%d</b> kB" % run['ram_free']
-    print "<br>(free = free+cached+buffered+slab reclaimable)"
+        print("<p>HW: %s" % hw_string(run))
+    print("<p>Date: %s" % run['datetime'])
+    print("<p>Free system RAM: <b>%d</b> kB" % run['ram_free'])
+    print("<br>(free = free+cached+buffered+slab reclaimable)")
     if run['swap_total']:
-        print "<p>Free system Swap: <b>%d</b> kB (out of <b>%d</b> kB)" % (run['swap_free'], run['swap_total'])
+        print("<p>Free system Swap: <b>%d</b> kB (out of <b>%d</b> kB)" % (run['swap_free'], run['swap_total']))
     if 'private_code' in run and run['private_code']:
-        print "<p>Private dirty code pages: <b>%d</b> kB" % run['private_code']
-        print "<br><i>(this means that system has incorrectly built shared libraries)</i>"
+        print("<p>Private dirty code pages: <b>%d</b> kB" % run['private_code'])
+        print("<br><i>(this means that system has incorrectly built shared libraries)</i>")
     output_errors(0, {}, run)
-    print """
+    print("""
 <p>Errors from each additional test round are listed below, but for
 a summary of them, see <a href="#error-summary">all errors summary
 section</a>. Note that the same issues (related to system services)
 may appear under multiple error types.
-""" # "fool Jed syntax highlighter
+""") # "fool Jed syntax highlighter
     output_data_links(run)
-    print "<hr>\n"
+    print("<hr>\n")
 
 
 # ------------------- output memory graphs -------------------------
@@ -1689,14 +1691,14 @@ may appear under multiple error types.
 def output_graph_table(titles, colors, data):
     "outputs memory usage bars for given (name, (values), tex(t)) tupple array"
     width = 640 # total width of the graph bars
-    print "<table><tr>"
+    print("<table><tr>")
     # column titles
     for title in titles:
         if title:
-            print "<th>%s</th>" % title
+            print("<th>%s</th>" % title)
         else:
-            print "<th></th>"
-    print "</tr>"
+            print("<th></th>")
+    print("</tr>")
     # Determine largest width we have for all rows for the 'graphical bar'.
     maxw = 0
     for item in data:
@@ -1706,9 +1708,9 @@ def output_graph_table(titles, colors, data):
         maxw = max(maxw, w)
     for item in data:
         # row title
-        print '<tr><td>%s</td>' % item[0]
+        print('<tr><td>%s</td>' % item[0])
         # graphical bar
-        print "<td><table border=0 cellpadding=0 cellspacing=0><tr>"
+        print("<td><table border=0 cellpadding=0 cellspacing=0><tr>")
         wpad = maxw
         for idx in range(len(colors)):
             w = int(item[1][idx]*width)
@@ -1720,16 +1722,16 @@ def output_graph_table(titles, colors, data):
         # widths of the per-row <table>s, and if they are not of equal width,
         # the result can be misleading.
         if wpad > 0:
-            print "<td width='%d' height='16'></td>" % wpad
-        print "</tr></table></td>"
+            print("<td width='%d' height='16'></td>" % wpad)
+        print("</tr></table></td>")
         # texts at end
         for text in item[2]:
             if text:
-                print '<td align="right">%s</td>' % text
+                print('<td align="right">%s</td>' % text)
             else:
-                print "<td></td>"
-        print "</tr>"
-    print "</table>"
+                print("<td></td>")
+        print("</tr>")
+    print("</table>")
 
 
 def output_apps_memory_graphs(cases):
@@ -1744,7 +1746,7 @@ def output_apps_memory_graphs(cases):
         commands = testcase['commands']
         cmdlines = testcase['cmdlines']
         processes = testcase['processes']
-        for process in processes.values():
+        for process in list(processes.values()):
             pid = process['Pid']
             if pid not in commands:
                 sys.stderr.write("Debug: %s[%s] in status list but not in FD list\n" % (process['Name'], pid))
@@ -1786,8 +1788,8 @@ def output_apps_memory_graphs(cases):
     cpuhoggers = []
     for pid in data:
         try:
-            first_round = min([x for x in data[pid].iterkeys() if x>0])
-            last_round  = max(data[pid].iterkeys())
+            first_round = min([x for x in data[pid].keys() if x>0])
+            last_round  = max(data[pid].keys())
             if first_round < last_round:
                 ticks_diff = cpu_tickdiff(cases[first_round], cases[last_round], pid)
                 cpu_total_diff = total_cpu_tickdiff(cases[first_round], cases[last_round])
@@ -1840,8 +1842,8 @@ def output_apps_memory_graphs(cases):
         else:
             try:
                 # Filter out processes that did not eat any CPU ticks.
-                first_round = min([x for x in data[pid].iterkeys() if x>0])
-                last_round  = max(data[pid].iterkeys())
+                first_round = min([x for x in data[pid].keys() if x>0])
+                last_round  = max(data[pid].keys())
                 if first_round < last_round:
                     ticks_diff = cpu_tickdiff(cases[first_round], cases[last_round], pid)
                     if ticks_diff <= 0:
@@ -1883,7 +1885,7 @@ def output_apps_memory_graphs(cases):
     orders.sort()
     
     # amount of memory in the device (float for calculations)
-    print """
+    print("""
 <p>Only processes which VmSize and amount of private dirty memory
 changes during tests are listed.  If a process has same name and size
 as its parent, it's assumed to be a thread and ignored.
@@ -1894,27 +1896,27 @@ all virtual allocations and memory maps of a process, so it might not
 have any relation to real process memory usage. However, it can show
 leaks which cause process eventually to run out of (2GB) address space
 (e.g. if it's not collecting joinable thread resources).
-"""
+""")
 
     # LEGEND
-    print '<p><table><tr><th><th align="left">Legend:'
-    if smaps_available: print """
+    print('<p><table><tr><th><th align="left">Legend:')
+    if smaps_available: print("""
 <tr><td bgcolor="%s" height="16" width="16"><td>Swap
 <tr><td bgcolor="%s" height="16" width="16"><td>Dirty
 <tr><td bgcolor="%s" height="16" width="16"><td>PSS: Proportional Set Size -- amount of resident memory, where each 4kB memory page is divided by the number of processes sharing it.
-""" % (bar2colors[0], bar2colors[1], bar2colors[2])
-    print """
+""" % (bar2colors[0], bar2colors[1], bar2colors[2]))
+    print("""
 <tr><td bgcolor="%s" height="16" width="16"><td>RSS: Resident Set Size
 <tr><td bgcolor="%s" height="16" width="16"><td>Size
 </table>
-""" % (bar2colors[3], bar2colors[4])
+""" % (bar2colors[3], bar2colors[4]))
 
     for order in orders:
         name = order[0]
         pid = order[2]
         cmdline = pidinfo[pid][1].replace('"', "&quot;")
-        print '<a name="memory_%s_%s"></a>' % (name, pid)
-        print '<h4><i><acronym title="%s">%s</acronym> [%s]</i></h4>' % (cmdline, name, pid)
+        print('<a name="memory_%s_%s"></a>' % (name, pid))
+        print('<h4><i><acronym title="%s">%s</acronym> [%s]</i></h4>' % (cmdline, name, pid))
         process = data[pid]
         namepid = (name, pid)
         text = ''
@@ -2011,8 +2013,8 @@ def test_round_link(idx):
         return '<a href="#round-%d">Test round %02d</a>:' % (idx, idx)
 
 def output_system_load_graphs(data):
-    print '<p>System CPU time distribution during the execution of test cases.'
-    print '<p>'
+    print('<p>System CPU time distribution during the execution of test cases.')
+    print('<p>')
     prev = data[0]
     entries = []
     idx = 1
@@ -2025,13 +2027,13 @@ def output_system_load_graphs(data):
             entries.append((case, (0,0,0,0,0), "-"))
         else:
             diffs = {}
-            for key in testcase['/proc/stat']['cpu'].keys():
+            for key in list(testcase['/proc/stat']['cpu'].keys()):
                 diffs[key] = testcase['/proc/stat']['cpu'][key] - prev['/proc/stat']['cpu'][key]
             divisor = float(sum(diffs.values()))
             if divisor <= 0:
                 entries.append((case, (0,0,0,0,0), "-"))
             else:
-                for key in diffs.keys():
+                for key in list(diffs.keys()):
                     diffs[key] = diffs[key] / divisor
                 bars = (diffs['system'] + diffs['irq'] + diffs['softirq'], \
                         diffs['user'], \
@@ -2044,13 +2046,13 @@ def output_system_load_graphs(data):
     titles = ("Test-case:", "system load:", "CPU usage-%:")
     output_graph_table(titles, bar3colors, entries)
     # Legend
-    print '<table><tr><th><th align="left">Legend:'
-    print '<tr><td bgcolor="%s" height=16 width=16><td>CPU time used by <i>system</i> tasks, including time spent in interrupt handling' % bar3colors[0]
-    print '<tr><td bgcolor="%s" height=16 width=16><td>CPU time used by <i>user</i> tasks' % bar3colors[1]
-    print '<tr><td bgcolor="%s" height=16 width=16><td>CPU time used by <i>user</i> tasks with <i>low priority</i> (nice)' % bar3colors[2]
-    print '<tr><td bgcolor="%s" height=16 width=16><td>CPU time wasted waiting for I/O (idle)' % bar3colors[3]
-    print '<tr><td bgcolor="%s" height=16 width=16><td>CPU time idle' % bar3colors[4]
-    print '</table>'
+    print('<table><tr><th><th align="left">Legend:')
+    print('<tr><td bgcolor="%s" height=16 width=16><td>CPU time used by <i>system</i> tasks, including time spent in interrupt handling' % bar3colors[0])
+    print('<tr><td bgcolor="%s" height=16 width=16><td>CPU time used by <i>user</i> tasks' % bar3colors[1])
+    print('<tr><td bgcolor="%s" height=16 width=16><td>CPU time used by <i>user</i> tasks with <i>low priority</i> (nice)' % bar3colors[2])
+    print('<tr><td bgcolor="%s" height=16 width=16><td>CPU time wasted waiting for I/O (idle)' % bar3colors[3])
+    print('<tr><td bgcolor="%s" height=16 width=16><td>CPU time idle' % bar3colors[4])
+    print('</table>')
 
 
 def output_network_use_graphs(data):
@@ -2062,9 +2064,9 @@ def output_network_use_graphs(data):
                 if face not in interfaces and testcase['transfers'][face] > 0:
                     interfaces[face] = []
         except KeyError: pass
-    faces = interfaces.keys()
+    faces = list(interfaces.keys())
     if not faces:
-        print "<p>Only local or no interfaces up when snapshots  were taken."
+        print("<p>Only local or no interfaces up when snapshots  were taken.")
         return
 
     # collect test round data per interfaces
@@ -2080,7 +2082,7 @@ def output_network_use_graphs(data):
     previous = []
     for face in faces:
         previous.append(interfaces[face][0])
-    prevrange = range(len(previous))
+    prevrange = list(range(len(previous)))
     # ...with max bar size to use as scale
     scale = 0
     rounds = []
@@ -2111,12 +2113,12 @@ def output_network_use_graphs(data):
 
     scale = float(scale)
     if not scale:
-        print "<p>Active interfaces, but no network traffic during the test-cases."
+        print("<p>Active interfaces, but no network traffic during the test-cases.")
         return
     
     # create table
-    print '<p>Network interface usage distribution during the test-cases.'
-    print '<p>'
+    print('<p>Network interface usage distribution during the test-cases.')
+    print('<p>')
     titles = ["Test-case:", "network usage:"]
     for face in faces:
         titles += ["%s<br>per round:" % face]
@@ -2139,10 +2141,10 @@ def output_network_use_graphs(data):
         entries.append((test_round_link(idx), bars, vals))
     output_graph_table(titles, ifcolors, entries)
     # Legend
-    print '<table><tr><th><th align="left">Legend:'
+    print('<table><tr><th><th align="left">Legend:')
     for i in range(len(faces)):
-        print '<tr><td bgcolor="%s" height=16 width=16><td>%s' % (ifcolors[i], faces[i])
-    print '</table>'
+        print('<tr><td bgcolor="%s" height=16 width=16><td>%s' % (ifcolors[i], faces[i]))
+    print('</table>')
 
 def hl_error(s):
     if "ERROR" in s:
@@ -2156,46 +2158,46 @@ def output_battery_data(data):
             skip = False
     if skip:
         return
-    print "<hr>"
-    print "<h3>Battery status</h3>"
-    print "<table border='1' cellpadding='3'>"
-    print " <thead>"
-    print "  <tr>"
-    print "   <th>"
-    print "   <th colspan='2'>Charger"
-    print "   <th colspan='2'>Charging"
-    print "   <th colspan='4'>Battery"
-    print "  <tr>"
-    print "   <th>Test-case:"
-    print "   <th>State:"
-    print "   <th>Type:"
-    print "   <th>State:"
-    print "   <th>Type:"
-    print "   <th>State:"
-    print "   <th>Temperature:"
-    print "   <th>Capacity:"
-    print "   <th>Voltage:"
-    print " </thead>"
-    print " <tbody>"
+    print("<hr>")
+    print("<h3>Battery status</h3>")
+    print("<table border='1' cellpadding='3'>")
+    print(" <thead>")
+    print("  <tr>")
+    print("   <th>")
+    print("   <th colspan='2'>Charger")
+    print("   <th colspan='2'>Charging")
+    print("   <th colspan='4'>Battery")
+    print("  <tr>")
+    print("   <th>Test-case:")
+    print("   <th>State:")
+    print("   <th>Type:")
+    print("   <th>State:")
+    print("   <th>Type:")
+    print("   <th>State:")
+    print("   <th>Temperature:")
+    print("   <th>Capacity:")
+    print("   <th>Voltage:")
+    print(" </thead>")
+    print(" <tbody>")
     idx = 0
     for testcase in data:
         if 'bmestat' in testcase:
             try:
-                print "  <tr>"
-                print "   <td>%s" % test_round_link(idx)
-                print "   <td>%s" % hl_error(testcase['bmestat']['charger_state'])
-                print "   <td>%s" % hl_error(testcase['bmestat']['charger_type'])
-                print "   <td>%s" % hl_error(testcase['bmestat']['charging_state'])
-                print "   <td>%s" % hl_error(testcase['bmestat']['charging_type'])
-                print "   <td>%s" % hl_error(testcase['bmestat']['battery_state'])
-                print "   <td>%s&deg;C" % testcase['bmestat']['battery_temperature']
-                print "   <td>%smAh" % testcase['bmestat']['battery_cur_capacity']
-                print "   <td>%.3fV" % (float(testcase['bmestat']['battery_cur_voltage'])/1000)
+                print("  <tr>")
+                print("   <td>%s" % test_round_link(idx))
+                print("   <td>%s" % hl_error(testcase['bmestat']['charger_state']))
+                print("   <td>%s" % hl_error(testcase['bmestat']['charger_type']))
+                print("   <td>%s" % hl_error(testcase['bmestat']['charging_state']))
+                print("   <td>%s" % hl_error(testcase['bmestat']['charging_type']))
+                print("   <td>%s" % hl_error(testcase['bmestat']['battery_state']))
+                print("   <td>%s&deg;C" % testcase['bmestat']['battery_temperature'])
+                print("   <td>%smAh" % testcase['bmestat']['battery_cur_capacity'])
+                print("   <td>%.3fV" % (float(testcase['bmestat']['battery_cur_voltage'])/1000))
             except:
                 pass
         idx += 1
-    print " </tbody>"
-    print "</table>"
+    print(" </tbody>")
+    print("</table>")
 
 def output_system_memory_graphs(data):
     "outputs memory graphs bars for the system"
@@ -2238,24 +2240,24 @@ def output_system_memory_graphs(data):
         columndata.append((case, bars, memtext))
     titles = ("Test-case:", "memory usage graph:", swaptext, "RAM used:", "free:")
     output_graph_table(titles, bar1colors, columndata)
-    print '<table><tr><th><th align="left">Legend:'
+    print('<table><tr><th><th align="left">Legend:')
     if testcase['swap_total']:
-        print '<tr><td bgcolor="%s" height="16" width="16"><td>Swap used' % bar1colors[0]
-    print """
+        print('<tr><td bgcolor="%s" height="16" width="16"><td>Swap used' % bar1colors[0])
+    print("""
 <tr><td bgcolor="%s" height="16" width="16"><td>RAM used in the device
 <tr><td bgcolor="%s" height="16" width="16"><td>RAM and swap freely usable in the device
 <tr><td bgcolor="%s" height="16" width="16"><td>OOM-kill limit (&gt;= %d MB used)
-""" % (bar1colors[1], bar1colors[2], bar1colors[3], round(mem_oom/1024))
-    print "</table>"
+""" % (bar1colors[1], bar1colors[2], bar1colors[3], round(mem_oom/1024)))
+    print("</table>")
 
 
 def output_reboots(reboots):
     if not reboots:
         return
-    print """
+    print("""
 <p><font color="red">ERROR: reboots detected on round(s) %s.
 Please use only endurance data from rounds between reboots!</font>
-""" % ", ".join([str(x) for x in reboots])
+""" % ", ".join([str(x) for x in reboots]))
 
 
 def readable_uptime(fuptime):
@@ -2267,7 +2269,7 @@ def readable_uptime(fuptime):
         values.append(uptime % div)
         uptime /= div
     split = ret = ""
-    order = range(len(names))
+    order = list(range(len(names)))
     order.reverse()
     for i in order:
         if values[i]:
@@ -2285,7 +2287,7 @@ def output_html_report(data):
     first = 1
 
     # X client names may contain UTF-8 characters, so add character encoding.
-    print """<html>
+    print("""<html>
 <head>
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8"/>
 <title>%s</title>
@@ -2307,7 +2309,7 @@ def output_html_report(data):
   </ul>
 <li>Resource usage changes for each of the test rounds:
   <ul>
-""" % (title, title)   #" fool Jed syntax highlighter
+""" % (title, title))   #" fool Jed syntax highlighter
     reboots = []
     uptime_prev = data[0]['uptime']
     for round in range(rounds):
@@ -2315,64 +2317,64 @@ def output_html_report(data):
         uptime_next = data[idx]['uptime']
         if uptime_next < uptime_prev:
             reboots.append(idx)
-            print "  <li><font color=red>REBOOT</font> (after <i>previous</i> round uptime of %s)</i>" % readable_uptime(uptime_prev)
+            print("  <li><font color=red>REBOOT</font> (after <i>previous</i> round uptime of %s)</i>" % readable_uptime(uptime_prev))
         uptime_prev = uptime_next
         desc = ""
         if 'datetime' in data[idx] and data[idx]['datetime']:
             desc += " [%s]" % data[idx]['datetime']
-        if data[idx].has_key('description') and data[idx]['description']:
+        if 'description' in data[idx] and data[idx]['description']:
             desc += " (%s)" % data[idx]['description']
-        print '  <li><a href="#round-%d">Round %d</a>%s' % (idx, idx, desc)
-    print """
+        print('  <li><a href="#round-%d">Round %d</a>%s' % (idx, idx, desc))
+    print("""
   </ul>
 <li>Summary of changes between all the rounds after the initial one:
   <ul>
     <li><a href="#error-summary">Error summary</a>
     <li><a href="#resource-summary">Resource usage summary</a>
   </ul>
-</ul>"""
+</ul>""")
     output_reboots(reboots)
-    print """
+    print("""
 <hr>
 
 <a name="initial-state"></a>
 <h2>Initial state</h2>
-"""
+""")
     output_initial_state(data[0])
 
-    print """
+    print("""
 <a name="system-memory"></a>
 <h2>Resource usage overview for the test rounds</h2>
 <h3>System memory usage</h3>
-"""
+""")
     output_system_memory_graphs(data)
-    print """
+    print("""
 <hr>
 <a name="system-load"></a>
-<h3>System load</h3>"""
+<h3>System load</h3>""")
     output_system_load_graphs(data)
-    print """
+    print("""
 <hr>
 <a name="network-use"></a>
-<h3>Network usage</h3>"""
+<h3>Network usage</h3>""")
     output_network_use_graphs(data)
     output_battery_data(data)
-    print """
+    print("""
 <hr>
 <a name="process-memory"></a>
 <h3>Processes memory usage</h3>
-""" # "fool Jed syntax highlighter
+""") # "fool Jed syntax highlighter
     output_apps_memory_graphs(data)
     if last - first > 1:
         summary = "resource-summary"
     else:
         summary = "round-%d" % last
-    print"""
+    print("""
 <hr>
 <h2>Resource usage changes for the test rounds</h2>
 <p>Details of resource changes are listed below, but for a summary,
 see <a href="#%s">resource changes summary section</a>.
-""" % summary # "fool Jed syntax highlighter
+""" % summary) # "fool Jed syntax highlighter
 
     err_stats = {}
     for idx in range(rounds):
@@ -2380,38 +2382,38 @@ see <a href="#%s">resource changes summary section</a>.
             title = "Test round %d differences from round %d" % (idx+1, idx)
         else:
             title = "Test round 1 differences from initial state"
-        print
-        print '<a name="round-%d"></a>' % (idx+1)
-        print "<h3>%s</h3>" % title
-        print "<p>Date: %s" % data[idx+1]['datetime']
+        print()
+        print('<a name="round-%d"></a>' % (idx+1))
+        print("<h3>%s</h3>" % title)
+        print("<p>Date: %s" % data[idx+1]['datetime'])
         output_run_diffs(idx, idx+1, data, 0)
         output_data_links(data[idx+1])
-        print "\n<hr>"
+        print("\n<hr>")
     
-    print """
+    print("""
 <a name="error-summary"></a>
 <h2>Summary of changes between test rounds %d - %d</h2>
-<h3>Error summary</h3>""" % (first, last)
+<h3>Error summary</h3>""" % (first, last))
     new_errors_by_category = get_new_errors_by_category(data[first], data[last])
     if new_errors_by_category:
         syslog_error_summary(data[last], new_errors_by_category, links=False)
-        print "<!-- summary for automatic parsing:"
+        print("<!-- summary for automatic parsing:")
         syslog_error_summary_text(new_errors_by_category)
-        print "-->"
+        print("-->")
     else:
-        print "<p>No identified errors logged."
+        print("<p>No identified errors logged.")
 
-    print """<hr>
+    print("""<hr>
 <a name="resource-summary"></a>
 <h3>Resource usage summary</h3>
 <p><font color="red">NOTE</font>: Process specific resource usage
 changes are shown only for processes which exist in both of the
 compared rounds!
-"""
+""")
     output_reboots(reboots)
     output_run_diffs(first, last, data, 1)
 
-    print "\n</body></html>"
+    print("\n</body></html>")
 
 
 # ------------------- go through all files -------------------------
@@ -2424,11 +2426,11 @@ def parse_syte_stats(dirs):
         # get basic information
         try:
             file, filename = syslog.open_compressed("%s/usage.csv" % dirname)
-        except IOError, e:
+        except IOError as e:
             error_exit("unable to open %s/usage.csv: %s" % (dirname, e))
-        except RuntimeError, e:
+        except RuntimeError as e:
             error_exit("unable to open %s/usage.csv: %s" % (dirname, e))
-        print >>sys.stderr, "Parsing '%s'..." % filename
+        print("Parsing '%s'..." % filename, file=sys.stderr)
         items = parse_csv(file, filename)
         if not items:
             error_exit("CSV parsing failed")
@@ -2441,17 +2443,17 @@ def parse_syte_stats(dirs):
             # use-case step description
             try:
                 items['description'] = open(filename).read().strip()
-            except IOError, e:
+            except IOError as e:
                 sys.stderr.write("WARNING: unable to read %s: %s\n" % (filename, e))
 
         try:
             file, filename = syslog.open_compressed("%s/smaps.cap" % dirname)
-        except IOError, e:
+        except IOError as e:
             error_exit("unable to open %s/smaps.cap: %s" % (dirname, e))
-        except RuntimeError, e:
+        except RuntimeError as e:
             error_exit("unable to open %s/smaps.cap: %s" % (dirname, e))
         if file:
-            print >>sys.stderr, "Parsing '%s'..." % filename
+            print("Parsing '%s'..." % filename, file=sys.stderr)
             items['smaps'], items['private_code'] = parse_smaps(file)
             if not items['smaps']:
                 error_exit("SMAPS data parsing failed")
@@ -2459,41 +2461,41 @@ def parse_syte_stats(dirs):
         try:
             file, filename = syslog.open_compressed("%s/syslog" % dirname)
             if file:
-                print >>sys.stderr, "Parsing '%s'..." % filename
+                print("Parsing '%s'..." % filename, file=sys.stderr)
                 items['logfile'] = filename
                 items['syslog_errors_by_category'] = syslog.get_errors_by_category(
                         file, logparser_config_syslog.regexps)
         except RuntimeError: pass
-        except IOError, e:
+        except IOError as e:
             sys.stderr.write("WARNING: %s\n" % e)
 
         try:
             file, filename = syslog.open_compressed("%s/stat" % dirname)
             if file:
-                print >>sys.stderr, "Parsing '%s'..." % filename
+                print("Parsing '%s'..." % filename, file=sys.stderr)
                 items['/proc/stat'] = parse_proc_stat(file)
                 if not items['/proc/stat']:
                     error_exit("/proc/stat parsing failed")
         except RuntimeError: pass
-        except IOError, e:
+        except IOError as e:
             sys.stderr.write("WARNING: %s\n" % e)
 
         try:
             file, filename = syslog.open_compressed("%s/ifconfig" % dirname)
             if file:
-                print >>sys.stderr, "Parsing '%s'..." % filename
+                print("Parsing '%s'..." % filename, file=sys.stderr)
                 items['transfers'] = parse_ifconfig(file)
         except RuntimeError: pass
-        except IOError, e:
+        except IOError as e:
             sys.stderr.write("WARNING: %s\n" % e)
 
         try:
             file, filename = syslog.open_compressed("%s/cgroups" % dirname)
             if file:
-                print >>sys.stderr, "Parsing '%s'..." % filename
+                print("Parsing '%s'..." % filename, file=sys.stderr)
                 items['pid2cgroup'], items['tid2group'], items['cgroups'] = parse_cgroups(file)
         except RuntimeError: pass
-        except IOError, e:
+        except IOError as e:
             sys.stderr.write("WARNING: %s\n" % e)
 
         dsme_rich_cores = get_dsme_rich_cores(dirname)
@@ -2503,46 +2505,46 @@ def parse_syte_stats(dirs):
         try:
             file, filename = syslog.open_compressed("%s/upstart_jobs_respawned" % dirname)
             if file:
-                print >>sys.stderr, "Parsing '%s'..." % filename
+                print("Parsing '%s'..." % filename, file=sys.stderr)
                 items['upstart_jobs_respawned'] = get_upstart_jobs_respawned(file)
         except RuntimeError: pass
-        except IOError, e:
+        except IOError as e:
             sys.stderr.write("WARNING: %s\n" % e)
 
         try:
             file, filename = syslog.open_compressed("%s/xmeminfo" % dirname)
             if file:
-                print >>sys.stderr, "Parsing '%s'..." % filename
+                print("Parsing '%s'..." % filename, file=sys.stderr)
                 items['xmeminfo'] = get_xres_usage(file)
         except RuntimeError: pass
-        except IOError, e:
+        except IOError as e:
             sys.stderr.write("WARNING: %s\n" % e)
 
         try:
             file, filename = syslog.open_compressed("%s/df" % dirname)
             if file:
-                print >>sys.stderr, "Parsing '%s'..." % filename
+                print("Parsing '%s'..." % filename, file=sys.stderr)
                 items['mounts'] = get_filesystem_usage_df(file)
         except RuntimeError: pass
-        except IOError, e:
+        except IOError as e:
             sys.stderr.write("WARNING: %s\n" % e)
 
         try:
             file, filename = syslog.open_compressed("%s/component_version" % dirname)
             if file:
-                print >>sys.stderr, "Parsing '%s'..." % filename
+                print("Parsing '%s'..." % filename, file=sys.stderr)
                 items['component_version'] = get_component_version(file)
         except RuntimeError: pass
-        except IOError, e:
+        except IOError as e:
             sys.stderr.write("WARNING: %s\n" % e)
 
         try:
             file, filename = syslog.open_compressed("%s/bmestat" % dirname)
             if file:
-                print >>sys.stderr, "Parsing '%s'..." % filename
+                print("Parsing '%s'..." % filename, file=sys.stderr)
                 items['bmestat'] = get_bmestat(file)
         except RuntimeError: pass
-        except IOError, e:
+        except IOError as e:
             sys.stderr.write("WARNING: %s\n" % e)
 
         data.append(items)
@@ -2573,7 +2575,7 @@ if __name__ == "__main__":
     try:
         logparser_config_syslog = syslog.LogParserConfig(configfile =
                 syslog.LogParserConfig.DEFAULT_CONFIG_SYSLOG)
-    except RuntimeError, e:
+    except RuntimeError as e:
         error_exit(str(e))
     if not logparser_config_syslog:
         error_exit("failed to initialize syslog parser configuration")
