@@ -1456,10 +1456,8 @@ def output_run_diffs(idx1, idx2, data, do_summary):
             elif x[1]+x[2] > 0:
                 filtered_out.append(x)
         diffs = diffs2
-        # Sort in descending order of CPU ticks used.
-        def cmp(a, b):
-            return (a > b) - (a < b)
-        diffs.sort(lambda x,y: cmp(x[1]+x[2], y[1]+y[2]))
+        # Sort in descending order of CPU ticks used
+        diffs.sort(key=lambda x: x[1]+x[2], reverse=True)
         diffs.reverse()
         if len(diffs)==0:
             return
