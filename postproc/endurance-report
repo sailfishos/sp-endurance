@@ -419,36 +419,33 @@ def get_bmestat(file):
             bmestat[key] = value
     return bmestat
 
-def get_process_info(file, headers):
+def get_process_info(file):
     """returns all process information in a hash indexed by the process PID,
     containing hash of information provided by the /proc/PID/status file
     (proc entry field name works as the hash key)
     """
     kthreads = {}
     processes = {}
-    fields = headers.strip().split(',')
-    fields[-1] = fields[-1].split(':')[0]        # remove ':' from last field
-    pididx = fields.index('Pid')
-    nameidx = fields.index('Name')
-    while 1:
-        line = file.readline().strip()
+    pid = None
+    for line in file:
+        line = line.strip()
         if not line:
-            break
-        item = {}
-        info = line.split(',')
-        # kernel threads & zombies don't have all the fields
-        if len(info) < len(fields):
-            kthreads[info[pididx]] = info[nameidx]
             continue
-        elif len(info) > len(fields):
-            sys.stderr.write("WARNING: Process [%s] has extra column(s) in CSV data!\n" % info[pididx])
-        for idx in range(len(fields)):
-            if info[idx][-3:] == " kB":
-                # convert memory values to integers
-                item[fields[idx]] = int(info[idx][:-3])
-            else:
-                item[fields[idx]] = info[idx]
-        processes[item['Pid']] = item
+
+        head = re.match(r'==> /proc/(\d+)/status <==', line)
+        if head:
+            pid = head[1]
+            processes[pid] = {}
+            continue
+
+        key, value = line.split(':', 1)
+        value = value.strip()
+        processes[pid][key] = value
+
+    for pid in list(processes.keys()):
+        if processes[pid].get('VmSize') is None:
+            kthreads[pid] = processes.pop(pid)['Name']
+
     return processes, kthreads
 
 
@@ -741,10 +738,6 @@ def parse_csv(file, filename):
     # get the process FD usage
     skip_to(file, "PID,FD count,Command", True)
     data['commands'], data['fdcounts'], data['cmdlines'] = get_commands_and_fd_counts(file)
-    
-    # get process statistics
-    headers = skip_to(file, "Name,", True)
-    data['processes'], data['kthreads'] = get_process_info(file, headers)
 
     # check if we have /proc/pid/stat in the CSV file
     headers = skip_to_next_header(file)
@@ -2432,6 +2425,14 @@ def parse_syte_stats(dirs):
         items = parse_csv(file, filename)
         if not items:
             error_exit("CSV parsing failed")
+
+        filename = "%s/pid_status" % dirname
+        print("Parsing '%s'..." % filename, file=sys.stderr)
+        try:
+            with open(filename) as file:
+                items['processes'], items['kthreads'] = get_process_info(file)
+        except IOError as e:
+            error_exit("unable to open %s: %s" % (filename, e))
 
         # filename without the extension
         items['basedir'] = dirname
