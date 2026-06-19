@@ -228,6 +228,14 @@ if [ "$snapshot_index" -eq 0 ] ; then
 	fi
 fi
 
+# temperature
+if [ -d "/sys/class/thermal" ] ; then
+	echo "- temperature"
+	find /sys/class/thermal -follow -mindepth 2 -maxdepth 2 -type f -perm +u+r \
+		| xargs head -v -n 1 2>/dev/null > $path/sysfs_thermal
+	[ -f $path/sysfs_thermal ] && [ ! -s $path/sysfs_thermal ] && rm $path/sysfs_thermal
+fi
+
 # save memory statistics
 echo "- SMAPS data"
 if type sp_smaps_snapshot >/dev/null 2>/dev/null ; then

@@ -33,9 +33,9 @@ require Exporter;
     parse_slabinfo parse_cgroups parse_interrupts parse_softirqs parse_bmestat
     parse_ramzswap parse_proc_stat parse_pagetypeinfo parse_diskstats
     parse_sysfs_fs parse_sysfs_power_supply parse_sysfs_backlight
-    parse_sysfs_cpu parse_component_version parse_step parse_usage_csv parse_df
-    parse_ifconfig parse_upstart_jobs_respawned parse_sched parse_dir
-    parse_pidfilter parse_proc_pid_status copen/;
+    parse_sysfs_cpu parse_sysfs_thermal parse_component_version parse_step
+    parse_usage_csv parse_df parse_ifconfig parse_upstart_jobs_respawned
+    parse_sched parse_dir parse_pidfilter parse_proc_pid_status copen/;
 
 use File::Basename qw/basename/;
 use List::MoreUtils qw/uniq zip all any none firstidx/;
@@ -596,6 +596,26 @@ sub parse_sysfs_cpu {
     }
 
     return \%cpu;
+}
+
+sub parse_sysfs_thermal {
+    my $fh = shift;
+
+    return {} unless defined $fh;
+
+    my %thermal;
+    while (<$fh>) {
+        next unless m#^==> /sys/class/thermal/(\S+)/(\S+) <==#;
+        my $key1 = $1;
+        my $key2 = $2;
+        my $value = <$fh>;
+        chomp $value;
+        next unless length $value;
+        next if $key1 =~ m#/# or $key2 =~ m#/# or $key2 eq 'uevent';
+        $thermal{$key1}->{$key2} = $value;
+    }
+
+    return \%thermal;
 }
 
 sub parse_sysfs_dmi_id {
@@ -1468,6 +1488,7 @@ sub parse_dir {
         '/sbin/ifconfig'           => parse_ifconfig(copen $name . '/ifconfig'),
         '/sys/class/backlight'     => parse_sysfs_backlight(copen $name . '/sysfs_backlight'),
         '/sys/class/power_supply'  => parse_sysfs_power_supply(copen $name . '/sysfs_power_supply'),
+        '/sys/class/thermal'       => parse_sysfs_thermal(copen $name . '/sysfs_thermal'),
         '/sys/devices/system/cpu'  => parse_sysfs_cpu(copen $name . '/sysfs_cpu'),
         '/sys/devices/virtual/dmi/id' => parse_sysfs_dmi_id(copen $name . '/sysfs_dmi_id'),
         '/sys/fs/ext4'             => parse_sysfs_fs(copen $name . '/sysfs_fs'),

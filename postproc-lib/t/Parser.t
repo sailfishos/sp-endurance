@@ -30,9 +30,10 @@ BEGIN {
         parse_slabinfo parse_cgroups parse_interrupts parse_softirqs
         parse_bmestat parse_ramzswap parse_proc_stat parse_pagetypeinfo
         parse_diskstats parse_sysfs_fs parse_sysfs_power_supply
-        parse_sysfs_backlight parse_sysfs_cpu parse_component_version
-        parse_step parse_usage_csv parse_ifconfig parse_upstart_jobs_respawned
-        parse_sched parse_pidfilter parse_proc_pid_status copen/);
+        parse_sysfs_backlight parse_sysfs_cpu parse_sysfs_thermal
+        parse_component_version parse_step parse_usage_csv parse_ifconfig
+        parse_upstart_jobs_respawned parse_sched parse_pidfilter
+        parse_proc_pid_status copen/);
 }
 
 ###### parse_openfds ######
@@ -1635,6 +1636,150 @@ END
         },
     },
 }, 'parse_sysfs_cpu - cpu0');
+
+###### parse_sysfs_thermal ######
+
+is_deeply(parse_sysfs_thermal, {}, 'parse_sysfs_thermal - undef input');
+is_deeply(parse_sysfs_thermal(IO::String->new('')), {}, 'parse_sysfs_thermal - empty input file');
+is_deeply(parse_sysfs_thermal(IO::String->new("\n\n\n")), {}, 'parse_sysfs_thermal - input file with only newlines');
+
+is_deeply(parse_sysfs_thermal(IO::String->new(<< 'END'
+==> /sys/class/thermal/thermal_zone36/uevent <==
+
+==> /sys/class/thermal/thermal_zone36/trip_point_0_hyst <==
+2000
+
+==> /sys/class/thermal/thermal_zone36/mode <==
+enabled
+
+==> /sys/class/thermal/thermal_zone36/available_policies <==
+power_allocator user_space step_wise bang_bang
+
+==> /sys/class/thermal/thermal_zone36/policy <==
+step_wise
+
+==> /sys/class/thermal/thermal_zone36/k_d <==
+0
+
+==> /sys/class/thermal/thermal_zone36/sustainable_power <==
+0
+
+==> /sys/class/thermal/thermal_zone36/type <==
+vtskin-max
+
+==> /sys/class/thermal/thermal_zone36/offset <==
+0
+
+==> /sys/class/thermal/thermal_zone36/slope <==
+1
+
+==> /sys/class/thermal/thermal_zone36/trip_point_0_type <==
+passive
+
+==> /sys/class/thermal/thermal_zone36/k_po <==
+0
+
+==> /sys/class/thermal/thermal_zone36/integral_cutoff <==
+0
+
+==> /sys/class/thermal/thermal_zone36/k_i <==
+0
+
+==> /sys/class/thermal/thermal_zone36/k_pu <==
+0
+
+==> /sys/class/thermal/thermal_zone36/temp <==
+
+==> /sys/class/thermal/thermal_zone36/trip_point_0_temp <==
+115000
+
+==> /sys/class/thermal/thermal_zone26/uevent <==
+
+==> /sys/class/thermal/thermal_zone26/trip_point_0_hyst <==
+2000
+
+==> /sys/class/thermal/thermal_zone26/mode <==
+enabled
+
+==> /sys/class/thermal/thermal_zone26/available_policies <==
+power_allocator user_space step_wise bang_bang
+
+==> /sys/class/thermal/thermal_zone26/policy <==
+step_wise
+
+==> /sys/class/thermal/thermal_zone26/k_d <==
+0
+
+==> /sys/class/thermal/thermal_zone26/sustainable_power <==
+0
+
+==> /sys/class/thermal/thermal_zone26/type <==
+cpu-dsu1
+
+==> /sys/class/thermal/thermal_zone26/offset <==
+0
+
+==> /sys/class/thermal/thermal_zone26/slope <==
+1
+
+==> /sys/class/thermal/thermal_zone26/trip_point_0_type <==
+passive
+
+==> /sys/class/thermal/thermal_zone26/k_po <==
+0
+
+==> /sys/class/thermal/thermal_zone26/integral_cutoff <==
+0
+
+==> /sys/class/thermal/thermal_zone26/k_i <==
+0
+
+==> /sys/class/thermal/thermal_zone26/k_pu <==
+0
+
+==> /sys/class/thermal/thermal_zone26/temp <==
+27706
+
+==> /sys/class/thermal/thermal_zone26/trip_point_0_temp <==
+115000
+END
+)), {
+    'thermal_zone26' => {
+        available_policies => 'power_allocator user_space step_wise bang_bang',
+        integral_cutoff => 0,
+        k_d => 0,
+        k_i => 0,
+        k_po => 0,
+        k_pu => 0,
+        mode => 'enabled',
+        offset => 0,
+        policy => 'step_wise',
+        slope => 1,
+        sustainable_power => 0,
+        temp => 27706,
+        trip_point_0_hyst => 2000,
+        trip_point_0_temp => 115000,
+        trip_point_0_type => 'passive',
+        type => 'cpu-dsu1',
+    },
+    'thermal_zone36' => {
+        available_policies => 'power_allocator user_space step_wise bang_bang',
+        integral_cutoff => 0,
+        k_d => 0,
+        k_i => 0,
+        k_po => 0,
+        k_pu => 0,
+        mode => 'enabled',
+        offset => 0,
+        policy => 'step_wise',
+        slope => 1,
+        sustainable_power => 0,
+        trip_point_0_hyst => 2000,
+        trip_point_0_temp => 115000,
+        trip_point_0_type => 'passive',
+        type => 'vtskin-max',
+    },
+}, 'parse_sysfs_thermal - two zones');
 
 ###### parse_component_version ######
 

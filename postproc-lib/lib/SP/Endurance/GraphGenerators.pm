@@ -3374,4 +3374,29 @@ sub generate_plot_cpu_suspend_time {
 }
 BEGIN { register_generator \&generate_plot_cpu_suspend_time; }
 
+sub generate_plot_temperature {
+    my $plotter = shift;
+    my $masterdb = shift;
+
+    my @zones = uniq grep { /^thermal_zone/ } map { keys %{$_->{'/sys/class/thermal'}} } @$masterdb;
+    return unless @zones > 0;
+
+    my $plot = $plotter->new_linespoints(
+        key => "3000_temperature",
+        label => "Temperature",
+        legend => "TEMPERATURE",
+        ylabel => 'temp-C',
+    );
+
+    foreach my $zone (@zones) {
+        $plot->push(
+            [nonzero map { $_->{'/sys/class/thermal'}->{$zone}->{temp} / 1000 } @$masterdb],
+            axes => 'x1y1', title => $zone,
+        );
+    }
+
+    done_plotting $plot;
+}
+BEGIN { register_generator \&generate_plot_temperature; }
+
 1;
