@@ -30,9 +30,9 @@ BEGIN {
         parse_slabinfo parse_cgroups parse_interrupts parse_softirqs
         parse_bmestat parse_ramzswap parse_proc_stat parse_pagetypeinfo
         parse_diskstats parse_sysfs_fs parse_sysfs_power_supply
-        parse_sysfs_backlight parse_sysfs_cpu parse_sysfs_thermal
-        parse_component_version parse_step parse_usage_csv parse_ifconfig
-        parse_upstart_jobs_respawned parse_sched parse_pidfilter
+        parse_sysfs_backlight parse_sysfs_cpu parse_sysfs_cpufreq
+        parse_sysfs_thermal parse_component_version parse_step parse_usage_csv
+        parse_ifconfig parse_upstart_jobs_respawned parse_sched parse_pidfilter
         parse_proc_pid_status copen/);
 }
 
@@ -1636,6 +1636,144 @@ END
         },
     },
 }, 'parse_sysfs_cpu - cpu0');
+
+###### parse_sysfs_cpufreq ######
+
+is_deeply(parse_sysfs_cpufreq, {}, 'parse_sysfs_cpufreq - undef input');
+is_deeply(parse_sysfs_cpufreq(IO::String->new('')), {}, 'parse_sysfs_cpufreq - empty input file');
+is_deeply(parse_sysfs_cpufreq(IO::String->new("\n\n\n")), {}, 'parse_sysfs_cpufreq - input file with only newlines');
+
+is_deeply(parse_sysfs_cpufreq(IO::String->new(<< 'END'
+==> /sys/devices/system/cpu/cpufreq/policy4/scaling_min_freq <==
+650000
+
+==> /sys/devices/system/cpu/cpufreq/policy4/scaling_available_governors <==
+sugov_ext conservative powersave performance schedutil
+
+==> /sys/devices/system/cpu/cpufreq/policy4/cpuinfo_cur_freq <==
+1828000
+
+==> /sys/devices/system/cpu/cpufreq/policy4/scaling_governor <==
+sugov_ext
+
+==> /sys/devices/system/cpu/cpufreq/policy4/cpuinfo_max_freq <==
+2400000
+
+==> /sys/devices/system/cpu/cpufreq/policy4/scaling_available_frequencies <==
+2400000 2350000 2300000 2250000 2200000 2150000 2050000 1950000 1850000 1750000 1650000 1550000 1450000 1350000 1250000 1150000 1050000 950000 850000 750000 650000
+
+==> /sys/devices/system/cpu/cpufreq/policy4/sugov_ext/down_rate_limit_us <==
+1
+
+==> /sys/devices/system/cpu/cpufreq/policy4/sugov_ext/up_rate_limit_us <==
+1
+
+==> /sys/devices/system/cpu/cpufreq/policy4/related_cpus <==
+4 5 6 7
+
+==> /sys/devices/system/cpu/cpufreq/policy4/scaling_cur_freq <==
+1850000
+
+==> /sys/devices/system/cpu/cpufreq/policy4/scaling_setspeed <==
+<unsupported>
+==> /sys/devices/system/cpu/cpufreq/policy4/stats/trans_table <==
+
+==> /sys/devices/system/cpu/cpufreq/policy4/stats/total_trans <==
+370936
+
+==> /sys/devices/system/cpu/cpufreq/policy4/stats/time_in_state <==
+2400000 74870
+2350000 2245
+2300000 2530
+2250000 2508
+2200000 3205
+2150000 7375
+2050000 7027
+1950000 6510
+1850000 8179
+1750000 5774
+1650000 4712
+1550000 4578
+1450000 5872
+1350000 7418
+1250000 7426
+1150000 3208
+1050000 4082
+950000 3526
+850000 2232
+750000 1821
+650000 3057572
+
+==> /sys/devices/system/cpu/cpufreq/policy4/affected_cpus <==
+4 5 6 7
+
+==> /sys/devices/system/cpu/cpufreq/policy4/scaling_max_freq <==
+2400000
+
+==> /sys/devices/system/cpu/cpufreq/policy4/cpuinfo_transition_latency <==
+1000
+
+==> /sys/devices/system/cpu/cpufreq/policy4/scaling_driver <==
+mtk-cpufreq-hw
+
+==> /sys/devices/system/cpu/cpufreq/policy4/cpuinfo_min_freq <==
+650000
+
+END
+)), {
+    4 => {
+        related_cpus => '4 5 6 7',
+        stats => {
+            time_in_state => {
+                '2400000' => 74870,
+                '2350000' => 2245,
+                '2300000' => 2530,
+                '2250000' => 2508,
+                '2200000' => 3205,
+                '2150000' => 7375,
+                '2050000' => 7027,
+                '1950000' => 6510,
+                '1850000' => 8179,
+                '1750000' => 5774,
+                '1650000' => 4712,
+                '1550000' => 4578,
+                '1450000' => 5872,
+                '1350000' => 7418,
+                '1250000' => 7426,
+                '1150000' => 3208,
+                '1050000' => 4082,
+                '950000' => 3526,
+                '850000' => 2232,
+                '750000' => 1821,
+                '650000' => 3057572,
+            },
+        },
+    },
+}, 'parse_sysfs_cpufreq - policy4');
+
+is_deeply(parse_sysfs_cpufreq(IO::String->new(<< 'END'
+==> /sys/devices/system/cpu/cpufreq/policy4/related_cpus <==
+4 5 6 7
+
+==> /sys/devices/system/cpu/cpufreq/policy4/stats/time_in_state <==
+1111 16361
+2222 934
+3333 5406
+4444 5555
+END
+)), {
+    4 => {
+        related_cpus => '4 5 6 7',
+        stats => {
+            time_in_state => {
+                '1111' => 16361,
+                '2222' => 934,
+                '3333' => 5406,
+                '4444' => 5555,
+            },
+        },
+    },
+}, 'parse_sysfs_cpufreq - policy4');
 
 ###### parse_sysfs_thermal ######
 

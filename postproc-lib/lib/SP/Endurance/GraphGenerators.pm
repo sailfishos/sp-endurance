@@ -695,6 +695,39 @@ sub generate_plot_cpu_freq {
 }
 BEGIN { register_generator \&generate_plot_cpu_freq; }
 
+sub generate_plot_cpu_freq_policies {
+    my $plotter = shift;
+    my $masterdb = shift;
+
+    my @policies = uniq map { keys %{$_->{'/sys/devices/system/cpu/cpufreq'}} } @$masterdb;
+
+    foreach my $policy_num (@policies) {
+        my ($related_cpus) = uniq map { $_->{'/sys/devices/system/cpu/cpufreq'}->{$policy_num}->{related_cpus} } @$masterdb;
+
+        my $plot = $plotter->new_histogram(
+            key => "2011_cpufreq_policy${policy_num}_time_in_state",
+            label => "CPUFREQ POLICY${policy_num} time in state\\nRelated CPUs: ${related_cpus}",
+            legend => "CPUFREQ POLICY${policy_num} TIME IN STATE",
+            ylabel => 'percent',
+        );
+
+        my @freqs = uniq map { keys %{$_->{'/sys/devices/system/cpu/cpufreq'}->{$policy_num}->{stats}->{time_in_state}} } @$masterdb;
+
+        foreach my $freq (sort { $b <=> $a } @freqs) {
+            $plot->push(
+            [cumulative_to_changes
+                map { $_->{'/sys/devices/system/cpu/cpufreq'}->{$policy_num}->{stats}->{time_in_state}->{$freq} } @$masterdb],
+            title => int($freq/1000) . 'MHz',
+            );
+        }
+
+        $plot->scale(to => 100);
+
+        done_plotting $plot;
+    }
+}
+BEGIN { register_generator \&generate_plot_cpu_freq_policies; }
+
 sub fs_to_mountpoint {
     my $fs = shift;
     my $masterdb = shift;

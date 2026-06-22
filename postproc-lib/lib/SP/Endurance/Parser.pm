@@ -33,9 +33,10 @@ require Exporter;
     parse_slabinfo parse_cgroups parse_interrupts parse_softirqs parse_bmestat
     parse_ramzswap parse_proc_stat parse_pagetypeinfo parse_diskstats
     parse_sysfs_fs parse_sysfs_power_supply parse_sysfs_backlight
-    parse_sysfs_cpu parse_sysfs_thermal parse_component_version parse_step
-    parse_usage_csv parse_df parse_ifconfig parse_upstart_jobs_respawned
-    parse_sched parse_dir parse_pidfilter parse_proc_pid_status copen/;
+    parse_sysfs_cpu parse_sysfs_cpufreq parse_sysfs_thermal
+    parse_component_version parse_step parse_usage_csv parse_df parse_ifconfig
+    parse_upstart_jobs_respawned parse_sched parse_dir parse_pidfilter
+    parse_proc_pid_status copen/;
 
 use File::Basename qw/basename/;
 use List::MoreUtils qw/uniq zip all any none firstidx/;
@@ -596,6 +597,32 @@ sub parse_sysfs_cpu {
     }
 
     return \%cpu;
+}
+
+sub parse_sysfs_cpufreq {
+    my $fh = shift;
+
+    return {} unless defined $fh;
+
+    my %cpufreq;
+
+    while (<$fh>) {
+        if (m#^==> /sys/devices/system/cpu/cpufreq/policy(\d+)/stats/time_in_state <==#) {
+            my $policy = $1;
+            while (<$fh>) {
+                last unless /^(\d+)\s+(\d+)/;
+                $cpufreq{$policy}->{stats}->{time_in_state}->{$1} = int $2;
+            }
+        } elsif (m#^==> /sys/devices/system/cpu/cpufreq/policy(\d+)/related_cpus <==#) {
+            my $policy = $1;
+            my $value = <$fh>;
+            chomp $value;
+
+            $cpufreq{$policy}->{related_cpus} = $value;
+        }
+    }
+
+    return \%cpufreq;
 }
 
 sub parse_sysfs_thermal {
@@ -1490,6 +1517,7 @@ sub parse_dir {
         '/sys/class/power_supply'  => parse_sysfs_power_supply(copen $name . '/sysfs_power_supply'),
         '/sys/class/thermal'       => parse_sysfs_thermal(copen $name . '/sysfs_thermal'),
         '/sys/devices/system/cpu'  => parse_sysfs_cpu(copen $name . '/sysfs_cpu'),
+        '/sys/devices/system/cpu/cpufreq' => parse_sysfs_cpufreq(copen $name . '/sysfs_cpu'),
         '/sys/devices/virtual/dmi/id' => parse_sysfs_dmi_id(copen $name . '/sysfs_dmi_id'),
         '/sys/fs/ext4'             => parse_sysfs_fs(copen $name . '/sysfs_fs'),
         '/usr/bin/bmestat'         => parse_bmestat(copen $name . '/bmestat'),
