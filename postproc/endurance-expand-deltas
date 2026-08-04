@@ -1,0 +1,100 @@
+#!/bin/sh
+#
+# Copyright (c) 2026 Jolla Mobile Ltd
+
+DELTA_FILE_SUFFIX=.vcdiff
+
+usage()
+{
+    cat <<END
+usage: $0 <dir>
+
+Expand all delta-compressed files found in snapshot dirs under <dir>.
+END
+}
+
+expand_single()
+{
+    local entry=$1
+    local old_entry=$2
+
+    if ! [ -f "$old_entry" ]; then
+         echo "Cannot expand '$entry': No such file: '$old_entry'" >&2
+         return 1
+    fi
+
+    local out=${entry%"$DELTA_FILE_SUFFIX"}
+
+    xdelta3 -d -s "$old_entry" "$entry" "$out" || return
+
+    rm -f "$entry"
+}
+
+expand_dir()
+{
+    local dir=$1
+    local old_dir=$2
+
+    local entry=
+    for entry in $(ls -d $dir/* 2>/dev/null); do
+        local old_entry=
+        if [ -n "$old_dir" ]; then
+            old_entry=$old_dir/${entry#"$dir/"}
+        fi
+        if [ -d "$entry" ]; then
+            expand_dir "$entry" "$old_entry" || return
+        elif [[ "$entry" =~ "$DELTA_FILE_SUFFIX"$ ]]; then
+            old_entry=${old_entry%"$DELTA_FILE_SUFFIX"}
+            expand_single "$entry" "$old_entry" || return
+        fi
+    done
+}
+
+expand_all()
+{
+    local snapshot=
+    local old_snapshot=
+    for snapshot in [0-9][0-9][0-9]; do
+        if [ -d "$snapshot" ]; then
+            expand_dir "$snapshot" "$old_snapshot" || return
+            old_snapshot=$snapshot
+        fi
+    done
+}
+
+parse_args()
+{
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            -h|--help)
+                OPT_HELP=1
+                return
+                ;;
+            -*)
+                usage >&2
+                return 1
+                ;;
+            *)
+                if [ "$OPT_DIR" ]; then
+                    usage >&2
+                    return 1
+                fi
+                OPT_DIR=$1
+                ;;
+        esac
+        shift
+    done
+}
+
+main()
+{
+    parse_args "$@" || return
+    if [ "$OPT_HELP" ]; then
+         usage
+         return
+    fi
+
+    (cd "$OPT_DIR" && expand_all)
+}
+
+main "$@"
