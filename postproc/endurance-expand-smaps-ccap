@@ -1,0 +1,68 @@
+#!/bin/sh
+#
+# Copyright (c) 2026 Jolla Mobile Ltd
+
+usage()
+{
+    cat <<END
+usage: $0 <dir>
+
+Convert SMAPS capture files from the compact format to the regular format. Works
+on files found in snapshot dirs under <dir>.
+END
+}
+
+expand_all()
+{
+    local dir=
+    for dir in [0-9][0-9][0-9]; do
+        local file=$dir/smaps.ccap
+        local file_out=$dir/smaps.cap
+        [ -f "$file" ] || continue
+        if ! sp_smaps_expand <"$file" >"$file_out"; then
+            rm -f "$file_out"
+            return 1
+        fi
+        rm -f "$file"
+    done
+}
+
+parse_args()
+{
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            -h|--help)
+                OPT_HELP=1
+                return
+                ;;
+            -*)
+                usage >&2
+                return 1
+                ;;
+            *)
+                OPT_DIR=$1
+                shift
+                break
+                ;;
+        esac
+        shift
+    done
+
+    if [ $# -gt 0 ]; then
+         usage >&2
+         return 1
+    fi
+}
+
+main()
+{
+    parse_args "$@" || return
+    if [ "$OPT_HELP" ]; then
+         usage
+         return
+    fi
+
+    (cd "$OPT_DIR" && expand_all)
+}
+
+main "$@"

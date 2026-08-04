@@ -239,7 +239,7 @@ fi
 # save memory statistics
 echo "- SMAPS data"
 if type sp_smaps_snapshot >/dev/null 2>/dev/null ; then
-	sp_smaps_snapshot | $COMPRESSOR | $NONCACHED_W $path/smaps.cap$COMPRESSOR_SUFFIX
+	sp_smaps_snapshot --compact | $COMPRESSOR | $NONCACHED_W $path/smaps.ccap$COMPRESSOR_SUFFIX
 elif find --help 2>&1 | grep -q maxdepth ; then
 	if [ -e /proc/self/smaps ] || [ -e /proc/1/smaps ] ; then
 		map_file=smaps

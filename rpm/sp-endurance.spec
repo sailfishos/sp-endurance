@@ -82,6 +82,7 @@ Requires: which
 %{_bindir}/endurance-plot
 %{_bindir}/endurance-multiplot
 %{_bindir}/endurance-report
+%{_bindir}/endurance-expand-smaps-ccap
 %{_bindir}/endurance-parse-snapshots
 %{_bindir}/endurance-split-snapshots
 %{_bindir}/endurance-extract-process-smaps
