@@ -70,6 +70,7 @@ Requires: perl(JSON::XS)
 # endurance-extract-process-smaps
 Requires: which
 Requires: xdelta3
+Requires: xxhash
 
 %description postproc
  Postprocessing scripts to parse and generate a report from the endurance

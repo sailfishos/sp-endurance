@@ -3,6 +3,7 @@
 # Copyright (c) 2026 Jolla Mobile Ltd
 
 DELTA_FILE_SUFFIX=.vcdiff
+CHECKSUM_FILE_SUFFIX=.xxh3
 
 usage()
 {
@@ -11,6 +12,15 @@ usage: $0 <dir>
 
 Expand all delta-compressed files found in snapshot dirs under <dir>.
 END
+}
+
+# Invoke xxh3sum under the directory where the checksum file exists
+xxh3sum_check()
+{
+    local checksum_file=$1
+    local checksum_dir=$(dirname "$checksum_file")
+
+    (cd "$checksum_dir" && xxh3sum --check --quiet -) <"$checksum_file"
 }
 
 expand_single()
@@ -24,10 +34,13 @@ expand_single()
     fi
 
     local out=${entry%"$DELTA_FILE_SUFFIX"}
+    local out_checksum=$out$CHECKSUM_FILE_SUFFIX
+    local out_dir=$(dirname "$out")
 
     xdelta3 -d -s "$old_entry" "$entry" "$out" || return
+    xxh3sum_check "$out_checksum" || return
 
-    rm -f "$entry"
+    rm -f "$entry" "$out_checksum"
 }
 
 expand_dir()
